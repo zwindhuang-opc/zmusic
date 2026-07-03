@@ -1,0 +1,103 @@
+{
+  "app": {
+    "title": "ZMusic",
+    "subtitle": "AI音乐生成平台"
+  },
+  "nav": {
+    "dashboard": "仪表盘",
+    "music": "音乐生成",
+    "lyrics": "歌词生成",
+    "mv": "MV视频",
+    "settings": "设置"
+  },
+  "header": {
+    "status": "状态",
+    "connected": "已连接",
+    "disconnected": "未连接",
+    "language": "语言"
+  },
+  "dashboard": {
+    "title": "系统概览",
+    "api_status": "API状态",
+    "version": "版本",
+    "uptime": "运行时间",
+    "configured": "已配置",
+    "not_configured": "未配置",
+    "agent_status": "代理状态",
+    "unicorn_agent": "独角兽代理",
+    "fsm_states": "FSM状态数",
+    "network_layers": "网络层数",
+    "start_creating": "开始创作"
+  },
+  "music": {
+    "title": "音乐生成",
+    "prompt": "音乐描述",
+    "prompt_placeholder": "描述您想创作的音乐...",
+    "style": "风格",
+    "style_placeholder": "流行、摇滚、电子...",
+    "duration": "时长（秒）",
+    "method": "生成方式",
+    "method_suno": "Suno AI（结构化）",
+    "method_muse": "Muse AI（描述式）",
+    "method_agent": "AI代理（FSM/网络层）",
+    "generate": "生成音乐",
+    "generating": "正在生成...",
+    "result": "生成结果",
+    "task_id": "任务ID",
+    "status": "状态",
+    "audio_url": "音频链接",
+    "download": "下载"
+  },
+  "lyrics": {
+    "title": "歌词生成器",
+    "theme": "主题",
+    "theme_placeholder": "爱情、夏天、梦想...",
+    "genre": "类型",
+    "method": "方法",
+    "method_fsm": "FSM编程",
+    "method_network": "网络层",
+    "method_muse": "Muse风格",
+    "generate": "生成歌词",
+    "generating": "正在生成...",
+    "result": "生成的歌词",
+    "copy": "复制",
+    "bpm": "节拍"
+  },
+  "mv": {
+    "title": "MV时间线生成器",
+    "theme": "主题",
+    "theme_placeholder": "夏天、夜晚、爱情...",
+    "style": "视觉风格",
+    "style_placeholder": "电影感、动漫、复古...",
+    "generate": "生成时间线",
+    "generating": "正在生成...",
+    "result": "时间线结果",
+    "scene": "场景",
+    "duration": "时长",
+    "effects": "特效",
+    "color_palette": "色调"
+  },
+  "settings": {
+    "title": "系统设置",
+    "api_configuration": "API配置",
+    "suno_api": "Suno AI API",
+    "muse_api": "Muse AI API",
+    "api_key": "API密钥",
+    "configured": "已配置",
+    "not_configured": "未配置",
+    "configure_hint": "设置环境变量以配置",
+    "architecture": "架构",
+    "mvc_info": "MVC模式与服务层",
+    "agents": "AI代理",
+    "endpoints": "可用接口"
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "cancel": "取消",
+    "save": "保存",
+    "reset": "重置",
+    "close": "关闭"
+  }
+}

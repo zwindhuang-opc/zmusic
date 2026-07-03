@@ -1,0 +1,103 @@
+{
+  "app": {
+    "title": "ZMusic",
+    "subtitle": "AI Music Generation Platform"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "music": "Music Generation",
+    "lyrics": "Lyrics Generator",
+    "mv": "MV Video",
+    "settings": "Settings"
+  },
+  "header": {
+    "status": "Status",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "language": "Language"
+  },
+  "dashboard": {
+    "title": "System Overview",
+    "api_status": "API Status",
+    "version": "Version",
+    "uptime": "Uptime",
+    "configured": "Configured",
+    "not_configured": "Not Configured",
+    "agent_status": "Agent Status",
+    "unicorn_agent": "Unicorn Agent",
+    "fsm_states": "FSM States",
+    "network_layers": "Network Layers",
+    "start_creating": "Start Creating"
+  },
+  "music": {
+    "title": "Music Generation",
+    "prompt": "Music Description",
+    "prompt_placeholder": "Describe the music you want to create...",
+    "style": "Style",
+    "style_placeholder": "pop, rock, electronic...",
+    "duration": "Duration (seconds)",
+    "method": "Generation Method",
+    "method_suno": "Suno AI (Structured)",
+    "method_muse": "Muse AI (Descriptive)",
+    "method_agent": "AI Agent (FSM/Network)",
+    "generate": "Generate Music",
+    "generating": "Generating...",
+    "result": "Generation Result",
+    "task_id": "Task ID",
+    "status": "Status",
+    "audio_url": "Audio URL",
+    "download": "Download"
+  },
+  "lyrics": {
+    "title": "Lyrics Generator",
+    "theme": "Theme",
+    "theme_placeholder": "love, summer, dreams...",
+    "genre": "Genre",
+    "method": "Method",
+    "method_fsm": "FSM Programming",
+    "method_network": "Network Layer",
+    "method_muse": "Muse Style",
+    "generate": "Generate Lyrics",
+    "generating": "Generating...",
+    "result": "Generated Lyrics",
+    "copy": "Copy",
+    "bpm": "BPM"
+  },
+  "mv": {
+    "title": "MV Timeline Generator",
+    "theme": "Theme",
+    "theme_placeholder": "summer, night, love...",
+    "style": "Visual Style",
+    "style_placeholder": "cinematic, anime, retro...",
+    "generate": "Generate Timeline",
+    "generating": "Generating...",
+    "result": "Timeline Result",
+    "scene": "Scene",
+    "duration": "Duration",
+    "effects": "Effects",
+    "color_palette": "Color Palette"
+  },
+  "settings": {
+    "title": "System Settings",
+    "api_configuration": "API Configuration",
+    "suno_api": "Suno AI API",
+    "muse_api": "Muse AI API",
+    "api_key": "API Key",
+    "configured": "Configured",
+    "not_configured": "Not Configured",
+    "configure_hint": "Set environment variable to configure",
+    "architecture": "Architecture",
+    "mvc_info": "MVC Pattern with Service Layer",
+    "agents": "AI Agents",
+    "endpoints": "Available Endpoints"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "reset": "Reset",
+    "close": "Close"
+  }
+}
