@@ -152,7 +152,8 @@ export class UnicornAgent {
       theme = 'love',
       style = 'modern',
       mood = 'happy',
-      bpm = 120
+      bpm = 120,
+      complexity = 5
     } = params;
 
     /**
@@ -175,20 +176,21 @@ export class UnicornAgent {
      */
     const stateContents = path.map((state) => ({
       state,
-      content: this._generateStateContent(state, { genre, theme, style, mood, bpm })
+      content: this._generateStateContent(state, { genre, theme, style, mood, bpm, complexity })
     }));
 
     return {
       success: true,
       method: 'fsm',
-      command: this._buildFSMCommand({ genre, theme, style, mood, bpm, path }),
+      command: this._buildFSMCommand({ genre, theme, style, mood, bpm, path, complexity }),
       execution: {
         data: stateContents.map(s => `[${s.state.toUpperCase()}]\n${s.content}`).join('\n\n')
       },
       stats: {
         states: path.length,
         transitions: path.length - 1,
-        bpm
+        bpm,
+        complexity
       }
     };
   }
@@ -202,16 +204,105 @@ export class UnicornAgent {
    * @returns {string} Generated content for the state
    */
   _generateStateContent(state, params) {
-    const { theme, mood, style, bpm } = params;
+    const { theme, mood, style, bpm, complexity = 5 } = params;
+
+    const complexityModifiers = {
+      low: { detail: '', depth: '', vivid: '' },
+      medium: { detail: '细腻地', depth: '深刻地', vivid: '生动的' },
+      high: { detail: '极其细腻地', depth: '深邃地', vivid: '栩栩如生的' },
+      extreme: { detail: '极致细腻地', depth: '无限深邃地', vivid: '令人身临其境的' }
+    };
+
+    const getModifier = (level) => {
+      if (level <= 3) return complexityModifiers.low;
+      if (level <= 6) return complexityModifiers.medium;
+      if (level <= 8) return complexityModifiers.high;
+      return complexityModifiers.extreme;
+    };
+
+    const mod = getModifier(complexity);
+
+    const introContents = {
+      1: `轻柔的${style}前奏, 营造${mood}氛围`,
+      3: `轻柔的${style}前奏, ${mod.detail}营造${mood}氛围, ${bpm}bpm`,
+      5: `${mod.vivid}${style}前奏缓缓展开, ${mod.detail}营造${mood}氛围, ${bpm}bpm, 配合轻柔的${style}乐器`,
+      7: `${mod.vivid}${style}前奏缓缓展开, ${mod.detail}营造${mood}氛围, ${bpm}bpm, 配合轻柔的${style}乐器, 融入微妙的和声变化`,
+      10: `${mod.vivid}${style}前奏缓缓展开, ${mod.detail}营造${mood}氛围, ${bpm}bpm, 配合轻柔的${style}乐器, 融入微妙的和声变化, 使用精致的音色设计和空间感处理, 为整首歌奠定${mood}而富有层次的基调`
+    };
+
+    const verse1Contents = {
+      1: `主歌开始, 讲述${theme}的故事`,
+      3: `主歌开始, ${mod.detail}讲述${theme}的故事, 情绪${mood}`,
+      5: `主歌开始, ${mod.detail}讲述${theme}的故事, ${mod.depth}表达${mood}情绪, 旋律线条流畅优美`,
+      7: `主歌开始, ${mod.detail}讲述${theme}的故事, ${mod.depth}表达${mood}情绪, 旋律线条流畅优美, 歌词富有诗意和画面感, 节奏感细腻`,
+      10: `主歌开始, ${mod.detail}讲述${theme}的故事, ${mod.depth}表达${mood}情绪, 旋律线条流畅优美, 歌词富有诗意和画面感, 节奏感细腻, 使用复杂的和弦进行, 配合精心设计的节奏型, 展现${theme}主题的多层次内涵`
+    };
+
+    const chorus1Contents = {
+      1: `副歌爆发, ${theme}的高潮`,
+      3: `副歌爆发, ${theme}的高潮, 能量提升`,
+      5: `副歌爆发, ${theme}的高潮, 能量大幅提升, 旋律朗朗上口, 和声丰富饱满`,
+      7: `副歌爆发, ${theme}的高潮, 能量大幅提升, 旋律朗朗上口, 和声丰富饱满, 编曲层次分明, 使用强有力的节奏驱动`,
+      10: `副歌爆发, ${theme}的高潮, 能量大幅提升至顶点, 旋律极其朗朗上口且富有记忆点, 和声丰富饱满且变化多样, 编曲层次分明且动态十足, 使用强有力的节奏驱动, 配合华丽的乐器编排和震撼的音效处理`
+    };
+
+    const verse2Contents = {
+      1: `主歌延续, 深化${theme}的内涵`,
+      3: `主歌延续, ${mod.depth}深化${theme}的内涵`,
+      5: `主歌延续, ${mod.depth}深化${theme}的内涵, 引入新的音乐元素, 情绪进一步发展`,
+      7: `主歌延续, ${mod.depth}深化${theme}的内涵, 引入新的音乐元素, 情绪进一步发展, 编曲更加丰富, 加入新的乐器层次`,
+      10: `主歌延续, ${mod.depth}深化${theme}的内涵, 引入新的音乐元素和旋律动机, 情绪进一步发展和升华, 编曲更加丰富和细腻, 加入新的乐器层次和和声变化, 展现${theme}主题的深度和广度`
+    };
+
+    const chorus2Contents = {
+      1: `副歌再现, 加强${theme}的记忆点`,
+      3: `副歌再现, ${mod.detail}加强${theme}的记忆点`,
+      5: `副歌再现, ${mod.detail}加强${theme}的记忆点, 编曲更加宏大, 能量更上一层楼`,
+      7: `副歌再现, ${mod.detail}加强${theme}的记忆点, 编曲更加宏大和华丽, 能量更上一层楼, 加入和声伴唱和乐器独奏`,
+      10: `副歌再现, ${mod.detail}加强${theme}的记忆点, 编曲更加宏大和华丽, 能量更上一层楼达到新高度, 加入精致的和声伴唱和华丽的乐器独奏, 使用复杂的编曲技巧和动态处理, 使${theme}主题深入人心`
+    };
+
+    const bridgeContents = {
+      1: `桥段转折, 引入新的音乐元素`,
+      3: `桥段转折, ${mod.detail}引入新的音乐元素`,
+      5: `桥段转折, ${mod.detail}引入新的音乐元素, 调性变化, 为最终高潮做铺垫`,
+      7: `桥段转折, ${mod.detail}引入新的音乐元素和和声色彩, 调性变化, 为最终高潮做铺垫, 使用对比强烈的编曲手法`,
+      10: `桥段转折, ${mod.detail}引入新的音乐元素和和声色彩, 调性变化带来新鲜感, 为最终高潮做完美铺垫, 使用对比强烈的编曲手法和精心设计的过渡段落, 展现音乐的深度和艺术性`
+    };
+
+    const finalChorusContents = {
+      1: `最终副歌, ${theme}达到情感顶点`,
+      3: `最终副歌, ${theme}达到情感顶点, 全曲高潮`,
+      5: `最终副歌, ${theme}达到情感顶点, 全曲最高潮, 编曲达到最宏大的状态`,
+      7: `最终副歌, ${theme}达到情感顶点, 全曲最高潮, 编曲达到最宏大的状态, 所有乐器齐奏, 和声达到最丰富`,
+      10: `最终副歌, ${theme}达到情感顶点, 全曲最高潮, 编曲达到最宏大和华丽的状态, 所有乐器齐奏形成震撼的音效墙, 和声达到最丰富和复杂的层次, 使用极致的动态范围和声音设计, 将${theme}主题推向永恒的巅峰`
+    };
+
+    const outroContents = {
+      1: `尾声淡出, ${mood}的情绪延续`,
+      3: `尾声淡出, ${mod.detail}延续${mood}的情绪`,
+      5: `尾声淡出, ${mod.detail}延续${mood}的情绪, 逐渐减弱, 留下回味`,
+      7: `尾声淡出, ${mod.detail}延续${mood}的情绪, 逐渐减弱, 使用渐弱的编曲手法, 留下悠长的回味`,
+      10: `尾声淡出, ${mod.detail}延续${mood}的情绪, 逐渐减弱, 使用精致的渐弱编曲手法和声音淡出效果, 留下悠长而深刻的回味, 以${style}特色的乐器收尾, 使整首歌完美落幕`
+    };
+
+    const getContent = (level, contents) => {
+      if (level >= 10) return contents[10];
+      if (level >= 7) return contents[7];
+      if (level >= 5) return contents[5];
+      if (level >= 3) return contents[3];
+      return contents[1];
+    };
+
     const contents = {
-      [FSM_STATES.INTRO]: `轻柔的${style}前奏, 营造${mood}氛围, ${bpm}bpm`,
-      [FSM_STATES.VERSE_1]: `主歌开始, 讲述${theme}的故事, 情绪${mood}`,
-      [FSM_STATES.CHORUS_1]: `副歌爆发, ${theme}的高潮, 能量提升`,
-      [FSM_STATES.VERSE_2]: `主歌延续, 深化${theme}的内涵`,
-      [FSM_STATES.CHORUS_2]: `副歌再现, 加强${theme}的记忆点`,
-      [FSM_STATES.BRIDGE]: `桥段转折, 引入新的音乐元素`,
-      [FSM_STATES.FINAL_CHORUS]: `最终副歌, ${theme}达到情感顶点`,
-      [FSM_STATES.OUTRO]: `尾声淡出, ${mood}的情绪延续`
+      [FSM_STATES.INTRO]: getContent(complexity, introContents),
+      [FSM_STATES.VERSE_1]: getContent(complexity, verse1Contents),
+      [FSM_STATES.CHORUS_1]: getContent(complexity, chorus1Contents),
+      [FSM_STATES.VERSE_2]: getContent(complexity, verse2Contents),
+      [FSM_STATES.CHORUS_2]: getContent(complexity, chorus2Contents),
+      [FSM_STATES.BRIDGE]: getContent(complexity, bridgeContents),
+      [FSM_STATES.FINAL_CHORUS]: getContent(complexity, finalChorusContents),
+      [FSM_STATES.OUTRO]: getContent(complexity, outroContents)
     };
     return contents[state] || '';
   }
@@ -224,8 +315,8 @@ export class UnicornAgent {
    * @returns {string} Formatted FSM command string
    */
   _buildFSMCommand(params) {
-    const { genre, theme, style, mood, bpm, path } = params;
-    return `[FSM-COMMAND] Genre=${genre} | Theme=${theme} | Style=${style} | Mood=${mood} | BPM=${bpm} | States=${path.join('->')}`;
+    const { genre, theme, style, mood, bpm, path, complexity } = params;
+    return `[FSM-COMMAND] Genre=${genre} | Theme=${theme} | Style=${style} | Mood=${mood} | BPM=${bpm} | Complexity=${complexity} | States=${path.join('->')}`;
   }
 
   /**
@@ -259,7 +350,8 @@ export class UnicornAgent {
       mood = 'happy',
       bpm = 120,
       elements = 'electronic elements',
-      subStyle = 'house'
+      subStyle = 'house',
+      complexity = 5
     } = params;
 
     /**
@@ -267,20 +359,21 @@ export class UnicornAgent {
      */
     const layers = NETWORK_LAYERS.map((layer) => ({
       layer,
-      content: this._generateLayerContent(layer, { genre, theme, style, mood, bpm, elements, subStyle })
+      content: this._generateLayerContent(layer, { genre, theme, style, mood, bpm, elements, subStyle, complexity })
     }));
 
     return {
       success: true,
       method: 'network_layer',
-      command: this._buildNetworkLayerCommand({ genre, theme, style, mood, bpm, elements, subStyle }),
+      command: this._buildNetworkLayerCommand({ genre, theme, style, mood, bpm, elements, subStyle, complexity }),
       execution: {
         data: layers.map(l => `[LAYER: ${l.layer.toUpperCase()}]\n${l.content}`).join('\n\n')
       },
       stats: {
         layers: layers.length,
         bpm,
-        totalElements: elements.split(' ').length
+        totalElements: elements.split(' ').length,
+        complexity
       }
     };
   }
@@ -294,12 +387,69 @@ export class UnicornAgent {
    * @returns {string} Generated content for the layer
    */
   _generateLayerContent(layer, params) {
-    const { theme, mood, bpm, elements, subStyle } = params;
+    const { theme, mood, bpm, elements, subStyle, complexity = 5 } = params;
+
+    const complexityModifiers = {
+      low: { detail: '', depth: '', elaborate: '' },
+      medium: { detail: '精心地', depth: '深刻地', elaborate: '细致的' },
+      high: { detail: '极其精心地', depth: '深邃地', elaborate: '精致复杂的' },
+      extreme: { detail: '极致精心地', depth: '无限深邃地', elaborate: '极其精致复杂的' }
+    };
+
+    const getModifier = (level) => {
+      if (level <= 3) return complexityModifiers.low;
+      if (level <= 6) return complexityModifiers.medium;
+      if (level <= 8) return complexityModifiers.high;
+      return complexityModifiers.extreme;
+    };
+
+    const mod = getModifier(complexity);
+
+    const foundationContents = {
+      1: `底层节拍: ${bpm}bpm基础律动`,
+      3: `底层节拍: ${bpm}bpm基础律动, 围绕${theme}主题构建稳定的${subStyle}基础节拍`,
+      5: `底层节拍: ${bpm}bpm基础律动, ${mod.detail}围绕${theme}主题构建稳定的${subStyle}基础节拍, 使用${mod.elaborate}节奏型`,
+      7: `底层节拍: ${bpm}bpm基础律动, ${mod.detail}围绕${theme}主题构建稳定的${subStyle}基础节拍, 使用${mod.elaborate}节奏型和复合节拍, 融入微妙的节奏变化`,
+      10: `底层节拍: ${bpm}bpm基础律动, ${mod.detail}围绕${theme}主题构建稳定而富有层次的${subStyle}基础节拍, 使用${mod.elaborate}节奏型和复合节拍, 融入微妙的节奏变化和复杂的切分, 配合精致的打击乐编排`
+    };
+
+    const melodyContents = {
+      1: `旋律层: 流畅的主旋律线条, 表达${theme}的${mood}情绪`,
+      3: `旋律层: 流畅的主旋律线条, 表达${theme}的${mood}情绪, 配合${elements}`,
+      5: `旋律层: 流畅优美的主旋律线条, ${mod.depth}表达${theme}的${mood}情绪, 配合${elements}, 使用${mod.elaborate}旋律发展手法`,
+      7: `旋律层: 流畅优美的主旋律线条, ${mod.depth}表达${theme}的${mood}情绪, 配合${elements}, 使用${mod.elaborate}旋律发展手法和转调技巧, 加入复调元素`,
+      10: `旋律层: 流畅优美且富有张力的主旋律线条, ${mod.depth}表达${theme}的${mood}情绪, 配合${elements}, 使用${mod.elaborate}旋律发展手法和转调技巧, 加入复调元素和对位线条, 配合精致的和声进行, 展现${theme}主题的多层次内涵`
+    };
+
+    const expressionContents = {
+      1: `表现层: 人声与和声, 诠释${theme}的${mood}情感`,
+      3: `表现层: 人声与和声, ${mod.depth}诠释${theme}的${mood}情感, 体现${subStyle}特色`,
+      5: `表现层: 人声与和声, ${mod.depth}诠释${theme}的${mood}情感, 体现${subStyle}特色, 使用${mod.elaborate}和声配置`,
+      7: `表现层: 人声与和声, ${mod.depth}诠释${theme}的${mood}情感, 体现${subStyle}特色, 使用${mod.elaborate}和声配置和多声部编排, 加入和声伴唱和合唱段落`,
+      10: `表现层: 人声与和声, ${mod.depth}诠释${theme}的${mood}情感, 体现${subStyle}特色, 使用${mod.elaborate}和声配置和多声部编排, 加入精致的和声伴唱和宏大的合唱段落, 配合细腻的人声效果处理和动态变化`
+    };
+
+    const effectsContents = {
+      1: `效果层: 混响、延迟、调制效果, 营造${mood}氛围`,
+      3: `效果层: 混响、延迟、调制效果, 营造${mood}氛围, 整合${elements}的声音设计`,
+      5: `效果层: 混响、延迟、调制效果, ${mod.detail}营造${mood}氛围, 整合${elements}的声音设计, 使用${mod.elaborate}音效处理`,
+      7: `效果层: 混响、延迟、调制效果, ${mod.detail}营造${mood}氛围, 整合${elements}的声音设计, 使用${mod.elaborate}音效处理和空间感设计, 加入自动化效果控制`,
+      10: `效果层: 混响、延迟、调制效果, ${mod.detail}营造${mood}氛围, 整合${elements}的声音设计, 使用${mod.elaborate}音效处理和空间感设计, 加入自动化效果控制和动态效果调制, 配合精致的音色设计和声音塑形, 打造沉浸式的听觉体验`
+    };
+
+    const getContent = (level, contents) => {
+      if (level >= 10) return contents[10];
+      if (level >= 7) return contents[7];
+      if (level >= 5) return contents[5];
+      if (level >= 3) return contents[3];
+      return contents[1];
+    };
+
     const contents = {
-      foundation: `底层节拍: ${bpm}bpm基础律动, 围绕${theme}主题构建稳定的${subStyle}基础节拍`,
-      melody: `旋律层: 流畅的主旋律线条, 表达${theme}的${mood}情绪, 配合${elements}`,
-      expression: `表现层: 人声与和声, 深度诠释${theme}的${mood}情感, 体现${subStyle}特色`,
-      effects: `效果层: 混响、延迟、调制效果, 营造${mood}氛围, 整合${elements}的声音设计`
+      foundation: getContent(complexity, foundationContents),
+      melody: getContent(complexity, melodyContents),
+      expression: getContent(complexity, expressionContents),
+      effects: getContent(complexity, effectsContents)
     };
     return contents[layer] || '';
   }
@@ -312,8 +462,8 @@ export class UnicornAgent {
    * @returns {string} Formatted network layer command string
    */
   _buildNetworkLayerCommand(params) {
-    const { genre, theme, style, mood, bpm, elements, subStyle } = params;
-    return `[NETWORK-LAYER] Genre=${genre} | Theme=${theme} | Style=${style} | Mood=${mood} | BPM=${bpm} | Elements=${elements} | SubStyle=${subStyle} | Layers=${NETWORK_LAYERS.join('+')}`;
+    const { genre, theme, style, mood, bpm, elements, subStyle, complexity } = params;
+    return `[NETWORK-LAYER] Genre=${genre} | Theme=${theme} | Style=${style} | Mood=${mood} | BPM=${bpm} | Elements=${elements} | SubStyle=${subStyle} | Complexity=${complexity} | Layers=${NETWORK_LAYERS.join('+')}`;
   }
 
   /**
@@ -350,13 +500,46 @@ export class UnicornAgent {
       elements = '热带打击乐',
       subStyle = '浩室',
       subject = '我',
-      object = '你'
+      object = '你',
+      complexity = 5
     } = params;
+
+    const complexityDesc = {
+      1: '',
+      3: '简单的',
+      5: '中等复杂度的',
+      7: '复杂的',
+      10: '极其复杂的、富有深度和艺术性的'
+    };
+
+    const getComplexityDesc = (level) => {
+      if (level >= 10) return complexityDesc[10];
+      if (level >= 7) return complexityDesc[7];
+      if (level >= 5) return complexityDesc[5];
+      if (level >= 3) return complexityDesc[3];
+      return complexityDesc[1];
+    };
+
+    const detailDesc = {
+      1: '',
+      3: '较为简单地',
+      5: '精心地',
+      7: '极其精心地',
+      10: '极致精心地、艺术化地'
+    };
+
+    const getDetailDesc = (level) => {
+      if (level >= 10) return detailDesc[10];
+      if (level >= 7) return detailDesc[7];
+      if (level >= 5) return detailDesc[5];
+      if (level >= 3) return detailDesc[3];
+      return detailDesc[1];
+    };
 
     /**
      * Build natural language command for Muse AI
      */
-    const command = `创作一首${genre}风格的歌曲, BPM ${bpm}, 主题为${theme}, 情绪为${mood}, 包含${elements}, 子风格为${subStyle}, 讲述${subject}对${object}的${theme}故事, 融合${style}编曲手法, 营造${mood}氛围。`;
+    const command = `创作一首${getComplexityDesc(complexity)}${genre}风格的歌曲, BPM ${bpm}, 主题为${theme}, 情绪为${mood}, 包含${elements}, 子风格为${subStyle}, ${getDetailDesc(complexity)}讲述${subject}对${object}的${theme}故事, 融合${style}编曲手法, ${getDetailDesc(complexity)}营造${mood}氛围, 使用${getComplexityDesc(complexity)}编曲技巧和声音设计。`;
 
     return {
       success: true,
@@ -367,7 +550,8 @@ export class UnicornAgent {
       },
       stats: {
         commandLength: command.length,
-        parameters: 8
+        parameters: 8,
+        complexity
       }
     };
   }
@@ -398,17 +582,35 @@ export class UnicornAgent {
       style = 'modern',
       theme = 'love',
       mood = 'happy',
-      bpm = 120
+      bpm = 120,
+      complexity = 5
     } = params;
+
+    const complexityTags = {
+      1: '',
+      3: 'simple',
+      5: 'medium complexity',
+      7: 'complex',
+      10: 'highly complex, intricate, artistic'
+    };
+
+    const getComplexityTag = (level) => {
+      if (level >= 10) return complexityTags[10];
+      if (level >= 7) return complexityTags[7];
+      if (level >= 5) return complexityTags[5];
+      if (level >= 3) return complexityTags[3];
+      return complexityTags[1];
+    };
 
     /**
      * Build JSON command for Suno AI
      */
     const command = JSON.stringify({
-      prompt: `A ${mood} ${genre} song about ${theme}`,
-      tags: [genre, style, mood, `${bpm}bpm`],
+      prompt: `A ${mood} ${genre} song about ${theme}, ${getComplexityTag(complexity)} arrangement`,
+      tags: [genre, style, mood, `${bpm}bpm`, getComplexityTag(complexity)],
       make_instrumental: false,
-      wait_audio: true
+      wait_audio: true,
+      complexity: complexity
     }, null, 2);
 
     return {
@@ -419,7 +621,8 @@ export class UnicornAgent {
         data: command
       },
       stats: {
-        parameters: 5
+        parameters: 5,
+        complexity
       }
     };
   }

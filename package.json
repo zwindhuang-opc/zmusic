@@ -7,9 +7,16 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "server": "node src/app.js",
+    "server": "node src/server.js",
     "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
-    "start": "concurrently \"npm run server\" \"npm run dev\""
+    "start": "concurrently \"npm run server\" \"npm run dev\"",
+    "version:bump": "node scripts/version-bump.js",
+    "version:major": "node scripts/version-bump.js major",
+    "version:minor": "node scripts/version-bump.js minor",
+    "version:patch": "node scripts/version-bump.js patch",
+    "version:current": "node scripts/version-bump.js --current",
+    "backup": "git add -A && git commit -m \"Auto backup $(date +%Y-%m-%d_%H:%M:%S)\" && git push origin HEAD",
+    "backup:tag": "git tag -f backup-$(date +%Y-%m-%d) && git push origin -f backup-$(date +%Y-%m-%d)"
   },
   "dependencies": {
     "cors": "^2.8.6",
