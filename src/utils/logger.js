@@ -1,155 +1,370 @@
 /**
- * Logger Utility - Log4j-style Logging System
- * 
- * This module provides a comprehensive logging system inspired by Log4j.
- * It supports multiple log levels (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
- * and provides structured logging with timestamps, module names, and optional data.
+ * Log4j-style Logger for ZMusic
  * 
  * Features:
- * - Six log levels for granular control
- * - ISO 8601 timestamp formatting
- * - Module name tracking for easy debugging
- * - Optional structured data logging
- * - Configurable log levels per module
+ * - Multiple log levels (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
+ * - File and console appenders
+ * - Pattern-based layout formatting
+ * - Log rotation support
+ * - Module-based logging
  * 
  * @module utils/logger
  * @version 1.0.0
- * @author ZMusic Team
  */
 
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 /**
- * Log Level Constants
- * 
- * Defines the severity levels for logging, from most verbose (TRACE) to most severe (FATAL).
- * Lower numbers indicate more verbose logging.
- * 
- * @constant {Object}
+ * Log levels enumeration
+ * @enum {number}
  */
-const LogLevel = {
-  /** TRACE - Most detailed logging, typically only enabled during development */
+export const LogLevel = {
   TRACE: 0,
-  /** DEBUG - Detailed information useful for debugging */
   DEBUG: 1,
-  /** INFO - General information about application operation */
   INFO: 2,
-  /** WARN - Warning messages about potential issues */
   WARN: 3,
-  /** ERROR - Error events that might still allow the application to continue */
   ERROR: 4,
-  /** FATAL - Very severe error events that will presumably lead the application to abort */
   FATAL: 5
 };
 
 /**
- * Log Level Names
- * 
- * Human-readable names for each log level, used in log output formatting.
- * 
- * @constant {string[]}
+ * Log level names mapping
  */
-const LevelNames = ['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'];
+const LevelNames = {
+  [LogLevel.TRACE]: 'TRACE',
+  [LogLevel.DEBUG]: 'DEBUG',
+  [LogLevel.INFO]: 'INFO',
+  [LogLevel.WARN]: 'WARN',
+  [LogLevel.ERROR]: 'ERROR',
+  [LogLevel.FATAL]: 'FATAL'
+};
 
 /**
- * Logger Class
- * 
- * Provides logging functionality with support for multiple log levels,
- * module tracking, and structured data logging.
- * 
- * @class Logger
+ * Pattern layout formatter
+ * Supports: %d (date), %p (level), %c (category), %m (message)
  */
-class Logger {
+class PatternLayout {
+  constructor(pattern = '[%d] [%p] [%c] - %m') {
+    this.pattern = pattern;
+  }
+
+  format(level, category, message, timestamp = new Date()) {
+    const dateStr = timestamp.toISOString();
+    const levelStr = LevelNames[level] || 'UNKNOWN';
+    
+    return this.pattern
+      .replace('%d', dateStr)
+      .replace('%p', levelStr)
+      .replace('%c', category)
+      .replace('%m', message);
+  }
+}
+
+/**
+ * Console appender - outputs to stdout/stderr
+ */
+class ConsoleAppender {
+  constructor(layout = new PatternLayout()) {
+    this.layout = layout;
+  }
+
+  append(level, category, message, timestamp) {
+    const formatted = this.layout.format(level, category, message, timestamp);
+    
+    if (level >= LogLevel.ERROR) {
+      console.error(formatted);
+    } else {
+      console.log(formatted);
+    }
+  }
+}
+
+/**
+ * File appender - writes to log files with rotation support
+ */
+class FileAppender {
+  constructor(filePath, layout = new PatternLayout(), maxSize = 10 * 1024 * 1024) {
+    this.filePath = filePath;
+    this.layout = layout;
+    this.maxSize = maxSize; // Default 10MB
+    
+    // Ensure log directory exists
+    const logDir = path.dirname(filePath);
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+  }
+
+  append(level, category, message, timestamp) {
+    const formatted = this.layout.format(level, category, message, timestamp);
+    
+    try {
+      // Check if rotation is needed
+      if (fs.existsSync(this.filePath)) {
+        const stats = fs.statSync(this.filePath);
+        if (stats.size >= this.maxSize) {
+          this.rotate();
+        }
+      }
+      
+      fs.appendFileSync(this.filePath, formatted + '\n', 'utf8');
+    } catch (error) {
+      console.error(`Failed to write to log file: ${error.message}`);
+    }
+  }
+
+  rotate() {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${this.filePath}.${timestamp}`;
+    
+    try {
+      if (fs.existsSync(this.filePath)) {
+        fs.renameSync(this.filePath, backupPath);
+      }
+    } catch (error) {
+      console.error(`Failed to rotate log file: ${error.message}`);
+    }
+  }
+}
+
+/**
+ * Main Logger class
+ */
+export class Logger {
   /**
-   * Constructor - Initialize a new Logger instance
-   * 
-   * @param {string} [moduleName='App'] - Name of the module using this logger
+   * Create a new logger instance
+   * @param {string} category - Logger category (usually module name)
+   * @param {number} level - Minimum log level
    */
-  constructor(moduleName = 'App') {
-    /** @type {string} Module name for log identification */
-    this.moduleName = moduleName;
-    /** @type {number} Current log level threshold */
-    this.level = LogLevel.INFO;
+  constructor(category, level = LogLevel.INFO) {
+    this.category = category;
+    this.level = level;
+    this.appenders = [];
+    
+    // Default appenders
+    this.addAppender(new ConsoleAppender());
+    
+    // File appender for production
+    if (process.env.NODE_ENV === 'production') {
+      const logPath = path.join(__dirname, '../../logs/app.log');
+      this.addAppender(new FileAppender(logPath));
+    }
   }
 
   /**
-   * Set the log level threshold
-   * 
-   * Messages below this level will not be logged.
-   * 
-   * @param {number} level - Log level from LogLevel constants
+   * Add an appender to this logger
+   * @param {Object} appender - Appender instance
+   */
+  addAppender(appender) {
+    this.appenders.push(appender);
+  }
+
+  /**
+   * Set the minimum log level
+   * @param {number} level - Log level from LogLevel enum
    */
   setLevel(level) {
     this.level = level;
   }
 
   /**
-   * Internal logging method
-   * 
-   * Formats and outputs log messages with timestamp, level, module name, and optional data.
-   * 
+   * Internal log method
    * @private
-   * @param {number} level - Log level for this message
-   * @param {string} message - Log message text
-   * @param {Object} [data] - Optional structured data to include
    */
-  _log(level, message, data) {
+  _log(level, message, ...args) {
     if (level < this.level) return;
-    const timestamp = new Date().toISOString();
-    const output = `[${timestamp}] [${LevelNames[level]}] [${this.moduleName}] ${message}`;
-    if (data) {
-      console.log(output, JSON.stringify(data));
-    } else {
-      console.log(output);
+    
+    const timestamp = new Date();
+    let formattedMessage = message;
+    
+    // Handle string formatting with %s, %d, %j
+    if (args.length > 0) {
+      formattedMessage = this.formatMessage(message, args);
+    }
+    
+    // Send to all appenders
+    for (const appender of this.appenders) {
+      appender.append(level, this.category, formattedMessage, timestamp);
     }
   }
 
   /**
-   * Log a TRACE level message
-   * 
-   * @param {string} message - Log message
-   * @param {Object} [data] - Optional structured data
+   * Format message with arguments
+   * @private
    */
-  trace(message, data) { this._log(LogLevel.TRACE, message, data); }
-  
+  formatMessage(message, args) {
+    let result = message;
+    let argIndex = 0;
+    
+    result = result.replace(/%[sdjo]/g, (match) => {
+      if (argIndex >= args.length) return match;
+      
+      const arg = args[argIndex++];
+      
+      switch (match) {
+        case '%s':
+          return String(arg);
+        case '%d':
+          return Number(arg).toString();
+        case '%j':
+        case '%o':
+          try {
+            return JSON.stringify(arg);
+          } catch {
+            return String(arg);
+          }
+        default:
+          return match;
+      }
+    });
+    
+    // Append remaining arguments
+    if (argIndex < args.length) {
+      result += ' ' + args.slice(argIndex).map(arg => {
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg);
+          } catch {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      }).join(' ');
+    }
+    
+    return result;
+  }
+
   /**
-   * Log a DEBUG level message
-   * 
+   * Log at TRACE level
    * @param {string} message - Log message
-   * @param {Object} [data] - Optional structured data
+   * @param {...any} args - Additional arguments
    */
-  debug(message, data) { this._log(LogLevel.DEBUG, message, data); }
-  
+  trace(message, ...args) {
+    this._log(LogLevel.TRACE, message, ...args);
+  }
+
   /**
-   * Log an INFO level message
-   * 
+   * Log at DEBUG level
    * @param {string} message - Log message
-   * @param {Object} [data] - Optional structured data
+   * @param {...any} args - Additional arguments
    */
-  info(message, data) { this._log(LogLevel.INFO, message, data); }
-  
+  debug(message, ...args) {
+    this._log(LogLevel.DEBUG, message, ...args);
+  }
+
   /**
-   * Log a WARN level message
-   * 
+   * Log at INFO level
    * @param {string} message - Log message
-   * @param {Object} [data] - Optional structured data
+   * @param {...any} args - Additional arguments
    */
-  warn(message, data) { this._log(LogLevel.WARN, message, data); }
-  
+  info(message, ...args) {
+    this._log(LogLevel.INFO, message, ...args);
+  }
+
   /**
-   * Log an ERROR level message
-   * 
+   * Log at WARN level
    * @param {string} message - Log message
-   * @param {Object} [data] - Optional structured data
+   * @param {...any} args - Additional arguments
    */
-  error(message, data) { this._log(LogLevel.ERROR, message, data); }
-  
+  warn(message, ...args) {
+    this._log(LogLevel.WARN, message, ...args);
+  }
+
   /**
-   * Log a FATAL level message
-   * 
+   * Log at ERROR level
    * @param {string} message - Log message
-   * @param {Object} [data] - Optional structured data
+   * @param {...any} args - Additional arguments
    */
-  fatal(message, data) { this._log(LogLevel.FATAL, message, data); }
+  error(message, ...args) {
+    this._log(LogLevel.ERROR, message, ...args);
+  }
+
+  /**
+   * Log at FATAL level
+   * @param {string} message - Log message
+   * @param {...any} args - Additional arguments
+   */
+  fatal(message, ...args) {
+    this._log(LogLevel.FATAL, message, ...args);
+  }
+
+  /**
+   * Check if TRACE level is enabled
+   * @returns {boolean}
+   */
+  isTraceEnabled() {
+    return this.level <= LogLevel.TRACE;
+  }
+
+  /**
+   * Check if DEBUG level is enabled
+   * @returns {boolean}
+   */
+  isDebugEnabled() {
+    return this.level <= LogLevel.DEBUG;
+  }
+
+  /**
+   * Check if INFO level is enabled
+   * @returns {boolean}
+   */
+  isInfoEnabled() {
+    return this.level <= LogLevel.INFO;
+  }
+
+  /**
+   * Check if WARN level is enabled
+   * @returns {boolean}
+   */
+  isWarnEnabled() {
+    return this.level <= LogLevel.WARN;
+  }
+
+  /**
+   * Check if ERROR level is enabled
+   * @returns {boolean}
+   */
+  isErrorEnabled() {
+    return this.level <= LogLevel.ERROR;
+  }
+
+  /**
+   * Check if FATAL level is enabled
+   * @returns {boolean}
+   */
+  isFatalEnabled() {
+    return this.level <= LogLevel.FATAL;
+  }
 }
 
-export { Logger, LogLevel };
+/**
+ * Logger configuration
+ */
+export const LoggerConfig = {
+  /**
+   * Configure global logger settings
+   * @param {Object} config - Configuration object
+   */
+  configure(config = {}) {
+    if (config.level !== undefined) {
+      Logger.defaultLevel = config.level;
+    }
+    
+    if (config.pattern) {
+      Logger.defaultPattern = config.pattern;
+    }
+    
+    if (config.appenders) {
+      Logger.defaultAppenders = config.appenders;
+    }
+  }
+};
+
+// Default export
 export default Logger;
