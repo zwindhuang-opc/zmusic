@@ -32,6 +32,7 @@ function App() {
       if (health.success) {
         setApiStatus({
           configured: health.apiConfigured || health.data?.apiConfigured,
+          museConfigured: health.museConfigured || health.data?.museConfigured || false,
           version: health.version || health.data?.version || '1.0.0',
           uptime: health.uptime || health.data?.uptime || 0
         });

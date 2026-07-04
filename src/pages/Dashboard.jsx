@@ -110,10 +110,12 @@ function Dashboard({ apiStatus, agentStatus, onNavigate }) {
             <div>
               <div className="flex justify-between text-xs mb-1.5">
                 <span className="text-gray-400">{t('dashboard.muse_ai')}</span>
-                <span className="text-amber-400">{t('dashboard.not_configured')}</span>
+                <span className={apiStatus.museConfigured ? 'text-emerald-400' : 'text-amber-400'}>
+                  {apiStatus.museConfigured ? t('header.connected') : t('dashboard.not_configured')}
+                </span>
               </div>
               <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-500" style={{ width: '30%' }} />
+                <div className={`h-full ${apiStatus.museConfigured ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: apiStatus.museConfigured ? '100%' : '30%' }} />
               </div>
             </div>
             <div>

@@ -13,6 +13,15 @@ import sunoService from '../services/suno.service.js';
 import museService from '../services/muse.service.js';
 import Logger from '../utils/logger.js';
 import { config } from '../config/index.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Read version from VERSION.json
+const versionFile = JSON.parse(fs.readFileSync(path.join(__dirname, '../../VERSION.json'), 'utf-8'));
 
 /**
  * 日志记录器实例
@@ -52,7 +61,7 @@ export class HealthController {
     return res.json({
       success: true,
       status: 'healthy',
-      version: '1.0.0',
+      version: versionFile.version,
       uptime: Math.floor(process.uptime()),
       port: config.port,
       apiConfigured: sunoService.isConfigured(),

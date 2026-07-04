@@ -1,12 +1,13 @@
 {
-  "version": "5.1.0",
+  "version": "5.1.1",
   "major": 5,
   "minor": 1,
-  "patch": 0,
+  "patch": 1,
   "releaseDate": "2026-07-05",
-  "buildNumber": 6,
+  "buildNumber": 7,
   "status": "production-ready",
   "changes": [
+    "v5.1.1 - Code documentation, screenshot automation, PMP/Scrum plan, hardcoding removal",
     "v5.1.0 - Dashboard statistics, copy/paste, floating AI chat ball, UX improvements",
     "Dashboard cards now show real generation stats from localStorage history",
     "Dashboard cards are clickable to navigate to respective pages",

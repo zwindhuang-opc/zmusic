@@ -51,3 +51,6 @@ debug/
 
 # Vite
 .vite/
+
+# Screenshots (large PNG files, track separately if needed)
+# screenshots/
