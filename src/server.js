@@ -3,6 +3,8 @@
  * Runs on port 5501, serves API endpoints
  */
 
+import './init.js';
+
 import express from 'express';
 import cors from 'cors';
 import { config } from './config/index.js';

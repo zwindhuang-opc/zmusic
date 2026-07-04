@@ -10,6 +10,7 @@ import MusicPage from './pages/MusicPage.jsx';
 import LyricsPage from './pages/LyricsPage.jsx';
 import MVPage from './pages/MVPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
+import FloatingChatBall from './components/FloatingChatBall.jsx';
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -161,13 +162,15 @@ function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-[#0a0a0f] via-[#0f0a1a] to-[#0a0a0f]">
-          {currentPage === 'dashboard' && <Dashboard apiStatus={apiStatus} agentStatus={agentStatus} />}
+          {currentPage === 'dashboard' && <Dashboard apiStatus={apiStatus} agentStatus={agentStatus} onNavigate={setCurrentPage} />}
           {currentPage === 'music' && <MusicPage />}
-          {currentPage === 'lyrics' && <LyricsPage />}
+          {currentPage === 'lyrics' && <LyricsPage onNavigate={setCurrentPage} />}
           {currentPage === 'mv' && <MVPage />}
           {currentPage === 'settings' && <SettingsPage />}
         </div>
       </main>
+
+      <FloatingChatBall />
     </div>
   );
 }

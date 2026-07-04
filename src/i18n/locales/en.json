@@ -86,7 +86,28 @@
     "simple": "Simple",
     "medium": "Medium",
     "complex": "Complex",
-    "very_complex": "Very Complex"
+    "very_complex": "Very Complex",
+    "language": "Language",
+    "language_zh": "Chinese",
+    "language_zh_desc": "Chinese lyrics",
+    "language_en": "English",
+    "language_en_desc": "English lyrics",
+    "language_mix": "Mixed",
+    "language_mix_desc": "Chinese/English mixed",
+    "variation": "Variation",
+    "variation_hint": "Different variations produce different styles",
+    "duration": "Duration (sec)",
+    "reference": "Reference Artist",
+    "reference_placeholder": "e.g., Jay Chou, Taylor Swift",
+    "script": "Creative Script",
+    "script_placeholder": "Describe your desired lyrics content, scene, emotion...",
+    "script_hint": "Creative script influences all generation algorithms",
+    "user_intent": "User Creative Intent",
+    "history": "History",
+    "no_history": "No generation records yet",
+    "clear_history": "Clear History",
+    "send_to_music": "Send to Music",
+    "send_to_mv": "Send to MV"
   },
   "mv": {
     "title": "MV Timeline Generator",
@@ -116,6 +137,17 @@
     "agents": "AI Agents",
     "endpoints": "Available Endpoints"
   },
+  "chat": {
+    "title": "AI Assistant",
+    "welcome": "Hello! I'm your AI music creation assistant. You can choose different AI models to help you create music, lyrics, and MVs.",
+    "placeholder": "Enter your creative idea...",
+    "you": "You",
+    "suno_response": "I'm Suno AI, specialized in music generation. Tell me what kind of music you want to create, and I'll generate professional audio works for you.",
+    "muse_response": "I'm Muse AI, specialized in intelligent creation. You can describe your creative intent in natural language, and I'll help you realize it.",
+    "fsm_response": "I'm FSM Programming Assistant, specialized in state machine transitions. You can precisely control the lyric generation process through state machines.",
+    "network_response": "I'm Network Layer Assistant, specialized in layered composition. I can help you create multi-layered music works.",
+    "default_response": "Thank you for your question! I'll do my best to help you with music creation."
+  },
   "common": {
     "loading": "Loading...",
     "error": "Error",
@@ -123,6 +155,8 @@
     "cancel": "Cancel",
     "save": "Save",
     "reset": "Reset",
-    "close": "Close"
+    "close": "Close",
+    "copy": "Copy",
+    "download": "Download"
   }
 }

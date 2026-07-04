@@ -141,7 +141,28 @@
     "parameters": "参数",
     "subject": "主语",
     "object": "宾语",
-    "generated_content": "生成内容"
+    "generated_content": "生成内容",
+    "language": "语言",
+    "language_zh": "中文",
+    "language_zh_desc": "中文歌词",
+    "language_en": "英文",
+    "language_en_desc": "英文歌词",
+    "language_mix": "中英混合",
+    "language_mix_desc": "中英文混合",
+    "variation": "变体",
+    "variation_hint": "不同变体产生不同风格的歌词",
+    "duration": "时长（秒）",
+    "reference": "参考艺术家",
+    "reference_placeholder": "如：周杰伦、Taylor Swift",
+    "script": "创作脚本",
+    "script_placeholder": "描述您想要的歌词内容、场景、情绪...",
+    "script_hint": "输入创作脚本将影响所有生成算法的输出",
+    "user_intent": "用户创作意图",
+    "history": "历史记录",
+    "no_history": "暂无生成记录",
+    "clear_history": "清空历史记录",
+    "send_to_music": "发送到音乐",
+    "send_to_mv": "发送到MV"
   },
   "mv": {
     "title": "MV时间线生成器",
@@ -240,7 +261,38 @@
     "jazz": "爵士",
     "classical": "古典",
     "rnb": "节奏布鲁斯",
-    "country": "乡村"
+    "country": "乡村",
+    "tango": "探戈",
+    "ancient": "古风",
+    "modern": "现代",
+    "chinese_classical": "中国古典",
+    "love_song": "情歌",
+    "gothic_rock": "哥特摇滚",
+    "ancient_modern": "古风现代"
+  },
+  "layers": {
+    "foundation": "基础层",
+    "melody": "旋律层",
+    "expression": "表达层",
+    "effects": "效果层"
+  },
+  "effects": {
+    "rain_wind": "风雨声",
+    "footsteps": "脚步声",
+    "reverb": "混响",
+    "delay": "延迟",
+    "di_da_delay": "滴答延迟",
+    "shimmer_reverb": "闪光混响",
+    "vocals": "人声",
+    "tropical_percussion": "热带打击乐",
+    "bass_line": "贝斯线",
+    "guitar_riffs": "吉他即兴",
+    "ambient_pads": "氛围铺垫",
+    "modulation": "调制"
+  },
+  "music_elements": {
+    "waltz": "华尔兹",
+    "tango": "探戈"
   },
   "themes": {
     "love": "爱情",
@@ -248,6 +300,48 @@
     "success": "成功",
     "dreams": "梦想",
     "nature": "自然",
-    "life": "人生"
+    "life": "人生",
+    "loneliness": "孤独",
+    "sadness": "悲伤",
+    "memory": "回忆",
+    "hope": "希望",
+    "lunatic": "疯癫",
+    "tango": "探戈"
+  },
+  "lyrics_meta": {
+    "literaryAnalysis": "文学分析",
+    "emotionalArc": "情感弧线",
+    "totalLines": "总行数",
+    "transitions": "转换次数",
+    "states": "状态数"
+  },
+  "literary_terms": {
+    "metaphor": "隐喻",
+    "personification": "拟人",
+    "imagery": "意象",
+    "repetition": "重复"
+  },
+  "chat": {
+    "title": "AI助手",
+    "welcome": "您好！我是您的AI音乐创作助手。您可以选择不同的AI模型来帮助您创作音乐、歌词和MV。",
+    "placeholder": "输入您的创作想法...",
+    "you": "您",
+    "suno_response": "我是Suno AI，擅长音乐生成。请告诉我您想要创作什么样的音乐，我会为您生成专业的音频作品。",
+    "muse_response": "我是Muse AI，擅长智能创作。您可以用自然语言描述您的创作意图，我会帮您实现。",
+    "fsm_response": "我是FSM编程助手，擅长状态机转换。您可以通过状态机来精确控制歌词的生成流程。",
+    "network_response": "我是网络层助手，擅长分层组合。我可以帮助您创建多层次的音乐作品。",
+    "default_response": "感谢您的提问！我会尽力帮助您完成音乐创作。"
+  },
+  "emotional_arc": {
+    "intro": "引子",
+    "verse": "主歌",
+    "pre_chorus": "预副歌",
+    "chorus": "副歌",
+    "bridge": "桥段",
+    "final_chorus": "终曲副歌",
+    "outro": "尾声",
+    "stable": "稳定",
+    "rising": "上升",
+    "falling": "下降"
   }
 }

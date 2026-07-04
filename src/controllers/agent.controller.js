@@ -118,8 +118,22 @@ export class AgentController {
   async generateLyrics(req, res) {
     try {
       const params = req.body || {};
-      logger.info(`Agent lyrics: method=${params.method || 'muse'}`);
-      const result = await unicornAgent.generateLyrics(params);
+      const mappedParams = {
+        method: params.method || 'muse',
+        theme: params.theme || 'love',
+        style: params.genre || params.style || 'pop',
+        bpm: params.bpm || 120,
+        duration: params.duration || 270,
+        complexity: params.complexity || 5,
+        subject: params.subject,
+        object: params.object,
+        language: params.language || 'zh',
+        variation: params.variation || 'A',
+        reference: params.reference || '',
+        script: params.script || ''
+      };
+      logger.info(`Agent lyrics: method=${mappedParams.method}, style=${mappedParams.style}, theme=${mappedParams.theme}, language=${mappedParams.language}`);
+      const result = await unicornAgent.generateLyrics(mappedParams);
       return res.json({ success: true, data: result });
     } catch (error) {
       logger.error(`Lyrics error: ${error.message}`);

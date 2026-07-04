@@ -67,7 +67,17 @@ const translations = {
       complexity_level: '复杂度等级',
       simple: '简单', medium: '中等', complex: '复杂', very_complex: '非常复杂',
       parameters: '参数', subject: '主语', object: '宾语',
-      generated_content: '生成内容'
+      generated_content: '生成内容',
+      language: '语言',
+      language_zh: '中文', language_zh_desc: '中文歌词',
+      language_en: '英文', language_en_desc: '英文歌词',
+      language_mix: '中英混合', language_mix_desc: '中英文混合',
+      variation: '变体', variation_hint: '不同变体产生不同风格的歌词',
+      duration: '时长（秒）',
+      reference: '参考艺术家', reference_placeholder: '如：周杰伦、Taylor Swift',
+      script: '创作脚本', script_placeholder: '描述您想要的歌词内容、场景、情绪...',
+      script_hint: '输入创作脚本将影响所有生成算法的输出',
+      user_intent: '用户创作意图'
     },
     mv: {
       title: 'MV时间线生成器',
@@ -136,12 +146,15 @@ const translations = {
       pop: '流行', rock: '摇滚', electronic: '电子',
       hip_hop: '嘻哈', ballad: '民谣', chinese_traditional: '中国传统',
       jazz: '爵士', classical: '古典', rnb: '节奏布鲁斯', country: '乡村',
-      chinese_classical: '中国古典', love_song: '情歌'
+      chinese_classical: '中国古典', love_song: '情歌',
+      tango: '探戈', ancient: '古风', modern: '现代',
+      ancient_modern: '古风现代', gothic_rock: '哥特摇滚'
     },
     themes: {
       love: '爱情', friendship: '友情', success: '成功',
       dreams: '梦想', nature: '自然', life: '人生', memory: '回忆',
-      loneliness: '孤独', sadness: '悲伤', hope: '希望'
+      loneliness: '孤独', sadness: '悲伤', hope: '希望',
+      lunatic: '疯癫', tango: '探戈'
     },
     layers: {
       foundation: '底层节拍',
@@ -169,6 +182,31 @@ const translations = {
       classical: '古典元素',
       mabg_style: 'MABG风格',
       deep_house: '深度浩室'
+    },
+    lyrics_meta: {
+      literaryAnalysis: '文学分析',
+      emotionalArc: '情感弧线',
+      totalLines: '总行数',
+      transitions: '转换次数',
+      states: '状态数'
+    },
+    literary_terms: {
+      metaphor: '隐喻',
+      personification: '拟人',
+      imagery: '意象',
+      repetition: '重复'
+    },
+    emotional_arc: {
+      intro: '引子',
+      verse: '主歌',
+      pre_chorus: '预副歌',
+      chorus: '副歌',
+      bridge: '桥段',
+      final_chorus: '终曲副歌',
+      outro: '尾声',
+      stable: '稳定',
+      rising: '上升',
+      falling: '下降'
     }
   },
   en: {
@@ -308,12 +346,15 @@ const translations = {
       pop: 'Pop', rock: 'Rock', electronic: 'Electronic',
       hip_hop: 'Hip Hop', ballad: 'Ballad', chinese_traditional: 'Chinese Traditional',
       jazz: 'Jazz', classical: 'Classical', rnb: 'R&B', country: 'Country',
-      chinese_classical: 'Chinese Classical', love_song: 'Love Song'
+      chinese_classical: 'Chinese Classical', love_song: 'Love Song',
+      tango: 'Tango', ancient: 'Ancient', modern: 'Modern',
+      ancient_modern: 'Ancient Modern', gothic_rock: 'Gothic Rock'
     },
     themes: {
       love: 'Love', friendship: 'Friendship', success: 'Success',
       dreams: 'Dreams', nature: 'Nature', life: 'Life', memory: 'Memory',
-      loneliness: 'Loneliness', sadness: 'Sadness', hope: 'Hope'
+      loneliness: 'Loneliness', sadness: 'Sadness', hope: 'Hope',
+      lunatic: 'Lunatic', tango: 'Tango'
     },
     layers: {
       foundation: 'Foundation',
@@ -341,6 +382,31 @@ const translations = {
       classical: 'Classical Elements',
       mabg_style: 'MABG Style',
       deep_house: 'Deep House'
+    },
+    lyrics_meta: {
+      literaryAnalysis: 'Literary Analysis',
+      emotionalArc: 'Emotional Arc',
+      totalLines: 'Total Lines',
+      transitions: 'Transitions',
+      states: 'States'
+    },
+    literary_terms: {
+      metaphor: 'Metaphor',
+      personification: 'Personification',
+      imagery: 'Imagery',
+      repetition: 'Repetition'
+    },
+    emotional_arc: {
+      intro: 'Intro',
+      verse: 'Verse',
+      pre_chorus: 'Pre-Chorus',
+      chorus: 'Chorus',
+      bridge: 'Bridge',
+      final_chorus: 'Final Chorus',
+      outro: 'Outro',
+      stable: 'Stable',
+      rising: 'Rising',
+      falling: 'Falling'
     }
   }
 };

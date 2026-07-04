@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Video, Sparkles, Loader, Film, Play, Clock, Palette } from 'lucide-react';
+import { Video, Sparkles, Loader, Film, Play, Clock, Palette, History, Copy } from 'lucide-react';
 import { useTranslation } from '../i18n/index.js';
 import api from '../services/api.client.js';
+import { useGeneration } from '../stores/generationStore.jsx';
+import HistoryPanel from '../components/HistoryPanel.jsx';
 
 function MVPage() {
   const { t } = useTranslation();
+  const { addToHistory, copyToClipboard, pendingLyrics } = useGeneration();
   const [genres, setGenres] = useState([]);
   const [genre, setGenre] = useState('pop');
   const [duration, setDuration] = useState(180);
@@ -13,6 +16,7 @@ function MVPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState(null);
   const [selectedEffects, setSelectedEffects] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   const MV_EFFECTS = [
     { id: 'rain_wind', name: 'effects.rain_wind' },
@@ -48,9 +52,18 @@ function MVPage() {
     setIsGenerating(true);
     setResult(null);
     try {
-      const data = await api.generateMV({ genre, duration, style, colorPalette });
+      const data = await api.generateMV({ genre, duration, style, colorPalette, effects: selectedEffects });
       if (data.success) {
         setResult(data.data);
+        addToHistory({
+          type: 'mv',
+          genre,
+          duration,
+          style,
+          colorPalette,
+          effects: selectedEffects,
+          result: data.data
+        });
       }
     } catch (error) {
       console.error('Generation failed:', error);
@@ -78,14 +91,23 @@ function MVPage() {
   return (
     <div className="space-y-6 animate-slide-in">
       <div className="gradient-border p-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-            <Video className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+              <Video className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">{t('mv.mv_video_generator')}</h1>
+              <p className="text-xs text-gray-400">{t('mv.professional_mv')}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">{t('mv.mv_video_generator')}</h1>
-            <p className="text-xs text-gray-400">{t('mv.professional_mv')}</p>
-          </div>
+          <button
+            onClick={() => setShowHistory(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm text-gray-300"
+          >
+            <History className="w-4 h-4" />
+            {t('lyrics.history')}
+          </button>
         </div>
       </div>
 
@@ -177,30 +199,25 @@ function MVPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="w-full py-3 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50"
-          >
-            {isGenerating ? (
-              <>
-                <Loader className="w-4 h-4 animate-spin" />
-                {t('mv.generating_mv')}
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                {t('mv.generate_mv_timeline')}
-              </>
-            )}
-          </button>
         </div>
 
         <div className="col-span-2 gradient-border p-6">
-          <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
-            <Film className="w-4 h-4 text-cyan-400" />
-            {t('mv.mv_timeline')}
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Film className="w-4 h-4 text-cyan-400" />
+              {t('mv.mv_timeline')}
+            </h3>
+            {result && (
+              <button
+                onClick={() => copyToClipboard(JSON.stringify(result, null, 2))}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-xs text-gray-300"
+                title={t('common.copy')}
+              >
+                <Copy className="w-3 h-3" />
+                {t('common.copy')}
+              </button>
+            )}
+          </div>
           {!result && !isGenerating && (
             <div className="text-center py-20 text-gray-500">
               <Video className="w-12 h-12 mx-auto mb-4 opacity-30" />
@@ -274,6 +291,34 @@ function MVPage() {
           )}
         </div>
       </div>
+
+      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0f] via-[#0f0a1a] to-transparent pt-16 pb-4 px-6 z-40">
+        <div className="max-w-7xl mx-auto">
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 shadow-lg shadow-cyan-500/20"
+          >
+            {isGenerating ? (
+              <>
+                <Loader className="w-4 h-4 animate-spin" />
+                {t('mv.generating_mv')}
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                {t('mv.generate_mv_timeline')}
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <HistoryPanel
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        filterType="mv"
+      />
     </div>
   );
 }

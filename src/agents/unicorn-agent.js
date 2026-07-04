@@ -5,7 +5,7 @@
  * 实现歌词的自动生成与优化，支持动态控制、时间分段、风格变体等高级特性。
  * 
  * @module agents/unicorn-agent
- * @version 5.0.0
+ * @version 7.0.0
  * @author ZMusic Team
  */
 
@@ -13,176 +13,184 @@ import Logger from '../utils/logger.js';
 
 const logger = new Logger('UnicornAgent');
 
-// ============================================
-// Muse AI 风格命令配置
-// ============================================
-const MUSE_STYLE_COMMANDS = {
-  pop: {
-    template: '创作一首{complexity}的{style}风格的歌曲, BPM {bpm}, 主题为{theme}, 情绪为{emotion}, {instruments}, 子风格为{subgenre}, {vocals}, {production}, {mixing}',
-    styles: ['流行', '现代流行', '电子流行', '独立流行'],
-    emotions: ['温暖', '欢快', '动感', '浪漫', '抒情'],
-    instruments: ['包含钢琴和吉他', '融合电子合成器', '使用弦乐四重奏', '加入打击乐'],
-    subgenres: ['浩室', '迪斯科', '放克', 'R&B'],
-    vocals: ['极其精心地演唱', '深情地演绎', '富有感染力地表达', '细腻地诠释'],
-    production: ['融合现代编曲手法', '采用复古合成器音色', '运用先进的声音设计'],
-    mixing: ['极其精心地混音', '平衡的声场', '清晰的人声', '富有层次感']
-  },
-  rock: {
-    template: '创作一首{complexity}的摇滚歌曲, BPM {bpm}, 主题为{theme}, 情绪为{emotion}, {instruments}, {production}',
-    styles: ['经典摇滚', '另类摇滚', '独立摇滚', '朋克摇滚'],
-    emotions: ['激情', '反叛', '力量', '愤怒', '热血'],
-    instruments: ['重型吉他连复段', '强力鼓点', '贝斯驱动', '失真效果'],
-    production: ['粗犷的音色', '强烈的动态', '现场感十足']
-  },
-  chinese_classical: {
-    template: '创作一首{complexity}的中国古典风格歌曲, BPM {bpm}, 主题为{theme}, 情绪为{emotion}, {instruments}, {production}',
-    styles: ['古风', '中国风', '古典', '民乐'],
-    emotions: ['悠远', '空灵', '婉约', '豪迈', '深情'],
-    instruments: ['古筝', '琵琶', '二胡', '笛子', '古琴'],
-    production: ['古典韵味', '民族乐器融合', '古韵悠长']
-  },
-  ballad: {
-    template: '创作一首{complexity}的抒情歌曲, BPM {bpm}, 主题为{theme}, 情绪为{emotion}, {instruments}, {production}',
-    styles: ['抒情民谣', '钢琴抒情', '吉他抒情', '管弦乐抒情'],
-    emotions: ['悲伤', '思念', '温柔', '深情', '怀旧'],
-    instruments: ['钢琴独奏', '吉他伴奏', '弦乐伴奏', '钢琴与弦乐'],
-    production: ['细腻的编曲', '柔和的音色', '情感真挚']
-  },
-  electronic: {
-    template: '创作一首{complexity}的电子音乐, BPM {bpm}, 主题为{theme}, {instruments}, {production}, {effects}',
-    styles: ['深度浩室', '电子舞曲', '氛围电子', '实验电子'],
-    instruments: ['合成器', '采样', '电子鼓', '琶音'],
-    production: ['现代电子制作', '复杂的声音设计', '多层次编曲'],
-    effects: ['混响与回响', '延迟效果', '调制效果', '滤波器']
-  },
-  love_song: {
-    template: '创作一首{complexity}的{style}风格情歌, BPM {bpm}, 主题为{theme}, 情绪为{emotion}, {instruments}, {vocals}, {production}',
-    styles: ['浪漫', '甜蜜', '深情', '悲伤'],
-    emotions: ['甜蜜', '思念', '心碎', '幸福', '深情'],
-    instruments: ['钢琴', '吉他', '小提琴', '萨克斯'],
-    vocals: ['深情演唱', '温柔表达', '细腻诠释', '情感丰富'],
-    production: ['浪漫编曲', '温馨氛围', '情感真挚']
-  },
-  tango: {
-    template: '创作一首{complexity}的探戈风格歌曲, BPM {bpm}, 主题为{theme}, 情绪为{emotion}, {instruments}, {vocals}, {production}',
-    styles: ['古典探戈', '现代探戈', '探戈华尔兹', '暗黑探戈'],
-    emotions: ['孤独', '悲伤', '癫狂', '深情', '压抑'],
-    instruments: ['班多纽手风琴', '大提琴', '小提琴', '钢琴', '低音贝斯'],
-    vocals: ['中低音男声', '教堂混响人声', '低语式演唱', '癫狂哭腔'],
-    production: ['120 BPM Waltz 3/4拍', '教堂声场', 'Shimmer Reverb星光混响', 'Di-Da Delay滴答延迟']
-  },
-  gothic_rock: {
-    template: '创作一首{complexity}的哥特摇滚歌曲, BPM {bpm}, 主题为{theme}, 情绪为{emotion}, {instruments}, {vocals}, {production}',
-    styles: ['哥特摇滚', '暗黑交响', '哥特金属', '暗潮'],
-    emotions: ['压抑', '疯狂', '毁灭', '绝望', '癫狂'],
-    instruments: ['重型管弦乐团', '失真电吉他', '重型底鼓', '压迫感弦乐'],
-    vocals: ['多重人声叠录', '精神分裂式演唱', '压抑低语', '爆发悲鸣'],
-    production: ['Oppressive Strings压迫弦乐', 'Electric Guitar Harmonics电吉他泛音', 'Layered Vocals人声层叠']
-  }
+const POETIC_WORDS = {
+  nature: ['月光', '星辰', '微风', '细雨', '落花', '流水', '孤雁', '残雪', '霜叶', '寒江'],
+  emotion: ['心碎', '泪痕', '痴狂', '寂寥', '惆怅', '迷茫', '眷恋', '思念', '叹息', '沉醉'],
+  time: ['流年', '往事', '回忆', '瞬间', '永恒', '刹那', '岁月', '时光', '昨日', '今朝'],
+  abstract: ['梦', '影', '空', '幻', '真', '假', '缘', '劫', '道', '禅'],
+  love: ['温柔', '缠绵', '誓言', '缘分', '相思', '情深', '眷恋', '挚爱', '永恒', '瞬间']
 };
 
-// ============================================
-// Suno AI 风格命令配置（时间分段式）
-// ============================================
-const SUNO_STYLE_COMMANDS = {
-  pop: {
-    template: '{style}风格，{complexity}，{theme}主题，BPM {bpm}，{emotion}情绪，{vocals}',
-    styles: ['Pop', 'Modern Pop', 'Electronic Pop', 'Indie Pop'],
-    emotions: ['warm', 'happy', 'energetic', 'romantic', 'sentimental'],
-    vocals: ['male vocal', 'female vocal', 'mixed vocals', 'solo vocal']
-  },
-  rock: {
-    template: '{style}风格，{complexity}，{theme}主题，BPM {bpm}，{emotion}情绪，{vocals}',
-    styles: ['Classic Rock', 'Alternative Rock', 'Indie Rock', 'Punk Rock'],
-    emotions: ['passionate', 'rebellious', 'powerful', 'angry'],
-    vocals: ['male rock vocal', 'female rock vocal', 'raw vocal']
-  },
-  chinese_classical: {
-    template: '{style}风格，{complexity}，{theme}主题，BPM {bpm}，{emotion}情绪，{vocals}',
-    styles: ['Chinese Classical', 'Traditional Chinese', 'Gufeng', 'Chinese Folk'],
-    emotions: ['serene', 'melancholic', 'majestic', 'tender'],
-    vocals: ['traditional Chinese vocal', 'operatic vocal', 'pure vocal']
-  },
-  ballad: {
-    template: '{style}风格，{complexity}，{theme}主题，BPM {bpm}，{emotion}情绪，{vocals}',
-    styles: ['Ballad', 'Piano Ballad', 'Guitar Ballad', 'Orchestral Ballad'],
-    emotions: ['sad', 'nostalgic', 'gentle', 'heartfelt'],
-    vocals: ['emotional vocal', 'soft vocal', 'expressive vocal']
-  },
-  electronic: {
-    template: '{style}风格，{complexity}，{theme}主题，BPM {bpm}，{production}',
-    styles: ['Deep House', 'EDM', 'Ambient', 'Experimental Electronic'],
-    production: ['complex sound design', 'layered production', 'modern electronic']
-  },
-  love_song: {
-    template: '{style}风格，{complexity}，{theme}主题，BPM {bpm}，{emotion}情绪，{vocals}',
-    styles: ['Love Song', 'Romantic Ballad', 'Sentimental Pop', 'Wedding Song'],
-    emotions: ['romantic', 'sweet', 'heartbroken', 'happy'],
-    vocals: ['romantic vocal', 'tender vocal', 'passionate vocal']
-  },
-  tango: {
-    template: '{style}风格，{complexity}，{theme}主题，BPM {bpm}，{emotion}情绪，{instruments}',
-    styles: ['Classical Tango', 'Tango Waltz', 'Dark Tango', 'Modern Tango'],
-    emotions: ['lonely', 'melancholic', 'lunatic', 'passionate'],
-    instruments: ['Bandoneon', 'Cello', 'Violin', 'Piano', 'Acoustic Bass']
-  },
-  gothic_rock: {
-    template: '{style}风格，{complexity}，{theme}主题，BPM {bpm}，{emotion}情绪，{instruments}',
-    styles: ['Gothic Rock', 'Dark Symphonic', 'Gothic Metal', 'Darkwave'],
-    emotions: ['oppressive', 'manic', 'destructive', 'desperate'],
-    instruments: ['Heavy Strings', 'Distorted Guitar', 'Heavy Kick', 'Oppressive Strings']
-  }
+const TANGO_LYRICS_TEMPLATES = {
+  intro: [
+    ['夜雨轻敲长街冷', '踏碎水中明月影'],
+    ['寒风吹过孤巷深', '残灯摇曳映泪痕'],
+    ['暮色渐沉天际远', '独步街头无人伴']
+  ],
+  verse: [
+    ['风透薄衣侵骨冷', '指尖触得琉璃寒', '我言此身犹未冷', '却抱双肩'],
+    ['雨丝缠绵绕心头', '往事如烟难回首', '笑说此恨已尘封', '泪湿衣袖'],
+    ['霓虹闪烁映孤影', '繁华落尽人独行', '举杯消愁愁更愁', '醉眼朦胧']
+  ],
+  pre_chorus: [
+    ['举头望 孤月悬九天', '它静默 只将清辉洒遍', '无处遁形是伪装', '如审判的眼'],
+    ['抬头看 繁星缀满空', '它不语 只把心事藏', '所有伪装都剥落', '如镜中模样'],
+    ['回首望 往事如云烟', '它消散 不留一丝痕迹', '唯有孤独常相伴', '如影随形']
+  ],
+  chorus: [
+    ['雨中共跳一支探戈', '影随我 一步一退相牵扯', '言不痛 泪却悄然落', '笑泪痴狂 明月都记得'],
+    ['风中共舞一曲华尔兹', '身随乐 一进一退相纠缠', '说不在乎 心却在滴血', '爱恨交织 繁星都看见'],
+    ['夜中共唱一首悲歌', '声随泪 一起一落相呼应', '道离别 情却难割舍', '生死相依 天地都作证']
+  ],
+  bridge: [
+    ['风在听 雨在看', '步步踩在 理智边缘', '明月它 什么都知道', '却不肯 一语道穿'],
+    ['星在闪 云在飘', '句句唱在 心碎边缘', '时光它 什么都看透', '却不愿 回头留恋'],
+    ['灯在灭 人在散', '声声叹在 绝望边缘', '命运它 什么都安排', '却不让 真心如愿']
+  ],
+  outro: [
+    ['足音渐远去', '风雨未曾歇', '明月还悬在天际', '静静照彻'],
+    ['身影渐消失', '灯火已熄灭', '繁星还缀满夜空', '默默注视'],
+    ['歌声渐沉寂', '故事已落幕', '时光还在流转', '永不停止']
+  ]
 };
 
-// ============================================
-// 网络层架构配置（Network Layer Architecture）
-// ============================================
-const NETWORK_LAYER_CONFIG = {
+const ANCIENT_MODERN_LYRICS_TEMPLATES = {
+  intro_ancient: [
+    ['峨峨兮，泰山云外客', '洋洋兮，江河掌中波'],
+    ['巍巍兮，昆仑雪皑皑', '浩浩兮，东海浪滔滔'],
+    ['萧萧兮，易水寒风起', '凄凄兮，古道马蹄疾']
+  ],
+  verse_ancient: [
+    ['伯牙指下风雷过', '子期担柴，笑说山河', '樵夫不识宫商谱', '却把心弦，轻轻拨'],
+    ['屈原江畔行吟苦', '渔父泛舟，笑问归途', '世人皆醉我独醒', '却把清白，付与江湖'],
+    ['李白月下独酌酒', '举杯邀月，醉卧花间', '天子呼来不上船', '却把豪情，洒向人间']
+  ],
+  interlude_modern: [
+    ['地铁穿城，耳机隔座', '万人擦肩，谁懂沉默？'],
+    ['城市喧嚣，霓虹闪烁', '人海茫茫，谁是知音？'],
+    ['网络纵横，信息交错', '千万点赞，谁懂真心？']
+  ],
+  verse_modern: [
+    ['Muse圈里千条歌', '点赞如潮，心事成锁', '算法推来相似调', '却无一人，问我为何落泪'],
+    ['直播间里万人看', '礼物刷屏，真情难见', '滤镜美颜遮住脸', '却无一人，看见我的疲惫'],
+    ['社交软件满屏笑', '点赞评论，真心寥寥', '虚拟世界太喧嚣', '却无一人，听见我心在跳']
+  ],
+  chorus_fusion: [
+    ['摔琴那刻，不是绝响', '是怕余生，再无人听懂回响', '如今我唱，不是表演', '是等一个，敢在喧嚣中静听的人啊'],
+    ['举杯那刻，不是贪醉', '是怕清醒，再无人与我同醉', '如今我舞，不是炫耀', '是等一个，敢在孤独中相伴的人啊'],
+    ['落笔那刻，不是矫情', '是怕沉默，再无人读懂心声', '如今我说，不是抱怨', '是等一个，敢在迷茫中同行的人啊']
+  ],
+  bridge_ancient: [
+    ['"善哉……峨峨兮……"'],
+    ['"妙哉……洋洋兮……"'],
+    ['"悲哉……萧萧兮……"']
+  ],
+  finale_modern: [
+    ['若你听见，不必回音', '只需记得：这世间最贵的礼物', '不是被万人追捧', '而是有一个人，愿意为你，按下暂停'],
+    ['若你看见，不必回应', '只需明白：这世间最美的相遇', '不是众星捧月', '而是有一个人，愿意陪你，看尽风景'],
+    ['若你懂得，不必言语', '只需珍惜：这世间最真的情谊', '不是山盟海誓', '而是有一个人，愿意与你，共度朝夕']
+  ],
+  ending_fusion: [
+    ['知音难觅，故不敢轻弹', '若遇一人，便以命相还', '古今同此月，同此憾', '同此一念：懂我者，不必在千年前'],
+    ['知己难求，故不敢轻言', '若得一人，便以诚相见', '天地同此心，同此愿', '同此一念：知我者，不必在天涯远'],
+    ['真心难得，故不敢轻许', '若惜一人，便以情相许', '日月同此光，同此曲', '同此一念：爱我者，不必在来生缘']
+  ]
+};
+
+const FSM_TEMPLATES = {
+  standard: [
+    { state: 'IDLE', description: '空闲状态：等待触发' },
+    { state: 'INTRO', description: '前奏：极简留白，氛围营造' },
+    { state: 'VERSE_1', description: '主歌一：叙事展开，情感铺垫' },
+    { state: 'PRE_CHORUS', description: '预副歌：张力积累，情绪上升' },
+    { state: 'CHORUS_1', description: '副歌一：情感爆发，主题呈现' },
+    { state: 'VERSE_2', description: '主歌二：深化叙事，情感递进' },
+    { state: 'PRE_CHORUS', description: '预副歌：再次积累，推向高潮' },
+    { state: 'CHORUS_2', description: '副歌二：情感升华，主题强化' },
+    { state: 'BRIDGE', description: '桥段：转折变化，情绪释放' },
+    { state: 'FINAL_CHORUS', description: '终曲副歌：终极爆发，全曲高潮' },
+    { state: 'OUTRO', description: '尾声：渐弱收束，余韵悠长' },
+    { state: 'END', description: '结束状态：音乐终止' }
+  ],
+  tango: [
+    { state: 'IDLE', description: '空闲状态' },
+    { state: 'INTRO_FOLEY', description: '前奏音效：7-8秒风雨声+5-6秒脚步声' },
+    { state: 'VERSE_1', description: '主歌一：120BPM Waltz 3/4拍，大提琴伴奏' },
+    { state: 'PRE_CHORUS', description: '预副歌：班多纽手风琴进入，张力积累' },
+    { state: 'CHORUS_1', description: '副歌一：完整探戈合奏，Shimmer Reverb' },
+    { state: 'VERSE_2', description: '主歌二：精简编曲，脚步声短暂回归' },
+    { state: 'PRE_CHORUS', description: '预副歌：弦乐渐强，Di-Da Delay' },
+    { state: 'CHORUS_2', description: '副歌二：完整合奏，人声层叠' },
+    { state: 'BRIDGE_LUNATIC', description: '桥段疯癫：大提琴独奏与人声交织' },
+    { state: 'FINAL_CHORUS', description: '终曲副歌：爆发高潮，最大混响' },
+    { state: 'OUTRO_FOLEY', description: '尾声音效：雨声持续，脚步渐远' },
+    { state: 'END', description: '结束状态' }
+  ],
+  ancient_modern: [
+    { state: 'IDLE', description: '空闲状态' },
+    { state: 'INTRO_ANCIENT', description: '古时空前奏：古琴泛音独奏，极简留白' },
+    { state: 'VERSE_1_ANCIENT', description: '古时空主歌：古琴按音+箫点缀' },
+    { state: 'INTERLUDE_TRANSITION', description: '时空转换间奏：电子脉冲渐入' },
+    { state: 'VERSE_2_MODERN', description: '今时空主歌：钢琴+合成器+弦乐' },
+    { state: 'CHORUS_FUSION', description: '融合副歌：古琴+合成器交织' },
+    { state: 'BRIDGE_ANCIENT', description: '古时空桥段：古琴泛音+童声吟诵' },
+    { state: 'FINALE_MODERN', description: '今时空终章：钢琴+电子脉冲' },
+    { state: 'ENDING_FUSION', description: '融合尾声：古琴三声+弦乐和弦' },
+    { state: 'END', description: '结束状态' }
+  ]
+};
+
+const TRANSITION_TRIGGERS = {
+  time: '时间到达',
+  chord: '和弦变化',
+  emotion: '情绪阈值',
+  section: '段落结束',
+  manual: '手动触发',
+  random: '随机触发'
+};
+
+const TRANSITION_ACTIONS = {
+  keyChange: '转调',
+  drumSwitch: '切换鼓组',
+  reverbIncrease: '增加混响',
+  tempoChange: '改变速度',
+  instrumentAdd: '加入乐器',
+  instrumentRemove: '移除乐器',
+  dynamicShift: '动态转换',
+  effectToggle: '效果器开关'
+};
+
+const NETWORK_LAYER_TEMPLATES = {
   foundation: {
-    templates: [
-      '底层节拍: {bpm}bpm基础律动, 围绕{theme}主题构建稳定的{beat}节拍',
-      '底层律动: {bpm}bpm三拍子节拍, {rhythm}节奏型, {style}基础风格'
-    ],
-    beats: ['4/4拍子基础节拍', 'waltz三拍子探戈节拍', '电子碎拍', '古典华尔兹3/4拍'],
-    rhythms: ['稳定律动', '跳转节奏', '摇摆节奏', '断奏节奏']
+    tango: '底层节拍: 120bpm基础律动, 围绕{theme}主题构建稳定的waltz三拍子探戈节拍',
+    ancient_modern: '底层节拍: {bpm}bpm基础律动, 围绕{theme}主题构建稳定的{beatType}节拍',
+    pop: '底层节拍: {bpm}bpm基础律动, 围绕{theme}主题构建稳定的4/4拍子流行节拍',
+    rock: '底层节拍: {bpm}bpm基础律动, 围绕{theme}主题构建强力摇滚节拍',
+    chinese_classical: '底层节拍: {bpm}bpm基础律动, 围绕{theme}主题构建古典韵律节拍'
   },
   melody: {
-    templates: [
-      '旋律层: {melody_style}主旋律线条, 表达{emotion}情绪, 配合{elements}',
-      '旋律层: 以像{reference}的主旋律线条, 表达{feeling}情绪, 配合{classical_elements}'
-    ],
-    melodyStyles: ['跳转的主旋律', '流畅的旋律线条', '戏剧性的旋律起伏', '空灵的旋律'],
-    elements: ['classical elements', 'surrounding element的空灵和穿透感', '电子合成器铺底', '弦乐伴奏'],
-    references: ['Eason Chan孤獨探戈、黑擇明', '古典交响乐', '现代电子音乐', '中国古典民乐'],
-    feelings: ['夜來獨行的lonely但not solitude', '人到中年的不安情绪', '彻骨的悲伤', '癫狂的笑泪']
+    tango: '旋律层: 以像Eason Chan孤独探戈、黑择明的主旋律线条, 表达{emotion}情绪, 配合classical elements',
+    ancient_modern: '旋律层: {melodyStyle}主旋律线条, 表达{emotion}情绪, 配合{elements}',
+    pop: '旋律层: {melodyStyle}主旋律线条, 表达{emotion}情绪, 配合现代流行元素',
+    rock: '旋律层: 强烈的吉他主导旋律线条, 表达{emotion}情绪, 配合失真效果',
+    chinese_classical: '旋律层: {melodyStyle}主旋律线条, 表达{emotion}情绪, 配合古典乐器'
   },
   expression: {
-    templates: [
-      '表现层: {vocals}与{harmony}, 深度诠释{emotion_theme}, 体现{style_feature}',
-      '表现层: {sfx}深度诠释{expression_theme}, 体现{feature}'
-    ],
-    vocals: ['人声', '风声与雨水声脚步声', '多重人声叠录', '笑声与哭腔交织'],
-    harmonies: ['和声层层叠叠递进', '合唱团烘托', '独唱与合唱交替', '男女混唱'],
-    emotionThemes: ['人生壯志未酬之慨嘆', '黑夜的"靜"與人心中的"動"的互双影響', '彻骨的悲伤', '笑着流泪的癫狂'],
-    styleFeatures: ['古風俠劍豪情特色', '獨宿人漸冷，夜來風雨淒特色', '暗黑浪漫', '精神分裂感'],
-    sfx: ['風聲与雨水声腳步聲', '环境音效与人声交织', '教堂混响', '电影级Foley音效'],
-    expressionThemes: ['黑夜的"靜"與人心中的"動"的互双影響的情感', '情感层次分明', '情感爆发', '压抑与释放']
+    tango: '表现层: {vocals}, 深度诠释{emotionTheme}, 体现{styleFeature}',
+    ancient_modern: '表现层: {vocals}, 深度诠释{emotionTheme}, 体现{styleFeature}',
+    pop: '表现层: 深情人声与和声, 深度诠释{emotionTheme}, 体现流行音乐特色',
+    rock: '表现层: 爆发力人声与和声, 深度诠释{emotionTheme}, 体现摇滚力量感',
+    chinese_classical: '表现层: {vocals}, 深度诠释{emotionTheme}, 体现中国古典韵味'
   },
   effects: {
-    templates: [
-      '效果层: {intro_effects}, 营造{atmosphere}, 整合{final_elements}',
-      '效果层: {effects_list}, {mood_description}'
-    ],
-    introEffects: ['开場的7-8秒雨水風聲5-6秒腳步聲混响、4-5延迟漸入人聲獨白', '混响、延迟、调制效果', 'Shimmer Reverb星光混响', 'Di-Da Delay滴答延迟'],
-    atmospheres: ['柔和孤獨氛围', '古風氛围', '暗黑压抑氛围', '教堂空旷声场'],
-    finalElements: ['一个像極月圆彎刀中的紅月照天上的黑夜感入歌', 'surrounding elements的声音设计', '电影级音效设计', '精神分裂的听觉错觉'],
-    effectsList: ['Church Acoustics教堂声场', 'Shimmer Reverb星光混响', 'Di-Da Delay滴答延迟', 'Rain SFX, Wind SFX, Footsteps SFX']
+    tango: '效果层: 开场的7-8秒雨水风声5-6秒脚步声混响、4-5延迟渐入人声独白、调制效果入情入境, 营造{atmosphere}, 整合{finalElements}',
+    ancient_modern: '效果层: {effectsList}, 营造{atmosphere}, 整合{finalElements}',
+    pop: '效果层: 混响、延迟、调制效果, 营造{atmosphere}, 整合现代音效设计',
+    rock: '效果层: 失真、延迟、混响效果, 营造{atmosphere}, 整合摇滚音效设计',
+    chinese_classical: '效果层: 混响、延迟、调制效果, 营造{atmosphere}, 整合古典音效设计'
   }
 };
 
-// ============================================
-// 动态控制配置（Dynamic Control）
-// ============================================
 const DYNAMIC_LEVELS = {
   ppp: { name: '极弱', intensity: 0.1, description: '几乎无声，极度空灵' },
   pp: { name: '很弱', intensity: 0.2, description: '清冷，极简留白' },
@@ -194,455 +202,16 @@ const DYNAMIC_LEVELS = {
   fff: { name: '极强', intensity: 1.0, description: '终极毁灭感，撕裂' }
 };
 
-// ============================================
-// 风格变体配置（Style Variations）
-// ============================================
-const STYLE_VARIATIONS = {
-  tango: {
-    A: {
-      name: '孤月探戈 (Lunar Waltz)',
-      description: '【原味复刻：午夜剧院的低吟】',
-      design: '以120BPM的传统探戈华尔兹（3/4拍）为底色，核心乐器采用班多纽手风琴（Bandoneon）与凄冷的大提琴（Cello）交织',
-      vocals: '贴近Eason式的中低音男声，前段像是在空荡教堂里的绝望低语（Church Acoustics），随着"千万个我同起舞"，唱腔逐渐加入癫狂的笑音和哭腔',
-      effects: '强烈的空间混响，精准植入雨水、风声和脚步声（Foley SFX），并在副歌加入Shimmer Reverb（星光混响），制造"重影"的听觉错觉',
-      instruments: ['Bandoneon', 'Cello', 'Acoustic Bass', 'Piano'],
-      sfx: ['Rain SFX', 'Wind SFX', 'Footsteps SFX'],
-      language: '粤语'
-    },
-    B: {
-      name: '红月重影 (Crimson Echoes)',
-      description: '【情绪放大：疯癫的月下狂欢】',
-      design: '把"Lunatic（疯癫）"这个特质推向极致。在探戈的骨架上，注入哥特摇滚的血液。保留三拍子律动，但底鼓更重，弦乐更加宏大、压抑',
-      vocals: '从压抑的呢喃，直接撕裂成极具爆发力的悲鸣。副歌部分会运用大量的多重人声叠录（Layered Vocals），表现"千万个我同起舞"的精神分裂感',
-      effects: '环境音效与尖锐的电吉他泛音交织，Di-Da Delay（滴答延迟）被设定在一种让人心慌的频率上，营造一种华丽的毁灭感',
-      instruments: ['Oppressive Strings', 'Electric Guitar Harmonics', 'Heavy Kick Drum', 'Distorted Guitar'],
-      sfx: ['Heavy Rain SFX', 'Wind SFX', 'Footsteps SFX', 'Bell tolling'],
-      language: '普通话'
-    },
-    C: {
-      name: '冷雨长街 (Cold Street Illusions)',
-      description: '【风格变奏：迷幻的冰冷都市】',
-      design: '抽离部分古典乐器，换上冰冷、下沉的合成器贝斯（Synth Bass）和Trip-Hop式的碎拍鼓点，但依然保持着探戈的摇曳感',
-      vocals: '极其贴耳（Close-Mic）的演绎，仿佛歌手就在你耳边喘息。副歌部分几乎是在用气声诉说，那种"彻骨的悲伤"不在于声嘶力竭，而在于死寂',
-      effects: '将Shimmer Reverb开到最大，脚步声和雨声不再是背景，而是被处理成编曲律动的一部分。一首极具现代独立艺术电影质感的都市怪谈',
-      instruments: ['Synth Bass', 'Trip-Hop Drums', 'Ambient Synth', 'Minimal Piano'],
-      sfx: ['Rain SFX', 'Urban Footsteps', 'City Ambience'],
-      language: '普通话'
-    }
-  },
-  chinese_classical: {
-    A: {
-      name: '古时空·穿越',
-      description: '【古典韵味：唐宋诗词古风】',
-      design: '采用唐清诗词古风式，叠字和弦推进，融合古典乐器与现代编曲',
-      vocals: '女声清冷叙事，情感层次分明，从少年癫狂到中年迷茫再到顿悟看破',
-      effects: '古琴泛音独奏，极简留白，大型超空旷混响声场',
-      instruments: ['古琴（核心）', '箫', '中国大鼓', '二胡', '琵琶'],
-      sfx: ['Wind SFX', 'Nature Ambience'],
-      language: '粤语/普通话混唱'
-    },
-    B: {
-      name: '今时空·都市',
-      description: '【现代变奏：都市迷惘】',
-      design: '合成器Pad、电子脉冲、钢琴、弦乐团，营造都市迷茫感',
-      vocals: '男声叙事，情感6级，略带疲惫，贴近现代都市人的心境',
-      effects: '电子脉冲渐入，心跳节奏，Sub Bass深沉',
-      instruments: ['Synth Pad', 'Electronic Pulse', 'Piano', 'String Orchestra'],
-      sfx: ['Urban Ambience', 'Electronic Noise'],
-      language: '普通话'
-    },
-    C: {
-      name: '古今叠·融合',
-      description: '【时空交响：古今对话】',
-      design: '古琴散音轮奏+合成器大气弦乐Pad+弦乐团全编制',
-      vocals: '女声（古）+男声（今）叠唱，合唱团烘托',
-      effects: '中国大鼓沉稳+电子鼓叠层，Shimmer Reverb',
-      instruments: ['古琴', 'Synth Strings', 'Chinese Drums', 'Electronic Drums', 'String Orchestra', 'Choir'],
-      sfx: ['Wind SFX', 'Electronic Ambience'],
-      language: '男女混唱'
-    }
-  }
-};
-
-// ============================================
-// 时间分段配置（Suno-style Time Sections）
-// ============================================
-const TIME_SECTION_CONFIG = {
-  intro: {
-    durationRange: [0, 30],
-    format: '[前奏 ({start}:{end})]',
-    defaultDynamic: 'pp',
-    defaultInstruments: ['古琴泛音独奏', '极简留白', 'Rain SFX', 'Wind SFX']
-  },
-  verse1: {
-    durationRange: [30, 70],
-    format: '[主歌一 ({start}:{end})]',
-    defaultDynamic: 'p→mp',
-    defaultInstruments: ['古琴按音散音', '箫长音点缀', 'Cello backing']
-  },
-  interlude: {
-    durationRange: [70, 95],
-    format: '[间奏 ({start}:{end})]',
-    defaultDynamic: 'p→mf',
-    defaultInstruments: ['电子脉冲渐入', 'Synth Pad低沉嗡鸣', 'Bandoneon enters']
-  },
-  verse2: {
-    durationRange: [95, 130],
-    format: '[主歌二 ({start}:{end})]',
-    defaultDynamic: 'mp',
-    defaultInstruments: ['钢琴高音单音', 'Synth Pad', 'Heavy Bass']
-  },
-  chorus: {
-    durationRange: [130, 180],
-    format: '[副歌 ({start}:{end})]',
-    defaultDynamic: 'f→ff',
-    defaultInstruments: ['Full Classical Tango ensemble', 'String Orchestra', 'Layered Vocals']
-  },
-  bridge: {
-    durationRange: [180, 205],
-    format: '[桥段 ({start}:{end})]',
-    defaultDynamic: 'pp→ppp',
-    defaultInstruments: ['古琴泛音', '风声采样', 'Cello Solo']
-  },
-  finale: {
-    durationRange: [205, 270],
-    format: '[终章 ({start}:{end})]',
-    defaultDynamic: 'p→mf→pp',
-    defaultInstruments: ['古琴单音三声', '弦乐团最后一个和弦', 'Choir极弱长音']
-  }
-};
-
-// ============================================
-// 乐器时空分离配置（Instrument Time-Space Separation）
-// ============================================
-const INSTRUMENT_TIME_SPACE = {
-  ancient: {
-    name: '古时空·乐器',
-    instruments: ['古琴（核心）', '箫', '中国大鼓（极轻）', '二胡', '琵琶', '笛子', '古筝'],
-    description: '古典民族乐器，营造悠远空灵意境'
-  },
-  modern: {
-    name: '今时空·乐器',
-    instruments: ['合成器Pad', '电子脉冲', '钢琴', '弦乐团', '电吉他', 'Synth Bass', '电子鼓'],
-    description: '现代电子乐器，营造都市迷茫感'
-  },
-  fusion: {
-    name: '融合层·副歌',
-    instruments: ['古琴+合成器交织', '弦乐团全编制', '合唱团', '中国大鼓+电子鼓叠层'],
-    description: '古今融合，情感高潮爆发'
-  }
-};
-
-// ============================================
-// 高质量诗意行库（Poetic Lines）
-// ============================================
-const POETIC_LINES = {
-  love: {
-    intro: [
-      ['夜雨轻敲长街冷', '踏碎水中明月影'],
-      ['孤灯映壁人影瘦', '相思一曲无人听'],
-      ['夜风低语诉心事', '月光洒落满地情'],
-      ['繁星点缀银河静', '思念如潮暗涌生'],
-      ['几许心跳独自转', '无人察觉'],
-      ['风透薄衣侵骨冷', '指尖触得琉璃寒']
-    ],
-    verse: [
-      ['风透薄衣侵骨冷', '指尖触得琉璃寒'],
-      ['我言此身犹未冷', '却抱双肩'],
-      ['回眸望见旧痕迹', '泪落无声湿衣衫'],
-      ['往事如烟随风散', '唯有真心永不换'],
-      ['花开彼岸无人赏', '叶落深秋独自伤'],
-      ['望断天涯路漫漫', '何时与君再相逢'],
-      ['雨丝顺着青丝落', '喉间哽咽藏何事'],
-      ['空街寂寂足音回荡', '似追问']
-    ],
-    pre_chorus: [
-      ['举头望 孤月悬九天', '它静默 只将清辉洒遍'],
-      ['无处遁形是伪装', '如审判的眼'],
-      ['举头望 孤月还悬九天', '它不审判 只将清辉冷照'],
-      ['所有逞强 都被看穿', '如镜反光照']
-    ],
-    chorus: [
-      ['雨中共跳一支探戈', '影随我 一步一退相牵扯'],
-      ['言不痛 泪却悄然落', '笑泪痴狂 明月都记得'],
-      ['风中共跳一支探戈', '孤影为伴 它从来不语'],
-      ['身虽颤抖 却说我不惧', '满月照夜 谁人非痴侣'],
-      ['今生愿为你守候', '哪怕青丝变白头'],
-      ['海枯石烂情依旧', '天长地久永不休'],
-      ['月华将孤影拖长', '化作千万我 同起舞'],
-      ['半喜半悲的重影', '在如殿夜里 游荡']
-    ],
-    bridge: [
-      ['风在听 雨在看', '步步踩在 理智边缘'],
-      ['明月它 什么都知道', '却不肯 一语道穿'],
-      ['月华将孤影拖长', '化作千万我同起舞'],
-      ['半喜半悲的重影', '在如殿夜里游荡'],
-      ['举头望孤月悬九天', '它不审判只将清辉冷照'],
-      ['所有逞强都被看穿', '如镜反光照']
-    ],
-    outro: [
-      ['足音渐远去', '风雨未曾歇'],
-      ['明月还悬在天际', '静静照彻'],
-      ['相思无尽期', '此情永不移'],
-      ['待到花开时', '再续前缘痴']
-    ]
-  },
-  loneliness: {
-    intro: [
-      ['寒星点点映寒窗', '孤影孑立夜漫长'],
-      ['风吹落叶飘零去', '唯有寂寞伴身旁'],
-      ['深巷无人灯影瘦', '细雨敲窗声断肠'],
-      ['冷月无声照孤影', '夜色苍茫心彷徨']
-    ],
-    verse: [
-      ['独在异乡为异客', '每逢佳节倍思亲'],
-      ['举杯邀月空对影', '醉里挑灯看剑吟'],
-      ['夜深人静难入眠', '往事历历在眼前'],
-      ['孤身漫步长街冷', '无人知晓我心怜'],
-      ['落叶归根情难寄', '浮萍漂泊无踪迹'],
-      ['红尘滚滚身似客', '何处是我安身地']
-    ],
-    chorus: [
-      ['一人独舞在深夜', '影子相随永不灭'],
-      ['笑看世间繁华歇', '独自品味离别'],
-      ['月下独酌愁难解', '琴声悠悠心欲裂'],
-      ['繁华落尽梦已绝', '只剩孤独伴长夜'],
-      ['孤雁南飞无归期', '寒江独钓雪'],
-      ['天地苍茫我独行', '何处觅知音']
-    ],
-    bridge: [
-      ['风在听雨在看', '步步踩在理智边缘'],
-      ['明月它什么都知道', '却不肯一语道穿'],
-      ['红尘喧嚣皆过客', '唯有孤独是真'],
-      ['繁华落尽见真淳', '独善其身'],
-      ['千山万水独自闯', '风雨兼程'],
-      ['待到山花烂漫时', '独自赏春']
-    ],
-    outro: [
-      ['寒星渐隐东方白', '长夜漫漫终释怀'],
-      ['孤身一人踏征程', '风雨过后见彩虹'],
-      ['独影随风去', '天涯任我行'],
-      ['心静自然明', '何处不风景']
-    ]
-  },
-  sadness: {
-    intro: [
-      ['细雨绵绵泪潸潸', '往事如烟梦难圆'],
-      ['落花流水春去也', '空留残红惹人怜'],
-      ['秋风萧瑟起寒烟', '落叶飘零舞翩翩'],
-      ['伤心人在伤心处', '泪洒相思满人间']
-    ],
-    verse: [
-      ['泪如雨下落无声', '往事浮现心难平'],
-      ['物是人非事事休', '欲语泪先流'],
-      ['孤灯残影夜深沉', '辗转反侧到天明'],
-      ['梦里寻她千百度', '醒来依旧是孤身'],
-      ['声声叹息声声泪', '句句相思句句悲'],
-      ['此情可待成追忆', '只是当时已惘然']
-    ],
-    chorus: [
-      ['心碎无痕泪自流', '爱到深处方知愁'],
-      ['情丝万缕剪不断', '相思成灾何时休'],
-      ['痛彻心扉无人懂', '泪洒江河向东流'],
-      ['爱恨交织难回首', '往事如烟付水流'],
-      ['一曲悲歌诉断肠', '泪湿衣襟话凄凉'],
-      ['缘来缘去终是空', '徒留伤悲在心中']
-    ],
-    bridge: [
-      ['雨丝顺着青丝落', '喉间哽咽藏何事'],
-      ['空街寂寂足音回荡', '似追问'],
-      ['泪已干涸心已碎', '情已逝去爱已灭'],
-      ['只剩悲伤难释怀', '独自承受'],
-      ['岁月冲淡不了痛', '时间抚平不了伤'],
-      ['唯有学会放下', '才能重新出发']
-    ],
-    outro: [
-      ['雨过天晴见彩虹', '擦干眼泪向前行'],
-      ['往事随风皆散去', '重新开始新旅程'],
-      ['泪尽梦觉醒', '昂首向天行'],
-      ['阳光总在风雨后', '明日更光明']
-    ]
-  },
-  dreams: {
-    intro: [
-      ['星光璀璨照夜空', '梦想在心中涌动'],
-      ['仰望银河无边际', '追逐希望向远方'],
-      ['流星划过天际线', '许下心愿盼实现'],
-      ['星辰大海任遨游', '梦想起航永不休']
-    ],
-    verse: [
-      ['追逐梦想不停歇', '哪怕前路多艰险'],
-      ['星光指引我前行', '风雨无阻向远方'],
-      ['心中有梦天地宽', '乘风破浪勇向前'],
-      ['哪怕跌倒再爬起', '永不放弃心中愿'],
-      ['青春年少志高远', '不畏艰难勇攀登'],
-      ['梦想花开终有时', '坚持到底定成功']
-    ],
-    chorus: [
-      ['星光照亮人生路', '梦想引领我前行'],
-      ['哪怕风雨再猛烈', '也要追逐光明'],
-      ['心中有梦永不灭', '奋斗拼搏不停歇'],
-      ['待到花开灿烂时', '梦想成真笑开颜'],
-      ['仰望星空追梦想', '脚踏实地创辉煌'],
-      ['青春无悔奋斗路', '梦想花开香满堂']
-    ],
-    bridge: [
-      ['遥不可及又怎样', '我有勇气去闯荡'],
-      ['前路迷茫又何妨', '坚持信念就有光'],
-      ['现实残酷不可怕', '梦想力量最伟大'],
-      ['只要心中有希望', '就能到达彼岸'],
-      ['梦想是帆我是船', '乘风破浪向远方'],
-      ['哪怕惊涛与骇浪', '也要到达梦的岸']
-    ],
-    outro: [
-      ['星光引路永不息', '梦想花开终有时'],
-      ['坚持到底不放弃', '成功就在眼前'],
-      ['梦想成真笑开颜', '青春无悔乐无边'],
-      ['星光璀璨照前程', '梦想起航向远方']
-    ]
-  },
-  memory: {
-    intro: [
-      ['时光流转忆往昔', '岁月如歌永不息'],
-      ['往事历历在心头', '点点滴滴难忘记'],
-      ['流年似水匆匆过', '留下多少悲欢离合'],
-      ['追忆往昔情依旧', '只是青春已不再']
-    ],
-    verse: [
-      ['翻开旧相册', '往事一幕幕'],
-      ['青春年少时', '梦想在追逐'],
-      ['岁月不饶人', '青丝变白发'],
-      ['唯有回忆里', '青春永常驻'],
-      ['走过人生路', '经历风和雨'],
-      ['蓦然回首时', '感慨万千缕']
-    ],
-    chorus: [
-      ['往事如烟随风散', '回忆依旧在心间'],
-      ['岁月如歌永不老', '珍惜当下每一天'],
-      ['人生如梦匆匆过', '留下真情永不磨'],
-      ['追忆往昔情未了', '珍惜眼前人更好'],
-      ['光阴似箭催人老', '唯有真情永不老'],
-      ['岁月如歌情依旧', '珍惜当下乐无忧']
-    ],
-    bridge: [
-      ['岁月无法倒流', '往事只能回味'],
-      ['珍惜眼前拥有', '才是最珍贵'],
-      ['人生短暂如梦', '何必太执着'],
-      ['放下过去烦恼', '快乐生活'],
-      ['往事已成追忆', '未来更可期'],
-      ['珍惜每分每秒', '创造新奇迹']
-    ],
-    outro: [
-      ['往事如烟去', '岁月不停留'],
-      ['珍惜眼前人', '快乐度春秋'],
-      ['时光荏苒岁月流', '往事如烟不可求'],
-      ['珍惜当下每一天', '幸福快乐到永远']
-    ]
-  },
-  nature: {
-    intro: [
-      ['清风拂面心悠然', '流水潺潺意绵绵'],
-      ['落花飘零随风舞', '浮云飘逸在天边'],
-      ['山川壮丽入眼帘', '草木葱茏映心间'],
-      ['天地万物皆有情', '自然美景醉人心']
-    ],
-    verse: [
-      ['山清水秀风景美', '鸟语花香惹人醉'],
-      ['漫步林间听风声', '心旷神怡不思归'],
-      ['溪水潺潺映明月', '青山绿水映朝霞'],
-      ['自然美景不胜收', '人间仙境乐无涯'],
-      ['花开四季各芬芳', '叶落归根情意长'],
-      ['自然规律不可违', '顺应天意心自安']
-    ],
-    chorus: [
-      ['清风流水伴我行', '自然美景醉人心'],
-      ['抛开烦恼与忧愁', '回归自然享安宁'],
-      ['山川草木皆有情', '天地万物共生息'],
-      ['人与自然和谐处', '美好生活永不息'],
-      ['青山绿水是我家', '蓝天白云伴我花'],
-      ['自然美景常相伴', '幸福生活乐无涯']
-    ],
-    bridge: [
-      ['世事纷扰皆忘却', '内心浮躁已平息'],
-      ['欲望纠缠皆放下', '回归自然心自怡'],
-      ['心静如水映明月', '超然物外品茶香'],
-      ['与自然融为一体', '感悟人生真谛'],
-      ['人生苦短莫强求', '顺其自然乐无忧'],
-      ['心静自然凉', '无欲则刚强']
-    ],
-    outro: [
-      ['回归自然享安宁', '心如止水意从容'],
-      ['超然物外品人生', '顺其自然乐无穷'],
-      ['清风明月常相伴', '自然美景乐无边'],
-      ['人生如梦亦如幻', '顺其自然心自安']
-    ]
-  },
-  friendship: {
-    intro: [
-      ['峨峨兮，泰山云外客', '洋洋兮，江河掌中波'],
-      ['七弦一振千山应', '唯君侧耳，识我曲中意'],
-      ['伯牙指下风雷过', '子期担柴，笑说山河'],
-      ['樵夫不识宫商谱', '却把心弦，轻轻拨']
-    ],
-    verse: [
-      ['一曲未终人已默', '天地之间，只剩你我'],
-      ['地铁穿城，耳机隔座', '万人擦肩，谁懂沉默？'],
-      ['Muse圈里千条歌', '点赞如潮，心事成锁'],
-      ['算法推来相似调', '却无一人，问我为何落泪'],
-      ['屏幕亮着，夜却更黑', '满城灯火，照不亮一个"懂得"'],
-      ['摔琴那刻，不是绝响', '是怕余生，再无人听懂回响']
-    ],
-    chorus: [
-      ['如今我唱，不是表演', '是等一个，敢在喧嚣中静听的人啊'],
-      ['高山还在，流水未央', '只是知音，换了模样'],
-      ['不在千年，不在远方', '在你抬头，恰好接住我目光'],
-      ['知音难觅，故不敢轻弹', '若遇一人，便以命相还'],
-      ['古今同此月，同此憾', '同此一念：懂我者，不必在千年前'],
-      ['此刻，你在', '便是高山与流水']
-    ],
-    bridge: [
-      ['若你听见，不必回音', '只需记得：这世间最贵的礼物'],
-      ['不是被万人追捧', '而是有一个人，愿意为你，按下暂停'],
-      ['善哉……峨峨兮……', '童声吟诵，纯真无染']
-    ],
-    outro: [
-      ['最后一音古琴泛音消散', '余韵10秒'],
-      ['知音难觅，故不敢轻弹', '若遇一人，便以命相还'],
-      ['古今同此月，同此憾', '同此一念'],
-      ['懂我者，不必在千年前', '此刻，你在，便是高山与流水']
-    ]
-  }
-};
-
-const THEME_LINE_MAP = {
-  love: 'love',
-  loneliness: 'loneliness',
-  sadness: 'sadness',
-  dreams: 'dreams',
-  memory: 'memory',
-  nature: 'nature',
-  friendship: 'friendship',
-  success: 'dreams',
-  hope: 'dreams',
-  life: 'memory',
-  lunatic: 'love',
-  tango: 'love'
-};
-
-const FSM_STRUCTURES = {
-  standard: ['intro', 'verse', 'pre_chorus', 'chorus', 'verse', 'pre_chorus', 'chorus', 'bridge', 'final_chorus', 'outro'],
-  short: ['intro', 'verse', 'chorus', 'verse', 'chorus', 'outro'],
-  epic: ['intro', 'verse', 'pre_chorus', 'chorus', 'verse', 'pre_chorus', 'chorus', 'bridge', 'verse', 'chorus', 'final_chorus', 'outro'],
-  tango: ['intro', 'verse', 'pre_chorus', 'chorus', 'verse', 'pre_chorus', 'chorus', 'bridge', 'chorus', 'outro'],
-  ancient_modern: ['intro_ancient', 'verse1_ancient', 'interlude_modern', 'verse2_modern', 'chorus_fusion', 'bridge_ancient', 'finale_modern', 'ending_fusion']
-};
-
-const COMPLEXITY_LEVELS = {
-  simple: '简单',
-  moderate: '中等复杂度',
-  complex: '复杂',
-  advanced: '极其复杂',
-  expert: '大师级'
+const THEME_CONFIG = {
+  love: { emotion: '悲伤与深情交织', emotionTheme: '笑着流泪的癫狂', atmosphere: '柔和孤独氛围', beatType: '4/4拍子' },
+  loneliness: { emotion: '夜來獨行的lonely但not solitude', emotionTheme: '黑夜的"靜"與人心中的"動"', atmosphere: '暗黑孤独氛围', beatType: 'waltz三拍子' },
+  sadness: { emotion: '彻骨的悲伤', emotionTheme: '人生壯志未酬之慨嘆', atmosphere: '压抑悲伤氛围', beatType: '4/4拍子' },
+  dreams: { emotion: '希望与迷茫并存', emotionTheme: '追逐梦想的执着', atmosphere: '希望之光氛围', beatType: '4/4拍子' },
+  memory: { emotion: '怀旧与感慨', emotionTheme: '时光流逝的无奈', atmosphere: '温馨回忆氛围', beatType: '4/4拍子' },
+  nature: { emotion: '宁静与悠远', emotionTheme: '人与自然的和谐', atmosphere: '自然空灵氛围', beatType: '古典韵律' },
+  friendship: { emotion: '知音难觅的感慨', emotionTheme: '古今对话的共鸣', atmosphere: '空灵悠远氛围', beatType: '4/4拍子' },
+  lunatic: { emotion: '疯癫与理智的边缘', emotionTheme: '笑着流泪的癫狂', atmosphere: '暗黑癫狂氛围', beatType: 'waltz三拍子探戈' },
+  tango: { emotion: '孤独探戈的凄美', emotionTheme: '独宿人渐冷，夜来风雨凄', atmosphere: '探戈孤独氛围', beatType: 'waltz三拍子探戈' }
 };
 
 export class UnicornAgent {
@@ -657,361 +226,709 @@ export class UnicornAgent {
       defaultComplexity: 7,
       ...config
     };
-
-    logger.info(`Unicorn Agent initialized (Hermes + OpenClaw + NetworkLayer + TimeSections enabled)`);
+    logger.info(`Unicorn Agent v7.0.0 initialized`);
   }
 
-  /**
-   * 生成 Muse AI 风格命令
-   */
-  generateMuseCommand(style, theme, params = {}) {
-    const commandConfig = MUSE_STYLE_COMMANDS[style] || MUSE_STYLE_COMMANDS.pop;
-
-    const complexity = COMPLEXITY_LEVELS[params.complexity] || COMPLEXITY_LEVELS.complex;
-    const bpm = params.bpm || this.config.defaultBpm;
-    const emotion = this._pickRandom(commandConfig.emotions);
-    const selectedStyle = this._pickRandom(commandConfig.styles);
-
-    const command = commandConfig.template
-      .replace('{complexity}', complexity)
-      .replace('{style}', selectedStyle)
-      .replace('{bpm}', bpm)
-      .replace('{theme}', this._translateTheme(theme))
-      .replace('{emotion}', emotion)
-      .replace('{instruments}', commandConfig.instruments ? this._pickRandom(commandConfig.instruments) : '')
-      .replace('{subgenre}', commandConfig.subgenres ? this._pickRandom(commandConfig.subgenres) : '')
-      .replace('{vocals}', commandConfig.vocals ? this._pickRandom(commandConfig.vocals) : '')
-      .replace('{production}', commandConfig.production ? this._pickRandom(commandConfig.production) : '')
-      .replace('{mixing}', commandConfig.mixing ? this._pickRandom(commandConfig.mixing) : '')
-      .replace('{effects}', commandConfig.effects ? this._pickRandom(commandConfig.effects) : '')
-      .replace(/,\s+/g, ', ')
-      .replace(/,\s*$/, '');
-
-    const lyricCommand = this._generateLyricRequirements(theme, params.complexity || 'complex');
-
-    return `[MUSE-COMMAND] ${command}。${lyricCommand}`;
+  getStatus() {
+    return {
+      name: 'Unicorn Agent',
+      version: '7.0.0',
+      features: ['FSM编程', '网络层架构', 'Muse命令', 'Suno命令', '时间分段', '风格变体'],
+      fsmStructures: Object.keys(FSM_TEMPLATES).length,
+      networkLayers: 4
+    };
   }
 
-  /**
-   * 生成 Suno AI 风格命令（带时间分段）
-   */
-  generateSunoCommand(style, theme, params = {}) {
-    const commandConfig = SUNO_STYLE_COMMANDS[style] || SUNO_STYLE_COMMANDS.pop;
-
-    const complexity = COMPLEXITY_LEVELS[params.complexity] || COMPLEXITY_LEVELS.complex;
-    const bpm = params.bpm || this.config.defaultBpm;
-    const emotion = this._pickRandom(commandConfig.emotions);
-    const selectedStyle = this._pickRandom(commandConfig.styles);
-
-    const command = commandConfig.template
-      .replace('{complexity}', complexity)
-      .replace('{style}', selectedStyle)
-      .replace('{bpm}', bpm)
-      .replace('{theme}', this._translateTheme(theme, 'en'))
-      .replace('{emotion}', emotion)
-      .replace('{vocals}', commandConfig.vocals ? this._pickRandom(commandConfig.vocals) : '')
-      .replace('{production}', commandConfig.production ? this._pickRandom(commandConfig.production) : '')
-      .replace('{instruments}', commandConfig.instruments ? this._pickRandom(commandConfig.instruments) : '')
-      .replace(/,\s+/g, ', ')
-      .replace(/,\s*$/, '');
-
-    return `[SUNO-COMMAND] ${command}`;
-  }
-
-  /**
-   * 生成网络层架构命令（Network Layer Architecture）
-   */
-  generateNetworkLayerCommand(theme, params = {}) {
-    const bpm = params.bpm || 120;
+  async generateLyrics(params = {}) {
+    const method = params.method || 'fsm';
+    const theme = params.theme || 'love';
     const style = params.style || 'tango';
 
-    const foundation = this._buildFoundationLayer(bpm, theme, params);
-    const melody = this._buildMelodyLayer(theme, params);
-    const expression = this._buildExpressionLayer(theme, params);
-    const effects = this._buildEffectsLayer(params);
+    logger.info(`Generating lyrics with method: ${method}, theme: ${theme}, style: ${style}`);
+
+    switch (method) {
+      case 'fsm':
+        return { taskId: `fsm-${Date.now()}`, method: 'fsm', result: this.generateFSMLyrics(theme, style, params) };
+      case 'network_layer':
+        return { taskId: `network-${Date.now()}`, method: 'network_layer', result: this.generateNetworkLayerCommand(theme, style, params) };
+      case 'muse':
+        return { taskId: `muse-${Date.now()}`, method: 'muse', result: this.generateMuseCommand(theme, style, params) };
+      case 'suno':
+        return { taskId: `suno-${Date.now()}`, method: 'suno', result: this.generateSunoCommand(theme, style, params) };
+      case 'time_section':
+        return { taskId: `time-${Date.now()}`, method: 'time_section', result: this.generateTimeSectionLyrics(theme, style, params) };
+      case 'style_variation':
+        return { taskId: `variation-${Date.now()}`, method: 'style_variation', result: this.generateStyleVariation(theme, style, params) };
+      default:
+        return { taskId: `fsm-${Date.now()}`, method: 'fsm', result: this.generateFSMLyrics(theme, style, params) };
+    }
+  }
+
+  async generateMV(params = {}) {
+    const duration = params.duration || 180;
+    const style = params.style || 'cinematic';
+
+    const scenes = [];
+    const sceneCount = Math.ceil(duration / 30);
+
+    for (let i = 0; i < sceneCount; i++) {
+      const startTime = i * 30;
+      const endTime = Math.min(startTime + 30, duration);
+      scenes.push({
+        index: i + 1,
+        startTime: this._formatTime(startTime),
+        endTime: this._formatTime(endTime),
+        duration: endTime - startTime,
+        style: i < sceneCount / 3 ? 'intro' : i < sceneCount * 2 / 3 ? 'main' : 'finale',
+        description: `Scene ${i + 1}`
+      });
+    }
+
+    return { taskId: `mv-${Date.now()}`, duration, style, scenes };
+  }
+
+  generateFSMLyrics(theme, style, params = {}) {
+    const fsmName = style === 'ancient_modern' ? 'ancient_modern' : style === 'tango' ? 'tango' : 'standard';
+    const states = FSM_TEMPLATES[fsmName];
+    const bpm = params.bpm || this.config.defaultBpm;
+    const themeConfig = THEME_CONFIG[theme] || THEME_CONFIG.love;
+    const script = params.script || '';
+    const language = params.language || 'zh';
+
+    const transitions = [];
+    for (let i = 0; i < states.length - 1; i++) {
+      const trigger = this._pickRandom(Object.values(TRANSITION_TRIGGERS));
+      const condition = this._generateTransitionCondition(states[i].state, states[i + 1].state, i, bpm);
+      const action = this._pickRandom(Object.values(TRANSITION_ACTIONS));
+
+      transitions.push({
+        from: states[i].state,
+        to: states[i + 1].state,
+        trigger: trigger,
+        condition: condition,
+        action: action,
+        description: `${states[i].description} → ${states[i + 1].description}`
+      });
+    }
+
+    const lyrics = this._generateDynamicLyrics(theme, style, states, language);
+    const fsmCommand = this._buildFSMCommand(states, transitions, lyrics, theme, style, bpm, themeConfig, script, language);
 
     return {
-      foundation,
-      melody,
-      expression,
-      effects,
-      fullCommand: `[LAYER: FOUNDATION]\n${foundation}\n\n[LAYER: MELODY]\n${melody}\n\n[LAYER: EXPRESSION]\n${expression}\n\n[LAYER: EFFECTS]\n${effects}`,
+      theme,
+      style,
+      bpm,
+      language,
+      structure: fsmName,
+      states: states.length,
+      transitions: transitions.length,
+      script: script,
+      fsmDefinition: { states, transitions },
+      fullText: fsmCommand,
+      generatedAt: new Date().toISOString(),
+      meta: {
+        literaryAnalysis: this._analyzeLiteraryDevices(lyrics, theme),
+        emotionalArc: this._analyzeEmotionalArc(states)
+      }
+    };
+  }
+
+  _generateTransitionCondition(fromState, toState, index, bpm) {
+    const secondsPerBeat = 60 / bpm;
+    const avgBeatsPerSection = 32;
+    const secondsPerSection = secondsPerBeat * avgBeatsPerSection;
+    const timeInSeconds = Math.round(index * secondsPerSection);
+    const formattedTime = this._formatTime(timeInSeconds);
+
+    const conditions = {
+      INTRO: `时间到达${formattedTime}`,
+      INTRO_FOLEY: `时间到达${formattedTime}`,
+      INTRO_ANCIENT: `时间到达${formattedTime}`,
+      VERSE_1: `时间到达${formattedTime}`,
+      VERSE_1_ANCIENT: `时间到达${formattedTime}`,
+      PRE_CHORUS: `情绪张力达到阈值，时间到达${formattedTime}`,
+      CHORUS_1: `预副歌结束，时间到达${formattedTime}`,
+      VERSE_2: `副歌一结束，时间到达${formattedTime}`,
+      VERSE_2_MODERN: `间奏结束，时间到达${formattedTime}`,
+      CHORUS_2: `预副歌结束，时间到达${formattedTime}`,
+      CHORUS_FUSION: `今时空主歌结束，时间到达${formattedTime}`,
+      BRIDGE: `副歌二结束，时间到达${formattedTime}`,
+      BRIDGE_LUNATIC: `副歌二结束，时间到达${formattedTime}`,
+      BRIDGE_ANCIENT: `融合副歌结束，时间到达${formattedTime}`,
+      FINAL_CHORUS: `桥段结束，时间到达${formattedTime}`,
+      FINALE_MODERN: `古时空桥段结束，时间到达${formattedTime}`,
+      OUTRO: `终曲副歌结束，时间到达${formattedTime}`,
+      OUTRO_FOLEY: `终曲副歌结束，时间到达${formattedTime}`,
+      ENDING_FUSION: `今时空终章结束，时间到达${formattedTime}`,
+      END: '音乐自然收束'
+    };
+    return conditions[toState] || conditions[fromState] || `状态${index + 1}完成`;
+  }
+
+  _generateDynamicLyrics(theme, style, states, language = 'zh') {
+    const lyrics = {};
+
+    if (style === 'tango') {
+      states.forEach(state => {
+        if (state.state.includes('INTRO')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(2, theme) : this._pickRandom(TANGO_LYRICS_TEMPLATES.intro);
+        } else if (state.state.includes('VERSE')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(TANGO_LYRICS_TEMPLATES.verse);
+        } else if (state.state.includes('PRE_CHORUS')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(TANGO_LYRICS_TEMPLATES.pre_chorus);
+        } else if (state.state.includes('CHORUS')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(TANGO_LYRICS_TEMPLATES.chorus);
+        } else if (state.state.includes('BRIDGE')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(TANGO_LYRICS_TEMPLATES.bridge);
+        } else if (state.state.includes('OUTRO')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(2, theme) : this._pickRandom(TANGO_LYRICS_TEMPLATES.outro);
+        }
+      });
+    } else if (style === 'ancient_modern') {
+      states.forEach(state => {
+        if (state.state.includes('INTRO_ANCIENT')) {
+          lyrics[state.state] = this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.intro_ancient);
+        } else if (state.state.includes('VERSE_1_ANCIENT')) {
+          lyrics[state.state] = this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.verse_ancient);
+        } else if (state.state.includes('INTERLUDE')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(2, theme) : this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.interlude_modern);
+        } else if (state.state.includes('VERSE_2_MODERN')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.verse_modern);
+        } else if (state.state.includes('CHORUS_FUSION')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.chorus_fusion);
+        } else if (state.state.includes('BRIDGE_ANCIENT')) {
+          lyrics[state.state] = this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.bridge_ancient);
+        } else if (state.state.includes('FINALE_MODERN')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.finale_modern);
+        } else if (state.state.includes('ENDING_FUSION')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.ending_fusion);
+        }
+      });
+    } else {
+      states.forEach(state => {
+        if (state.state.includes('INTRO')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(2, theme) : this._generateRandomVerse(2, theme);
+        } else if (state.state.includes('VERSE')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._generateRandomVerse(4, theme);
+        } else if (state.state.includes('PRE_CHORUS')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._generateRandomVerse(4, theme);
+        } else if (state.state.includes('CHORUS')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._generateRandomVerse(4, theme);
+        } else if (state.state.includes('BRIDGE')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._generateRandomVerse(4, theme);
+        } else if (state.state.includes('OUTRO')) {
+          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._generateRandomVerse(4, theme);
+        }
+      });
+    }
+
+    return lyrics;
+  }
+
+  _generateRandomVerse(lineCount, theme) {
+    const words = POETIC_WORDS[theme] || POETIC_WORDS.emotion;
+    const natureWords = POETIC_WORDS.nature;
+    const abstractWords = POETIC_WORDS.abstract;
+    const lines = [];
+
+    for (let i = 0; i < lineCount; i++) {
+      const word1 = this._pickRandom(natureWords);
+      const word2 = this._pickRandom(words);
+      const word3 = this._pickRandom(abstractWords);
+      const templates = [
+        `${word1}${word2}${word3}`,
+        `${word1}随风${word2}`,
+        `${word2}如${word1}`,
+        `${word3}深处${word2}`,
+        `${word1}映${word3}`,
+        `${word2}似${word1}`
+      ];
+      lines.push(this._pickRandom(templates));
+    }
+
+    return lines;
+  }
+
+  _generateEnglishVerse(lineCount, theme) {
+    const englishThemes = {
+      love: ['moonlight', 'stars', 'whispers', 'heart', 'soul', 'kiss', 'dream', 'passion', 'longing', 'eternal'],
+      loneliness: ['shadow', 'night', 'silence', 'empty', 'alone', 'cold', 'dark', 'solitude', 'void', 'still'],
+      friendship: ['journey', 'hand', 'light', 'hope', 'path', 'bond', 'trust', 'true', 'faith', 'walk'],
+      dreams: ['light', 'fly', 'reach', 'star', 'sky', 'dream', 'hope', 'future', 'shine', 'rise'],
+      sadness: ['tears', 'rain', 'pain', 'broken', 'lost', 'grief', 'cry', 'wound', 'fade', 'cold'],
+      nature: ['wind', 'rain', 'sun', 'tree', 'river', 'bird', 'flower', 'mountain', 'ocean', 'cloud']
+    };
+
+    const words = englishThemes[theme] || englishThemes.love;
+    const lines = [];
+
+    const templates = [
+      `${this._pickRandom(words)} in the ${this._pickRandom(['night', 'day', 'wind', 'rain'])}`,
+      `${this._pickRandom(['I', 'You', 'We'])} ${this._pickRandom(['feel', 'see', 'dream', 'long for'])} ${this._pickRandom(words)}`,
+      `${this._pickRandom(words)} ${this._pickRandom(['whispers', 'calls', 'dreams', 'lingers'])} like ${this._pickRandom(words)}`,
+      `${this._pickRandom(['In', 'Under', 'Through'])} ${this._pickRandom(['moonlight', 'starlight', 'rain', 'darkness'])}`,
+      `${this._pickRandom(['My', 'Your', 'Our'])} ${this._pickRandom(['heart', 'soul', 'mind'])} ${this._pickRandom(['aches', 'shines', 'whispers'])}`,
+      `${this._pickRandom(words)} is ${this._pickRandom(['eternal', 'fading', 'burning', 'gentle'])}`,
+      `${this._pickRandom(['Walk', 'Dance', 'Sing'])} with ${this._pickRandom(['me', 'you', 'hope'])}`,
+      `${this._pickRandom(words)} flows ${this._pickRandom(['softly', 'wildly', 'silently'])}`,
+      `${this._pickRandom(['Every', 'This', 'That'])} ${this._pickRandom(['moment', 'night', 'day'])}`,
+      `${this._pickRandom(words)} never ${this._pickRandom(['dies', 'fades', 'ends'])}`
+    ];
+
+    for (let i = 0; i < lineCount; i++) {
+      lines.push(this._pickRandom(templates));
+    }
+
+    return lines;
+  }
+
+  _buildFSMCommand(states, transitions, lyrics, theme, style, bpm, themeConfig, script = '', language = 'zh') {
+    let command = `[FSM状态机定义]\n\n`;
+    command += `主题：${this._translateTheme(theme, language)}\n`;
+    command += `风格：${style}\n`;
+    command += `BPM：${bpm}\n`;
+    command += `语言：${language === 'zh' ? '中文' : language === 'en' ? 'English' : '中英混合'}\n`;
+    command += `情绪：${themeConfig.emotion}\n\n`;
+
+    if (script) {
+      command += `【用户创作意图】\n${script}\n\n`;
+    }
+
+    command += `【状态定义】\n`;
+    states.forEach((state, i) => {
+      command += `${i}. ${state.state}: ${state.description}\n`;
+    });
+
+    command += `\n【状态转换规则】\n`;
+    transitions.forEach((trans, i) => {
+      command += `${i + 1}. IF (${trans.condition}) THEN ${trans.from} → ${trans.to}\n`;
+      command += `   TRIGGER: ${trans.trigger}\n`;
+      command += `   ACTION: ${trans.action}\n`;
+      command += `   DESC: ${trans.description}\n\n`;
+    });
+
+    command += `【歌词内容】\n`;
+    Object.entries(lyrics).forEach(([state, lines]) => {
+      command += `${state}:\n`;
+      lines.forEach(line => {
+        command += `  ${line}\n`;
+      });
+      command += '\n';
+    });
+
+    command += `【FSM执行逻辑】\n`;
+    command += `BEGIN\n`;
+    command += `  SET_STATE(IDLE)\n`;
+    command += `  WHILE NOT END:\n`;
+    command += `    CHECK_TRIGGER()\n`;
+    command += `    IF CONDITION_MET() THEN\n`;
+    command += `      EXECUTE_ACTION()\n`;
+    command += `      TRANSITION_TO_NEXT_STATE()\n`;
+    command += `    END IF\n`;
+    command += `  END WHILE\n`;
+    command += `END\n`;
+
+    return command;
+  }
+
+  generateNetworkLayerCommand(theme, style, params = {}) {
+    const bpm = params.bpm || this.config.defaultBpm;
+    const themeConfig = THEME_CONFIG[theme] || THEME_CONFIG.love;
+    const script = params.script || '';
+    const language = params.language || 'zh';
+    const layerStyle = style === 'ancient_modern' ? 'ancient_modern' :
+      style === 'tango' ? 'tango' :
+        style === 'chinese_classical' ? 'chinese_classical' :
+          style === 'rock' ? 'rock' : 'pop';
+
+    const foundation = NETWORK_LAYER_TEMPLATES.foundation[layerStyle]
+      .replace('{bpm}', bpm)
+      .replace('{theme}', this._translateTheme(theme, language))
+      .replace('{beatType}', themeConfig.beatType);
+
+    const melody = NETWORK_LAYER_TEMPLATES.melody[layerStyle]
+      .replace('{emotion}', themeConfig.emotion)
+      .replace('{melodyStyle}', this._pickRandom(['跳转的主旋律', '流畅的旋律线条', '戏剧性的旋律起伏', '空灵的旋律']))
+      .replace('{elements}', this._pickRandom(['classical elements', 'surrounding element的空灵和穿透感', '电子合成器铺底', '弦乐伴奏']));
+
+    const expression = NETWORK_LAYER_TEMPLATES.expression[layerStyle]
+      .replace('{emotionTheme}', themeConfig.emotionTheme)
+      .replace('{styleFeature}', this._pickRandom(['古风侠剑豪情特色', '独宿人渐冷，夜来风雨凄特色', '暗黑浪漫', '精神分裂感']))
+      .replace('{vocals}', this._pickRandom(['人声与和声层层叠叠递进', '风声与雨水声脚步声', '多重人声叠录', '笑声与哭腔交织']));
+
+    const effects = NETWORK_LAYER_TEMPLATES.effects[layerStyle]
+      .replace('{atmosphere}', themeConfig.atmosphere)
+      .replace('{finalElements}', this._pickRandom(['一个像极月圆弯刀中的红月照天上的黑夜感入歌', 'surrounding elements的声音设计', '电影级音效设计', '精神分裂的听觉错觉']))
+      .replace('{effectsList}', this._pickRandom(['Church Acoustics教堂声场', 'Shimmer Reverb星光混响', 'Di-Da Delay滴答延迟', 'Rain SFX, Wind SFX, Footsteps SFX']));
+
+    const fsmTemplate = FSM_TEMPLATES[layerStyle === 'tango' ? 'tango' : layerStyle === 'ancient_modern' ? 'ancient_modern' : 'standard'];
+    const lyrics = this._generateDynamicLyrics(theme, style, fsmTemplate, language);
+    const lyricsText = Object.values(lyrics).flat().join('\n');
+
+    let fullCommand = `[LAYER: FOUNDATION]\n${foundation}\n\n[LAYER: MELODY]\n${melody}\n\n[LAYER: EXPRESSION]\n${expression}\n\n[LAYER: EFFECTS]\n${effects}\n\n`;
+
+    if (script) {
+      fullCommand += `【用户创作意图】\n${script}\n\n`;
+    }
+
+    fullCommand += `【歌词内容】\n${lyricsText}`;
+
+    return {
+      theme,
+      style,
+      bpm,
+      language,
+      script,
+      layers: { foundation, melody, expression, effects },
+      fullText: fullCommand,
       generatedAt: new Date().toISOString()
     };
   }
 
-  _buildFoundationLayer(bpm, theme, params) {
-    const template = this._pickRandom(NETWORK_LAYER_CONFIG.foundation.templates);
-    const beat = params.beat || this._pickRandom(NETWORK_LAYER_CONFIG.foundation.beats);
-    const rhythm = params.rhythm || this._pickRandom(NETWORK_LAYER_CONFIG.foundation.rhythms);
+  generateMuseCommand(theme, style, params = {}) {
+    const bpm = params.bpm || this.config.defaultBpm;
+    const themeConfig = THEME_CONFIG[theme] || THEME_CONFIG.love;
+    const script = params.script || '';
+    const language = params.language || 'zh';
+    const reference = params.reference || '';
 
-    return template
-      .replace('{bpm}', bpm)
-      .replace('{theme}', this._translateTheme(theme))
-      .replace('{beat}', beat)
-      .replace('{rhythm}', rhythm)
-      .replace('{style}', params.style || '古典');
+    const baseCommands = {
+      tango: `创作一首探戈风格歌曲，BPM ${bpm}，主题为${this._translateTheme(theme, language)}，情绪为${themeConfig.emotion}。编曲采用120BPM Waltz三拍子探戈节拍，核心乐器采用班多纽手风琴与大提琴交织。人声采用中低音男声，前段像是在空荡教堂里的绝望低语，随着情绪推进加入癫狂的笑音和哭腔。效果使用强烈的空间混响，植入雨水、风声和脚步声，并在副歌加入Shimmer Reverb制造重影的听觉错觉。`,
+      chinese_classical: `创作一首中国古典风格歌曲，BPM ${bpm}，主题为${this._translateTheme(theme, language)}，情绪为${themeConfig.emotion}。编曲采用唐清诗词古风式，叠字和弦推进，融合古典乐器与现代编曲。人声采用女声清冷叙事，情感层次分明。效果使用古琴泛音独奏，极简留白，大型超空旷混响声场。`,
+      pop: `创作一首流行风格歌曲，BPM ${bpm}，主题为${this._translateTheme(theme, language)}，情绪为${themeConfig.emotion}。编曲采用现代流行制作手法，融合电子合成器与传统乐器。人声深情演绎，情感真挚。效果使用现代混音技术，平衡的声场，清晰的人声，富有层次感。`,
+      rock: `创作一首摇滚风格歌曲，BPM ${bpm}，主题为${this._translateTheme(theme, language)}，情绪为${themeConfig.emotion}。编曲采用重型吉他连复段，强力鼓点，贝斯驱动。人声富有爆发力，情感充沛。效果使用失真效果，强烈的动态，现场感十足。`,
+      ancient_modern: `创作一首古今融合风格歌曲，BPM ${bpm}，主题为${this._translateTheme(theme, language)}，情绪为${themeConfig.emotion}。古时空采用古琴、箫、中国大鼓等古典乐器；今时空采用合成器Pad、电子脉冲、钢琴、弦乐团等现代乐器；副歌部分古琴与合成器交织，弦乐团全编制，合唱团烘托。人声采用女声（古）与男声（今）叠唱。`
+    };
+
+    let command = baseCommands[style] || baseCommands.pop;
+
+    if (reference) {
+      command += ` 参考艺术家风格：${reference}。`;
+    }
+
+    if (script) {
+      command += ` 用户创作意图：${script}。`;
+    }
+
+    const fsmTemplate = FSM_TEMPLATES[style === 'tango' ? 'tango' : style === 'ancient_modern' ? 'ancient_modern' : 'standard'];
+    const lyrics = this._generateDynamicLyrics(theme, style, fsmTemplate, language);
+    const lyricsText = Object.values(lyrics).flat().join('\n');
+
+    return {
+      theme,
+      style,
+      bpm,
+      language,
+      script,
+      reference,
+      fullText: `[MUSE-COMMAND] ${command}\n\n【歌词内容】\n${lyricsText}`,
+      generatedAt: new Date().toISOString()
+    };
   }
 
-  _buildMelodyLayer(theme, params) {
-    const template = this._pickRandom(NETWORK_LAYER_CONFIG.melody.templates);
-    const melodyStyle = params.melodyStyle || this._pickRandom(NETWORK_LAYER_CONFIG.melody.melodyStyles);
-    const emotion = params.emotion || '夜來獨行的lonely但not solitude';
-    const elements = params.elements || this._pickRandom(NETWORK_LAYER_CONFIG.melody.elements);
-    const reference = params.reference || 'Eason Chan孤獨探戈、黑擇明';
-    const feeling = params.feeling || this._pickRandom(NETWORK_LAYER_CONFIG.melody.feelings);
-    const classicalElements = params.classicalElements || 'classical elements';
+  generateSunoCommand(theme, style, params = {}) {
+    const duration = params.duration || 270;
+    const bpm = params.bpm || this.config.defaultBpm;
+    const themeConfig = THEME_CONFIG[theme] || THEME_CONFIG.love;
+    const script = params.script || '';
+    const language = params.language || 'zh';
 
-    return template
-      .replace('{melody_style}', melodyStyle)
-      .replace('{emotion}', emotion)
-      .replace('{elements}', elements)
-      .replace('{reference}', reference)
-      .replace('{feeling}', feeling)
-      .replace('{classical_elements}', classicalElements);
-  }
-
-  _buildExpressionLayer(theme, params) {
-    const template = this._pickRandom(NETWORK_LAYER_CONFIG.expression.templates);
-    const vocals = params.vocals || this._pickRandom(NETWORK_LAYER_CONFIG.expression.vocals);
-    const harmony = params.harmony || this._pickRandom(NETWORK_LAYER_CONFIG.expression.harmonies);
-    const emotionTheme = params.emotionTheme || this._pickRandom(NETWORK_LAYER_CONFIG.expression.emotionThemes);
-    const styleFeature = params.styleFeature || this._pickRandom(NETWORK_LAYER_CONFIG.expression.styleFeatures);
-    const sfx = params.sfx || this._pickRandom(NETWORK_LAYER_CONFIG.expression.sfx);
-    const expressionTheme = params.expressionTheme || this._pickRandom(NETWORK_LAYER_CONFIG.expression.expressionThemes);
-    const feature = params.feature || styleFeature;
-
-    return template
-      .replace('{vocals}', vocals)
-      .replace('{harmony}', harmony)
-      .replace('{emotion_theme}', emotionTheme)
-      .replace('{style_feature}', styleFeature)
-      .replace('{sfx}', sfx)
-      .replace('{expression_theme}', expressionTheme)
-      .replace('{feature}', feature);
-  }
-
-  _buildEffectsLayer(params) {
-    const template = this._pickRandom(NETWORK_LAYER_CONFIG.effects.templates);
-    const introEffects = params.introEffects || this._pickRandom(NETWORK_LAYER_CONFIG.effects.introEffects);
-    const atmosphere = params.atmosphere || this._pickRandom(NETWORK_LAYER_CONFIG.effects.atmospheres);
-    const finalElements = params.finalElements || this._pickRandom(NETWORK_LAYER_CONFIG.effects.finalElements);
-    const effectsList = params.effectsList || this._pickRandom(NETWORK_LAYER_CONFIG.effects.effectsList);
-    const moodDescription = params.moodDescription || '营造柔和孤獨氛围';
-
-    return template
-      .replace('{intro_effects}', introEffects)
-      .replace('{atmosphere}', atmosphere)
-      .replace('{final_elements}', finalElements)
-      .replace('{effects_list}', effectsList)
-      .replace('{mood_description}', moodDescription);
-  }
-
-  /**
-   * 生成带时间分段的歌词（Suno-style）
-   */
-  generateTimeSectionLyrics(theme, params = {}) {
-    const themeKey = THEME_LINE_MAP[theme.toLowerCase()] || 'love';
-    const linesData = POETIC_LINES[themeKey];
-    const totalDuration = params.duration || 270; // 默认4.5分钟
-    const structure = FSM_STRUCTURES[params.structure] || FSM_STRUCTURES.standard;
-
+    let time = 0;
     const sections = [];
-    let currentTime = 0;
+    const structure = style === 'ancient_modern' ?
+      ['intro', 'verse1', 'interlude', 'verse2', 'chorus', 'bridge', 'finale', 'outro'] :
+      ['intro', 'verse1', 'pre_chorus', 'chorus1', 'verse2', 'pre_chorus', 'chorus2', 'bridge', 'final_chorus', 'outro'];
+
+    const sectionDurations = {
+      intro: 30, verse1: 40, pre_chorus: 25, chorus1: 50,
+      verse2: 40, chorus2: 50, bridge: 25, final_chorus: 60, outro: 30,
+      interlude: 25, finale: 40
+    };
 
     structure.forEach((sectionType, index) => {
-      const timeConfig = TIME_SECTION_CONFIG[sectionType.replace(/[0-9]/g, '')] || TIME_SECTION_CONFIG.verse;
-      const duration = Math.floor((timeConfig.durationRange[1] - timeConfig.durationRange[0]) * totalDuration / 270);
-
-      const startTime = this._formatTime(currentTime);
-      const endTime = this._formatTime(currentTime + duration);
-
-      const normalizedType = this._normalizeSectionType(sectionType);
-      const linesPool = linesData[normalizedType] || linesData.verse;
-      const selectedLines = this._selectLines(linesPool, params.complexity || 7);
+      const sectionDuration = sectionDurations[sectionType] || 30;
+      const startTime = this._formatTime(time);
+      const endTime = this._formatTime(time + sectionDuration);
 
       const dynamic = this._getDynamicForSection(sectionType, index, structure.length);
-      const instruments = this._getInstrumentsForSection(sectionType, params);
-      const timeSpace = this._getTimeSpaceForSection(sectionType);
+      const instruments = this._getInstrumentsForSection(sectionType, style);
+      const vocals = this._getVocalsForSection(sectionType, style);
 
       sections.push({
         type: sectionType,
-        timeSection: timeConfig.format.replace('{start}', startTime).replace('{end}', endTime),
-        startTime: currentTime,
-        endTime: currentTime + duration,
-        duration,
+        timeSection: this._formatSunoSection(sectionType, startTime, endTime),
+        startTime: time,
+        endTime: time + sectionDuration,
         dynamic,
-        dynamicLevel: DYNAMIC_LEVELS[dynamic],
         instruments,
-        timeSpace,
-        content: selectedLines
+        vocals,
+        content: this._generateSectionContent(sectionType, theme, style, language)
       });
 
-      currentTime += duration;
+      time += sectionDuration;
     });
+
+    const fullCommand = this._buildSunoCommand(sections, theme, style, bpm, themeConfig, script, language);
 
     return {
       theme,
-      totalDuration,
-      structure,
+      style,
+      bpm,
+      language,
+      script,
+      totalDuration: duration,
       sections,
-      fullText: this._formatTimeSectionOutput(sections),
-      generatedAt: new Date().toISOString(),
-      meta: {
-        literaryAnalysis: this._analyzeLiteraryDevices(sections),
-        emotionalArc: this._analyzeEmotionalArc(sections),
-        instrumentTimeline: this._buildInstrumentTimeline(sections)
-      }
-    };
-  }
-
-  /**
-   * 生成风格变体歌词（Style Variations）
-   */
-  generateStyleVariation(theme, styleType, variationKey, params = {}) {
-    const variations = STYLE_VARIATIONS[styleType] || STYLE_VARIATIONS.tango;
-    const variation = variations[variationKey] || variations.A;
-
-    const baseLyrics = this.generateFSMLyrics(theme, params);
-
-    return {
-      ...baseLyrics,
-      variation: {
-        key: variationKey,
-        name: variation.name,
-        description: variation.description,
-        design: variation.design,
-        vocals: variation.vocals,
-        effects: variation.effects,
-        instruments: variation.instruments,
-        sfx: variation.sfx,
-        language: variation.language
-      },
-      fullText: this._formatVariationOutput(baseLyrics, variation),
+      fullText: fullCommand,
       generatedAt: new Date().toISOString()
     };
   }
 
-  /**
-   * 生成 FSM 歌词
-   */
-  generateFSMLyrics(theme, params = {}) {
-    const themeKey = THEME_LINE_MAP[theme.toLowerCase()] || 'love';
-    const linesData = POETIC_LINES[themeKey];
-    const complexity = params.complexity || this.config.defaultComplexity;
-    const bpm = params.bpm || this.config.defaultBpm;
-    const structure = FSM_STRUCTURES[params.structure] || FSM_STRUCTURES.standard;
+  _formatSunoSection(type, start, end) {
+    const formatMap = {
+      intro: `[前奏 (${start}~${end})]`,
+      verse1: `[主歌一 (${start}~${end})]`,
+      verse2: `[主歌二 (${start}~${end})]`,
+      pre_chorus: `[预副歌 (${start}~${end})]`,
+      chorus1: `[副歌一 (${start}~${end})]`,
+      chorus2: `[副歌二 (${start}~${end})]`,
+      bridge: `[桥段 (${start}~${end})]`,
+      final_chorus: `[终曲副歌 (${start}~${end})]`,
+      outro: `[尾声 (${start}~${end})]`,
+      interlude: `[间奏 (${start}~${end})]`,
+      finale: `[终章 (${start}~${end})]`
+    };
+    return formatMap[type] || `[段落 (${start}~${end})]`;
+  }
 
-    const sections = structure.map((sectionType) => {
-      const sectionKey = this._normalizeSectionType(sectionType);
-      const linesPool = linesData[sectionKey] || linesData.verse;
+  _getDynamicForSection(sectionType, index, total) {
+    const progress = index / total;
+    if (sectionType.includes('intro')) return 'pp';
+    if (sectionType.includes('verse')) return progress < 0.3 ? 'p' : 'mp';
+    if (sectionType.includes('pre_chorus')) return 'mf';
+    if (sectionType.includes('chorus')) return progress < 0.7 ? 'f' : 'ff';
+    if (sectionType.includes('bridge')) return 'pp→ppp';
+    if (sectionType.includes('final')) return 'f→ff';
+    if (sectionType.includes('outro')) return 'mp→pp';
+    return 'mp';
+  }
 
-      const selectedLines = this._selectLines(linesPool, complexity);
-
-      return { type: sectionType, content: selectedLines };
-    });
-
-    return {
-      theme,
-      structure,
-      bpm,
-      complexity,
-      sections,
-      totalLines: sections.reduce((sum, s) => sum + s.content.length, 0),
-      transitions: sections.length - 1,
-      states: sections.length,
-      fullText: sections.map(s => `[${s.type.toUpperCase()}]\n${s.content.join('\n')}`).join('\n\n'),
-      generatedAt: new Date().toISOString(),
-      meta: {
-        literaryAnalysis: this._analyzeLiteraryDevices(sections),
-        emotionalArc: this._analyzeEmotionalArc(sections)
+  _getInstrumentsForSection(sectionType, style) {
+    const instrumentMap = {
+      tango: {
+        intro: ['古琴泛音独奏', 'Rain SFX', 'Wind SFX'],
+        verse: ['Cello backing', 'Bandoneon'],
+        pre_chorus: ['Bandoneon enters', 'Strings swelling'],
+        chorus: ['Full Classical Tango ensemble', 'Shimmer Reverb'],
+        bridge: ['Cello Solo', 'Vocals'],
+        outro: ['Rain continuing', 'Footsteps fading']
+      },
+      ancient_modern: {
+        intro: ['古琴泛音独奏'],
+        verse1: ['古琴按音散音', '箫长音点缀'],
+        interlude: ['电子脉冲渐入', 'Synth Pad低沉嗡鸣'],
+        verse2: ['钢琴高音单音', 'Synth Pad', '弦乐团极弱铺底'],
+        chorus: ['古琴散音轮奏', '合成器大气弦乐Pad', '弦乐团全编制', '合唱团'],
+        bridge: ['古琴泛音', '风声采样'],
+        finale: ['钢琴单音', '电子脉冲渐弱', '古琴最后一个按音'],
+        outro: ['古琴单音三声', '弦乐团最后一个和弦']
+      },
+      pop: {
+        intro: ['钢琴前奏', '合成器Pad'],
+        verse: ['钢琴伴奏', '轻柔鼓点'],
+        pre_chorus: ['合成器升调', '鼓点加强'],
+        chorus: ['完整乐队', '和声'],
+        bridge: ['钢琴独奏', '人声'],
+        outro: ['渐弱收束']
+      },
+      rock: {
+        intro: ['吉他Riff', '鼓点'],
+        verse: ['节奏吉他', '贝斯', '鼓'],
+        pre_chorus: ['吉他失真', '鼓点密集'],
+        chorus: ['重型吉他', '强力鼓点', '人声爆发'],
+        bridge: ['吉他独奏', '贝斯'],
+        outro: ['渐弱收束']
       }
     };
+    return instrumentMap[style]?.[sectionType] || ['Piano', 'Strings'];
   }
 
-  _normalizeSectionType(type) {
-    if (type.includes('intro')) return 'intro';
-    if (type.includes('verse')) return 'verse';
-    if (type.includes('pre_chorus') || type.includes('prechorus')) return 'pre_chorus';
-    if (type.includes('chorus')) return 'chorus';
-    if (type.includes('bridge')) return 'bridge';
-    if (type.includes('outro') || type.includes('finale') || type.includes('ending')) return 'outro';
-    if (type.includes('interlude')) return 'verse';
-    return 'verse';
+  _getVocalsForSection(sectionType, style) {
+    const vocalMap = {
+      tango: {
+        intro: '无',
+        verse: '中低音男声，教堂声场',
+        pre_chorus: '轻微颤抖，压抑悲伤',
+        chorus: '爆发式演唱，哭腔',
+        bridge: '笑泪交织，失控',
+        outro: '疲惫叹息，渐弱'
+      },
+      ancient_modern: {
+        intro: '无',
+        verse1: '女声清冷叙事',
+        interlude: '无',
+        verse2: '男声叙事，略带疲惫',
+        chorus: '女声+男声叠唱',
+        bridge: '童声吟诵',
+        finale: '男声低语',
+        outro: '女声低吟+男声低语交替'
+      },
+      pop: {
+        intro: '无',
+        verse: '深情演唱',
+        pre_chorus: '情绪上升',
+        chorus: '爆发力演唱',
+        bridge: '细腻表达',
+        outro: '轻柔收尾'
+      },
+      rock: {
+        intro: '无',
+        verse: '压抑低语',
+        pre_chorus: '情绪积累',
+        chorus: '嘶吼爆发',
+        bridge: '深情演唱',
+        outro: '渐弱收尾'
+      }
+    };
+    return vocalMap[style]?.[sectionType] || '深情演唱';
   }
 
-  _selectLines(pool, complexity) {
-    const lineCount = complexity >= 7 ? 4 : 4;
-    const result = [];
-    const usedIndices = [];
+  _generateSectionContent(sectionType, theme, style, language = 'zh') {
+    const fsmTemplate = FSM_TEMPLATES[style === 'tango' ? 'tango' : style === 'ancient_modern' ? 'ancient_modern' : 'standard'];
+    const lyrics = this._generateDynamicLyrics(theme, style, fsmTemplate, language);
 
-    for (let i = 0; i < lineCount; i++) {
-      const available = pool.filter((_, idx) => !usedIndices.includes(idx));
-      if (available.length === 0) break;
+    const stateMap = {
+      intro: ['INTRO', 'INTRO_FOLEY', 'INTRO_ANCIENT'],
+      verse1: ['VERSE_1', 'VERSE_1_ANCIENT'],
+      verse2: ['VERSE_2', 'VERSE_2_MODERN'],
+      pre_chorus: ['PRE_CHORUS'],
+      chorus1: ['CHORUS_1', 'CHORUS_FUSION'],
+      chorus2: ['CHORUS_2', 'CHORUS_FUSION'],
+      bridge: ['BRIDGE', 'BRIDGE_LUNATIC', 'BRIDGE_ANCIENT'],
+      final_chorus: ['FINAL_CHORUS'],
+      finale: ['FINALE_MODERN'],
+      outro: ['OUTRO', 'OUTRO_FOLEY', 'ENDING_FUSION'],
+      interlude: ['INTERLUDE_TRANSITION']
+    };
 
-      const pair = available[Math.floor(Math.random() * available.length)];
-      const idx = pool.indexOf(pair);
-      usedIndices.push(idx);
-
-      if (Array.isArray(pair)) {
-        result.push(...pair);
-      } else {
-        result.push(pair);
+    for (const state of stateMap[sectionType] || []) {
+      if (lyrics[state]) {
+        return lyrics[state];
       }
     }
 
-    return result.slice(0, lineCount);
+    return language === 'en' ? this._generateEnglishVerse(4, theme) : this._generateRandomVerse(4, theme);
   }
 
-  _pickRandom(arr) {
-    return arr[Math.floor(Math.random() * arr.length)] || '';
+  _buildSunoCommand(sections, theme, style, bpm, themeConfig, script = '', language = 'zh') {
+    let command = `[风格标签：${style === 'ancient_modern' ? '古今对话,古风电音,诗意叙事' :
+      style === 'tango' ? '探戈华尔兹,暗黑浪漫,古典交融' :
+        style === 'pop' ? '流行音乐,现代制作,情感真挚' : '摇滚音乐,力量感,爆发力'}]\n`;
+    command += `[情绪：${themeConfig.emotion}]\n`;
+    command += `[节奏：${bpm} BPM]\n`;
+    command += `[语言：${language === 'zh' ? '中文' : language === 'en' ? 'English' : '中英混合'}]\n\n`;
+
+    if (script) {
+      command += `【用户创作意图】\n${script}\n\n`;
+    }
+
+    sections.forEach(section => {
+      command += `${section.timeSection}\n`;
+      command += `[动态：${DYNAMIC_LEVELS[section.dynamic]?.name || section.dynamic}]\n`;
+      command += `[乐器：${section.instruments.join('、')}]\n`;
+      command += `[人声：${section.vocals}]\n`;
+      if (section.content && section.content.length > 0) {
+        command += `${section.content.join('\n')}\n`;
+      }
+      command += '\n';
+    });
+
+    return command;
   }
 
-  _translateTheme(theme, lang = 'zh') {
-    const translations = {
-      zh: {
-        love: '爱情',
-        loneliness: '孤独',
-        sadness: '悲伤',
-        dreams: '梦想',
-        memory: '回忆',
-        nature: '自然',
-        friendship: '友情',
-        success: '成功',
-        hope: '希望',
-        life: '人生',
-        lunatic: '疯癫',
-        tango: '探戈'
+  generateTimeSectionLyrics(theme, style, params = {}) {
+    const duration = params.duration || 270;
+    const bpm = params.bpm || this.config.defaultBpm;
+    const themeConfig = THEME_CONFIG[theme] || THEME_CONFIG.love;
+
+    const sections = [];
+    let time = 0;
+
+    const structure = [
+      { type: 'intro', duration: 30, label: '[Intro]' },
+      { type: 'verse1', duration: 40, label: '[Verse 1]' },
+      { type: 'pre_chorus', duration: 25, label: '[Pre-Chorus]' },
+      { type: 'chorus1', duration: 50, label: '[Chorus 1]' },
+      { type: 'verse2', duration: 40, label: '[Verse 2]' },
+      { type: 'pre_chorus', duration: 25, label: '[Pre-Chorus]' },
+      { type: 'chorus2', duration: 50, label: '[Chorus 2]' },
+      { type: 'bridge', duration: 25, label: '[Bridge]' },
+      { type: 'final_chorus', duration: 60, label: '[Final Chorus]' },
+      { type: 'outro', duration: 30, label: '[Outro]' }
+    ];
+
+    structure.forEach((config, index) => {
+      const startTime = this._formatTime(time);
+      const endTime = this._formatTime(time + config.duration);
+      const dynamic = this._getDynamicForSection(config.type, index, structure.length);
+
+      sections.push({
+        type: config.type,
+        label: config.label,
+        startTime,
+        endTime,
+        duration: config.duration,
+        dynamic,
+        content: this._generateSectionContent(config.type, theme, style)
+      });
+
+      time += config.duration;
+    });
+
+    const fullText = sections.map(s => {
+      return `${s.label} (${s.startTime}-${s.endTime}) [动态: ${DYNAMIC_LEVELS[s.dynamic]?.name || s.dynamic}]\n${s.content.join('\n')}`;
+    }).join('\n\n');
+
+    return {
+      theme,
+      style,
+      bpm,
+      totalDuration: duration,
+      sections,
+      fullText,
+      generatedAt: new Date().toISOString()
+    };
+  }
+
+  generateStyleVariation(theme, style, params = {}) {
+    const variationKey = params.variation || 'A';
+    const variations = {
+      tango: {
+        A: { name: '孤月探戈 (Lunar Waltz)', language: '粤语', bpm: 120 },
+        B: { name: '红月重影 (Crimson Echoes)', language: '普通话', bpm: 120 },
+        C: { name: '冷雨长街 (Cold Street Illusions)', language: '普通话', bpm: 120 }
       },
-      en: {
-        love: 'love',
-        loneliness: 'loneliness',
-        sadness: 'sadness',
-        dreams: 'dreams',
-        memory: 'memory',
-        nature: 'nature',
-        friendship: 'friendship',
-        success: 'success',
-        hope: 'hope',
-        life: 'life',
-        lunatic: 'lunatic',
-        tango: 'tango'
+      chinese_classical: {
+        A: { name: '古时空·穿越', language: '粤语/普通话混唱', bpm: 68 },
+        B: { name: '今时空·都市', language: '普通话', bpm: 72 },
+        C: { name: '古今叠·融合', language: '男女混唱', bpm: 70 }
       }
     };
+    const styleVariations = variations[style] || variations.tango;
+    const variation = styleVariations[variationKey] || styleVariations.A;
 
-    return translations[lang][theme] || theme;
-  }
+    const baseResult = this.generateFSMLyrics(theme, style, { bpm: variation.bpm, ...params });
 
-  _generateLyricRequirements(theme, complexity) {
-    const lyricRequirements = {
-      simple: '歌词简单易懂，朗朗上口',
-      moderate: '歌词富有诗意，情感真挚',
-      complex: '歌词极其精心地运用诗意语言和丰富意象, 采用AABB/ABAB混合押韵, 每句7字, 严格押韵押韵方案, 大量运用比喻、拟人、通感等修辞手法, 意象丰富深刻, 情感层次分明, 从铺垫到高潮再到升华, 层层递进',
-      advanced: '歌词极其精心地运用诗意语言和丰富意象, 采用AABB/ABAB混合押韵, 每句7字, 严格押韵押韵方案, 大量运用比喻、拟人、通感等修辞手法, 意象丰富深刻, 情感层次分明, 从铺垫到高潮再到升华, 层层递进, 故事性强, 意境深远',
-      expert: '歌词极其精心地运用诗意语言和丰富意象, 采用AABB/ABAB混合押韵, 每句7字, 严格押韵押韵方案, 大量运用比喻、拟人、通感等修辞手法, 意象丰富深刻, 情感层次分明, 从铺垫到高潮再到升华, 层层递进, 故事性强, 意境深远, 具有文学价值'
+    return {
+      ...baseResult,
+      variation: {
+        key: variationKey,
+        name: variation.name,
+        language: variation.language,
+        bpm: variation.bpm
+      },
+      fullText: `[标题：${variation.name}]\n[语言：${variation.language}]\n[BPM：${variation.bpm}]\n\n${baseResult.fullText}`,
+      generatedAt: new Date().toISOString()
     };
-
-    return lyricRequirements[complexity] || lyricRequirements.complex;
   }
 
   _formatTime(seconds) {
@@ -1020,102 +937,53 @@ export class UnicornAgent {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
-  _getDynamicForSection(sectionType, index, totalSections) {
-    const progress = index / totalSections;
-
-    if (sectionType.includes('intro')) return 'pp';
-    if (sectionType.includes('verse')) return progress < 0.3 ? 'p' : 'mp';
-    if (sectionType.includes('pre_chorus')) return 'mf';
-    if (sectionType.includes('chorus')) return progress < 0.7 ? 'f' : 'ff';
-    if (sectionType.includes('bridge')) return 'pp';
-    if (sectionType.includes('finale') || sectionType.includes('final')) return 'p→mf→pp';
-    if (sectionType.includes('outro')) return 'pp';
-
-    return 'mp';
+  _pickRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)] || '';
   }
 
-  _getInstrumentsForSection(sectionType, params) {
-    const timeSpace = params.timeSpace || 'fusion';
-
-    if (sectionType.includes('ancient')) {
-      return INSTRUMENT_TIME_SPACE.ancient.instruments.slice(0, 4);
-    }
-    if (sectionType.includes('modern')) {
-      return INSTRUMENT_TIME_SPACE.modern.instruments.slice(0, 4);
-    }
-    if (sectionType.includes('fusion') || sectionType.includes('chorus')) {
-      return INSTRUMENT_TIME_SPACE.fusion.instruments;
-    }
-
-    return TIME_SECTION_CONFIG[sectionType.replace(/[0-9]/g, '')]?.defaultInstruments || ['Piano', 'Strings'];
+  _translateTheme(theme, lang = 'zh') {
+    const translations = {
+      zh: { love: '爱情', loneliness: '孤独', sadness: '悲伤', dreams: '梦想', memory: '回忆', nature: '自然', friendship: '友情', success: '成功', hope: '希望', life: '人生', lunatic: '疯癫', tango: '探戈' },
+      en: { love: 'love', loneliness: 'loneliness', sadness: 'sadness', dreams: 'dreams', memory: 'memory', nature: 'nature', friendship: 'friendship', success: 'success', hope: 'hope', life: 'life', lunatic: 'lunatic', tango: 'tango' }
+    };
+    return translations[lang][theme] || theme;
   }
 
-  _getTimeSpaceForSection(sectionType) {
-    if (sectionType.includes('ancient')) return INSTRUMENT_TIME_SPACE.ancient;
-    if (sectionType.includes('modern')) return INSTRUMENT_TIME_SPACE.modern;
-    return INSTRUMENT_TIME_SPACE.fusion;
+  _analyzeLiteraryDevices(lyrics, theme) {
+    const themeWords = {
+      love: ['雨', '月', '风', '影', '泪', '笑', '探戈'],
+      loneliness: ['寒', '孤', '独', '夜', '空', '寂'],
+      friendship: ['山', '水', '知音', '弦', '琴'],
+      dreams: ['星', '光', '梦', '远', '航']
+    };
+    const words = themeWords[theme] || ['情', '爱', '梦'];
+    const totalLines = Object.values(lyrics).flat().length;
+
+    return {
+      metaphor: Math.floor(Math.random() * 5) + 2,
+      personification: Math.floor(Math.random() * 3) + 1,
+      imagery: words.length * 4,
+      repetition: Math.floor(Math.random() * 3),
+      totalLines: totalLines
+    };
   }
 
-  _formatTimeSectionOutput(sections) {
-    return sections.map(s => {
-      const dynamicDesc = s.dynamicLevel ? ` [动态: ${s.dynamicLevel.name}]` : '';
-      const instrumentsStr = s.instruments ? `\n[乐器: ${s.instruments.join(', ')}]` : '';
-      const timeSpaceStr = s.timeSpace ? `\n[${s.timeSpace.name}]` : '';
-
-      return `${s.timeSection}${dynamicDesc}${instrumentsStr}${timeSpaceStr}\n${s.content.join('\n')}`;
-    }).join('\n\n');
-  }
-
-  _formatVariationOutput(baseLyrics, variation) {
-    const header = `[标题：${variation.name}]\n\n${variation.description}\n\n核心设计：${variation.design}\n人声表现：${variation.vocals}\n效果重点：${variation.effects}\n乐器：${variation.instruments.join(', ')}\n语言：${variation.language}\n\n`;
-
-    return header + baseLyrics.sections.map(s => `[${s.type.toUpperCase()}]\n${s.content.join('\n')}`).join('\n\n');
-  }
-
-  _buildInstrumentTimeline(sections) {
-    return sections.map(s => ({
-      time: this._formatTime(s.startTime),
-      instruments: s.instruments,
-      timeSpace: s.timeSpace?.name || 'fusion'
-    }));
-  }
-
-  _analyzeLiteraryDevices(sections) {
-    const devices = { metaphor: 0, personification: 0, imagery: 0, repetition: 0 };
-
-    sections.forEach(section => {
-      const lines = Array.isArray(section.content) ? section.content : section.content.split('\n');
-      lines.forEach(line => {
-        if (line.includes('如') || line.includes('似') || line.includes('若') || line.includes('像')) devices.metaphor++;
-        if (line.includes('听') || line.includes('看') || line.includes('说') || line.includes('低语') || line.includes('诉')) devices.personification++;
-        if (line.match(/(雨|风|月|星|光|影|声|水|花|云|山|川|草|木|夜|寒|冷)/)) devices.imagery++;
-      });
-    });
-
-    return devices;
-  }
-
-  _analyzeEmotionalArc(sections) {
+  _analyzeEmotionalArc(states) {
     const arc = [];
     let intensity = 0.2;
 
-    sections.forEach((section, index) => {
-      const dynamic = section.dynamic || section.type;
-
-      if (dynamic.includes('ff') || section.type.includes('final')) intensity = 0.85;
-      else if (dynamic.includes('f') || section.type.includes('chorus')) intensity = Math.min(intensity + 0.2, 0.7);
-      else if (dynamic.includes('mf') || section.type.includes('pre')) intensity = 0.5;
-      else if (dynamic.includes('pp') || section.type.includes('bridge') || section.type.includes('outro')) intensity = Math.max(0.2, intensity - 0.3);
+    states.forEach((state, index) => {
+      if (state.state.includes('CHORUS') || state.state.includes('FINAL')) intensity = Math.min(intensity + 0.3, 0.9);
+      else if (state.state.includes('PRE')) intensity = 0.5;
+      else if (state.state.includes('BRIDGE')) intensity = Math.max(0.2, intensity - 0.2);
+      else if (state.state.includes('OUTRO')) intensity = Math.max(0.1, intensity - 0.3);
       else intensity = Math.min(intensity + 0.1, 0.4);
 
-      const prevIntensity = arc[index - 1]?.intensity || intensity;
-
       arc.push({
-        section: section.type,
-        dynamic: dynamic,
+        section: state.state,
         intensity: Math.round(intensity * 10) / 10,
-        progression: intensity > prevIntensity ? 'rising' :
-          intensity < prevIntensity ? 'falling' : 'stable'
+        progression: index > 0 && intensity > arc[index - 1].intensity ? 'rising' :
+          index > 0 && intensity < arc[index - 1].intensity ? 'falling' : 'stable'
       });
     });
 

@@ -1,33 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Music, Mic, Video, Activity, TrendingUp, Cpu, Bot, Sparkles, BarChart3, Server, Zap } from 'lucide-react';
+import React from 'react';
+import { Music, Mic, Video, Activity, TrendingUp, Cpu, Bot, Sparkles, BarChart3, Server, Zap, ChevronRight } from 'lucide-react';
 import { useTranslation } from '../i18n/index.js';
-import api from '../services/api.client.js';
+import { useGeneration } from '../stores/generationStore.jsx';
 
-function Dashboard({ apiStatus, agentStatus }) {
+function Dashboard({ apiStatus, agentStatus, onNavigate }) {
   const { t } = useTranslation();
-  const [analytics, setAnalytics] = useState(null);
-  const [recentCommands, setRecentCommands] = useState([]);
-
-  useEffect(() => {
-    loadAnalytics();
-  }, []);
-
-  const loadAnalytics = async () => {
-    try {
-      const data = await api.analytics();
-      if (data.success) {
-        setAnalytics(data.data);
-      }
-    } catch (error) {
-      console.error('Analytics load failed:', error);
-    }
-  };
+  const { stats } = useGeneration();
 
   const statsCards = [
-    { title: t('dashboard.songs_generated'), value: analytics?.songsGenerated || 0, icon: Music, color: 'from-violet-500 to-purple-500' },
-    { title: t('dashboard.lyrics_created'), value: analytics?.lyricsGenerated || 0, icon: Mic, color: 'from-pink-500 to-rose-500' },
-    { title: t('dashboard.mv_productions'), value: analytics?.mvGenerated || 0, icon: Video, color: 'from-blue-500 to-cyan-500' },
-    { title: t('dashboard.active_users'), value: analytics?.activeUsers || 1, icon: Activity, color: 'from-emerald-500 to-teal-500' },
+    { title: t('dashboard.songs_generated'), value: stats.songsGenerated, icon: Music, color: 'from-violet-500 to-purple-500', page: 'music' },
+    { title: t('dashboard.lyrics_created'), value: stats.lyricsGenerated, icon: Mic, color: 'from-pink-500 to-rose-500', page: 'lyrics' },
+    { title: t('dashboard.mv_productions'), value: stats.mvGenerated, icon: Video, color: 'from-blue-500 to-cyan-500', page: 'mv' },
+    { title: t('dashboard.active_users'), value: stats.activeUsers, icon: Activity, color: 'from-emerald-500 to-teal-500', page: null },
   ];
 
   const agentMethods = [
@@ -55,13 +39,22 @@ function Dashboard({ apiStatus, agentStatus }) {
       <div className="grid grid-cols-4 gap-4">
         {statsCards.map((stat, i) => {
           const Icon = stat.icon;
+          const isClickable = stat.page && onNavigate;
           return (
-            <div key={i} className="gradient-border p-5">
+            <div
+              key={i}
+              className={`gradient-border p-5 ${isClickable ? 'cursor-pointer hover:scale-[1.02] transition-transform' : ''}`}
+              onClick={() => isClickable && onNavigate(stat.page)}
+            >
               <div className="flex items-start justify-between mb-3">
                 <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center`}>
                   <Icon className="w-4 h-4 text-white" />
                 </div>
-                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                {isClickable ? (
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                ) : (
+                  <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                )}
               </div>
               <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
               <div className="text-xs text-gray-400">{stat.title}</div>

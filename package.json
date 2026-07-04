@@ -1,6 +1,6 @@
 {
   "name": "zmusic",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "description": "ZMusic - Real AI Music Generation Platform with MVC Architecture",
   "type": "module",
   "scripts": {
@@ -24,6 +24,7 @@
     "@capacitor/core": "^8.4.1",
     "@capacitor/ios": "^8.4.1",
     "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "lucide-react": "^0.294.0",
     "react": "^18.2.0",

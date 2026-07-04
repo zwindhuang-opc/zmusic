@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { Music, Play, Sparkles, Loader, Download, Wand2, Cpu, Zap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Music, Play, Sparkles, Loader, Download, Wand2, Cpu, Zap, History, Copy } from 'lucide-react';
 import { useTranslation } from '../i18n/index.js';
 import api from '../services/api.client.js';
+import { useGeneration } from '../stores/generationStore.jsx';
+import HistoryPanel from '../components/HistoryPanel.jsx';
 
 const STYLES = ['pop', 'rock', 'electronic', 'hip_hop', 'ballad', 'chinese_traditional', 'jazz', 'classical', 'rnb', 'country'];
 
@@ -29,7 +31,14 @@ const MUSIC_EFFECTS = [
 
 function MusicPage() {
   const { t } = useTranslation();
+  const { addToHistory, copyToClipboard, pendingLyrics } = useGeneration();
   const [prompt, setPrompt] = useState('');
+
+  useEffect(() => {
+    if (pendingLyrics) {
+      setPrompt(pendingLyrics);
+    }
+  }, [pendingLyrics]);
   const [style, setStyle] = useState('pop');
   const [duration, setDuration] = useState(60);
   const [bpm, setBpm] = useState(120);
@@ -41,6 +50,7 @@ function MusicPage() {
   const [error, setError] = useState('');
   const [selectedLayers, setSelectedLayers] = useState(['foundation', 'melody', 'expression', 'effects']);
   const [selectedEffects, setSelectedEffects] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   const AGENT_METHODS = [
     { id: 'fsm', name: t('music.fsm_programming'), desc: t('music.state_machine') },
@@ -71,6 +81,17 @@ function MusicPage() {
       const data = await api.generateMusicAgent(params);
       if (data.success) {
         setResult(data);
+        addToHistory({
+          type: 'song',
+          method,
+          theme,
+          style,
+          bpm,
+          duration,
+          provider,
+          prompt,
+          result: data
+        });
       } else {
         setError(data.error || t('music.generation_failed'));
       }
@@ -86,14 +107,23 @@ function MusicPage() {
   return (
     <div className="space-y-6 animate-slide-in">
       <div className="gradient-border p-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
-            <Music className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
+              <Music className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">{t('music.ai_music_generation')}</h1>
+              <p className="text-xs text-gray-400">{t('music.powered_by')}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">{t('music.ai_music_generation')}</h1>
-            <p className="text-xs text-gray-400">{t('music.powered_by')}</p>
-          </div>
+          <button
+            onClick={() => setShowHistory(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm text-gray-300"
+          >
+            <History className="w-4 h-4" />
+            {t('lyrics.history')}
+          </button>
         </div>
       </div>
 
@@ -202,8 +232,8 @@ function MusicPage() {
                       }
                     }}
                     className={`p-3 rounded-lg text-center transition-all ${selectedLayers.includes(layer.id)
-                        ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30'
-                        : 'bg-white/5 border border-white/5 hover:border-white/10'
+                      ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30'
+                      : 'bg-white/5 border border-white/5 hover:border-white/10'
                       }`}
                   >
                     <Icon className="w-4 h-4 mx-auto text-violet-400 mb-1" />
@@ -228,8 +258,8 @@ function MusicPage() {
                     }
                   }}
                   className={`px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all ${selectedEffects.includes(effect.id)
-                      ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
-                      : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
+                    ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
                     }`}
                 >
                   {t(effect.name)}
@@ -244,23 +274,6 @@ function MusicPage() {
             </div>
           )}
 
-          <button
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="w-full py-3 rounded-lg bg-gradient-to-r from-violet-500 to-pink-500 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 transition-all"
-          >
-            {isGenerating ? (
-              <>
-                <Loader className="w-4 h-4 animate-spin" />
-                {t('music.generating_music')}
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                {t('music.generate_music_with', { method: currentMethod?.name || '' })}
-              </>
-            )}
-          </button>
         </div>
 
         <div className="gradient-border p-5">
@@ -283,7 +296,16 @@ function MusicPage() {
           {result && (
             <div className="space-y-3">
               <div className="p-3 rounded-lg bg-white/5 border border-white/5">
-                <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{t('music.task_id')}</div>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">{t('music.task_id')}</div>
+                  <button
+                    onClick={() => copyToClipboard(result.taskId)}
+                    className="flex items-center gap-1 px-2 py-1 rounded bg-white/5 text-xs text-gray-400 hover:bg-white/10 transition-colors"
+                  >
+                    <Copy className="w-3 h-3" />
+                    {t('common.copy')}
+                  </button>
+                </div>
                 <div className="text-xs font-mono text-violet-300">{result.taskId}</div>
               </div>
               {result.providers && Object.entries(result.providers).map(([name, data]) => (
@@ -296,13 +318,52 @@ function MusicPage() {
                     </span>
                   </div>
                   {data.error && <div className="text-[10px] text-rose-300">{data.error}</div>}
-                  {data.taskId && <div className="text-[10px] text-gray-400 font-mono">{data.taskId}</div>}
+                  {data.taskId && (
+                    <div className="flex items-center justify-between">
+                      <div className="text-[10px] text-gray-400 font-mono">{data.taskId}</div>
+                      <button
+                        onClick={() => copyToClipboard(data.taskId)}
+                        className="flex items-center gap-1 px-2 py-1 rounded bg-white/5 text-xs text-gray-500 hover:bg-white/10 transition-colors"
+                      >
+                        <Copy className="w-3 h-3" />
+                        {t('common.copy')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0f] via-[#0f0a1a] to-transparent pt-16 pb-4 px-6 z-40">
+        <div className="max-w-7xl mx-auto">
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-violet-500 to-pink-500 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 shadow-lg shadow-purple-500/20"
+          >
+            {isGenerating ? (
+              <>
+                <Loader className="w-4 h-4 animate-spin" />
+                {t('music.generating_music')}
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                {t('music.generate_music_with', { method: currentMethod?.name || '' })}
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <HistoryPanel
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        filterType="song"
+      />
     </div>
   );
 }
