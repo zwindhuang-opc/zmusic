@@ -89,8 +89,8 @@ function LyricsPage() {
                     key={m.id}
                     onClick={() => setMethod(m.id)}
                     className={`w-full p-3 rounded-lg text-left transition-all flex items-center gap-3 ${method === m.id
-                        ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30'
-                        : 'bg-white/5 border border-white/5 hover:border-white/10'
+                      ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30'
+                      : 'bg-white/5 border border-white/5 hover:border-white/10'
                       }`}
                   >
                     <Icon className="w-4 h-4 text-violet-400" />
@@ -112,11 +112,11 @@ function LyricsPage() {
                   key={g}
                   onClick={() => setGenre(g)}
                   className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${genre === g
-                      ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
-                      : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                    ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
                     }`}
                 >
-                  {g}
+                  {t(`styles.${g}`) || g}
                 </button>
               ))}
             </div>
@@ -125,16 +125,16 @@ function LyricsPage() {
           <div className="gradient-border p-5">
             <label className="text-xs font-medium text-gray-300 mb-3 block">{t('lyrics.theme')}</label>
             <div className="grid grid-cols-2 gap-2">
-              {themes.map(t => (
+              {themes.map(tm => (
                 <button
-                  key={t}
-                  onClick={() => setTheme(t)}
-                  className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${theme === t
-                      ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
-                      : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                  key={tm}
+                  onClick={() => setTheme(tm)}
+                  className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${theme === tm
+                    ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
                     }`}
                 >
-                  {t}
+                  {t(`themes.${tm}`) || tm}
                 </button>
               ))}
             </div>

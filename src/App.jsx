@@ -118,17 +118,17 @@ function App() {
 
         <div className="p-4 border-t border-purple-500/10 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400">API</span>
+            <span className="text-xs text-gray-400">{t('header.api')}</span>
             <div className={`flex items-center gap-1.5 ${apiStatus.configured ? 'text-emerald-400' : 'text-amber-400'}`}>
               <div className={`w-1.5 h-1.5 rounded-full ${apiStatus.configured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-              <span className="text-[10px] font-medium">{apiStatus.configured ? 'LIVE' : 'OFFLINE'}</span>
+              <span className="text-[10px] font-medium">{apiStatus.configured ? t('header.live') : t('header.offline')}</span>
             </div>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-400">{t('dashboard.agent_status')}</span>
             <div className="flex items-center gap-1.5 text-violet-400">
               <Bot className="w-3 h-3" />
-              <span className="text-[10px] font-medium">ACTIVE</span>
+              <span className="text-[10px] font-medium">{t('header.active')}</span>
             </div>
           </div>
           <div className="flex items-center justify-between">
@@ -155,7 +155,7 @@ function App() {
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
               <Zap className="w-3.5 h-3.5 text-pink-400" />
-              <span className="text-xs text-gray-300">Hermes + OpenClaw</span>
+              <span className="text-xs text-gray-300">{t('header.hermes_openclaw')}</span>
             </div>
           </div>
         </header>
