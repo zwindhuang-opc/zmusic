@@ -19,17 +19,21 @@ function App() {
   const [agentStatus, setAgentStatus] = useState(null);
 
   useEffect(() => {
-    loadStatus();
+    const controller = new AbortController();
+    loadStatus(controller.signal);
     const interval = setInterval(() => {
-      loadStatus();
-    }, 30000);
-    return () => clearInterval(interval);
+      loadStatus(controller.signal);
+    }, 60000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, []);
 
-  const loadStatus = async () => {
+  const loadStatus = async (signal) => {
     try {
-      const health = await api.health();
-      if (health.success) {
+      const health = await api.health(signal);
+      if (health?.success) {
         setApiStatus({
           configured: health.apiConfigured || health.data?.apiConfigured,
           museConfigured: health.museConfigured || health.data?.museConfigured || false,
@@ -37,12 +41,14 @@ function App() {
           uptime: health.uptime || health.data?.uptime || 0
         });
       }
-      const agent = await api.agentStatus();
-      if (agent.success) {
+      const agent = await api.agentStatus(signal);
+      if (agent?.success) {
         setAgentStatus(agent.data || agent);
       }
     } catch (error) {
-      console.error('Status check failed:', error);
+      if (error.name !== 'AbortError') {
+        // Silent fail - status will retry on next interval
+      }
     }
   };
 

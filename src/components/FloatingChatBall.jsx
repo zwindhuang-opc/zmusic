@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { MessageCircle, ChevronUp, ChevronDown, Bot, Sparkles, Zap, Music, Send, X } from 'lucide-react';
 import { useTranslation } from '../i18n/index.js';
+import { UnicornAgent } from '../agents/unicorn-agent.js';
 
 const AI_AGENTS = [
-  { id: 'suno', name: 'Suno AI', icon: Music, color: 'from-emerald-500 to-teal-500', desc: '音乐生成' },
-  { id: 'muse', name: 'Muse AI', icon: Sparkles, color: 'from-blue-500 to-cyan-500', desc: '智能创作' },
-  { id: 'fsm', name: 'FSM编程', icon: Bot, color: 'from-violet-500 to-purple-500', desc: '状态机' },
-  { id: 'network', name: '网络层', icon: Zap, color: 'from-pink-500 to-rose-500', desc: '分层组合' },
+  { id: 'suno', icon: Music, color: 'from-emerald-500 to-teal-500' },
+  { id: 'muse', icon: Sparkles, color: 'from-blue-500 to-cyan-500' },
+  { id: 'fsm', icon: Bot, color: 'from-violet-500 to-purple-500' },
+  { id: 'network', icon: Zap, color: 'from-pink-500 to-rose-500' },
 ];
+
+const unicornAgent = new UnicornAgent();
 
 function FloatingChatBall() {
   const { t } = useTranslation();
@@ -26,17 +29,95 @@ function FloatingChatBall() {
     setInput('');
     setIsTyping(true);
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 800));
 
-    const responses = {
-      suno: t('chat.suno_response'),
-      muse: t('chat.muse_response'),
-      fsm: t('chat.fsm_response'),
-      network: t('chat.network_response'),
-    };
+    let responseContent = '';
+    const userInput = input.trim();
 
-    setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', content: responses[selectedAgent] || t('chat.default_response'), agent: selectedAgent }]);
+    try {
+      switch (selectedAgent) {
+        case 'suno':
+          const sunoResult = await unicornAgent.generateSunoCommand(
+            extractTheme(userInput) || 'love',
+            extractStyle(userInput) || 'pop',
+            { duration: 180, bpm: 120, script: userInput, language: 'zh' }
+          );
+          responseContent = `已为您生成Suno风格音乐命令:\n\n${sunoResult.fullText.substring(0, 300)}...`;
+          break;
+        case 'muse':
+          const museResult = await unicornAgent.generateMuseCommand(
+            extractTheme(userInput) || 'love',
+            extractStyle(userInput) || 'pop',
+            { bpm: 120, script: userInput, language: 'zh' }
+          );
+          responseContent = `已为您生成Muse风格创作命令:\n\n${museResult.fullText.substring(0, 300)}...`;
+          break;
+        case 'fsm':
+          const fsmResult = await unicornAgent.generateLyrics({
+            method: 'fsm',
+            theme: extractTheme(userInput) || 'love',
+            style: extractStyle(userInput) || 'tango',
+            bpm: 120,
+            script: userInput,
+            language: 'zh'
+          });
+          responseContent = `已为您生成FSM状态机歌词:\n\n状态数: ${fsmResult.result.states}\n转换数: ${fsmResult.result.transitions}\n\n${fsmResult.result.fullText.substring(0, 300)}...`;
+          break;
+        case 'network':
+          const networkResult = await unicornAgent.generateLyrics({
+            method: 'network_layer',
+            theme: extractTheme(userInput) || 'love',
+            style: extractStyle(userInput) || 'pop',
+            bpm: 120,
+            script: userInput,
+            language: 'zh'
+          });
+          responseContent = `已为您生成网络层架构音乐:\n\n${networkResult.result.fullText.substring(0, 300)}...`;
+          break;
+        default:
+          responseContent = t('chat.default_response');
+      }
+    } catch (error) {
+      responseContent = `处理您的请求时出现错误: ${error.message}`;
+    }
+
+    setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', content: responseContent, agent: selectedAgent }]);
     setIsTyping(false);
+  };
+
+  const extractTheme = (text) => {
+    const themeKeywords = {
+      love: ['爱', '爱情', '恋爱', '深情', '温柔', '浪漫', '思念', '眷恋'],
+      loneliness: ['孤独', '寂寞', '独行', '寂寥', '独处'],
+      sadness: ['悲伤', '难过', '痛苦', '心碎', '惆怅'],
+      dreams: ['梦想', '希望', '未来', '追逐', '理想'],
+      nature: ['自然', '山水', '月光', '星辰', '风雨'],
+      tango: ['探戈', '华尔兹', '舞蹈'],
+      friendship: ['友情', '朋友', '知己']
+    };
+    for (const [theme, keywords] of Object.entries(themeKeywords)) {
+      if (keywords.some(keyword => text.includes(keyword))) {
+        return theme;
+      }
+    }
+    return null;
+  };
+
+  const extractStyle = (text) => {
+    const styleKeywords = {
+      tango: ['探戈'],
+      pop: ['流行', '通俗'],
+      rock: ['摇滚'],
+      chinese_classical: ['古典', '古风'],
+      ancient_modern: ['古今', '融合'],
+      electronic: ['电子', '电音']
+    };
+    for (const [style, keywords] of Object.entries(styleKeywords)) {
+      if (keywords.some(keyword => text.includes(keyword))) {
+        return style;
+      }
+    }
+    return null;
   };
 
   const handleKeyPress = (e) => {
@@ -69,8 +150,8 @@ function FloatingChatBall() {
                 })()}
               </div>
               <div>
-                <div className="text-sm font-semibold text-white">{currentAgent?.name}</div>
-                <div className="text-[10px] text-gray-500">{currentAgent?.desc}</div>
+                <div className="text-sm font-semibold text-white">{t(`chat.agents.${selectedAgent}.name`)}</div>
+                <div className="text-[10px] text-gray-500">{t(`chat.agents.${selectedAgent}.desc`)}</div>
               </div>
             </div>
             <button
@@ -97,7 +178,7 @@ function FloatingChatBall() {
                     }`}
                 >
                   <Icon className="w-3 h-3" />
-                  {agent.name}
+                  {t(`chat.agents.${agent.id}.name`)}
                 </button>
               );
             })}
@@ -110,8 +191,8 @@ function FloatingChatBall() {
                   ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/20'
                   : 'bg-white/5 border border-white/5'
                   }`}>
-                  <div className="text-xs text-gray-400 mb-1">{msg.type === 'user' ? t('chat.you') : AI_AGENTS.find(a => a.id === msg.agent)?.name}</div>
-                  <div className="text-sm text-white">{msg.content}</div>
+                  <div className="text-xs text-gray-400 mb-1">{msg.type === 'user' ? t('chat.you') : t(`chat.agents.${msg.agent}.name`)}</div>
+                  <div className="text-sm text-white whitespace-pre-wrap">{msg.content}</div>
                 </div>
               </div>
             ))}

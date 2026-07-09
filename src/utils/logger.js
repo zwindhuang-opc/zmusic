@@ -3,21 +3,13 @@
  * 
  * Features:
  * - Multiple log levels (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
- * - File and console appenders
+ * - Console appender (browser)
  * - Pattern-based layout formatting
- * - Log rotation support
  * - Module-based logging
  * 
  * @module utils/logger
  * @version 1.0.0
  */
-
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /**
  * Log levels enumeration
@@ -66,7 +58,7 @@ class PatternLayout {
 }
 
 /**
- * Console appender - outputs to stdout/stderr
+ * Console appender - outputs to console
  */
 class ConsoleAppender {
   constructor(layout = new PatternLayout()) {
@@ -85,54 +77,6 @@ class ConsoleAppender {
 }
 
 /**
- * File appender - writes to log files with rotation support
- */
-class FileAppender {
-  constructor(filePath, layout = new PatternLayout(), maxSize = 10 * 1024 * 1024) {
-    this.filePath = filePath;
-    this.layout = layout;
-    this.maxSize = maxSize; // Default 10MB
-    
-    // Ensure log directory exists
-    const logDir = path.dirname(filePath);
-    if (!fs.existsSync(logDir)) {
-      fs.mkdirSync(logDir, { recursive: true });
-    }
-  }
-
-  append(level, category, message, timestamp) {
-    const formatted = this.layout.format(level, category, message, timestamp);
-    
-    try {
-      // Check if rotation is needed
-      if (fs.existsSync(this.filePath)) {
-        const stats = fs.statSync(this.filePath);
-        if (stats.size >= this.maxSize) {
-          this.rotate();
-        }
-      }
-      
-      fs.appendFileSync(this.filePath, formatted + '\n', 'utf8');
-    } catch (error) {
-      console.error(`Failed to write to log file: ${error.message}`);
-    }
-  }
-
-  rotate() {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupPath = `${this.filePath}.${timestamp}`;
-    
-    try {
-      if (fs.existsSync(this.filePath)) {
-        fs.renameSync(this.filePath, backupPath);
-      }
-    } catch (error) {
-      console.error(`Failed to rotate log file: ${error.message}`);
-    }
-  }
-}
-
-/**
  * Main Logger class
  */
 export class Logger {
@@ -146,14 +90,7 @@ export class Logger {
     this.level = level;
     this.appenders = [];
     
-    // Default appenders
     this.addAppender(new ConsoleAppender());
-    
-    // File appender for production
-    if (process.env.NODE_ENV === 'production') {
-      const logPath = path.join(__dirname, '../../logs/app.log');
-      this.addAppender(new FileAppender(logPath));
-    }
   }
 
   /**
@@ -182,12 +119,10 @@ export class Logger {
     const timestamp = new Date();
     let formattedMessage = message;
     
-    // Handle string formatting with %s, %d, %j
     if (args.length > 0) {
       formattedMessage = this.formatMessage(message, args);
     }
     
-    // Send to all appenders
     for (const appender of this.appenders) {
       appender.append(level, this.category, formattedMessage, timestamp);
     }
@@ -223,7 +158,6 @@ export class Logger {
       }
     });
     
-    // Append remaining arguments
     if (argIndex < args.length) {
       result += ' ' + args.slice(argIndex).map(arg => {
         if (typeof arg === 'object') {
@@ -366,5 +300,4 @@ export const LoggerConfig = {
   }
 };
 
-// Default export
 export default Logger;

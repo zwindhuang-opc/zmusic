@@ -33,7 +33,8 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
+        mono: ['Consolas', 'Monaco', 'Courier New', 'monospace'],
       },
     },
   },

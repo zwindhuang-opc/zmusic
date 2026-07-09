@@ -330,7 +330,25 @@
     "muse_response": "我是Muse AI，擅长智能创作。您可以用自然语言描述您的创作意图，我会帮您实现。",
     "fsm_response": "我是FSM编程助手，擅长状态机转换。您可以通过状态机来精确控制歌词的生成流程。",
     "network_response": "我是网络层助手，擅长分层组合。我可以帮助您创建多层次的音乐作品。",
-    "default_response": "感谢您的提问！我会尽力帮助您完成音乐创作。"
+    "default_response": "感谢您的提问！我会尽力帮助您完成音乐创作。",
+    "agents": {
+      "suno": {
+        "name": "Suno AI",
+        "desc": "音乐生成"
+      },
+      "muse": {
+        "name": "Muse AI",
+        "desc": "智能创作"
+      },
+      "fsm": {
+        "name": "FSM编程",
+        "desc": "状态机"
+      },
+      "network": {
+        "name": "网络层",
+        "desc": "分层组合"
+      }
+    }
   },
   "emotional_arc": {
     "intro": "引子",

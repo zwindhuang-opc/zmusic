@@ -6,23 +6,38 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 class ApiClient {
-  async request(path, options = {}) {
+  async request(path, options = {}, signal) {
     const url = `${API_BASE}${path}`;
-    const response = await fetch(url, {
-      headers: { 'Content-Type': 'application/json' },
-      ...options
-    });
-    return await response.json();
+    try {
+      const response = await fetch(url, {
+        headers: { 'Content-Type': 'application/json' },
+        ...options,
+        signal
+      });
+      if (!response.ok) {
+        return { success: false, error: `HTTP ${response.status}` };
+      }
+      const text = await response.text();
+      if (!text) {
+        return { success: false, error: 'Empty response' };
+      }
+      return JSON.parse(text);
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw error;
+      }
+      return { success: false, error: error.message };
+    }
   }
 
   // Health
-  health() {
-    return this.request('/health');
+  health(signal) {
+    return this.request('/health', {}, signal);
   }
 
   // Agent
-  agentStatus() {
-    return this.request('/agent/status');
+  agentStatus(signal) {
+    return this.request('/agent/status', {}, signal);
   }
 
   agentLyrics(params) {
