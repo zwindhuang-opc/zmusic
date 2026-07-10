@@ -1,6 +1,6 @@
 {
   "name": "zmusic",
-  "version": "5.1.1",
+  "version": "5.1.2",
   "description": "ZMusic - Real AI Music Generation Platform with MVC Architecture",
   "type": "module",
   "scripts": {
@@ -10,6 +10,11 @@
     "server": "node src/server.js",
     "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
     "start": "concurrently \"npm run server\" \"npm run dev\"",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:android": "npm run build && npx cap sync android && npx cap open android",
+    "cap:ios": "npm run build && npx cap sync ios && npx cap open ios",
+    "cap:run:android": "npm run build && npx cap sync android && npx cap run android",
+    "cap:run:ios": "npm run build && npx cap sync ios && npx cap run ios",
     "version:bump": "node scripts/version-bump.js",
     "version:major": "node scripts/version-bump.js major",
     "version:minor": "node scripts/version-bump.js minor",
@@ -21,13 +26,19 @@
     "screenshot:version": "node scripts/take-screenshots.mjs --version"
   },
   "dependencies": {
-    "@capacitor/android": "^8.4.1",
-    "@capacitor/cli": "^8.4.1",
-    "@capacitor/core": "^8.4.1",
-    "@capacitor/ios": "^8.4.1",
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/app": "^6.0.3",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
+    "@capacitor/haptics": "^6.0.3",
+    "@capacitor/ios": "^6.2.1",
+    "@capacitor/keyboard": "^6.0.4",
+    "@capacitor/splash-screen": "^6.0.4",
+    "@capacitor/status-bar": "^6.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "kleur": "^4.1.5",
     "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

@@ -68,7 +68,7 @@ function App() {
 
   return (
     <div className="flex h-screen bg-[#0a0a0f] text-white overflow-hidden">
-      <aside className="w-64 glass flex flex-col border-r border-purple-500/10">
+      <aside className="desktop-sidebar w-64 glass flex flex-col border-r border-purple-500/10">
         <div className="p-5 border-b border-purple-500/10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
@@ -147,8 +147,13 @@ function App() {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-14 glass border-b border-purple-500/10 flex items-center justify-between px-6">
-          <div className="flex items-center gap-4">
+        <header className="safe-area-top h-14 glass border-b border-purple-500/10 flex items-center justify-between px-4 md:px-6">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="md:hidden flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+            </div>
             <h2 className="text-sm font-semibold">
               {navigationItems.find(item => item.id === currentPage)?.label}
             </h2>
@@ -156,7 +161,7 @@ function App() {
               v{apiStatus.version}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
               <Cpu className="w-3.5 h-3.5 text-violet-400" />
               <span className="text-xs text-gray-300">{t('dashboard.unicorn_agent')}</span>
@@ -166,15 +171,35 @@ function App() {
               <span className="text-xs text-gray-300">{t('header.hermes_openclaw')}</span>
             </div>
           </div>
+          <div className="md:hidden flex items-center gap-1.5">
+            <div className={`w-2 h-2 rounded-full ${apiStatus.configured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+          </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-[#0a0a0f] via-[#0f0a1a] to-[#0a0a0f]">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-[#0a0a0f] via-[#0f0a1a] to-[#0a0a0f]">
           {currentPage === 'dashboard' && <Dashboard apiStatus={apiStatus} agentStatus={agentStatus} onNavigate={setCurrentPage} />}
           {currentPage === 'music' && <MusicPage />}
           {currentPage === 'lyrics' && <LyricsPage onNavigate={setCurrentPage} />}
           {currentPage === 'mv' && <MVPage />}
           {currentPage === 'settings' && <SettingsPage />}
         </div>
+
+        <nav className="mobile-bottom-nav safe-area-bottom glass border-t border-purple-500/10 px-2 py-1 justify-around items-center">
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentPage === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setCurrentPage(item.id)}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all ${isActive ? 'text-violet-400' : 'text-gray-500'}`}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="text-[9px] font-medium">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
       </main>
 
       <FloatingChatBall />
