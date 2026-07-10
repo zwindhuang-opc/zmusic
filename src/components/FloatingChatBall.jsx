@@ -127,20 +127,30 @@ function FloatingChatBall() {
     }
   };
 
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      setIsOpen(false);
+    }
+  };
+
   const currentAgent = AI_AGENTS.find(a => a.id === selectedAgent);
 
   return (
     <>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-violet-500 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-purple-500/30 hover:scale-110 transition-transform z-50"
+        className="fixed bottom-24 right-6 md:bottom-8 w-14 h-14 rounded-full bg-gradient-to-r from-violet-500 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-purple-500/30 hover:scale-110 transition-transform z-50"
         title={t('chat.title')}
       >
         {isOpen ? <ChevronDown className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
 
       {isOpen && (
-        <div className="fixed bottom-24 right-6 w-96 bg-[#0f0f1a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-slide-up">
+        <div
+          onClick={handleBackdropClick}
+          className="fixed inset-0 z-40"
+        >
+          <div className="fixed bottom-24 right-6 md:bottom-8 w-96 max-w-[calc(100vw-2rem)] bg-[#0f0f1a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-slide-up">
           <div className="flex items-center justify-between p-4 border-b border-white/5">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${currentAgent?.color} flex items-center justify-center`}>
@@ -229,6 +239,7 @@ function FloatingChatBall() {
               </button>
             </div>
           </div>
+        </div>
         </div>
       )}
     </>
