@@ -8,15 +8,8 @@ import HistoryPanel from '../components/HistoryPanel.jsx';
 function MVPage() {
   const { t } = useTranslation();
   const { addToHistory, copyToClipboard, pendingLyrics } = useGeneration();
-  const [genres, setGenres] = useState([]);
-  const [genre, setGenre] = useState('pop');
-  const [duration, setDuration] = useState(180);
-  const [style, setStyle] = useState('modern');
-  const [colorPalette, setColorPalette] = useState('purple_gradient');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [result, setResult] = useState(null);
-  const [selectedEffects, setSelectedEffects] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
+
+  const FALLBACK_GENRES = ['pop', 'rock', 'electronic', 'hip_hop', 'ballad', 'chinese_traditional', 'jazz', 'classical', 'rnb', 'country'];
 
   const MV_EFFECTS = [
     { id: 'rain_wind', name: 'effects.rain_wind' },
@@ -33,6 +26,16 @@ function MVPage() {
     { id: 'modulation', name: 'effects.modulation' }
   ];
 
+  const [genres, setGenres] = useState(FALLBACK_GENRES);
+  const [genre, setGenre] = useState('pop');
+  const [duration, setDuration] = useState(180);
+  const [style, setStyle] = useState('modern');
+  const [colorPalette, setColorPalette] = useState('purple_gradient');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [result, setResult] = useState(null);
+  const [selectedEffects, setSelectedEffects] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+
   useEffect(() => {
     loadGenres();
   }, []);
@@ -40,11 +43,11 @@ function MVPage() {
   const loadGenres = async () => {
     try {
       const data = await api.mvGenres();
-      if (data.success) {
+      if (data.success && data.data?.length > 0) {
         setGenres(data.data);
       }
     } catch (error) {
-      console.error('Genres load failed:', error);
+      console.error('Genres load failed, using fallback:', error);
     }
   };
 
@@ -89,38 +92,38 @@ function MVPage() {
   ];
 
   return (
-    <div className="space-y-6 animate-slide-in">
-      <div className="gradient-border p-6">
+    <div className="space-y-4 md:space-y-6 animate-slide-in pb-28 md:pb-6">
+      <div className="gradient-border p-4 md:p-6">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
               <Video className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">{t('mv.mv_video_generator')}</h1>
-              <p className="text-xs text-gray-400">{t('mv.professional_mv')}</p>
+              <h1 className="text-lg md:text-xl font-bold text-white">{t('mv.mv_video_generator')}</h1>
+              <p className="text-[10px] md:text-xs text-gray-400">{t('mv.professional_mv')}</p>
             </div>
           </div>
           <button
             onClick={() => setShowHistory(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm text-gray-300"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-xs md:text-sm text-gray-300"
           >
-            <History className="w-4 h-4" />
+            <History className="w-3.5 h-3.5 md:w-4 md:h-4" />
             {t('lyrics.history')}
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="space-y-4">
-          <div className="gradient-border p-5">
+      <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-3 md:gap-4">
+        <div className="space-y-3 md:space-y-4">
+          <div className="gradient-border p-4 md:p-5">
             <label className="text-xs font-medium text-gray-300 mb-3 block">{t('mv.mv_genre')}</label>
             <div className="space-y-2">
               {genres.map(g => (
                 <button
                   key={g}
                   onClick={() => setGenre(g)}
-                  className={`w-full px-3 py-2 rounded-lg text-xs font-medium transition-all text-left ${genre === g
+                  className={`w-full px-3 py-2.5 rounded-lg text-xs font-medium transition-all text-left ${genre === g
                     ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
                     : 'bg-white/5 text-gray-400 hover:bg-white/10'
                     }`}
@@ -131,7 +134,7 @@ function MVPage() {
             </div>
           </div>
 
-          <div className="gradient-border p-5">
+          <div className="gradient-border p-4 md:p-5">
             <label className="text-xs font-medium text-gray-300 mb-3 block">{t('mv.duration_seconds')}</label>
             <input
               type="range"
@@ -149,12 +152,12 @@ function MVPage() {
             </div>
           </div>
 
-          <div className="gradient-border p-5">
+          <div className="gradient-border p-4 md:p-5">
             <label className="text-xs font-medium text-gray-300 mb-3 block">{t('mv.style')}</label>
             <select
               value={style}
               onChange={(e) => setStyle(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50"
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50"
             >
               {styleOptions.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -162,12 +165,12 @@ function MVPage() {
             </select>
           </div>
 
-          <div className="gradient-border p-5">
+          <div className="gradient-border p-4 md:p-5">
             <label className="text-xs font-medium text-gray-300 mb-3 block">{t('mv.color_palette_label')}</label>
             <select
               value={colorPalette}
               onChange={(e) => setColorPalette(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50"
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50"
             >
               {paletteOptions.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -175,9 +178,9 @@ function MVPage() {
             </select>
           </div>
 
-          <div className="gradient-border p-5">
+          <div className="gradient-border p-4 md:p-5">
             <label className="text-xs font-medium text-gray-300 mb-3 block">{t('layers.effects')}</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 md:grid-cols-3 gap-2">
               {MV_EFFECTS.map(effect => (
                 <button
                   key={effect.id}
@@ -188,7 +191,7 @@ function MVPage() {
                       setSelectedEffects([...selectedEffects, effect.id]);
                     }
                   }}
-                  className={`px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all ${selectedEffects.includes(effect.id)
+                  className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${selectedEffects.includes(effect.id)
                     ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
                     : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
                     }`}
@@ -201,7 +204,7 @@ function MVPage() {
 
         </div>
 
-        <div className="col-span-2 gradient-border p-6">
+        <div className="md:col-span-2 gradient-border p-4 md:p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-white flex items-center gap-2">
               <Film className="w-4 h-4 text-cyan-400" />
@@ -219,37 +222,37 @@ function MVPage() {
             )}
           </div>
           {!result && !isGenerating && (
-            <div className="text-center py-20 text-gray-500">
-              <Video className="w-12 h-12 mx-auto mb-4 opacity-30" />
-              <div className="text-sm">{t('mv.click_to_start')}</div>
+            <div className="text-center py-12 md:py-20 text-gray-500">
+              <Video className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 opacity-30" />
+              <div className="text-xs md:text-sm">{t('mv.click_to_start')}</div>
             </div>
           )}
           {isGenerating && (
-            <div className="text-center py-20">
-              <Loader className="w-10 h-10 mx-auto mb-4 text-cyan-400 animate-spin" />
-              <div className="text-sm text-gray-400">{t('mv.creating_timeline')}</div>
+            <div className="text-center py-12 md:py-20">
+              <Loader className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-3 md:mb-4 text-cyan-400 animate-spin" />
+              <div className="text-xs md:text-sm text-gray-400">{t('mv.creating_timeline')}</div>
             </div>
           )}
           {result && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-4 gap-3">
+            <div className="space-y-3 md:space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
                 <div className="p-3 rounded-lg bg-white/5 border border-white/5">
-                  <Clock className="w-3.5 h-3.5 text-gray-400 mb-1" />
+                  <Clock className="w-4 h-4 md:w-3.5 md:h-3.5 text-gray-400 mb-1" />
                   <div className="text-[10px] text-gray-500 uppercase">{t('mv.duration')}</div>
                   <div className="text-sm font-semibold text-white">{result.duration}s</div>
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-white/5">
-                  <Palette className="w-3.5 h-3.5 text-gray-400 mb-1" />
+                  <Palette className="w-4 h-4 md:w-3.5 md:h-3.5 text-gray-400 mb-1" />
                   <div className="text-[10px] text-gray-500 uppercase">{t('mv.palette')}</div>
                   <div className="text-sm font-semibold text-white">{t(`mv.${result.colorPalette}`) || result.colorPalette}</div>
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-white/5">
-                  <Film className="w-3.5 h-3.5 text-gray-400 mb-1" />
+                  <Film className="w-4 h-4 md:w-3.5 md:h-3.5 text-gray-400 mb-1" />
                   <div className="text-[10px] text-gray-500 uppercase">{t('mv.scenes')}</div>
                   <div className="text-sm font-semibold text-white">{result.totalScenes}</div>
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-white/5">
-                  <Sparkles className="w-3.5 h-3.5 text-gray-400 mb-1" />
+                  <Sparkles className="w-4 h-4 md:w-3.5 md:h-3.5 text-gray-400 mb-1" />
                   <div className="text-[10px] text-gray-500 uppercase">{t('mv.effects_label')}</div>
                   <div className="text-sm font-semibold text-white">{result.effects?.length || 0}</div>
                 </div>
@@ -260,7 +263,7 @@ function MVPage() {
                 <div className="space-y-2">
                   {result.timeline?.map((scene, i) => (
                     <div key={i} className="p-3 rounded-lg bg-white/5 border border-white/5 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/30 to-cyan-500/30 flex items-center justify-center text-xs font-bold text-white">
+                      <div className="w-10 h-10 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-blue-500/30 to-cyan-500/30 flex items-center justify-center text-sm md:text-xs font-bold text-white">
                         {scene.sceneId}
                       </div>
                       <div className="flex-1">
@@ -281,7 +284,7 @@ function MVPage() {
                 <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t('mv.effects_label')}</h4>
                 <div className="flex flex-wrap gap-2">
                   {result.effects?.map((effect, i) => (
-                    <span key={i} className="text-[10px] px-2 py-1 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                    <span key={i} className="text-xs px-2 py-1 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
                       {t(`effects.${effect}`) || effect}
                     </span>
                   ))}
@@ -292,12 +295,12 @@ function MVPage() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0f] via-[#0f0a1a] to-transparent pt-16 pb-4 px-6 z-40">
+      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0f] via-[#0f0a1a] to-transparent pt-12 md:pt-16 pb-6 md:pb-4 px-4 md:px-6 z-40">
         <div className="max-w-7xl mx-auto">
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 shadow-lg shadow-cyan-500/20"
+            className="w-full py-3.5 md:py-4 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold text-sm md:text-base flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 shadow-lg shadow-cyan-500/20"
           >
             {isGenerating ? (
               <>

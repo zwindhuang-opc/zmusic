@@ -6,6 +6,7 @@ import { useGeneration } from '../stores/generationStore.jsx';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 
 const STYLES = ['pop', 'rock', 'electronic', 'hip_hop', 'ballad', 'chinese_traditional', 'jazz', 'classical', 'rnb', 'country'];
+const GENRES = ['pop', 'rock', 'electronic', 'hip_hop', 'ballad', 'ancient', 'modern', 'chinese_classical', 'love_song', 'gothic_rock'];
 
 const MUSIC_LAYERS = [
   { id: 'foundation', name: 'layers.foundation', icon: Cpu },
@@ -40,6 +41,7 @@ function MusicPage() {
     }
   }, [pendingLyrics]);
   const [style, setStyle] = useState('pop');
+  const [genre, setGenre] = useState('pop');
   const [duration, setDuration] = useState(60);
   const [bpm, setBpm] = useState(120);
   const [method, setMethod] = useState('fsm');
@@ -71,6 +73,7 @@ function MusicPage() {
       const params = {
         prompt,
         style,
+        genre,
         duration,
         bpm,
         method,
@@ -86,6 +89,7 @@ function MusicPage() {
           method,
           theme,
           style,
+          genre,
           bpm,
           duration,
           provider,
@@ -105,190 +109,205 @@ function MusicPage() {
   const currentMethod = AGENT_METHODS.find(m => m.id === method);
 
   return (
-    <div className="space-y-6 animate-slide-in">
-      <div className="gradient-border p-6">
+    <div className="space-y-4 md:space-y-6 animate-slide-in pb-28 md:pb-6">
+      <div className="gradient-border p-4 md:p-6">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
               <Music className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">{t('music.ai_music_generation')}</h1>
-              <p className="text-xs text-gray-400">{t('music.powered_by')}</p>
+              <h1 className="text-lg md:text-xl font-bold text-white">{t('music.ai_music_generation')}</h1>
+              <p className="text-[10px] md:text-xs text-gray-400">{t('music.powered_by')}</p>
             </div>
           </div>
           <button
             onClick={() => setShowHistory(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm text-gray-300"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-xs md:text-sm text-gray-300"
           >
-            <History className="w-4 h-4" />
+            <History className="w-3.5 h-3.5 md:w-4 md:h-4" />
             {t('lyrics.history')}
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 space-y-4">
-          <div className="gradient-border p-5">
-            <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.music_prompt')}</label>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder={t('music.prompt_placeholder')}
-              className="w-full h-24 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 resize-none"
+      <div className="space-y-4 md:space-y-6">
+        <div className="gradient-border p-4 md:p-5">
+          <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.music_prompt')}</label>
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder={t('music.prompt_placeholder')}
+            className="w-full h-20 md:h-24 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 resize-none"
+          />
+        </div>
+
+        <div className="gradient-border p-4 md:p-5">
+          <label className="text-xs font-medium text-gray-300 mb-3 block">{t('music.music_style')}</label>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-2.5">
+            {STYLES.map(s => (
+              <button
+                key={s}
+                onClick={() => setStyle(s)}
+                className={`px-3 py-2.5 md:py-2 rounded-lg text-xs font-medium transition-all ${style === s
+                  ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
+                  }`}
+              >
+                {t(`styles.${s}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="gradient-border p-4 md:p-5">
+          <label className="text-xs font-medium text-gray-300 mb-3 block">{t('lyrics.genre')}</label>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-2.5">
+            {GENRES.map(g => (
+              <button
+                key={g}
+                onClick={() => setGenre(g)}
+                className={`px-3 py-2.5 md:py-2 rounded-lg text-xs font-medium transition-all ${genre === g
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
+                  }`}
+              >
+                {t(`styles.${g}`) || g}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+          <div className="gradient-border p-4">
+            <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.duration_s')}</label>
+            <input
+              type="number"
+              value={duration}
+              onChange={(e) => setDuration(parseInt(e.target.value) || 60)}
+              min="10"
+              max="300"
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50"
             />
           </div>
-
-          <div className="gradient-border p-5">
-            <label className="text-xs font-medium text-gray-300 mb-3 block">{t('music.music_style')}</label>
-            <div className="grid grid-cols-5 gap-2">
-              {STYLES.map(s => (
-                <button
-                  key={s}
-                  onClick={() => setStyle(s)}
-                  className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${style === s
-                    ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
-                    : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
-                    }`}
-                >
-                  {t(`styles.${s}`)}
-                </button>
-              ))}
-            </div>
+          <div className="gradient-border p-4">
+            <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.bpm')}</label>
+            <input
+              type="number"
+              value={bpm}
+              onChange={(e) => setBpm(parseInt(e.target.value) || 120)}
+              min="60"
+              max="200"
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50"
+            />
           </div>
+          <div className="gradient-border p-4">
+            <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.theme')}</label>
+            <select
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50"
+            >
+              <option value="love">{t('themes.love')}</option>
+              <option value="friendship">{t('themes.friendship')}</option>
+              <option value="success">{t('themes.success')}</option>
+              <option value="dreams">{t('themes.dreams')}</option>
+              <option value="nature">{t('themes.nature')}</option>
+              <option value="life">{t('themes.life')}</option>
+            </select>
+          </div>
+        </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="gradient-border p-4">
-              <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.duration_s')}</label>
-              <input
-                type="number"
-                value={duration}
-                onChange={(e) => setDuration(parseInt(e.target.value) || 60)}
-                min="10"
-                max="300"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50"
-              />
-            </div>
-            <div className="gradient-border p-4">
-              <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.bpm')}</label>
-              <input
-                type="number"
-                value={bpm}
-                onChange={(e) => setBpm(parseInt(e.target.value) || 120)}
-                min="60"
-                max="200"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50"
-              />
-            </div>
-            <div className="gradient-border p-4">
-              <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.theme')}</label>
-              <select
-                value={theme}
-                onChange={(e) => setTheme(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50"
+        <div className="gradient-border p-4 md:p-5">
+          <label className="text-xs font-medium text-gray-300 mb-3 block">{t('music.ai_agent_method')}</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            {AGENT_METHODS.map(m => (
+              <button
+                key={m.id}
+                onClick={() => setMethod(m.id)}
+                className={`p-3.5 md:p-3 rounded-lg text-left transition-all ${method === m.id
+                  ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30'
+                  : 'bg-white/5 border border-white/5 hover:border-white/10'
+                  }`}
               >
-                <option value="love">{t('themes.love')}</option>
-                <option value="friendship">{t('themes.friendship')}</option>
-                <option value="success">{t('themes.success')}</option>
-                <option value="dreams">{t('themes.dreams')}</option>
-                <option value="nature">{t('themes.nature')}</option>
-                <option value="life">{t('themes.life')}</option>
-              </select>
-            </div>
+                <div className="text-sm font-medium text-white">{m.name}</div>
+                <div className="text-[10px] md:text-xs text-gray-400 mt-0.5">{m.desc}</div>
+              </button>
+            ))}
           </div>
+        </div>
 
-          <div className="gradient-border p-5">
-            <label className="text-xs font-medium text-gray-300 mb-3 block">{t('music.ai_agent_method')}</label>
-            <div className="grid grid-cols-2 gap-2">
-              {AGENT_METHODS.map(m => (
+        <div className="gradient-border p-4 md:p-5">
+          <label className="text-xs font-medium text-gray-300 mb-3 block">{t('layers.foundation')} ({t('music_elements.waltz')} {t('music_elements.tango')})</label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+            {MUSIC_LAYERS.map(layer => {
+              const Icon = layer.icon;
+              return (
                 <button
-                  key={m.id}
-                  onClick={() => setMethod(m.id)}
-                  className={`p-3 rounded-lg text-left transition-all ${method === m.id
+                  key={layer.id}
+                  onClick={() => {
+                    if (selectedLayers.includes(layer.id)) {
+                      setSelectedLayers(selectedLayers.filter(l => l !== layer.id));
+                    } else {
+                      setSelectedLayers([...selectedLayers, layer.id]);
+                    }
+                  }}
+                  className={`p-3.5 md:p-3 rounded-lg text-center transition-all ${selectedLayers.includes(layer.id)
                     ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30'
                     : 'bg-white/5 border border-white/5 hover:border-white/10'
                     }`}
                 >
-                  <div className="text-sm font-medium text-white">{m.name}</div>
-                  <div className="text-[10px] text-gray-400 mt-0.5">{m.desc}</div>
+                  <Icon className="w-5 h-5 md:w-4 md:h-4 mx-auto text-violet-400 mb-1" />
+                  <div className="text-xs md:text-[10px] text-gray-300">{t(layer.name)}</div>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
-
-          <div className="gradient-border p-5">
-            <label className="text-xs font-medium text-gray-300 mb-3 block">{t('layers.foundation')} ({t('music_elements.waltz')} {t('music_elements.tango')})</label>
-            <div className="grid grid-cols-4 gap-2">
-              {MUSIC_LAYERS.map(layer => {
-                const Icon = layer.icon;
-                return (
-                  <button
-                    key={layer.id}
-                    onClick={() => {
-                      if (selectedLayers.includes(layer.id)) {
-                        setSelectedLayers(selectedLayers.filter(l => l !== layer.id));
-                      } else {
-                        setSelectedLayers([...selectedLayers, layer.id]);
-                      }
-                    }}
-                    className={`p-3 rounded-lg text-center transition-all ${selectedLayers.includes(layer.id)
-                      ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30'
-                      : 'bg-white/5 border border-white/5 hover:border-white/10'
-                      }`}
-                  >
-                    <Icon className="w-4 h-4 mx-auto text-violet-400 mb-1" />
-                    <div className="text-[10px] text-gray-300">{t(layer.name)}</div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="gradient-border p-5">
-            <label className="text-xs font-medium text-gray-300 mb-3 block">{t('layers.effects')}</label>
-            <div className="grid grid-cols-4 gap-2">
-              {MUSIC_EFFECTS.map(effect => (
-                <button
-                  key={effect.id}
-                  onClick={() => {
-                    if (selectedEffects.includes(effect.id)) {
-                      setSelectedEffects(selectedEffects.filter(e => e !== effect.id));
-                    } else {
-                      setSelectedEffects([...selectedEffects, effect.id]);
-                    }
-                  }}
-                  className={`px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all ${selectedEffects.includes(effect.id)
-                    ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
-                    : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
-                    }`}
-                >
-                  {t(effect.name)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {error && (
-            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300">
-              {error}
-            </div>
-          )}
-
         </div>
 
-        <div className="gradient-border p-5">
+        <div className="gradient-border p-4 md:p-5">
+          <label className="text-xs font-medium text-gray-300 mb-3 block">{t('layers.effects')}</label>
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {MUSIC_EFFECTS.map(effect => (
+              <button
+                key={effect.id}
+                onClick={() => {
+                  if (selectedEffects.includes(effect.id)) {
+                    setSelectedEffects(selectedEffects.filter(e => e !== effect.id));
+                  } else {
+                    setSelectedEffects([...selectedEffects, effect.id]);
+                  }
+                }}
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${selectedEffects.includes(effect.id)
+                  ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
+                  }`}
+              >
+                {t(effect.name)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {error && (
+          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300">
+            {error}
+          </div>
+        )}
+
+        <div className="gradient-border p-4 md:p-5">
           <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-3">
             <Wand2 className="w-4 h-4 text-pink-400" />
             {t('music.result')}
           </h3>
           {!result && !isGenerating && (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-8 md:py-12 text-gray-500">
               <Music className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <div className="text-xs">{t('music.no_music_generated')}</div>
             </div>
           )}
           {isGenerating && (
-            <div className="text-center py-12">
+            <div className="text-center py-8 md:py-12">
               <Loader className="w-8 h-8 mx-auto mb-3 text-violet-400 animate-spin" />
               <div className="text-xs text-gray-400">{t('music.creating_your_music')}</div>
             </div>
@@ -337,12 +356,12 @@ function MusicPage() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0f] via-[#0f0a1a] to-transparent pt-16 pb-4 px-6 z-40">
+      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0f] via-[#0f0a1a] to-transparent pt-12 md:pt-16 pb-6 md:pb-4 px-4 md:px-6 z-40">
         <div className="max-w-7xl mx-auto">
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-violet-500 to-pink-500 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 shadow-lg shadow-purple-500/20"
+            className="w-full py-3.5 md:py-4 rounded-xl bg-gradient-to-r from-violet-500 to-pink-500 text-white font-semibold text-sm md:text-base flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 shadow-lg shadow-purple-500/20"
           >
             {isGenerating ? (
               <>

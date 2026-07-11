@@ -1,7 +1,8 @@
 {
   "name": "zmusic",
-  "version": "5.1.2",
+  "version": "5.3.0",
   "description": "ZMusic - Real AI Music Generation Platform with MVC Architecture",
+  "main": "electron/main.js",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,6 +16,9 @@
     "cap:ios": "npm run build && npx cap sync ios && npx cap open ios",
     "cap:run:android": "npm run build && npx cap sync android && npx cap run android",
     "cap:run:ios": "npm run build && npx cap sync ios && npx cap run ios",
+    "electron:dev": "cross-env ELECTRON_START_URL=http://localhost:5500 electron .",
+    "electron:build": "npm run build && electron-builder",
+    "electron:pack": "npm run build && electron-builder --dir",
     "version:bump": "node scripts/version-bump.js",
     "version:major": "node scripts/version-bump.js major",
     "version:minor": "node scripts/version-bump.js minor",
@@ -49,6 +53,9 @@
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
     "concurrently": "^8.2.2",
+    "cross-env": "^10.1.0",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
     "postcss": "^8.4.32",
     "puppeteer": "^25.3.0",
     "tailwindcss": "^3.3.6",
@@ -56,5 +63,49 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "build": {
+    "appId": "com.zmusic.app",
+    "productName": "ZMusic",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "resources/icons/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "resources/icons/icon-256.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "resources/icons/icon-256.png",
+      "uninstallerIcon": "resources/icons/icon-256.png",
+      "installerHeaderIcon": "resources/icons/icon-256.png"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "resources/icons/icon-512.png"
+    },
+    "linux": {
+      "target": [
+        "deb",
+        "rpm",
+        "AppImage"
+      ],
+      "icon": "resources/icons"
+    }
   }
 }

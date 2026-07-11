@@ -49,6 +49,32 @@ body,
   .mobile-bottom-nav {
     display: flex !important;
   }
+
+  button {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  input[type="range"] {
+    min-height: 32px;
+  }
+
+  .gradient-border {
+    padding: 12px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
 }
 
 ::-webkit-scrollbar {

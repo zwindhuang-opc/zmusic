@@ -147,14 +147,14 @@ function App() {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="safe-area-top h-14 glass border-b border-purple-500/10 flex items-center justify-between px-4 md:px-6">
+        <header className="safe-area-top h-16 md:h-14 glass border-b border-purple-500/10 flex items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-3 md:gap-4">
             <div className="md:hidden flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
             </div>
-            <h2 className="text-sm font-semibold">
+            <h2 className="text-base md:text-sm font-semibold">
               {navigationItems.find(item => item.id === currentPage)?.label}
             </h2>
             <span className="text-[10px] px-2 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
@@ -172,7 +172,7 @@ function App() {
             </div>
           </div>
           <div className="md:hidden flex items-center gap-1.5">
-            <div className={`w-2 h-2 rounded-full ${apiStatus.configured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+            <div className={`w-2.5 h-2.5 rounded-full ${apiStatus.configured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
           </div>
         </header>
 
@@ -184,7 +184,7 @@ function App() {
           {currentPage === 'settings' && <SettingsPage />}
         </div>
 
-        <nav className="mobile-bottom-nav safe-area-bottom glass border-t border-purple-500/10 px-2 py-1 justify-around items-center">
+        <nav className="mobile-bottom-nav safe-area-bottom glass border-t border-purple-500/10 px-2 py-3 justify-around items-center">
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
@@ -192,10 +192,10 @@ function App() {
               <button
                 key={item.id}
                 onClick={() => setCurrentPage(item.id)}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all ${isActive ? 'text-violet-400' : 'text-gray-500'}`}
+                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[60px] ${isActive ? 'text-violet-400' : 'text-gray-500'}`}
               >
-                <Icon className="w-5 h-5" />
-                <span className="text-[9px] font-medium">{item.label}</span>
+                <Icon className="w-6 h-6" />
+                <span className="text-[10px] font-medium">{item.label}</span>
               </button>
             );
           })}
