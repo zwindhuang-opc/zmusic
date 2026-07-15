@@ -1,10 +1,10 @@
 {
-  "version": "5.3.1",
+  "version": "5.3.2",
   "major": 5,
   "minor": 3,
-  "patch": 1,
+  "patch": 2,
   "releaseDate": "2026-07-15",
-  "buildNumber": 11,
+  "buildNumber": 12,
   "status": "production-ready",
   "changes": [
     "v5.3.0 - Multi-platform release (Android APK, Windows Electron, iOS config, Web)",
