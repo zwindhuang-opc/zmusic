@@ -11,6 +11,7 @@
  */
 
 import { UnicornAgent } from '../agents/unicorn-agent.js';
+import generationHistory from '../services/generation.history.js';
 import Logger from '../utils/logger.js';
 
 /**
@@ -135,6 +136,7 @@ export class AgentController {
       };
       logger.info(`Agent lyrics: method=${mappedParams.method}, style=${mappedParams.style}, theme=${mappedParams.theme}, language=${mappedParams.language}`);
       const result = await unicornAgent.generateLyrics(mappedParams);
+      generationHistory.add('lyrics', { params: mappedParams, result });
       return res.json({ success: true, data: result });
     } catch (error) {
       logger.error(`Lyrics error: ${error.message}`);
@@ -174,6 +176,7 @@ export class AgentController {
       const params = req.body || {};
       logger.info(`Agent MV: duration=${params.duration || 180}`);
       const result = await unicornAgent.generateMV(params);
+      generationHistory.add('mv', { params, result });
       return res.json({ success: true, data: result });
     } catch (error) {
       logger.error(`MV error: ${error.message}`);

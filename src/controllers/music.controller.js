@@ -12,6 +12,7 @@
 
 import sunoService from '../services/suno.service.js';
 import museService from '../services/muse.service.js';
+import generationHistory from '../services/generation.history.js';
 import Logger from '../utils/logger.js';
 import { buildSunoPrompt, MUSIC_STYLES, MUSIC_GENRES, MUSIC_THEMES } from '../config/musicStyles.js';
 
@@ -66,6 +67,7 @@ export class MusicController {
       }
 
       const result = await sunoService.generateMusic(prompt, style, duration);
+      generationHistory.add('music', { params: { prompt, style, duration }, result });
       return res.json({ success: true, data: result });
     } catch (error) {
       logger.error(`Generate error: ${error.message}`);
@@ -152,6 +154,7 @@ export class MusicController {
         }
       }
 
+      generationHistory.add('music', { params, result });
       return res.json(result);
     } catch (error) {
       logger.error(`Agent generate error: ${error.message}`);

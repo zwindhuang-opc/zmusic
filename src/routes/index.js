@@ -8,6 +8,7 @@ import musicController from '../controllers/music.controller.js';
 import lyricsController from '../controllers/lyrics.controller.js';
 import mvController from '../controllers/mv.controller.js';
 import agentController from '../controllers/agent.controller.js';
+import historyController from '../controllers/history.controller.js';
 import Logger from '../utils/logger.js';
 
 const logger = new Logger('Routes');
@@ -85,6 +86,27 @@ export async function handleRoute(req, res, url, method, body) {
   if (path === '/api/mv/generate-agent' && method === 'POST') {
     req.body = body;
     return agentController.generateMV(req, res);
+  }
+
+  // History endpoints
+  if (path === '/api/history' && method === 'GET') {
+    return historyController.getAll(req, res);
+  }
+
+  if (path === '/api/history/stats' && method === 'GET') {
+    return historyController.getStats(req, res);
+  }
+
+  if (path === '/api/history/:id' && method === 'GET') {
+    return historyController.getById(req, res);
+  }
+
+  if (path === '/api/history/:id' && method === 'DELETE') {
+    return historyController.delete(req, res);
+  }
+
+  if (path === '/api/history/clear' && method === 'POST') {
+    return historyController.clear(req, res);
   }
 
   // 404
