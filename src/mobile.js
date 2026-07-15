@@ -3,6 +3,8 @@ import { Capacitor } from '@capacitor/core';
 async function initMobile() {
   if (!Capacitor.isNativePlatform()) return;
 
+  window.Capacitor = Capacitor;
+
   const { StatusBar, Style } = await import('@capacitor/status-bar');
   const { SplashScreen } = await import('@capacitor/splash-screen');
   const { App: CapApp } = await import('@capacitor/app');

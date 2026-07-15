@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Key, Save, RefreshCw, Server, Bot, Cpu, CheckCircle, AlertCircle } from 'lucide-react';
 import { useTranslation } from '../i18n/index.js';
-import api from '../services/api.client.js';
+import api, { isMobileEnvironment } from '../services/api.client.js';
 
 function SettingsPage() {
   const { t } = useTranslation();
@@ -10,7 +10,9 @@ function SettingsPage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    loadStatus();
+    if (!isMobileEnvironment()) {
+      loadStatus();
+    }
   }, []);
 
   const loadStatus = async () => {

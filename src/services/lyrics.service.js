@@ -349,7 +349,8 @@ const NETWORK_LAYER_CONFIG = {
       '底层律动: {bpm}bpm三拍子节拍, {rhythm}节奏型, {style}基础风格'
     ],
     beats: ['4/4拍子基础节拍', 'waltz三拍子探戈节拍', '电子碎拍', '古典华尔兹3/4拍'],
-    rhythms: ['稳定律动', '跳转节奏', '摇摆节奏', '断奏节奏']
+    rhythms: ['稳定律动', '跳转节奏', '摇摆节奏', '断奏节奏'],
+    styles: ['古典', '流行', '电子', '摇滚', '爵士', '民谣']
   },
   melody: {
     templates: [
@@ -795,23 +796,23 @@ export class LyricsService {
   }
 
   _buildFoundationLayer(bpm, theme, params) {
-    const template = params.foundationTemplate || NETWORK_LAYER_CONFIG.foundation.templates[0];
-    const beat = params.beat || NETWORK_LAYER_CONFIG.foundation.beats[1];
-    const rhythm = params.rhythm || NETWORK_LAYER_CONFIG.foundation.rhythms[0];
+    const template = params.foundationTemplate || NETWORK_LAYER_CONFIG.foundation.templates[Math.floor(Math.random() * NETWORK_LAYER_CONFIG.foundation.templates.length)];
+    const beat = params.beat || NETWORK_LAYER_CONFIG.foundation.beats[Math.floor(Math.random() * NETWORK_LAYER_CONFIG.foundation.beats.length)];
+    const rhythm = params.rhythm || NETWORK_LAYER_CONFIG.foundation.rhythms[Math.floor(Math.random() * NETWORK_LAYER_CONFIG.foundation.rhythms.length)];
 
     return template
       .replace('{bpm}', bpm)
       .replace('{theme}', this._translateTheme(theme))
       .replace('{beat}', beat)
       .replace('{rhythm}', rhythm)
-      .replace('{style}', params.style || '古典');
+      .replace('{style}', params.style || NETWORK_LAYER_CONFIG.foundation.styles[Math.floor(Math.random() * NETWORK_LAYER_CONFIG.foundation.styles.length)]);
   }
 
   _buildMelodyLayer(theme, params) {
-    const template = params.melodyTemplate || NETWORK_LAYER_CONFIG.melody.templates[1];
-    const reference = params.reference || 'Eason Chan孤獨探戈、黑擇明';
-    const feeling = params.feeling || '夜來獨行的lonely但not solitude';
-    const classicalElements = params.classicalElements || 'classical elements';
+    const template = params.melodyTemplate || NETWORK_LAYER_CONFIG.melody.templates[Math.floor(Math.random() * NETWORK_LAYER_CONFIG.melody.templates.length)];
+    const reference = params.reference || NETWORK_LAYER_CONFIG.melody.references[Math.floor(Math.random() * NETWORK_LAYER_CONFIG.melody.references.length)];
+    const feeling = params.feeling || NETWORK_LAYER_CONFIG.melody.feelings[Math.floor(Math.random() * NETWORK_LAYER_CONFIG.melody.feelings.length)];
+    const classicalElements = params.classicalElements || NETWORK_LAYER_CONFIG.melody.elements[Math.floor(Math.random() * NETWORK_LAYER_CONFIG.melody.elements.length)];
 
     return template
       .replace('{reference}', reference)
@@ -820,10 +821,10 @@ export class LyricsService {
   }
 
   _buildExpressionLayer(theme, params) {
-    const template = params.expressionTemplate || NETWORK_LAYER_CONFIG.expression.templates[1];
-    const sfx = params.sfx || '風聲与雨水声腳步聲';
-    const expressionTheme = params.expressionTheme || '黑夜的"靜"與人心中的"動"的互双影響的情感';
-    const feature = params.feature || '獨宿人漸冷，夜來風雨淒特色';
+    const template = params.expressionTemplate || NETWORK_LAYER_CONFIG.expression.templates[Math.floor(Math.random() * 2)];
+    const sfx = params.sfx || NETWORK_LAYER_CONFIG.expression.sfx[Math.floor(Math.random() * 4)];
+    const expressionTheme = params.expressionTheme || NETWORK_LAYER_CONFIG.expression.expressionThemes[Math.floor(Math.random() * 4)];
+    const feature = params.feature || NETWORK_LAYER_CONFIG.expression.styleFeatures[Math.floor(Math.random() * 4)];
 
     return template
       .replace('{sfx}', sfx)
@@ -832,10 +833,10 @@ export class LyricsService {
   }
 
   _buildEffectsLayer(params) {
-    const template = params.effectsTemplate || NETWORK_LAYER_CONFIG.effects.templates[0];
-    const introEffects = params.introEffects || '开場的7-8秒雨水風聲5-6秒腳步聲混响、4-5延迟漸入人聲獨白';
-    const atmosphere = params.atmosphere || '柔和孤獨氛围';
-    const finalElements = params.finalElements || '一个像極月圆彎刀中的紅月照天上的黑夜感入歌';
+    const template = params.effectsTemplate || NETWORK_LAYER_CONFIG.effects.templates[Math.floor(Math.random() * NETWORK_LAYER_CONFIG.effects.templates.length)];
+    const introEffects = params.introEffects || NETWORK_LAYER_CONFIG.effects.introEffects[Math.floor(Math.random() * NETWORK_LAYER_CONFIG.effects.introEffects.length)];
+    const atmosphere = params.atmosphere || NETWORK_LAYER_CONFIG.effects.atmospheres[Math.floor(Math.random() * NETWORK_LAYER_CONFIG.effects.atmospheres.length)];
+    const finalElements = params.finalElements || NETWORK_LAYER_CONFIG.effects.finalElements[Math.floor(Math.random() * NETWORK_LAYER_CONFIG.effects.finalElements.length)];
 
     return template
       .replace('{intro_effects}', introEffects)

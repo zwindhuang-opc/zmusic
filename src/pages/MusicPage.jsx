@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Music, Play, Sparkles, Loader, Download, Wand2, Cpu, Zap, History, Copy } from 'lucide-react';
 import { useTranslation } from '../i18n/index.js';
-import api from '../services/api.client.js';
+import api, { isMobileEnvironment } from '../services/api.client.js';
 import { useGeneration } from '../stores/generationStore.jsx';
+import { generateMusic } from '../utils/musicEngine.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
+import { MUSIC_STYLES, MUSIC_GENRES, MUSIC_THEMES } from '../config/musicStyles.js';
 
-const STYLES = ['pop', 'rock', 'electronic', 'hip_hop', 'ballad', 'chinese_traditional', 'jazz', 'classical', 'rnb', 'country'];
-const GENRES = ['pop', 'rock', 'electronic', 'hip_hop', 'ballad', 'ancient', 'modern', 'chinese_classical', 'love_song', 'gothic_rock'];
+const STYLES = Object.keys(MUSIC_STYLES);
+const GENRES = Object.keys(MUSIC_GENRES);
 
 const MUSIC_LAYERS = [
   { id: 'foundation', name: 'layers.foundation', icon: Cpu },
@@ -81,7 +83,14 @@ function MusicPage() {
         provider,
         autoGenerateLyrics: true
       };
-      const data = await api.generateMusicAgent(params);
+
+      let data;
+      if (isMobileEnvironment()) {
+        data = generateMusic(params);
+      } else {
+        data = await api.generateMusicAgent(params);
+      }
+
       if (data.success) {
         setResult(data);
         addToHistory({
@@ -208,12 +217,9 @@ function MusicPage() {
               onChange={(e) => setTheme(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50"
             >
-              <option value="love">{t('themes.love')}</option>
-              <option value="friendship">{t('themes.friendship')}</option>
-              <option value="success">{t('themes.success')}</option>
-              <option value="dreams">{t('themes.dreams')}</option>
-              <option value="nature">{t('themes.nature')}</option>
-              <option value="life">{t('themes.life')}</option>
+              {Object.entries(MUSIC_THEMES).map(([key, value]) => (
+                <option key={key} value={key}>{t(value.name) || key}</option>
+              ))}
             </select>
           </div>
         </div>

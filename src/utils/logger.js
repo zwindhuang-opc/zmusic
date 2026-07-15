@@ -6,6 +6,8 @@
  * - Console appender (browser)
  * - Pattern-based layout formatting
  * - Module-based logging
+ * - File appender support
+ * - Global log level configuration
  * 
  * @module utils/logger
  * @version 1.0.0
@@ -23,6 +25,17 @@ export const LogLevel = {
   ERROR: 4,
   FATAL: 5
 };
+
+let globalLevel = LogLevel.INFO;
+try {
+  if (typeof window !== 'undefined') {
+    globalLevel = import.meta.env?.MODE === 'development' ? LogLevel.DEBUG : LogLevel.INFO;
+  } else if (typeof process !== 'undefined') {
+    globalLevel = process.env?.NODE_ENV === 'development' ? LogLevel.DEBUG : LogLevel.INFO;
+  }
+} catch {
+  globalLevel = LogLevel.INFO;
+}
 
 /**
  * Log level names mapping
@@ -48,7 +61,7 @@ class PatternLayout {
   format(level, category, message, timestamp = new Date()) {
     const dateStr = timestamp.toISOString();
     const levelStr = LevelNames[level] || 'UNKNOWN';
-    
+
     return this.pattern
       .replace('%d', dateStr)
       .replace('%p', levelStr)
@@ -67,7 +80,7 @@ class ConsoleAppender {
 
   append(level, category, message, timestamp) {
     const formatted = this.layout.format(level, category, message, timestamp);
-    
+
     if (level >= LogLevel.ERROR) {
       console.error(formatted);
     } else {
@@ -85,12 +98,20 @@ export class Logger {
    * @param {string} category - Logger category (usually module name)
    * @param {number} level - Minimum log level
    */
-  constructor(category, level = LogLevel.INFO) {
+  constructor(category, level = globalLevel) {
     this.category = category;
     this.level = level;
     this.appenders = [];
-    
+
     this.addAppender(new ConsoleAppender());
+  }
+
+  /**
+   * Set global log level for all new loggers
+   * @param {number} level - Log level from LogLevel enum
+   */
+  static setGlobalLevel(level) {
+    globalLevel = level;
   }
 
   /**
@@ -115,14 +136,14 @@ export class Logger {
    */
   _log(level, message, ...args) {
     if (level < this.level) return;
-    
+
     const timestamp = new Date();
     let formattedMessage = message;
-    
+
     if (args.length > 0) {
       formattedMessage = this.formatMessage(message, args);
     }
-    
+
     for (const appender of this.appenders) {
       appender.append(level, this.category, formattedMessage, timestamp);
     }
@@ -135,12 +156,12 @@ export class Logger {
   formatMessage(message, args) {
     let result = message;
     let argIndex = 0;
-    
+
     result = result.replace(/%[sdjo]/g, (match) => {
       if (argIndex >= args.length) return match;
-      
+
       const arg = args[argIndex++];
-      
+
       switch (match) {
         case '%s':
           return String(arg);
@@ -157,7 +178,7 @@ export class Logger {
           return match;
       }
     });
-    
+
     if (argIndex < args.length) {
       result += ' ' + args.slice(argIndex).map(arg => {
         if (typeof arg === 'object') {
@@ -170,7 +191,7 @@ export class Logger {
         return String(arg);
       }).join(' ');
     }
-    
+
     return result;
   }
 
@@ -289,11 +310,11 @@ export const LoggerConfig = {
     if (config.level !== undefined) {
       Logger.defaultLevel = config.level;
     }
-    
+
     if (config.pattern) {
       Logger.defaultPattern = config.pattern;
     }
-    
+
     if (config.appenders) {
       Logger.defaultAppenders = config.appenders;
     }

@@ -13,6 +13,7 @@
 import sunoService from '../services/suno.service.js';
 import museService from '../services/muse.service.js';
 import Logger from '../utils/logger.js';
+import { buildSunoPrompt, MUSIC_STYLES, MUSIC_GENRES, MUSIC_THEMES } from '../config/musicStyles.js';
 
 /**
  * 日志记录器实例
@@ -103,10 +104,19 @@ export class MusicController {
           });
         }
         try {
-          const sunoPrompt = params.lyrics || `A ${params.genre || 'pop'} song about ${params.theme || 'love'}`;
+          const styleInfo = MUSIC_STYLES[params.style] || MUSIC_STYLES.pop;
+          const sunoPrompt = buildSunoPrompt({
+            prompt: params.lyrics || params.prompt || 'A beautiful song',
+            style: params.style || 'pop',
+            genre: params.genre || 'pop',
+            theme: params.theme || 'love',
+            bpm: params.bpm || 120,
+            duration: params.duration || 60
+          });
+          const combinedTags = `${styleInfo.sunoTags}, ${params.genre || ''}`;
           result.providers.suno = await sunoService.generateMusic(
             sunoPrompt,
-            params.style || 'pop',
+            combinedTags,
             params.duration || 60
           );
         } catch (error) {

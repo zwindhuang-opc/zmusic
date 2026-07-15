@@ -130,6 +130,7 @@ export class AgentController {
         language: params.language || 'zh',
         variation: params.variation || 'A',
         reference: params.reference || '',
+        referenceSong: params.referenceSong || '',
         script: params.script || ''
       };
       logger.info(`Agent lyrics: method=${mappedParams.method}, style=${mappedParams.style}, theme=${mappedParams.theme}, language=${mappedParams.language}`);

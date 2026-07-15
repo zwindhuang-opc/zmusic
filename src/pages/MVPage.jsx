@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Video, Sparkles, Loader, Film, Play, Clock, Palette, History, Copy } from 'lucide-react';
+import { Video, Sparkles, Loader, Film, Play, Clock, Palette, History, Copy, AlertCircle } from 'lucide-react';
 import { useTranslation } from '../i18n/index.js';
-import api from '../services/api.client.js';
+import api, { isMobileEnvironment } from '../services/api.client.js';
 import { useGeneration } from '../stores/generationStore.jsx';
+import { generateMV } from '../utils/mvEngine.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 
 function MVPage() {
   const { t } = useTranslation();
   const { addToHistory, copyToClipboard, pendingLyrics } = useGeneration();
 
-  const FALLBACK_GENRES = ['pop', 'rock', 'electronic', 'hip_hop', 'ballad', 'chinese_traditional', 'jazz', 'classical', 'rnb', 'country'];
+  const FALLBACK_GENRES = ['pop', 'rock', 'electronic', 'hip_hop', 'ballad', 'chinese_traditional', 'jazz', 'classical', 'rnb', 'country', 'love_song', 'chinese_classical', 'concert', 'modern', 'cinematic', 'retro', 'anime', 'gothic_rock'];
 
   const MV_EFFECTS = [
     { id: 'rain_wind', name: 'effects.rain_wind' },
@@ -33,11 +34,14 @@ function MVPage() {
   const [colorPalette, setColorPalette] = useState('purple_gradient');
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
   const [selectedEffects, setSelectedEffects] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
-    loadGenres();
+    if (!isMobileEnvironment()) {
+      loadGenres();
+    }
   }, []);
 
   const loadGenres = async () => {
@@ -54,8 +58,14 @@ function MVPage() {
   const handleGenerate = async () => {
     setIsGenerating(true);
     setResult(null);
+    setError(null);
     try {
-      const data = await api.generateMV({ genre, duration, style, colorPalette, effects: selectedEffects });
+      let data;
+      if (isMobileEnvironment()) {
+        data = { success: true, data: generateMV({ genre, duration, style, colorPalette, effects: selectedEffects }) };
+      } else {
+        data = await api.generateMV({ genre, duration, style, colorPalette, effects: selectedEffects });
+      }
       if (data.success) {
         setResult(data.data);
         addToHistory({
@@ -67,9 +77,12 @@ function MVPage() {
           effects: selectedEffects,
           result: data.data
         });
+      } else {
+        setError(data.error || t('common.error_unknown'));
       }
     } catch (error) {
       console.error('Generation failed:', error);
+      setError(error.message || t('common.error_connection'));
     } finally {
       setIsGenerating(false);
     }
@@ -231,6 +244,18 @@ function MVPage() {
             <div className="text-center py-12 md:py-20">
               <Loader className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-3 md:mb-4 text-cyan-400 animate-spin" />
               <div className="text-xs md:text-sm text-gray-400">{t('mv.creating_timeline')}</div>
+            </div>
+          )}
+          {error && (
+            <div className="text-center py-8 md:py-12">
+              <AlertCircle className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 text-red-400" />
+              <div className="text-sm md:text-base text-red-300 mb-2">{error}</div>
+              <button
+                onClick={handleGenerate}
+                className="px-4 py-2 rounded-lg bg-white/10 text-white text-xs hover:bg-white/20 transition-all"
+              >
+                {t('common.retry')}
+              </button>
             </div>
           )}
           {result && (

@@ -19,6 +19,7 @@
  */
 
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { isMobileEnvironment } from '../services/api.client.js';
 
 /**
  * localStorage key for persisting generation history
@@ -186,11 +187,28 @@ export function GenerationProvider({ children }) {
    */
   const copyToClipboard = useCallback(async (text) => {
     try {
-      await navigator.clipboard.writeText(text);
-      return true;
+      if (isMobileEnvironment()) {
+        const { Clipboard } = await import('@capacitor/clipboard');
+        await Clipboard.write({ string: text });
+        return true;
+      } else {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
     } catch (e) {
       console.error('Failed to copy:', e);
-      return false;
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return true;
+      } catch (fallbackError) {
+        console.error('Fallback copy failed:', fallbackError);
+        return false;
+      }
     }
   }, []);
 

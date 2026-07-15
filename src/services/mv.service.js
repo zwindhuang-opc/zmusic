@@ -28,6 +28,18 @@ const logger = new Logger('MVService');
  * - electronic: 电子风格 - 霓虹赛博色调，夜店/城市夜景/霓虹街/VR世界/激光场景
  * - hip_hop: 嘻哈风格 - 都市金色调，街头/车/录音棚/钱/天台场景
  * - ballad: 民谣风格 - 柔和粉彩色调，钢琴/雨/窗/蜡烛/信场景
+ * - jazz: 爵士风格 - 暖棕金色调，酒吧/萨克斯/威士忌/钢琴/城市夜景
+ * - classical: 古典风格 - 深蓝金色调，音乐厅/交响乐团/指挥/小提琴/钢琴
+ * - rnb: 节奏布鲁斯 - 深紫蓝色调，录音棚/霓虹灯/城市夜景/镜面/烟雾
+ * - country: 乡村风格 - 暖黄色调，乡村小路/田野/木屋/吉他/夕阳
+ * - love_song: 情歌风格 - 粉红玫瑰色调，情侣/花海/日落/烛光/情书
+ * - chinese_classical: 中国古典 - 青绿山水色调，竹林/荷塘/古琴/书法/山水
+ * - concert: 演唱会风格 - 红蓝舞台色调，舞台/粉丝/灯光秀/烟火/大合唱
+ * - modern: 现代风格 - 蓝灰冷色调，城市天际线/玻璃幕墙/地铁/电梯/天台
+ * - cinematic: 电影感风格 - 蓝橙对比色调，追车/慢动作/雨景/剪影/夕阳
+ * - retro: 复古风格 - 棕褐黄色调，黑胶唱片/磁带/霓虹招牌/老式电视/舞厅
+ * - anime: 动漫风格 - 粉蓝梦幻色调，樱花/星空/海边/校园/夏日祭
+ * - gothic_rock: 哥特摇滚 - 黑红紫色调，古堡/十字架/蝙蝠/月亮/迷雾
  * 
  * 每个模板包含：
  * - palette: 色调方案名称
@@ -66,6 +78,66 @@ const MV_TEMPLATES = {
     palette: 'soft_pastel',
     scenes: ['piano', 'rain', 'window', 'candle', 'letter'],
     effects: ['soft_focus', 'bokeh', 'slow_zoom']
+  },
+  jazz: {
+    palette: 'warm_brown_gold',
+    scenes: ['bar', 'saxophone', 'whiskey', 'piano', 'city_night'],
+    effects: ['bokeh', 'soft_focus', 'sepia']
+  },
+  classical: {
+    palette: 'dark_blue_gold',
+    scenes: ['concert_hall', 'orchestra', 'conductor', 'violin', 'piano'],
+    effects: ['slow_zoom', 'dolly', 'soft_focus']
+  },
+  rnb: {
+    palette: 'deep_purple_blue',
+    scenes: ['studio', 'neon_lights', 'city_night', 'mirror', 'smoke'],
+    effects: ['color_shift', 'bokeh', 'slow_motion']
+  },
+  country: {
+    palette: 'warm_yellow',
+    scenes: ['country_road', 'field', 'cabin', 'guitar', 'sunset'],
+    effects: ['sun_flare', 'warm_tones', 'soft_focus']
+  },
+  love_song: {
+    palette: 'pink_rose',
+    scenes: ['couple', 'flower_sea', 'sunset', 'candlelight', 'love_letter'],
+    effects: ['soft_focus', 'bokeh', 'warm_glow']
+  },
+  chinese_classical: {
+    palette: 'green_landscape',
+    scenes: ['bamboo_forest', 'lotus_pond', 'guqin', 'calligraphy', 'mountain_water'],
+    effects: ['ink_wash', 'fade', 'slow_zoom']
+  },
+  concert: {
+    palette: 'stage_red_blue',
+    scenes: ['stage', 'fans', 'light_show', 'fireworks', 'chorus'],
+    effects: ['strobe', 'light_trails', 'glow']
+  },
+  modern: {
+    palette: 'blue_gray_cool',
+    scenes: ['city_skyline', 'glass_wall', 'subway', 'elevator', 'rooftop'],
+    effects: ['cold_tones', 'reflection', 'slow_motion']
+  },
+  cinematic: {
+    palette: 'blue_orange_contrast',
+    scenes: ['car_chase', 'slow_motion', 'rain_scene', 'silhouette', 'sunset'],
+    effects: ['film_grain', 'anamorphic', 'lens_flare']
+  },
+  retro: {
+    palette: 'brown_yellow_vintage',
+    scenes: ['vinyl_record', 'cassette', 'neon_sign', 'vintage_tv', 'dance_hall'],
+    effects: ['vhs', 'grain', 'color_bleed']
+  },
+  anime: {
+    palette: 'pink_blue_dream',
+    scenes: ['cherry_blossom', 'starry_sky', 'seaside', 'school', 'summer_festival'],
+    effects: ['glow', 'sparkle', 'soft_focus']
+  },
+  gothic_rock: {
+    palette: 'black_red_purple',
+    scenes: ['castle', 'cross', 'bats', 'moon', 'fog'],
+    effects: ['high_contrast', 'vignette', 'cold_tones']
   }
 };
 

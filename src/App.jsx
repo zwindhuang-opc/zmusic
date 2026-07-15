@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from './i18n/index.js';
 import {
   LayoutDashboard, Music, Mic, Video, Settings, Sparkles, TrendingUp,
-  Activity, Cpu, Zap, BarChart3, Server, Bot, Globe
+  Activity, Cpu, Zap, BarChart3, Server, Bot, Globe, ArrowLeft
 } from 'lucide-react';
-import api from './services/api.client.js';
+import api, { isMobileEnvironment } from './services/api.client.js';
 import Dashboard from './pages/Dashboard.jsx';
 import MusicPage from './pages/MusicPage.jsx';
 import LyricsPage from './pages/LyricsPage.jsx';
@@ -19,15 +19,17 @@ function App() {
   const [agentStatus, setAgentStatus] = useState(null);
 
   useEffect(() => {
-    const controller = new AbortController();
-    loadStatus(controller.signal);
-    const interval = setInterval(() => {
+    if (!isMobileEnvironment()) {
+      const controller = new AbortController();
       loadStatus(controller.signal);
-    }, 60000);
-    return () => {
-      controller.abort();
-      clearInterval(interval);
-    };
+      const interval = setInterval(() => {
+        loadStatus(controller.signal);
+      }, 60000);
+      return () => {
+        controller.abort();
+        clearInterval(interval);
+      };
+    }
   }, []);
 
   const loadStatus = async (signal) => {
@@ -149,6 +151,13 @@ function App() {
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="safe-area-top h-16 md:h-14 glass border-b border-purple-500/10 flex items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-3 md:gap-4">
+            <button
+              onClick={() => setCurrentPage('dashboard')}
+              className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+              aria-label={t('header.back')}
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-300" />
+            </button>
             <div className="md:hidden flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-white" />

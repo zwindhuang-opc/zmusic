@@ -40,6 +40,16 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    success: true, 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    apiConfigured: true,
+    version: '5.3.0'
+  });
+});
+
 // Start server
 const PORT = 5501;
 app.listen(PORT, () => {
