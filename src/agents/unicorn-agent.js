@@ -10,6 +10,7 @@
  */
 
 import Logger from '../utils/logger.js';
+import { generateDynamicLyrics, getThemeBank } from '../utils/dynamicLyricsEngine.js';
 
 const logger = new Logger('UnicornAgent');
 
@@ -614,81 +615,9 @@ const CONCEPT_POOLS = {
   ]
 };
 
-const TANGO_LYRICS_TEMPLATES = {
-  intro: [
-    ['夜雨轻敲长街冷', '踏碎水中明月影'],
-    ['寒风吹过孤巷深', '残灯摇曳映泪痕'],
-    ['暮色渐沉天际远', '独步街头无人伴']
-  ],
-  verse: [
-    ['风透薄衣侵骨冷', '指尖触得琉璃寒', '我言此身犹未冷', '却抱双肩'],
-    ['雨丝缠绵绕心头', '往事如烟难回首', '笑说此恨已尘封', '泪湿衣袖'],
-    ['霓虹闪烁映孤影', '繁华落尽人独行', '举杯消愁愁更愁', '醉眼朦胧']
-  ],
-  pre_chorus: [
-    ['举头望 孤月悬九天', '它静默 只将清辉洒遍', '无处遁形是伪装', '如审判的眼'],
-    ['抬头看 繁星缀满空', '它不语 只把心事藏', '所有伪装都剥落', '如镜中模样'],
-    ['回首望 往事如云烟', '它消散 不留一丝痕迹', '唯有孤独常相伴', '如影随形']
-  ],
-  chorus: [
-    ['雨中共跳一支探戈', '影随我 一步一退相牵扯', '言不痛 泪却悄然落', '笑泪痴狂 明月都记得'],
-    ['风中共舞一曲华尔兹', '身随乐 一进一退相纠缠', '说不在乎 心却在滴血', '爱恨交织 繁星都看见'],
-    ['夜中共唱一首悲歌', '声随泪 一起一落相呼应', '道离别 情却难割舍', '生死相依 天地都作证']
-  ],
-  bridge: [
-    ['风在听 雨在看', '步步踩在 理智边缘', '明月它 什么都知道', '却不肯 一语道穿'],
-    ['星在闪 云在飘', '句句唱在 心碎边缘', '时光它 什么都看透', '却不愿 回头留恋'],
-    ['灯在灭 人在散', '声声叹在 绝望边缘', '命运它 什么都安排', '却不让 真心如愿']
-  ],
-  outro: [
-    ['足音渐远去', '风雨未曾歇', '明月还悬在天际', '静静照彻'],
-    ['身影渐消失', '灯火已熄灭', '繁星还缀满夜空', '默默注视'],
-    ['歌声渐沉寂', '故事已落幕', '时光还在流转', '永不停止']
-  ]
-};
-
-const ANCIENT_MODERN_LYRICS_TEMPLATES = {
-  intro_ancient: [
-    ['峨峨兮，泰山云外客', '洋洋兮，江河掌中波'],
-    ['巍巍兮，昆仑雪皑皑', '浩浩兮，东海浪滔滔'],
-    ['萧萧兮，易水寒风起', '凄凄兮，古道马蹄疾']
-  ],
-  verse_ancient: [
-    ['伯牙指下风雷过', '子期担柴，笑说山河', '樵夫不识宫商谱', '却把心弦，轻轻拨'],
-    ['屈原江畔行吟苦', '渔父泛舟，笑问归途', '世人皆醉我独醒', '却把清白，付与江湖'],
-    ['李白月下独酌酒', '举杯邀月，醉卧花间', '天子呼来不上船', '却把豪情，洒向人间']
-  ],
-  interlude_modern: [
-    ['地铁穿城，耳机隔座', '万人擦肩，谁懂沉默？'],
-    ['城市喧嚣，霓虹闪烁', '人海茫茫，谁是知音？'],
-    ['网络纵横，信息交错', '千万点赞，谁懂真心？']
-  ],
-  verse_modern: [
-    ['Muse圈里千条歌', '点赞如潮，心事成锁', '算法推来相似调', '却无一人，问我为何落泪'],
-    ['直播间里万人看', '礼物刷屏，真情难见', '滤镜美颜遮住脸', '却无一人，看见我的疲惫'],
-    ['社交软件满屏笑', '点赞评论，真心寥寥', '虚拟世界太喧嚣', '却无一人，听见我心在跳']
-  ],
-  chorus_fusion: [
-    ['摔琴那刻，不是绝响', '是怕余生，再无人听懂回响', '如今我唱，不是表演', '是等一个，敢在喧嚣中静听的人啊'],
-    ['举杯那刻，不是贪醉', '是怕清醒，再无人与我同醉', '如今我舞，不是炫耀', '是等一个，敢在孤独中相伴的人啊'],
-    ['落笔那刻，不是矫情', '是怕沉默，再无人读懂心声', '如今我说，不是抱怨', '是等一个，敢在迷茫中同行的人啊']
-  ],
-  bridge_ancient: [
-    ['"善哉……峨峨兮……"'],
-    ['"妙哉……洋洋兮……"'],
-    ['"悲哉……萧萧兮……"']
-  ],
-  finale_modern: [
-    ['若你听见，不必回音', '只需记得：这世间最贵的礼物', '不是被万人追捧', '而是有一个人，愿意为你，按下暂停'],
-    ['若你看见，不必回应', '只需明白：这世间最美的相遇', '不是众星捧月', '而是有一个人，愿意陪你，看尽风景'],
-    ['若你懂得，不必言语', '只需珍惜：这世间最真的情谊', '不是山盟海誓', '而是有一个人，愿意与你，共度朝夕']
-  ],
-  ending_fusion: [
-    ['知音难觅，故不敢轻弹', '若遇一人，便以命相还', '古今同此月，同此憾', '同此一念：懂我者，不必在千年前'],
-    ['知己难求，故不敢轻言', '若得一人，便以诚相见', '天地同此心，同此愿', '同此一念：知我者，不必在天涯远'],
-    ['真心难得，故不敢轻许', '若惜一人，便以情相许', '日月同此光，同此曲', '同此一念：爱我者，不必在来生缘']
-  ]
-};
+// Hardcoded lyric templates removed - now using dynamicLyricsEngine for procedural generation
+const TANGO_LYRICS_TEMPLATES = null;
+const ANCIENT_MODERN_LYRICS_TEMPLATES = null;
 
 const FSM_TEMPLATES = {
   standard: [
@@ -1692,40 +1621,55 @@ export class UnicornAgent {
   _generateDynamicLyrics(theme, style, states, language = 'zh') {
     const lyrics = {};
 
-    if (style === 'tango') {
-      states.forEach(state => {
-        if (state.state.includes('INTRO')) {
-          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(2, theme) : this._pickRandom(TANGO_LYRICS_TEMPLATES.intro);
-        } else if (state.state.includes('VERSE')) {
-          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(TANGO_LYRICS_TEMPLATES.verse);
-        } else if (state.state.includes('PRE_CHORUS')) {
-          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(TANGO_LYRICS_TEMPLATES.pre_chorus);
-        } else if (state.state.includes('CHORUS')) {
-          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(TANGO_LYRICS_TEMPLATES.chorus);
-        } else if (state.state.includes('BRIDGE')) {
-          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(TANGO_LYRICS_TEMPLATES.bridge);
-        } else if (state.state.includes('OUTRO')) {
-          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(2, theme) : this._pickRandom(TANGO_LYRICS_TEMPLATES.outro);
-        }
+    if (style === 'tango' || style === 'ancient_modern') {
+      // Dynamic generation using dynamicLyricsEngine - no hardcoded templates
+      const dynamicResult = generateDynamicLyrics({
+        genre: style,
+        theme: theme,
+        method: 'basic',
+        complexity: 5,
+        language: language
       });
-    } else if (style === 'ancient_modern') {
+
+      // Map dynamic sections to FSM states
+      const sectionMap = {};
+      dynamicResult.sections.forEach(section => {
+        const normalizedType = section.type.includes('intro') ? 'intro' :
+          section.type.includes('verse') ? 'verse' :
+            section.type.includes('pre_chorus') ? 'pre_chorus' :
+              section.type.includes('chorus') ? 'chorus' :
+                section.type.includes('bridge') ? 'bridge' :
+                  section.type.includes('outro') ? 'outro' :
+                    section.type.includes('interlude') ? 'interlude' :
+                      section.type.includes('finale') ? 'finale' :
+                        section.type.includes('ending') ? 'ending' : 'verse';
+        sectionMap[normalizedType] = section.content.split('\n').filter(l => l.trim());
+      });
+
       states.forEach(state => {
-        if (state.state.includes('INTRO_ANCIENT')) {
-          lyrics[state.state] = this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.intro_ancient);
-        } else if (state.state.includes('VERSE_1_ANCIENT')) {
-          lyrics[state.state] = this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.verse_ancient);
-        } else if (state.state.includes('INTERLUDE')) {
-          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(2, theme) : this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.interlude_modern);
-        } else if (state.state.includes('VERSE_2_MODERN')) {
-          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.verse_modern);
-        } else if (state.state.includes('CHORUS_FUSION')) {
-          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.chorus_fusion);
-        } else if (state.state.includes('BRIDGE_ANCIENT')) {
-          lyrics[state.state] = this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.bridge_ancient);
-        } else if (state.state.includes('FINALE_MODERN')) {
-          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.finale_modern);
-        } else if (state.state.includes('ENDING_FUSION')) {
-          lyrics[state.state] = language === 'en' ? this._generateEnglishVerse(4, theme) : this._pickRandom(ANCIENT_MODERN_LYRICS_TEMPLATES.ending_fusion);
+        const s = state.state;
+        if (language === 'en') {
+          lyrics[s] = this._generateEnglishVerse(s.includes('INTRO') || s.includes('OUTRO') ? 2 : 4, theme, style);
+        } else if (s.includes('INTRO')) {
+          lyrics[s] = sectionMap.intro || [];
+        } else if (s.includes('VERSE')) {
+          lyrics[s] = sectionMap.verse || [];
+        } else if (s.includes('PRE_CHORUS')) {
+          lyrics[s] = sectionMap.pre_chorus || [];
+        } else if (s.includes('CHORUS')) {
+          lyrics[s] = sectionMap.chorus || [];
+        } else if (s.includes('BRIDGE')) {
+          lyrics[s] = sectionMap.bridge || [];
+        } else if (s.includes('OUTRO')) {
+          lyrics[s] = sectionMap.outro || [];
+        } else if (s.includes('INTERLUDE')) {
+          lyrics[s] = sectionMap.interlude || sectionMap.verse || [];
+        } else if (s.includes('FINALE')) {
+          lyrics[s] = sectionMap.finale || sectionMap.chorus || [];
+        } else if (s.includes('ENDING')) {
+          lyrics[s] = sectionMap.ending || sectionMap.outro || [];
+        } else {
+          lyrics[s] = sectionMap.verse || [];
         }
       });
     } else {
