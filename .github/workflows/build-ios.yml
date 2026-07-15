@@ -1,0 +1,166 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      export_method:
+        description: 'Export method'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - ad-hoc
+          - app-store
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'ios/**'
+      - 'package.json'
+      - 'capacitor.config.*'
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Sync Capacitor iOS
+        run: npx cap sync ios
+
+      - name: Install CocoaPods
+        run: |
+          cd ios/App
+          pod install --repo-update
+
+      - name: Build IPA (unsigned - development export)
+        if: ${{ !secrets.IOS_CERTIFICATE_P12 }}
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath ../../build/App.xcarchive \
+            -destination "generic/platform=iOS" \
+            -allowProvisioningUpdates \
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+          mkdir -p ../../build/ipa-output
+          cat > ../../build/ExportOptions.plist << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>development</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>stripSwiftSymbols</key>
+              <true/>
+              <key>teamID</key>
+              <string></string>
+              <key>compileBitcode</key>
+              <false/>
+          </dict>
+          </plist>
+          PLIST
+
+          xcodebuild -exportArchive \
+            -archivePath ../../build/App.xcarchive \
+            -exportOptionsPlist ../../build/ExportOptions.plist \
+            -exportPath ../../build/ipa-output \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Build IPA (signed)
+        if: ${{ secrets.IOS_CERTIFICATE_P12 }}
+        env:
+          IOS_CERTIFICATE_P12: ${{ secrets.IOS_CERTIFICATE_P12 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+          EXPORT_METHOD: ${{ github.event.inputs.export_method || 'development' }}
+        run: |
+          # Create temporary keychain
+          security create-keychain -p "temp123" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "temp123" build.keychain
+
+          # Import certificate
+          echo "$IOS_CERTIFICATE_P12" | base64 --decode > certificate.p12
+          security import certificate.p12 -k build.keychain -P "$IOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -A
+
+          # Set provisioning profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$IOS_PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+
+          # Build and archive
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath ../../build/App.xcarchive \
+            -destination "generic/platform=iOS" \
+            archive
+
+          # Export IPA
+          mkdir -p ../../build/ipa-output
+          cat > ../../build/ExportOptions.plist << PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>${EXPORT_METHOD}</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>stripSwiftSymbols</key>
+              <true/>
+              <key>compileBitcode</key>
+              <false/>
+          </dict>
+          </plist>
+          PLIST
+
+          xcodebuild -exportArchive \
+            -archivePath ../../build/App.xcarchive \
+            -exportOptionsPlist ../../build/ExportOptions.plist \
+            -exportPath ../../build/ipa-output
+
+      - name: Rename and upload IPA
+        run: |
+          # Find the IPA file
+          IPA_FILE=$(find build/ipa-output -name "*.ipa" | head -1)
+          if [ -n "$IPA_FILE" ]; then
+            cp "$IPA_FILE" zmusic-v${{ github.run_number }}-ios.ipa
+            echo "IPA built: zmusic-v${{ github.run_number }}-ios.ipa"
+            ls -la zmusic-v*-ios.ipa
+          else
+            echo "No IPA found - checking archive..."
+            ls -R build/
+            exit 1
+          fi
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zmusic-ios-ipa
+          path: zmusic-v*-ios.ipa
+          retention-days: 90
