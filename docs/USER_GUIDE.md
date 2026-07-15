@@ -1,0 +1,321 @@
+# ZMusic User Guide
+
+**Version 5.4.0** | Dynamic Procedural Lyrics Engine v6
+
+A complete guide to using ZMusic for AI music, lyrics, and MV generation.
+
+---
+
+## Table of Contents
+
+1. [Getting Started](#getting-started)
+2. [Dashboard](#dashboard)
+3. [Lyrics Generation](#lyrics-generation)
+4. [Music Generation](#music-generation)
+5. [MV Timeline Generation](#mv-timeline-generation)
+6. [History & Records](#history--records)
+7. [Settings](#settings)
+8. [Mobile App](#mobile-app)
+9. [Tips & Tricks](#tips--tricks)
+10. [FAQ](#faq)
+
+---
+
+## Getting Started
+
+### Starting the App
+
+**Option A: Web App (Developer Mode)**
+```bash
+npm run dev:full
+```
+Open: http://localhost:5500
+
+**Option B: Mobile App**
+- Android: Install `zmusic-v5.4.0-signed.apk`
+- iOS: Build via GitHub Actions (see [GitHub Actions Guide](GITHUB_ACTIONS_GUIDE.md))
+
+### Interface Language
+
+ZMusic supports both Chinese and English. Toggle language in the top-right corner of the app.
+
+---
+
+## Dashboard
+
+The Dashboard is your home screen, showing:
+- **Quick Stats** - Total generations, history count
+- **Quick Actions** - Jump to Lyrics, Music, or MV generation
+- **Recent History** - Your latest generated content
+- **System Status** - Backend connection status
+
+---
+
+## Lyrics Generation
+
+The Lyrics page uses the **Dynamic Procedural Engine v6** — no two generations are the same.
+
+### Step 1: Choose a Genre
+
+Select a song structure (genre):
+- **Pop** - INTRO → VERSE → CHORUS → VERSE → CHORUS → BRIDGE → CHORUS → OUTRO
+- **Ballad** - Slower, more emotional structure
+- **Rock** - Higher energy with extended sections
+- **Electronic** - Build-up focused structure
+- **Tango** - Special 3/4 waltz structure
+- **Ancient-Modern** - Fusion of classical and modern Chinese
+- And more...
+
+### Step 2: Choose a Theme
+
+30 themes available:
+> love, loneliness, sadness, dreams, memory, nature, friendship, success, hope, life, lunatic, tango, heartbreak, healing, time_travel, epic_journey, dark_mystery, romantic_night, nostalgic_memory, energetic_party, dreamy_fantasy, modern_city, ancient_legend, indie_story, folk_tale, summer_vibes, winter_solitude, spring_awakening, autumn_melancholy, ocean_dreams
+
+### Step 3: Choose a Style
+
+30 styles available:
+> pop, rock, electronic, hip_hop, ballad, jazz, classical, rnb, country, heartbreaking, healing, time_travel, epic, dark, romantic, nostalgic, energetic, dreamy, modern, ancient, indie, folk, kpop, reggae, ambient, chinese_traditional, chinese_classical, love_song, gothic_rock, ancient_modern
+
+### Step 4: Choose Generation Method
+
+| Method | What It Produces | Best For |
+|--------|------------------|----------|
+| **Basic** | Structured lyrics with sections | Quick songwriting |
+| **Network Layer** | Lyrics + 4-layer audio commands (Foundation/Melody/Expression/Effects) | Detailed music production |
+| **Time Section** | Lyrics + time-stamped instrument dynamics | MV/video production |
+| **Variation** | Style remix (A/B/C variations) | Exploring alternatives |
+
+### Step 5: Set Complexity (1-10)
+
+- **1-3**: Simple, short lyrics
+- **4-6**: Standard complexity (recommended)
+- **7-10**: Complex, layered output
+
+### Step 6: Mix Mode (Advanced)
+
+Enable **Mix Mode** to combine multiple themes and styles:
+- Select 2-3 themes (e.g., love + sadness + hope)
+- Select 2-3 styles (e.g., pop + rock + jazz)
+- The engine blends vocabulary banks to create cross-genre hybrid lyrics
+- This creates thousands of unique possibilities per combination
+
+### Step 7: Generate
+
+Click **"Generate"** — the engine procedurally creates:
+- Unique lyrics from word banks + templates
+- Rhyme-matched lines (Chinese rhyme groups)
+- Section-appropriate content (intro vs chorus vs bridge)
+- Style-influenced vocabulary
+
+### Understanding the Output
+
+```
+[INTRO]
+  ← Opening lines, sets the mood
+
+[VERSE 1]
+  ← Story development
+
+[PRE-CHORUS]
+  ← Build-up to chorus
+
+[CHORUS]
+  ← Main hook, most memorable
+
+[BRIDGE]
+  ← Contrast section
+
+[OUTRO]
+  ← Closing, resolution
+```
+
+For **Network Layer** method, you also get:
+```
+[FOUNDATION LAYER]
+  ← Beat, rhythm, tempo commands
+
+[MELODY LAYER]
+  ← Main melody elements
+
+[EXPRESSION LAYER]
+  ← Dynamics, emotion controls
+
+[EFFECTS LAYER]
+  ← Atmosphere, sound effects
+```
+
+---
+
+## Music Generation
+
+### Suno AI Mode
+
+1. Enter a **prompt** describing the song (e.g., "A happy summer pop song")
+2. Select **style** (pop, rock, jazz, etc.)
+3. Set **duration** (30-300 seconds)
+4. Click **Generate**
+5. Suno AI creates the actual audio
+
+### Dual Engine Mode (Agent)
+
+1. Enable **Suno** and/or **Muse** engines
+2. Enable **Auto-Generate Lyrics** to create lyrics first
+3. Set parameters:
+   - Genre, theme, style
+   - BPM (60-200)
+   - Duration
+4. Click **Generate**
+5. The agent coordinates lyrics + music generation
+
+### Muse AI Mode
+
+Uses natural language commands (generated by the lyrics engine) to create music. Best for experimental/creative pieces.
+
+---
+
+## MV Timeline Generation
+
+Create video timelines for music videos.
+
+### Parameters
+
+| Parameter | Options | Description |
+|-----------|---------|-------------|
+| Genre | electronic, cinematic, pop, etc. | Visual style |
+| Duration | 60-600 seconds | Video length |
+| Style | narrative, abstract, performance | MV type |
+| Color Palette | warm_tones, cool_tones, neon, vintage | Color grading |
+
+### Output
+
+The MV timeline includes:
+- Time-stamped scene descriptions
+- Camera movements
+- Color grading instructions
+- Transition effects
+- Instrument-to-scene mapping
+
+---
+
+## History & Records
+
+All generated content is **automatically saved** — you never lose your work.
+
+### Where History is Stored
+
+| Layer | Storage | Capacity | Offline Access |
+|-------|---------|----------|----------------|
+| Client | Browser localStorage | 100 entries | Yes |
+| Server | File system (.history/) | 200 entries | Yes (if server running) |
+
+### Accessing History
+
+1. Click **"History"** in the navigation
+2. Filter by type: Lyrics / Music / MV / Commands
+3. Click any entry to view full details
+4. Use **"Delete"** to remove individual entries
+5. Use **"Clear All"** to wipe history
+
+### Statistics
+
+The History page shows:
+- Total generations
+- Breakdown by type (lyrics, music, MV)
+- Most used themes/styles
+- Generation timeline
+
+---
+
+## Settings
+
+### API Configuration
+
+| Setting | Description |
+|---------|-------------|
+| Suno API Key | For Suno AI music generation |
+| Muse API Key | For Muse AI music generation |
+| API Base URL | Backend server URL |
+
+### Preferences
+
+| Setting | Description |
+|---------|-------------|
+| Language | Chinese / English |
+| Default Complexity | 1-10 (default: 5) |
+| Auto-save History | On/Off (default: On) |
+
+---
+
+## Mobile App
+
+### Android
+
+1. Download `zmusic-v5.4.0-signed.apk`
+2. Enable "Install from unknown sources" in Android settings
+3. Install the APK
+4. Open ZMusic app
+
+**Features same as web app** — all generation, history, and settings work offline.
+
+### iOS
+
+1. Build IPA via GitHub Actions (see [GitHub Actions Guide](GITHUB_ACTIONS_GUIDE.md))
+2. Sideload using Sideloadly or AltStore
+3. Trust the developer in Settings > General > VPN & Device Management
+4. Open ZMusic app
+
+---
+
+## Tips & Tricks
+
+### Getting Better Lyrics
+
+1. **Mix themes** — Combine "love" + "sadness" + "hope" for emotional depth
+2. **Use higher complexity** (7-10) for more detailed output
+3. **Try variation mode** — Get 3 different takes on the same theme/style
+4. **Network layer method** gives you production-ready commands
+
+### Production Workflow
+
+1. Generate lyrics (Basic method)
+2. Refine lyrics (Variation method)
+3. Generate music commands (Network Layer method)
+4. Feed commands to Suno/Muse AI
+5. Generate MV timeline (Time Section method)
+
+### Mix Mode Examples
+
+| Theme Combo | Style Combo | Result |
+|-------------|-------------|--------|
+| love + sadness | pop + jazz | Melancholic jazz-pop love song |
+| nature + dreams | ambient + classical | Ethereal classical ambient piece |
+| modern_city + loneliness | electronic + hip_hop | Urban electronic hip-hop |
+| ancient_legend + epic_journey | chinese_classical + rock | Epic Chinese rock fusion |
+
+---
+
+## FAQ
+
+**Q: Why are my lyrics different each time even with the same settings?**
+A: The v6 engine uses procedural generation — it constructs lyrics from word banks and templates with random selection. Same settings = different output every time. This is by design.
+
+**Q: Can I edit the generated lyrics?**
+A: Yes! Copy the lyrics from the output area and edit in any text editor.
+
+**Q: Why does the backend show "unreachable"?**
+A: The backend server needs to be running. Start it with `npm run server` or `npm run dev:full`.
+
+**Q: Does the app work offline?**
+A: Yes. History is stored in localStorage and works offline. Generation requires the backend to be running (locally or remote).
+
+**Q: How do I share my generated content?**
+A: Use the History page to view past generations. Copy text or take screenshots to share.
+
+**Q: Can I use the generated lyrics commercially?**
+A: The lyrics are procedurally generated by your app. You own the output. Check Suno/Muse AI terms for music rights.
+
+**Q: How many unique lyrics can be generated?**
+A: Billions. With 30 themes × 30 styles × 4 methods × 50+ templates × 100+ words per category, the combination space is effectively unlimited.
+
+**Q: The APK won't install — what do I do?**
+A: Ensure you have `zmusic-v5.4.0-signed.apk` (not the unsigned version). Enable "Install from unknown sources" in Android Settings > Security.

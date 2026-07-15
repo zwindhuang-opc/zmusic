@@ -1,385 +1,397 @@
-# ZMusic - AI音乐生成平台
+# ZMusic - AI Music Generation Platform
 
-## 项目概述
+**Version 5.4.0** | Dynamic Procedural Lyrics Engine v6
 
-ZMusic是一个基于MVC架构的AI音乐生成平台，集成Suno AI和Muse AI双引擎，提供音乐、歌词、MV时间线的智能生成服务。
+ZMusic is a full-stack AI music generation platform with dual AI engines (Suno + Muse), dynamic procedural lyrics generation, MV timeline creation, and cross-platform mobile support.
 
-## 核心特性
+---
 
-- **双AI引擎支持**: Suno AI (结构化参数) + Muse AI (自然语言命令)
-- **智能代理系统**: Unicorn Agent + Hermes Agent + OpenClaw Agent
-- **多种生成方法**: FSM编程、网络层组合、Muse风格、Suno风格
-- **完整的i18n支持**: 中英文双语界面
-- **MVC架构**: 清晰的职责分离，易于维护和扩展
-- **实时日志系统**: Log4j风格的分级日志
+## Table of Contents
 
-## 技术栈
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
+- [Dynamic Lyrics Engine](#dynamic-lyrics-engine)
+- [History Persistence](#history-persistence)
+- [Mobile Apps](#mobile-apps)
+- [GitHub Actions (iOS Builds)](#github-actions-ios-builds)
+- [API Reference](#api-reference)
+- [Configuration](#configuration)
+- [Troubleshooting](#troubleshooting)
+- [Documentation](#documentation)
 
-### 前端
-- React 18
-- Vite 5
-- Tailwind CSS
-- Lucide React Icons
+---
 
-### 后端
-- Express 5
-- Node.js 18+
+## Key Features
+
+- **Dynamic Procedural Lyrics Engine v6** - No hardcoded lyrics. Billions of unique combinations from word banks, templates, and rhyme engine
+- **Dual AI Engines** - Suno AI (structured params) + Muse AI (natural language commands)
+- **Unicorn Agent v7** - FSM-based generation with 4 methods (basic, network, time, variation)
+- **Mix Mode** - Combine multiple themes + styles for cross-genre hybrid lyrics
+- **History Persistence** - All generated content saved locally (localStorage) and server-side (file system)
+- **Cross-Platform** - Web, Android (APK), iOS (IPA via GitHub Actions), Desktop (Electron)
+- **i18n Support** - Chinese/English bilingual interface
+- **MVC Architecture** - Clean separation of concerns
+
+---
+
+## Tech Stack
+
+### Frontend
+- React 18 + Vite 5.4
+- Tailwind CSS + Lucide Icons
+- Capacitor 6 (mobile bridge)
+
+### Backend
+- Node.js 18+ / Express 5
 - ES Modules
+- File-based storage (no database required)
 
-### AI服务
-- Suno.cn API (v5.5)
-- Muse AI API
+### AI Services
+- Suno.cn API (v5.5) - Structured music generation
+- Muse AI API - Natural language music generation
 
-## 项目结构
+### Mobile
+- Android: Gradle + Capacitor (signed APK)
+- iOS: Xcode + Capacitor (IPA via GitHub Actions)
+
+---
+
+## Quick Start
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/vcfhuang/zmusic.git
+cd zmusic
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your API keys
+```
+
+### Run the Web App
+
+```bash
+# Start both frontend + backend together
+npm run dev:full
+
+# Or start separately:
+npm run server    # Backend API on port 5501
+npm run dev       # Frontend dev server on port 5500
+```
+
+Open **http://localhost:5500** in your browser.
+
+### Build for Production
+
+```bash
+# Build frontend
+npm run build
+
+# Start production server
+npm run server
+```
+
+---
+
+## Project Structure
 
 ```
 zmusic/
 ├── src/
-│   ├── agents/              # AI代理层
-│   │   └── unicorn-agent.js # 独角兽代理（FSM + 网络层）
-│   ├── config/              # 配置管理
-│   │   └── index.js
-│   ├── controllers/         # 控制器层
+│   ├── agents/                    # AI Agent Layer
+│   │   └── unicorn-agent.js       # Unicorn Agent v7 (FSM + Dynamic Generation)
+│   ├── config/                    # Configuration
+│   │   ├── index.js               # Main config
+│   │   ├── musicStyles.js         # Music style definitions
+│   │   └── lyricsStyles.js        # Lyrics style metadata
+│   ├── controllers/               # Controller Layer (HTTP handlers)
 │   │   ├── health.controller.js
 │   │   ├── music.controller.js
 │   │   ├── lyrics.controller.js
 │   │   ├── mv.controller.js
-│   │   └── agent.controller.js
-│   ├── i18n/                # 国际化
-│   │   └── index.js
-│   ├── pages/               # 页面组件
+│   │   ├── agent.controller.js
+│   │   └── history.controller.js  # History API endpoints
+│   ├── i18n/                      # Internationalization
+│   ├── pages/                     # React Page Components
 │   │   ├── Dashboard.jsx
 │   │   ├── MusicPage.jsx
 │   │   ├── LyricsPage.jsx
 │   │   ├── MVPage.jsx
 │   │   └── SettingsPage.jsx
-│   ├── routes/              # 路由定义
-│   │   └── index.js
-│   ├── services/            # 服务层
-│   │   ├── suno.service.js
-│   │   ├── muse.service.js
-│   │   ├── lyrics.service.js
-│   │   └── mv.service.js
-│   ├── utils/               # 工具函数
-│   │   └── logger.js
-│   ├── App.jsx              # 主应用组件
-│   ├── main.jsx             # 入口文件
-│   └── server.js            # 后端服务器
-├── .env.example             # 环境变量示例
-├── .gitignore
+│   ├── routes/                    # Route Definitions
+│   ├── services/                  # Service Layer (Business Logic)
+│   │   ├── suno.service.js        # Suno AI integration
+│   │   ├── muse.service.js        # Muse AI integration
+│   │   ├── lyrics.service.js      # Dynamic lyrics generation
+│   │   ├── mv.service.js          # MV timeline generation
+│   │   ├── history.service.js     # Client-side history (localStorage)
+│   │   └── generation.history.js  # Server-side history (file system)
+│   ├── utils/                     # Utilities
+│   │   ├── logger.js              # Log4j-style logger
+│   │   ├── lyricsEngine.js        # Lyrics engine (delegates to dynamic engine)
+│   │   └── dynamicLyricsEngine.js # Dynamic procedural generation engine v6
+│   ├── App.jsx                    # Main app component
+│   ├── main.jsx                   # Entry point
+│   └── server.js                  # Backend server
+├── android/                       # Android project
+│   ├── app/build.gradle           # APK build config + signing
+│   └── keystore/zmusic.jks        # Signing keystore
+├── ios/                           # iOS project
+├── .github/workflows/
+│   └── build-ios.yml              # GitHub Actions iOS IPA build
+├── build-ios.sh                   # macOS IPA build script
+├── .env.example                   # Environment template
 ├── package.json
 ├── vite.config.js
+├── capacitor.config.json
 └── README.md
 ```
 
-## 快速开始
+---
 
-### 1. 安装依赖
+## Dynamic Lyrics Engine
 
-```bash
-npm install
+The v6 engine replaces all hardcoded lyrics with procedural generation.
+
+### How It Works
+
+```
+Word Banks (30 themes x 8 categories)
+         +
+Style Modifiers (30 styles)
+         +
+Sentence Templates (51 patterns)
+         +
+Chinese Rhyme Engine (10 rhyme groups)
+         =
+Billions of Unique Combinations
 ```
 
-### 2. 配置环境变量
+### Generation Methods
 
-复制 `.env.example` 到 `.env` 并填写API密钥：
+| Method | Description | Use Case |
+|--------|-------------|----------|
+| `basic` | Standard section-based generation | Quick lyrics |
+| `network` | 4-layer composition (Foundation/Melody/Expression/Effects) | Detailed commands |
+| `time` | Time-stamped sections with instrument dynamics | MV timelines |
+| `variation` | Style variations (A/B/C) | Remix exploration |
+| `mix` | Blend multiple themes + styles | Cross-genre hybrids |
 
-```bash
-cp .env.example .env
+### Available Themes (30)
+love, loneliness, sadness, dreams, memory, nature, friendship, success, hope, life, lunatic, tango, heartbreak, healing, time_travel, epic_journey, dark_mystery, romantic_night, nostalgic_memory, energetic_party, dreamy_fantasy, modern_city, ancient_legend, indie_story, folk_tale, summer_vibes, winter_solitude, spring_awakening, autumn_melancholy, ocean_dreams
+
+### Available Styles (30)
+pop, rock, electronic, hip_hop, ballad, jazz, classical, rnb, country, heartbreaking, healing, time_travel, epic, dark, romantic, nostalgic, energetic, dreamy, modern, ancient, indie, folk, kpop, reggae, ambient, chinese_traditional, chinese_classical, love_song, gothic_rock, ancient_modern
+
+### Combinatorics
+```
+30 themes x 30 styles x 4 methods x 10 complexity x 3 variations
+x 50+ templates x 100+ words per category = billions of unique outputs
 ```
 
-编辑 `.env` 文件：
+---
+
+## History Persistence
+
+All generated content is automatically saved and accessible even offline.
+
+### Client-Side (localStorage)
+- File: `src/services/history.service.js`
+- Stores: lyrics, music, MV, commands
+- Capacity: 100 entries
+- Accessible: Even when backend is offline
+
+### Server-Side (File System)
+- File: `src/services/generation.history.js`
+- Storage: `.history/` directory with JSON files
+- Capacity: 200 entries
+- Auto-cleanup: Oldest entries removed when limit reached
+
+### History API
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/history` | GET | Get all history (optional `?type=lyrics`) |
+| `/api/history/stats` | GET | Get generation statistics |
+| `/api/history/:id` | GET | Get specific record |
+| `/api/history/:id` | DELETE | Delete a record |
+| `/api/history/clear` | POST | Clear all history |
+
+---
+
+## Mobile Apps
+
+### Android APK
+
+The signed APK is built locally on Windows:
+
+```bash
+# Build frontend + sync + build APK
+npm run build
+npx cap sync android
+cd android
+.\gradlew.bat assembleRelease
+```
+
+Output: `zmusic-v5.4.0-signed.apk`
+
+Signing config in `android/app/build.gradle`:
+- Keystore: `android/keystore/zmusic.jks`
+- Alias: `zmusic`
+- Validity: 10000 days
+
+### iOS IPA
+
+iOS IPAs require macOS + Xcode. Two options:
+
+1. **GitHub Actions (recommended)** - Build on cloud Mac from Windows
+   - See: [GitHub Actions Guide](docs/GITHUB_ACTIONS_GUIDE.md)
+   - Workflow: `.github/workflows/build-ios.yml`
+
+2. **Local macOS build** - Run `build-ios.sh` on a Mac
+   ```bash
+   ./build-ios.sh development
+   ```
+
+---
+
+## GitHub Actions (iOS Builds)
+
+Build iOS IPAs from your Windows PC using GitHub's free macOS runners.
+
+### Quick Steps
+
+1. Go to **https://github.com/vcfhuang/zmusic/actions**
+2. Select **"Build iOS IPA"** workflow
+3. Click **"Run workflow"**
+4. Choose export method: `development` / `ad-hoc` / `app-store`
+5. Wait ~10-15 minutes
+6. Download IPA from **Artifacts** section
+
+### Detailed Guide
+
+See: [docs/GITHUB_ACTIONS_GUIDE.md](docs/GITHUB_ACTIONS_GUIDE.md)
+
+---
+
+## API Reference
+
+### Base URL
+```
+http://localhost:5501/api
+```
+
+### Key Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | System health check |
+| `/api/agent/status` | GET | Unicorn Agent status |
+| `/api/lyrics/genres` | GET | Available genres |
+| `/api/lyrics/generate` | POST | Generate lyrics |
+| `/api/music/generate` | POST | Generate music (Suno) |
+| `/api/music/generate-agent` | POST | Generate music (dual engine) |
+| `/api/mv/generate` | POST | Generate MV timeline |
+| `/api/history` | GET | Get generation history |
+
+Full API docs: [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
+
+---
+
+## Configuration
+
+### Environment Variables (.env)
 
 ```env
-# Suno AI API配置
-SUNO_CN_API_KEY=your_suno_api_key_here
+# Suno AI API
+SUNO_CN_API_KEY=your_suno_api_key
 
-# Muse AI API配置
-MUSE_AI_API_KEY=your_muse_api_key_here
+# Muse AI API
+MUSE_AI_API_KEY=your_muse_api_key
 MUSE_AI_BASE_URL=https://api.muse.ai
 
-# 服务器配置
+# Server
 PORT=5501
 NODE_ENV=development
 ```
 
-### 3. 启动应用
+### Version Management
 
 ```bash
-# 启动完整应用（前端 + 后端）
-npm start
-
-# 或分别启动
-npm run server    # 后端 API (端口 5501)
-npm run dev       # 前端开发服务器 (端口 5500)
+npm run version:current   # Show current version
+npm run version:patch     # 5.4.0 -> 5.4.1
+npm run version:minor     # 5.4.0 -> 5.5.0
+npm run version:major     # 5.4.0 -> 6.0.0
 ```
 
-访问 http://localhost:5500
-
-## API文档
-
-### 健康检查
-
-```
-GET /api/health
-```
-
-返回系统状态和配置信息。
-
-### 业务分析
-
-```
-GET /api/business/analytics
-```
-
-返回使用统计数据。
-
-### AI代理状态
-
-```
-GET /api/agent/status
-```
-
-返回Unicorn Agent配置和能力信息。
-
-### 音乐生成
-
-```
-POST /api/music/generate
-Content-Type: application/json
-
-{
-  "prompt": "一首关于夏天的快乐歌曲",
-  "style": "pop",
-  "duration": 120
-}
-```
-
-使用Suno AI生成音乐。
-
-### 代理音乐生成
-
-```
-POST /api/music/generate-agent
-Content-Type: application/json
-
-{
-  "sunoEnabled": true,
-  "museEnabled": true,
-  "autoGenerateLyrics": true,
-  "genre": "pop",
-  "theme": "love",
-  "style": "modern",
-  "mood": "happy",
-  "bpm": 120,
-  "duration": 180
-}
-```
-
-使用双AI引擎生成音乐。
-
-### 歌词生成
-
-```
-POST /api/lyrics/generate
-Content-Type: application/json
-
-{
-  "genre": "pop",
-  "theme": "love",
-  "subject": "我",
-  "object": "你"
-}
-```
-
-生成结构化歌词。
-
-### AI代理歌词生成
-
-```
-POST /api/agent/lyrics
-Content-Type: application/json
-
-{
-  "method": "fsm",  // fsm | network_layer | muse | suno
-  "genre": "pop",
-  "theme": "love",
-  "bpm": 128
-}
-```
-
-使用AI代理智能生成歌词。
-
-### MV时间线生成
-
-```
-POST /api/mv/generate
-Content-Type: application/json
-
-{
-  "genre": "electronic",
-  "duration": 240
-}
-```
-
-生成MV视频时间线。
-
-### AI代理MV生成
-
-```
-POST /api/agent/mv
-Content-Type: application/json
-
-{
-  "duration": 240,
-  "style": "cinematic",
-  "colorPalette": "warm_tones"
-}
-```
-
-使用AI代理生成MV时间线。
-
-## 架构说明
-
-### MVC模式
-
-- **Model**: 服务层（suno.service, muse.service, lyrics.service, mv.service）
-- **View**: React页面组件（Dashboard, MusicPage, LyricsPage, MVPage, SettingsPage）
-- **Controller**: 控制器层（处理HTTP请求，协调服务调用）
-
-### AI代理系统
-
-**Unicorn Agent** 是核心AI代理，提供四种生成方法：
-
-1. **FSM编程**: 使用有限状态机生成结构化歌词
-   - 8个状态：INTRO → VERSE_1 → CHORUS_1 → VERSE_2 → CHORUS_2 → BRIDGE → FINAL_CHORUS → OUTRO
-   - 状态转换确保音乐逻辑性
-
-2. **网络层组合**: 4层音频组合
-   - Foundation: 基础节拍和节奏
-   - Melody: 主旋律元素
-   - Expression: 情感和动态元素
-   - Effects: 音效和氛围元素
-
-3. **Muse风格**: 自然语言命令
-   - 生成描述性中文命令
-   - 适合Muse AI的直观方式
-
-4. **Suno风格**: 结构化参数
-   - JSON格式的参数对象
-   - 适合Suno AI的精确控制
-
-### 日志系统
-
-使用Log4j风格的分级日志：
-
-- TRACE: 最详细的开发日志
-- DEBUG: 调试信息
-- INFO: 一般运行信息
-- WARN: 警告消息
-- ERROR: 错误事件
-- FATAL: 致命错误
-
-日志格式：`[时间戳] [级别] [模块名] 消息`
-
-## 国际化
-
-支持中英文双语切换：
-
-- 默认语言：中文 (zh)
-- 支持语言：中文、英文
-- 所有UI文本已100%翻译
-- 语言切换即时生效
-
-## 版本控制
-
-- 当前版本：1.0.0
-- 语义化版本控制
-- Git分支管理
-- GitHub自动备份
-
-## 开发指南
-
-### 添加新的AI代理方法
-
-1. 在 `unicorn-agent.js` 中添加新方法
-2. 在 `agent.controller.js` 中添加对应的API端点
-3. 在路由中注册新端点
-4. 更新文档
-
-### 添加新的音乐风格
-
-1. 在对应的服务文件中添加模板（lyrics.service.js 或 mv.service.js）
-2. 更新i18n翻译文件
-3. 测试新风格
-
-### 调试技巧
-
-```javascript
-// 调整日志级别
-logger.setLevel(LogLevel.DEBUG);
-
-// 查看代理状态
-GET /api/agent/status
-
-// 查看系统健康
-GET /api/health
-```
-
-## 故障排除
-
-### API密钥未配置
-
-确保在 `.env` 文件中设置了正确的API密钥：
-
-```env
-SUNO_CN_API_KEY=sk-...
-MUSE_AI_API_KEY=...
-```
-
-### 端口冲突
-
-如果端口5500或5501被占用：
+### Backup to GitHub
 
 ```bash
-# 查找占用进程
+npm run backup            # Commit + push all changes
+npm run backup:tag        # Create dated tag
+```
+
+---
+
+## Troubleshooting
+
+### Port Already in Use
+
+```bash
+# Find process using port
 netstat -ano | findstr :5500
 
-# 终止进程
-taskkill /PID <进程ID> /F
+# Kill process
+taskkill /PID <PID> /F
 ```
 
-### 依赖问题
+### Backend Unreachable
 
-```bash
-# 清除缓存
-npm cache clean --force
+1. Check backend is running: `npm run server`
+2. Verify port 5501 is open
+3. Check `.env` file exists and has correct config
+4. View logs for errors
 
-# 重新安装
-rm -rf node_modules package-lock.json
-npm install
-```
+### APK Won't Install
 
-## 贡献指南
+- Ensure you have the signed APK: `zmusic-v5.4.0-signed.apk`
+- Enable "Install from unknown sources" on Android
+- The APK is signed with a self-signed certificate (valid until 2053)
 
-1. Fork项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建Pull Request
+### iOS Build Fails
 
-## 许可证
+- iOS builds require macOS (use GitHub Actions)
+- See: [GitHub Actions Guide](docs/GITHUB_ACTIONS_GUIDE.md)
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [User Guide](docs/USER_GUIDE.md) | End-user guide for using ZMusic |
+| [GitHub Actions Guide](docs/GITHUB_ACTIONS_GUIDE.md) | Step-by-step iOS IPA build guide |
+| [API Documentation](API_DOCUMENTATION.md) | Full REST API reference |
+| [Architecture](docs/ARCHITECTURE.md) | System architecture details |
+
+---
+
+## License
 
 MIT License
 
-## 联系方式
+## Links
 
-- GitHub: @vcfhuang
-- Email: vcfhuang@qq.com
-
-## 致谢
-
-- Suno AI - 音乐生成引擎
-- Muse AI - 自然语言音乐生成
-- React & Vite - 前端框架
-- Express - 后端框架
+- GitHub: [https://github.com/vcfhuang/zmusic](https://github.com/vcfhuang/zmusic)
+- Contact: vcfhuang@qq.com
