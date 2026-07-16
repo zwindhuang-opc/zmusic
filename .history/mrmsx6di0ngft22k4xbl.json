@@ -1,0 +1,249 @@
+{
+  "id": "mrmsx6di0ngft22k4xbl",
+  "type": "lyrics",
+  "timestamp": "2026-07-16T00:59:26.214Z",
+  "params": {
+    "method": "fsm",
+    "theme": "time_travel",
+    "style": "romantic",
+    "bpm": 120,
+    "duration": 270,
+    "complexity": 10,
+    "subject": "我",
+    "object": "你 , 他",
+    "language": "zh",
+    "variation": "A",
+    "reference": "",
+    "referenceSong": "",
+    "script": "以 D minor 起調, 只需要浪漫, 自由創作故事"
+  },
+  "result": {
+    "taskId": "fsm-1784163566190",
+    "method": "fsm",
+    "result": {
+      "theme": "time_travel",
+      "style": "romantic",
+      "bpm": 120,
+      "language": "zh",
+      "structure": "ballad",
+      "states": 12,
+      "transitions": 11,
+      "script": "以 D minor 起調, 只需要浪漫, 自由創作故事",
+      "fsmDefinition": {
+        "states": [
+          {
+            "state": "IDLE",
+            "description": "空闲状态：等待触发"
+          },
+          {
+            "state": "INTRO_PIANO",
+            "description": "前奏：钢琴独奏，极简留白"
+          },
+          {
+            "state": "VERSE_1",
+            "description": "主歌一：钢琴伴奏，深情演唱"
+          },
+          {
+            "state": "PRE_CHORUS",
+            "description": "预副歌：弦乐加入，情绪上升"
+          },
+          {
+            "state": "CHORUS_1",
+            "description": "副歌一：全乐队，情感爆发"
+          },
+          {
+            "state": "VERSE_2",
+            "description": "主歌二：钢琴+弦乐，情感递进"
+          },
+          {
+            "state": "PRE_CHORUS",
+            "description": "预副歌：更大弦乐，推向高潮"
+          },
+          {
+            "state": "CHORUS_2",
+            "description": "副歌二：更强演唱，和声加入"
+          },
+          {
+            "state": "BRIDGE_PIANO",
+            "description": "桥段：钢琴独奏，内心独白"
+          },
+          {
+            "state": "FINAL_CHORUS",
+            "description": "终曲副歌：终极爆发，全曲高潮"
+          },
+          {
+            "state": "OUTRO_PIANO",
+            "description": "尾声：钢琴独奏，渐弱收束"
+          },
+          {
+            "state": "END",
+            "description": "结束状态"
+          }
+        ],
+        "transitions": [
+          {
+            "from": "IDLE",
+            "to": "INTRO_PIANO",
+            "trigger": "情感浓度达到顶点",
+            "condition": "钢琴琶音结束，时间到达0:00",
+            "action": "速度渐慢",
+            "description": "空闲状态：等待触发 → 前奏：钢琴独奏，极简留白"
+          },
+          {
+            "from": "INTRO_PIANO",
+            "to": "VERSE_1",
+            "trigger": "歌手情感触发",
+            "condition": "吟唱段落结束，时间到达0:16",
+            "action": "速度渐慢",
+            "description": "前奏：钢琴独奏，极简留白 → 主歌一：钢琴伴奏，深情演唱"
+          },
+          {
+            "from": "VERSE_1",
+            "to": "PRE_CHORUS",
+            "trigger": "歌手情感触发",
+            "condition": "情感浓度达到顶点，时间到达0:32",
+            "action": "移除弦乐",
+            "description": "主歌一：钢琴伴奏，深情演唱 → 预副歌：弦乐加入，情绪上升"
+          },
+          {
+            "from": "PRE_CHORUS",
+            "to": "CHORUS_1",
+            "trigger": "情感浓度达到顶点",
+            "condition": "深情爆发时刻，时间到达0:48",
+            "action": "抒情转调",
+            "description": "预副歌：弦乐加入，情绪上升 → 副歌一：全乐队，情感爆发"
+          },
+          {
+            "from": "CHORUS_1",
+            "to": "VERSE_2",
+            "trigger": "歌手情感触发",
+            "condition": "吟唱段落结束，时间到达1:04",
+            "action": "切换抒情鼓组",
+            "description": "副歌一：全乐队，情感爆发 → 主歌二：钢琴+弦乐，情感递进"
+          },
+          {
+            "from": "VERSE_2",
+            "to": "PRE_CHORUS",
+            "trigger": "情感浓度达到顶点",
+            "condition": "情感浓度达到顶点，时间到达1:20",
+            "action": "速度渐慢",
+            "description": "主歌二：钢琴+弦乐，情感递进 → 预副歌：更大弦乐，推向高潮"
+          },
+          {
+            "from": "PRE_CHORUS",
+            "to": "CHORUS_2",
+            "trigger": "情感浓度达到顶点",
+            "condition": "深情爆发时刻，时间到达1:36",
+            "action": "加入钢琴",
+            "description": "预副歌：更大弦乐，推向高潮 → 副歌二：更强演唱，和声加入"
+          },
+          {
+            "from": "CHORUS_2",
+            "to": "BRIDGE_PIANO",
+            "trigger": "抒情和弦转换",
+            "condition": "弦乐独奏结束，时间到达1:52",
+            "action": "开启合唱效果器",
+            "description": "副歌二：更强演唱，和声加入 → 桥段：钢琴独奏，内心独白"
+          },
+          {
+            "from": "BRIDGE_PIANO",
+            "to": "FINAL_CHORUS",
+            "trigger": "歌手情感触发",
+            "condition": "深情爆发时刻，时间到达2:08",
+            "action": "增加人声混响",
+            "description": "桥段：钢琴独奏，内心独白 → 终曲副歌：终极爆发，全曲高潮"
+          },
+          {
+            "from": "FINAL_CHORUS",
+            "to": "OUTRO_PIANO",
+            "trigger": "抒情和弦转换",
+            "condition": "钢琴渐弱结束，时间到达2:24",
+            "action": "加入钢琴",
+            "description": "终曲副歌：终极爆发，全曲高潮 → 尾声：钢琴独奏，渐弱收束"
+          },
+          {
+            "from": "OUTRO_PIANO",
+            "to": "END",
+            "trigger": "抒情和弦转换",
+            "condition": "情感自然收束",
+            "action": "增加人声混响",
+            "description": "尾声：钢琴独奏，渐弱收束 → 结束状态"
+          }
+        ]
+      },
+      "fullText": "[FSM状态机定义]\n\n主题：time_travel\n风格：romantic\nBPM：120\n语言：中文\n情绪：宿命与轮回\n\n【用户创作意图】\n以 D minor 起調, 只需要浪漫, 自由創作故事\n\n【状态定义】\n0. IDLE: 空闲状态：等待触发\n1. INTRO_PIANO: 前奏：钢琴独奏，极简留白\n2. VERSE_1: 主歌一：钢琴伴奏，深情演唱\n3. PRE_CHORUS: 预副歌：弦乐加入，情绪上升\n4. CHORUS_1: 副歌一：全乐队，情感爆发\n5. VERSE_2: 主歌二：钢琴+弦乐，情感递进\n6. PRE_CHORUS: 预副歌：更大弦乐，推向高潮\n7. CHORUS_2: 副歌二：更强演唱，和声加入\n8. BRIDGE_PIANO: 桥段：钢琴独奏，内心独白\n9. FINAL_CHORUS: 终曲副歌：终极爆发，全曲高潮\n10. OUTRO_PIANO: 尾声：钢琴独奏，渐弱收束\n11. END: 结束状态\n\n【状态转换规则】\n1. IF (钢琴琶音结束，时间到达0:00) THEN IDLE → INTRO_PIANO\n   TRIGGER: 情感浓度达到顶点\n   ACTION: 速度渐慢\n   DESC: 空闲状态：等待触发 → 前奏：钢琴独奏，极简留白\n\n2. IF (吟唱段落结束，时间到达0:16) THEN INTRO_PIANO → VERSE_1\n   TRIGGER: 歌手情感触发\n   ACTION: 速度渐慢\n   DESC: 前奏：钢琴独奏，极简留白 → 主歌一：钢琴伴奏，深情演唱\n\n3. IF (情感浓度达到顶点，时间到达0:32) THEN VERSE_1 → PRE_CHORUS\n   TRIGGER: 歌手情感触发\n   ACTION: 移除弦乐\n   DESC: 主歌一：钢琴伴奏，深情演唱 → 预副歌：弦乐加入，情绪上升\n\n4. IF (深情爆发时刻，时间到达0:48) THEN PRE_CHORUS → CHORUS_1\n   TRIGGER: 情感浓度达到顶点\n   ACTION: 抒情转调\n   DESC: 预副歌：弦乐加入，情绪上升 → 副歌一：全乐队，情感爆发\n\n5. IF (吟唱段落结束，时间到达1:04) THEN CHORUS_1 → VERSE_2\n   TRIGGER: 歌手情感触发\n   ACTION: 切换抒情鼓组\n   DESC: 副歌一：全乐队，情感爆发 → 主歌二：钢琴+弦乐，情感递进\n\n6. IF (情感浓度达到顶点，时间到达1:20) THEN VERSE_2 → PRE_CHORUS\n   TRIGGER: 情感浓度达到顶点\n   ACTION: 速度渐慢\n   DESC: 主歌二：钢琴+弦乐，情感递进 → 预副歌：更大弦乐，推向高潮\n\n7. IF (深情爆发时刻，时间到达1:36) THEN PRE_CHORUS → CHORUS_2\n   TRIGGER: 情感浓度达到顶点\n   ACTION: 加入钢琴\n   DESC: 预副歌：更大弦乐，推向高潮 → 副歌二：更强演唱，和声加入\n\n8. IF (弦乐独奏结束，时间到达1:52) THEN CHORUS_2 → BRIDGE_PIANO\n   TRIGGER: 抒情和弦转换\n   ACTION: 开启合唱效果器\n   DESC: 副歌二：更强演唱，和声加入 → 桥段：钢琴独奏，内心独白\n\n9. IF (深情爆发时刻，时间到达2:08) THEN BRIDGE_PIANO → FINAL_CHORUS\n   TRIGGER: 歌手情感触发\n   ACTION: 增加人声混响\n   DESC: 桥段：钢琴独奏，内心独白 → 终曲副歌：终极爆发，全曲高潮\n\n10. IF (钢琴渐弱结束，时间到达2:24) THEN FINAL_CHORUS → OUTRO_PIANO\n   TRIGGER: 抒情和弦转换\n   ACTION: 加入钢琴\n   DESC: 终曲副歌：终极爆发，全曲高潮 → 尾声：钢琴独奏，渐弱收束\n\n11. IF (情感自然收束) THEN OUTRO_PIANO → END\n   TRIGGER: 抒情和弦转换\n   ACTION: 增加人声混响\n   DESC: 尾声：钢琴独奏，渐弱收束 → 结束状态\n\n【歌词内容】\nINTRO_PIANO:\n  末班地铁的门快要关上\n  我站在站台 你站在车厢\n\nVERSE_1:\n  我们什么都没说\n  只是看着对方的眼睛\n  车门关上的那一声闷响\n  像把一辈子 切成了两半\n\nPRE_CHORUS:\n  广播在催 冷漠在哽\n  脚步却像被钉在地上\n\nCHORUS_1:\n  末班车带走的不只是你\n  还有我和你所有的泪痕\n  有些分别没有告别\n  只是车开了 人就散了\n\nVERSE_2:\n  后来我坐过无数次末班车\n  每一节车厢都像你\n  可每次门开 下来的\n  从来都不是你\n\nCHORUS_2:\n  末班车带走的不只是你\n  还有我和你所有的泪痕\n  有些分别没有告别\n  只是车开了 人就散了\n\nBRIDGE_PIANO:\n  如果那天我冲进车厢\n  现在会不会是另一种人生\n  可如果从来不卖返程票\n\nFINAL_CHORUS:\n  末班车带走的不只是你\n  还有我和你所有的泪痕\n  有些分别没有告别\n  只是车开了 人就散了\n  再唱一遍这一句 释然\n\nOUTRO_PIANO:\n  末班车开往终点站\n  我的终点站 一直是你的方向\n\n【FSM执行逻辑】\nBEGIN\n  SET_STATE(IDLE)\n  WHILE NOT END:\n    CHECK_TRIGGER()\n    IF CONDITION_MET() THEN\n      EXECUTE_ACTION()\n      TRANSITION_TO_NEXT_STATE()\n    END IF\n  END WHILE\nEND\n",
+      "generatedAt": "2026-07-16T00:59:26.213Z",
+      "meta": {
+        "literaryAnalysis": {
+          "metaphor": 3,
+          "personification": 3,
+          "imagery": 12,
+          "repetition": 1,
+          "totalLines": 30
+        },
+        "emotionalArc": [
+          {
+            "section": "IDLE",
+            "intensity": 0.3,
+            "progression": "stable"
+          },
+          {
+            "section": "INTRO_PIANO",
+            "intensity": 0.4,
+            "progression": "rising"
+          },
+          {
+            "section": "VERSE_1",
+            "intensity": 0.4,
+            "progression": "stable"
+          },
+          {
+            "section": "PRE_CHORUS",
+            "intensity": 0.7,
+            "progression": "rising"
+          },
+          {
+            "section": "CHORUS_1",
+            "intensity": 0.9,
+            "progression": "rising"
+          },
+          {
+            "section": "VERSE_2",
+            "intensity": 0.4,
+            "progression": "falling"
+          },
+          {
+            "section": "PRE_CHORUS",
+            "intensity": 0.7,
+            "progression": "rising"
+          },
+          {
+            "section": "CHORUS_2",
+            "intensity": 0.9,
+            "progression": "rising"
+          },
+          {
+            "section": "BRIDGE_PIANO",
+            "intensity": 0.7,
+            "progression": "falling"
+          },
+          {
+            "section": "FINAL_CHORUS",
+            "intensity": 0.9,
+            "progression": "rising"
+          },
+          {
+            "section": "OUTRO_PIANO",
+            "intensity": 0.6,
+            "progression": "falling"
+          },
+          {
+            "section": "END",
+            "intensity": 0.4,
+            "progression": "falling"
+          }
+        ]
+      }
+    }
+  }
+}

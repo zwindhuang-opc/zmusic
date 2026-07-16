@@ -1,0 +1,208 @@
+{
+  "id": "mrmt03k3q5gpn56uh7",
+  "type": "lyrics",
+  "timestamp": "2026-07-16T01:01:42.531Z",
+  "params": {
+    "method": "suno",
+    "theme": "time_travel",
+    "style": "romantic",
+    "bpm": 120,
+    "duration": 270,
+    "complexity": 10,
+    "subject": "我",
+    "object": "你 , 他",
+    "language": "zh",
+    "variation": "A",
+    "reference": "",
+    "referenceSong": "",
+    "script": "以 D minor 起調, 只需要浪漫, 自由創作故事"
+  },
+  "result": {
+    "taskId": "suno-1784163702528",
+    "method": "suno",
+    "result": {
+      "theme": "time_travel",
+      "style": "romantic",
+      "bpm": 120,
+      "language": "zh",
+      "script": "以 D minor 起調, 只需要浪漫, 自由創作故事",
+      "totalDuration": 270,
+      "sections": [
+        {
+          "type": "intro",
+          "timeSection": "[前奏 (0:00~0:30)]",
+          "startTime": 0,
+          "endTime": 30,
+          "dynamic": "pp",
+          "instruments": [
+            "Piano",
+            "Strings"
+          ],
+          "vocals": "深情演唱",
+          "content": [
+            "末班地铁的门快要关上",
+            "我站在站台 你站在车厢"
+          ]
+        },
+        {
+          "type": "verse1",
+          "timeSection": "[主歌一 (0:30~1:10)]",
+          "startTime": 30,
+          "endTime": 70,
+          "dynamic": "p",
+          "instruments": [
+            "Piano",
+            "Strings"
+          ],
+          "vocals": "深情演唱",
+          "content": [
+            "我们什么都没说",
+            "只是看着对方的眼睛",
+            "车门关上的那一声闷响",
+            "像把一辈子 切成了两半"
+          ]
+        },
+        {
+          "type": "pre_chorus",
+          "timeSection": "[预副歌 (1:10~1:35)]",
+          "startTime": 70,
+          "endTime": 95,
+          "dynamic": "mf",
+          "instruments": [
+            "Piano",
+            "Strings"
+          ],
+          "vocals": "深情演唱",
+          "content": [
+            "广播在催 热情在哽",
+            "脚步却像被钉在地上"
+          ]
+        },
+        {
+          "type": "chorus1",
+          "timeSection": "[副歌一 (1:35~2:25)]",
+          "startTime": 95,
+          "endTime": 145,
+          "dynamic": "f",
+          "instruments": [
+            "Piano",
+            "Strings"
+          ],
+          "vocals": "深情演唱",
+          "content": [
+            "照片会褪色 泪痕不会",
+            "有些瞬间 被定格成永远",
+            "我们在相纸里永远年轻",
+            "而镜中人 一年年走远"
+          ]
+        },
+        {
+          "type": "verse2",
+          "timeSection": "[主歌二 (2:25~3:05)]",
+          "startTime": 145,
+          "endTime": 185,
+          "dynamic": "mp",
+          "instruments": [
+            "Piano",
+            "Strings"
+          ],
+          "vocals": "深情演唱",
+          "content": [
+            "后来我坐过无数次末班车",
+            "每一节车厢都像你",
+            "可每次门开 下来的",
+            "从来都不是你"
+          ]
+        },
+        {
+          "type": "pre_chorus",
+          "timeSection": "[预副歌 (3:05~3:30)]",
+          "startTime": 185,
+          "endTime": 210,
+          "dynamic": "mf",
+          "instruments": [
+            "Piano",
+            "Strings"
+          ],
+          "vocals": "深情演唱",
+          "content": [
+            "广播在催 狂喜在哽",
+            "脚步却像被钉在地上"
+          ]
+        },
+        {
+          "type": "chorus2",
+          "timeSection": "[副歌二 (3:30~4:20)]",
+          "startTime": 210,
+          "endTime": 260,
+          "dynamic": "f",
+          "instruments": [
+            "Piano",
+            "Strings"
+          ],
+          "vocals": "深情演唱",
+          "content": [
+            "这封寄不出的信 装满感动",
+            "每一个字都是当年的我",
+            "有些话一旦错过时机",
+            "就只能在纸上老去"
+          ]
+        },
+        {
+          "type": "bridge",
+          "timeSection": "[桥段 (4:20~4:45)]",
+          "startTime": 260,
+          "endTime": 285,
+          "dynamic": "pp→ppp",
+          "instruments": [
+            "Piano",
+            "Strings"
+          ],
+          "vocals": "深情演唱",
+          "content": [
+            "时间是个残酷的修图师",
+            "它只修别人 不修你",
+            "你永远停在了那一秒"
+          ]
+        },
+        {
+          "type": "final_chorus",
+          "timeSection": "[终曲副歌 (4:45~5:45)]",
+          "startTime": 285,
+          "endTime": 345,
+          "dynamic": "ff",
+          "instruments": [
+            "Piano",
+            "Strings"
+          ],
+          "vocals": "深情演唱",
+          "content": [
+            "照片会褪色 委屈不会",
+            "有些瞬间 被定格成永远",
+            "我们在相纸里永远年轻",
+            "而镜中人 一年年走远",
+            "再唱一遍这一句 委屈"
+          ]
+        },
+        {
+          "type": "outro",
+          "timeSection": "[尾声 (5:45~6:15)]",
+          "startTime": 345,
+          "endTime": 375,
+          "dynamic": "mp→pp",
+          "instruments": [
+            "Piano",
+            "Strings"
+          ],
+          "vocals": "深情演唱",
+          "content": [
+            "信封上没有地址",
+            "收件人 是二十年前的你"
+          ]
+        }
+      ],
+      "fullText": "[风格标签：摇滚音乐,力量感,爆发力]\n[情绪：宿命与轮回]\n[节奏：120 BPM]\n[语言：中文]\n\n【用户创作意图】\n以 D minor 起調, 只需要浪漫, 自由創作故事\n\n[前奏 (0:00~0:30)]\n[动态：很弱]\n[乐器：Piano、Strings]\n[人声：深情演唱]\n末班地铁的门快要关上\n我站在站台 你站在车厢\n\n[主歌一 (0:30~1:10)]\n[动态：弱]\n[乐器：Piano、Strings]\n[人声：深情演唱]\n我们什么都没说\n只是看着对方的眼睛\n车门关上的那一声闷响\n像把一辈子 切成了两半\n\n[预副歌 (1:10~1:35)]\n[动态：中强]\n[乐器：Piano、Strings]\n[人声：深情演唱]\n广播在催 热情在哽\n脚步却像被钉在地上\n\n[副歌一 (1:35~2:25)]\n[动态：强]\n[乐器：Piano、Strings]\n[人声：深情演唱]\n照片会褪色 泪痕不会\n有些瞬间 被定格成永远\n我们在相纸里永远年轻\n而镜中人 一年年走远\n\n[主歌二 (2:25~3:05)]\n[动态：中弱]\n[乐器：Piano、Strings]\n[人声：深情演唱]\n后来我坐过无数次末班车\n每一节车厢都像你\n可每次门开 下来的\n从来都不是你\n\n[预副歌 (3:05~3:30)]\n[动态：中强]\n[乐器：Piano、Strings]\n[人声：深情演唱]\n广播在催 狂喜在哽\n脚步却像被钉在地上\n\n[副歌二 (3:30~4:20)]\n[动态：强]\n[乐器：Piano、Strings]\n[人声：深情演唱]\n这封寄不出的信 装满感动\n每一个字都是当年的我\n有些话一旦错过时机\n就只能在纸上老去\n\n[桥段 (4:20~4:45)]\n[动态：pp→ppp]\n[乐器：Piano、Strings]\n[人声：深情演唱]\n时间是个残酷的修图师\n它只修别人 不修你\n你永远停在了那一秒\n\n[终曲副歌 (4:45~5:45)]\n[动态：很强]\n[乐器：Piano、Strings]\n[人声：深情演唱]\n照片会褪色 委屈不会\n有些瞬间 被定格成永远\n我们在相纸里永远年轻\n而镜中人 一年年走远\n再唱一遍这一句 委屈\n\n[尾声 (5:45~6:15)]\n[动态：mp→pp]\n[乐器：Piano、Strings]\n[人声：深情演唱]\n信封上没有地址\n收件人 是二十年前的你\n\n",
+      "generatedAt": "2026-07-16T01:01:42.531Z"
+    }
+  }
+}

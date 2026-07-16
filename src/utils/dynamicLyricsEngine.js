@@ -334,210 +334,529 @@ const STYLE_MODIFIERS = {
     sentencePatterns: ['{subject}{action}，{emotion}的{object}', '{imagery}里{action}，{emotion}满天'],
     rhymePreference: 'AABB',
     lineLength: [7, 12],
-    tone: 'casual'
+    tone: 'casual',
+    instrumentation: ['钢琴', '吉他', '贝斯', '鼓组'],
+    dynamics: ['mf', 'f'],
+    vocal: { gender: '男声', emotionLevel: '情感6级', tone: '叙事', dialect: '普通话', micTechnique: '贴近麦克风', layering: '双轨人声' },
+    effects: ['混响', '延迟'],
+    sfx: []
   },
   rock: {
     vocabularyBias: ['撕裂', '火焰', '反叛', '自由', '呐喊', '热血'],
     sentencePatterns: ['{subject}{action}天，{emotion}燃烧', '{imagery}{action}，{subject}永不{action}'],
     rhymePreference: 'ABAB',
     lineLength: [6, 11],
-    tone: 'urban'
+    tone: 'urban',
+    instrumentation: ['吉他', '贝斯', '鼓组', '钢琴'],
+    dynamics: ['f', 'ff', '渐强'],
+    vocal: { gender: '男声', emotionLevel: '情感8级', tone: '嘶吼', dialect: '普通话', micTechnique: '贴近麦克风', layering: '多重人声叠录' },
+    effects: ['失真', '压缩', '混响'],
+    sfx: ['雷声']
   },
   electronic: {
     vocabularyBias: ['霓虹', '脉冲', '未来', '节拍', '释放', '迷幻'],
     sentencePatterns: ['{imagery}{action}，{subject}{action}', '{emotion}的{object}，{action}到{timeWord}'],
     rhymePreference: 'AABB',
     lineLength: [6, 10],
-    tone: 'urban'
+    tone: 'urban',
+    instrumentation: ['合成器', '电子鼓', '采样器', '音序器'],
+    dynamics: ['mf', 'f', '突强'],
+    vocal: { gender: '女声', emotionLevel: '情感7级', tone: '吟唱', dialect: '普通话', micTechnique: '贴耳', layering: '双轨人声' },
+    effects: ['调制', '延迟', '镶边'],
+    sfx: ['心跳', '时钟']
   },
   hip_hop: {
     vocabularyBias: ['街头', '真实', '态度', '麦克风', '涂鸦', '节奏'],
     sentencePatterns: ['{subject}在{location}{action}，{emotion}是{object}', '{imagery}{action}，{subject}说真话'],
     rhymePreference: 'AABB',
     lineLength: [8, 14],
-    tone: 'casual'
+    tone: 'casual',
+    instrumentation: ['鼓组', '贝斯', '采样器', '合成器'],
+    dynamics: ['mf', 'f'],
+    vocal: { gender: '男声', emotionLevel: '情感6级', tone: '独白', dialect: '普通话', micTechnique: '贴近麦克风', layering: '单层人声' },
+    effects: ['压缩', '均衡'],
+    sfx: []
   },
   ballad: {
     vocabularyBias: ['深情', '钢琴', '思念', '月光', '永恒', '温柔'],
     sentencePatterns: ['{subject}{action}，{emotion}蔓延', '{imagery}里{action}，{object}还在'],
     rhymePreference: 'ABAB',
     lineLength: [7, 12],
-    tone: 'formal'
+    tone: 'formal',
+    instrumentation: ['钢琴', '大提琴', '小提琴', '吉他'],
+    dynamics: ['p', 'mp', 'mf'],
+    vocal: { gender: '女声', emotionLevel: '情感7级', tone: '叙事', dialect: '普通话', micTechnique: '空荡大厅', layering: '双轨人声' },
+    effects: ['混响', '延迟', '合唱'],
+    sfx: ['雨声']
   },
   jazz: {
     vocabularyBias: ['萨克斯', '红酒', '慵懒', '夜色', '优雅', '摇摆'],
     sentencePatterns: ['{location}里{subject}{action}，{emotion}悠扬', '{imagery}与{imagery}，{emotion}成诗'],
     rhymePreference: 'ABCB',
     lineLength: [7, 13],
-    tone: 'casual'
+    tone: 'casual',
+    instrumentation: ['萨克斯', '钢琴', '贝斯', '鼓组'],
+    dynamics: ['mp', 'mf'],
+    vocal: { gender: '女声', emotionLevel: '情感5级', tone: '低语', dialect: '普通话', micTechnique: '教堂混响', layering: '单层人声' },
+    effects: ['混响', '延迟'],
+    sfx: []
   },
   classical: {
     vocabularyBias: ['钢琴', '小提琴', '永恒', '宫廷', '高雅', '命运'],
     sentencePatterns: ['{subject}{action}，{object}永恒', '{imagery}间{action}，{emotion}不朽'],
     rhymePreference: 'ABAB',
     lineLength: [7, 12],
-    tone: 'classical'
+    tone: 'classical',
+    instrumentation: ['钢琴', '小提琴', '大提琴', '长笛'],
+    dynamics: ['p', 'mp', 'mf', 'f'],
+    vocal: { gender: '女声', emotionLevel: '情感4级', tone: '吟诵', dialect: '普通话', micTechnique: '教堂混响', layering: '和声合唱' },
+    effects: ['混响'],
+    sfx: []
   },
   rnb: {
     vocabularyBias: ['烛光', '红酒', '性感', '亲密', '节奏', '夜色'],
     sentencePatterns: ['{location}里{subject}{action}，{emotion}流转', '{imagery}{action}，{subject}靠近'],
     rhymePreference: 'ABCB',
     lineLength: [7, 12],
-    tone: 'casual'
+    tone: 'casual',
+    instrumentation: ['钢琴', '贝斯', '鼓组', '合成器'],
+    dynamics: ['mp', 'mf'],
+    vocal: { gender: '女声', emotionLevel: '情感6级', tone: '低语', dialect: '普通话', micTechnique: '贴耳', layering: '双轨人声' },
+    effects: ['延迟', '混响', '调制'],
+    sfx: ['心跳']
   },
   country: {
     vocabularyBias: ['公路', '吉他', '牛仔', '星空', '自由', '篝火'],
     sentencePatterns: ['{location}上{subject}{action}，{emotion}自由', '{imagery}{action}，{object}简单'],
     rhymePreference: 'AABB',
     lineLength: [7, 12],
-    tone: 'casual'
+    tone: 'casual',
+    instrumentation: ['吉他', '贝斯', '鼓组', '小提琴'],
+    dynamics: ['mp', 'mf'],
+    vocal: { gender: '男声', emotionLevel: '情感5级', tone: '叙事', dialect: '普通话', micTechnique: '远距', layering: '单层人声' },
+    effects: ['混响'],
+    sfx: ['风声']
   },
   heartbreaking: {
     vocabularyBias: ['碎裂', '泪痕', '绝望', '回忆', '伤口', '心碎'],
     sentencePatterns: ['{subject}{action}，{emotion}成河', '{imagery}里{action}，{object}破碎'],
     rhymePreference: 'ABAB',
     lineLength: [6, 12],
-    tone: 'formal'
+    tone: 'formal',
+    instrumentation: ['钢琴', '大提琴', '小提琴', '吉他'],
+    dynamics: ['p', 'mp', '渐弱'],
+    vocal: { gender: '女声', emotionLevel: '情感8级', tone: '低语', dialect: '普通话', micTechnique: '空荡大厅', layering: '单层人声' },
+    effects: ['混响', '延迟', '颤音'],
+    sfx: ['雨声']
   },
   healing: {
     vocabularyBias: ['阳光', '微风', '治愈', '温暖', '新生', '安宁'],
     sentencePatterns: ['{subject}{action}，{emotion}流淌', '{imagery}里{action}，{object}愈合'],
     rhymePreference: 'AABB',
     lineLength: [7, 12],
-    tone: 'ethereal'
+    tone: 'ethereal',
+    instrumentation: ['钢琴', '吉他', '小提琴', '合成器'],
+    dynamics: ['p', 'mp', 'mf'],
+    vocal: { gender: '女声', emotionLevel: '情感4级', tone: '低语', dialect: '普通话', micTechnique: '教堂混响', layering: '和声合唱' },
+    effects: ['混响', '延迟', '调制'],
+    sfx: ['风声', '鸟鸣', '流水']
   },
   time_travel: {
     vocabularyBias: ['铜镜', '前世', '轮回', '时空', '宿命', '千年'],
     sentencePatterns: ['{subject}{action}，{object}轮回', '{imagery}交错，{emotion}穿越'],
     rhymePreference: 'ABAB',
     lineLength: [7, 13],
-    tone: 'classical'
+    tone: 'classical',
+    instrumentation: ['古琴', '古筝', '箫', '合成器'],
+    dynamics: ['p', 'mp', 'mf', '渐强'],
+    vocal: { gender: '女声', emotionLevel: '情感5级', tone: '吟诵', dialect: '普通话', micTechnique: '空荡大厅', layering: '双轨人声' },
+    effects: ['混响', '延迟', '调制'],
+    sfx: ['钟声']
   },
   epic: {
     vocabularyBias: ['战旗', '荣耀', '征途', '英雄', '壮志', '烽火'],
     sentencePatterns: ['{subject}{action}，{object}永存', '{imagery}间{action}，{emotion}磅礴'],
     rhymePreference: 'AABB',
     lineLength: [7, 13],
-    tone: 'classical'
+    tone: 'classical',
+    instrumentation: ['小提琴', '大提琴', '鼓组', '小号'],
+    dynamics: ['f', 'ff', '渐强', '突强'],
+    vocal: { gender: '男声', emotionLevel: '情感8级', tone: '呐喊', dialect: '普通话', micTechnique: '教堂混响', layering: '和声合唱' },
+    effects: ['混响', '压缩'],
+    sfx: ['雷声', '钟声']
   },
   dark: {
     vocabularyBias: ['深渊', '诅咒', '暗影', '救赎', '恐惧', '黑暗'],
     sentencePatterns: ['{location}里{subject}{action}，{emotion}蔓延', '{imagery}{action}，{object}降临'],
     rhymePreference: 'ABCB',
     lineLength: [7, 12],
-    tone: 'ethereal'
+    tone: 'ethereal',
+    instrumentation: ['钢琴', '大提琴', '合成器', '效果器'],
+    dynamics: ['pp', 'p', 'mf'],
+    vocal: { gender: '男声', emotionLevel: '情感7级', tone: '低语', dialect: '普通话', micTechnique: '远距', layering: '单层人声' },
+    effects: ['混响', '延迟', '相位'],
+    sfx: ['雷声', '风声']
   },
   romantic: {
     vocabularyBias: ['玫瑰', '月光', '誓言', '浪漫', '心跳', '星光'],
     sentencePatterns: ['{location}下{subject}{action}，{emotion}永恒', '{imagery}{action}，{object}不散'],
     rhymePreference: 'AABB',
     lineLength: [7, 12],
-    tone: 'formal'
+    tone: 'formal',
+    instrumentation: ['钢琴', '小提琴', '大提琴', '萨克斯'],
+    dynamics: ['mp', 'mf'],
+    vocal: { gender: '女声', emotionLevel: '情感6级', tone: '吟唱', dialect: '普通话', micTechnique: '贴近麦克风', layering: '双轨人声' },
+    effects: ['混响', '延迟', '合唱'],
+    sfx: []
   },
   nostalgic: {
     vocabularyBias: ['旧时光', '青春', '回忆', '蝉鸣', '泛黄', '那年'],
     sentencePatterns: ['{subject}{action}，{object}不老', '{imagery}里{action}，{emotion}依旧'],
     rhymePreference: 'ABAB',
     lineLength: [7, 12],
-    tone: 'casual'
+    tone: 'casual',
+    instrumentation: ['吉他', '钢琴', '贝斯', '小提琴'],
+    dynamics: ['p', 'mp'],
+    vocal: { gender: '男声', emotionLevel: '情感5级', tone: '叙事', dialect: '普通话', micTechnique: '远距', layering: '单层人声' },
+    effects: ['混响', '延迟'],
+    sfx: ['风声', '钟声']
   },
   energetic: {
     vocabularyBias: ['火焰', '舞台', '燃烧', '热血', '呐喊', '活力'],
     sentencePatterns: ['{subject}{action}，{emotion}沸腾', '{imagery}{action}，{object}闪耀'],
     rhymePreference: 'AABB',
     lineLength: [6, 11],
-    tone: 'urban'
+    tone: 'urban',
+    instrumentation: ['鼓组', '吉他', '贝斯', '合成器'],
+    dynamics: ['f', 'ff', '突强'],
+    vocal: { gender: '合唱', emotionLevel: '情感7级', tone: '呐喊', dialect: '普通话', micTechnique: '贴近麦克风', layering: '多重人声叠录' },
+    effects: ['失真', '压缩', '延迟'],
+    sfx: []
   },
   dreamy: {
     vocabularyBias: ['云朵', '精灵', '魔法', '仙境', '梦幻', '星光'],
     sentencePatterns: ['{location}里{subject}{action}，{emotion}流转', '{imagery}{action}，{object}美好'],
     rhymePreference: 'ABCB',
     lineLength: [7, 12],
-    tone: 'ethereal'
+    tone: 'ethereal',
+    instrumentation: ['钢琴', '合成器', '小提琴', '长笛'],
+    dynamics: ['p', 'mp', 'mf'],
+    vocal: { gender: '女声', emotionLevel: '情感4级', tone: '吟唱', dialect: '普通话', micTechnique: '教堂混响', layering: '和声合唱' },
+    effects: ['混响', '延迟', '调制', '镶边'],
+    sfx: ['鸟鸣', '流水']
   },
   modern: {
     vocabularyBias: ['霓虹', '都市', '态度', '潮流', '个性', '自由'],
     sentencePatterns: ['{location}里{subject}{action}，{emotion}是我的', '{imagery}{action}，{object}不被定义'],
     rhymePreference: 'AABB',
     lineLength: [7, 13],
-    tone: 'urban'
+    tone: 'urban',
+    instrumentation: ['合成器', '电子鼓', '贝斯', '效果器'],
+    dynamics: ['mf', 'f'],
+    vocal: { gender: '男声', emotionLevel: '情感6级', tone: '独白', dialect: '普通话', micTechnique: '贴耳', layering: '单层人声' },
+    effects: ['压缩', '均衡', '延迟'],
+    sfx: ['心跳']
   },
   ancient: {
     vocabularyBias: ['墨香', '折扇', '青衫', '江湖', '诗词', '红颜'],
     sentencePatterns: ['{subject}{action}，{object}情长', '{imagery}间{action}，{emotion}悠悠'],
     rhymePreference: 'ABAB',
     lineLength: [7, 12],
-    tone: 'classical'
+    tone: 'classical',
+    instrumentation: ['古琴', '古筝', '箫', '笛子'],
+    dynamics: ['p', 'mp', 'mf'],
+    vocal: { gender: '女声', emotionLevel: '情感4级', tone: '吟诵', dialect: '普通话', micTechnique: '空荡大厅', layering: '和声合唱' },
+    effects: ['混响'],
+    sfx: ['风声', '流水']
   },
   indie: {
     vocabularyBias: ['吉他', '真实', '独立', '简单', '倔强', '自由'],
     sentencePatterns: ['{subject}{action}，{object}是自己', '{imagery}{action}，{emotion}简单'],
     rhymePreference: 'ABCB',
     lineLength: [7, 12],
-    tone: 'casual'
+    tone: 'casual',
+    instrumentation: ['吉他', '钢琴', '贝斯', '鼓组'],
+    dynamics: ['mp', 'mf'],
+    vocal: { gender: '男声', emotionLevel: '情感5级', tone: '叙事', dialect: '普通话', micTechnique: '贴近麦克风', layering: '单层人声' },
+    effects: ['混响'],
+    sfx: []
   },
   folk: {
     vocabularyBias: ['炊烟', '麦田', '故乡', '老槐', '乡音', '土地'],
     sentencePatterns: ['{location}里{subject}{action}，{emotion}暖心', '{imagery}{action}，{object}是根'],
     rhymePreference: 'AABB',
     lineLength: [7, 12],
-    tone: 'casual'
+    tone: 'casual',
+    instrumentation: ['吉他', '古筝', '笛子', '鼓'],
+    dynamics: ['p', 'mp', 'mf'],
+    vocal: { gender: '男声', emotionLevel: '情感4级', tone: '叙事', dialect: '普通话', micTechnique: '远距', layering: '单层人声' },
+    effects: ['混响'],
+    sfx: ['风声', '流水']
   },
   kpop: {
     vocabularyBias: ['舞台', '星光', '应援', '梦想', '青春', '闪耀'],
     sentencePatterns: ['{subject}{action}，{emotion}发光', '{imagery}{action}，{object}不散场'],
     rhymePreference: 'AABB',
     lineLength: [7, 12],
-    tone: 'casual'
+    tone: 'casual',
+    instrumentation: ['合成器', '鼓组', '贝斯', '钢琴'],
+    dynamics: ['mf', 'f', 'ff'],
+    vocal: { gender: '女声', emotionLevel: '情感7级', tone: '吟唱', dialect: '普通话', micTechnique: '贴近麦克风', layering: '多重人声叠录' },
+    effects: ['混响', '延迟', '调制'],
+    sfx: []
   },
   reggae: {
     vocabularyBias: ['海滩', '椰树', '阳光', '放松', '自由', '爱'],
     sentencePatterns: ['{location}上{subject}{action}，{emotion}放松', '{imagery}{action}，{object}简单'],
     rhymePreference: 'ABCB',
     lineLength: [7, 12],
-    tone: 'casual'
+    tone: 'casual',
+    instrumentation: ['吉他', '贝斯', '鼓组', '钢琴'],
+    dynamics: ['mp', 'mf'],
+    vocal: { gender: '男声', emotionLevel: '情感5级', tone: '叙事', dialect: '普通话', micTechnique: '远距', layering: '单层人声' },
+    effects: ['混响', '延迟'],
+    sfx: ['海浪', '风声']
   },
   ambient: {
     vocabularyBias: ['回声', '宁静', '宇宙', '冥想', '深海', '星空'],
     sentencePatterns: ['{subject}{action}，{emotion}无尽', '{imagery}间{action}，{object}消融'],
     rhymePreference: 'ABCB',
     lineLength: [6, 12],
-    tone: 'ethereal'
+    tone: 'ethereal',
+    instrumentation: ['合成器', '效果器', '采样器', '钢琴'],
+    dynamics: ['pp', 'p', 'mp'],
+    vocal: { gender: '女声', emotionLevel: '情感3级', tone: '低语', dialect: '普通话', micTechnique: '教堂混响', layering: '和声合唱' },
+    effects: ['混响', '延迟', '调制'],
+    sfx: ['风声', '流水', '海浪']
   },
   chinese_traditional: {
     vocabularyBias: ['古筝', '琵琶', '墨笔', '茶香', '山水', '诗意'],
     sentencePatterns: ['{subject}{action}，{object}韵味长', '{imagery}间{action}，{emotion}悠然'],
     rhymePreference: 'ABAB',
     lineLength: [7, 12],
-    tone: 'classical'
+    tone: 'classical',
+    instrumentation: ['古筝', '琵琶', '笛子', '箫'],
+    dynamics: ['p', 'mp', 'mf'],
+    vocal: { gender: '女声', emotionLevel: '情感4级', tone: '吟诵', dialect: '普通话', micTechnique: '空荡大厅', layering: '和声合唱' },
+    effects: ['混响'],
+    sfx: ['风声', '流水']
   },
   chinese_classical: {
     vocabularyBias: ['古琴', '笛声', '宫廷', '牡丹', '琴棋', '雅致'],
     sentencePatterns: ['{subject}{action}，{object}永恒', '{imagery}间{action}，{emotion}高雅'],
     rhymePreference: 'ABAB',
     lineLength: [7, 12],
-    tone: 'classical'
+    tone: 'classical',
+    instrumentation: ['古琴', '笛子', '古筝', '阮'],
+    dynamics: ['p', 'mp', 'mf'],
+    vocal: { gender: '女声', emotionLevel: '情感4级', tone: '吟诵', dialect: '粤语', micTechnique: '教堂混响', layering: '和声合唱' },
+    effects: ['混响'],
+    sfx: ['风声', '钟声']
   },
   love_song: {
     vocabularyBias: ['玫瑰', '戒指', '誓言', '深情', '永恒', '思念'],
     sentencePatterns: ['{subject}{action}，{emotion}是歌', '{imagery}{action}，{object}不变'],
     rhymePreference: 'AABB',
     lineLength: [7, 12],
-    tone: 'formal'
+    tone: 'formal',
+    instrumentation: ['钢琴', '小提琴', '大提琴', '吉他'],
+    dynamics: ['mp', 'mf', 'f'],
+    vocal: { gender: '女声', emotionLevel: '情感7级', tone: '吟唱', dialect: '普通话', micTechnique: '贴近麦克风', layering: '双轨人声' },
+    effects: ['混响', '延迟', '合唱'],
+    sfx: []
   },
   gothic_rock: {
     vocabularyBias: ['十字架', '鲜血', '玫瑰', '诅咒', '古堡', '暗黑'],
     sentencePatterns: ['{location}里{subject}{action}，{emotion}弥漫', '{imagery}{action}，{object}永恒'],
     rhymePreference: 'ABAB',
     lineLength: [7, 13],
-    tone: 'ethereal'
+    tone: 'ethereal',
+    instrumentation: ['吉他', '贝斯', '鼓组', '合成器'],
+    dynamics: ['f', 'ff', '突强'],
+    vocal: { gender: '男声', emotionLevel: '情感8级', tone: '嘶吼', dialect: '普通话', micTechnique: '贴近麦克风', layering: '多重人声叠录' },
+    effects: ['失真', '混响', '延迟', '相位'],
+    sfx: ['雷声', '钟声']
   },
   ancient_modern: {
     vocabularyBias: ['古筝', '电子', '汉服', '霓虹', '融合', '传承'],
     sentencePatterns: ['{subject}{action}，{object}交融', '{imagery}与{imagery}，{emotion}碰撞'],
     rhymePreference: 'ABCB',
     lineLength: [7, 13],
-    tone: 'urban'
+    tone: 'urban',
+    instrumentation: ['古筝', '合成器', '弦乐团', '电子鼓'],
+    dynamics: ['mp', 'mf', 'f'],
+    vocal: { gender: '女声', emotionLevel: '情感6级', tone: '吟唱', dialect: '普通话', micTechnique: '贴近麦克风', layering: '双轨人声' },
+    effects: ['混响', '延迟', '调制'],
+    sfx: []
+  }
+};
+
+/* =========================================================================
+ * 2.5 PRODUCTION METADATA BANKS
+ * ========================================================================= */
+
+const CHINESE_INSTRUMENTS = ['古琴', '古筝', '箫', '笛子', '琵琶', '二胡', '鼓', '笙', '埙', '阮'];
+const WESTERN_INSTRUMENTS = ['钢琴', '小提琴', '大提琴', '吉他', '贝斯', '鼓组', '萨克斯', '小号', '长笛', '班多钮手风琴'];
+const ELECTRONIC_INSTRUMENTS = ['合成器', '电子鼓', '采样器', '效果器', '音序器'];
+const SOUND_EFFECTS = ['雨声', '风声', '脚步声', '雷声', '鸟鸣', '海浪', '钟声', '心跳', '时钟', '流水'];
+const EFFECTS_PROCESSING = ['混响', '延迟', '调制', '合唱', '失真', '压缩', '均衡', '镶边', '相位', '颤音'];
+const DYNAMICS = ['pp', 'p', 'mp', 'mf', 'f', 'ff', '渐强', '渐弱', '突强', '突弱'];
+const VOCAL_DIRECTIONS = {
+  gender: ['男声', '女声', '童声', '合唱'],
+  emotionLevel: ['情感3级', '情感4级', '情感5级', '情感6级', '情感7级', '情感8级'],
+  tone: ['叙事', '低语', '嘶吼', '吟唱', '呐喊', '独白', '吟诵'],
+  dialect: ['普通话', '粤语', '闽南语'],
+  micTechnique: ['贴近麦克风', '教堂混响', '空荡大厅', '贴耳', '远距'],
+  layering: ['单层人声', '双轨人声', '多重人声叠录', '和声合唱']
+};
+const STYLE_VARIATION_SCHEMES = {
+  default: { name: '原味复刻', description: '最完美贴合原始蓝图的方案' },
+  enhanced: { name: '情绪放大', description: '将核心特质推向极致' },
+  transformed: { name: '风格变奏', description: '抽离部分元素，换上新的音色' }
+};
+
+const TIME_SIGNATURES = {
+  '4/4': { name: '四四拍', chinese: '进行曲', feel: '稳定', bpmRange: [60, 140], description: '强弱次强弱' },
+  '3/4': { name: '三四拍', chinese: '华尔兹', feel: '摇摆', bpmRange: [60, 100], description: '强弱弱' },
+  '2/4': { name: '二四拍', chinese: '快步', feel: '轻快', bpmRange: [80, 160], description: '强弱' },
+  '6/8': { name: '六八拍', chinese: '船歌', feel: '流动', bpmRange: [60, 120], description: '强弱弱次强弱弱' },
+  '3/8': { name: '三八拍', chinese: '圆舞曲', feel: '轻盈', bpmRange: [80, 130], description: '强弱弱' },
+  '9/8': { name: '九八拍', chinese: '复三拍', feel: '宏大', bpmRange: [50, 100], description: '强弱弱次强弱弱再次强弱弱' },
+  '5/4': { name: '五四拍', chinese: '不对称', feel: '复杂', bpmRange: [60, 110], description: '强弱次强弱' }
+};
+
+const TEMPO_MARKINGS = {
+  largo: { name: '广板', bpm: 40, description: '缓慢庄重' },
+  lento: { name: '慢板', bpm: 50, description: '缓慢' },
+  adagio: { name: '柔板', bpm: 60, description: '舒缓优美' },
+  andante: { name: '行板', bpm: 76, description: '行走速度' },
+  moderato: { name: '中板', bpm: 100, description: '适中速度' },
+  allegretto: { name: '小快板', bpm: 116, description: '轻快' },
+  allegro: { name: '快板', bpm: 132, description: '快速活泼' },
+  vivace: { name: '活泼', bpm: 140, description: '生动活泼' },
+  presto: { name: '急板', bpm: 180, description: '急速' },
+  prestissimo: { name: '最急板', bpm: 200, description: '极快' }
+};
+
+const ARTICULATION_MARKS = {
+  legato: { name: '连奏', symbol: '⌒', description: '连贯流畅' },
+  staccato: { name: '断奏', symbol: '·', description: '短促跳跃' },
+  tenuto: { name: '保持', symbol: '-', description: '充分保持时值' },
+  marcato: { name: '强调', symbol: '^', description: '有力强调' },
+  accent: { name: '重音', symbol: '>', description: '加强力度' },
+  staccatissimo: { name: '顿音', symbol: '▼', description: '更短促' },
+  portato: { name: '半连奏', symbol: '⌒·', description: '连中有断' }
+};
+
+const EXPRESSION_MARKS = {
+  crescendo: { name: '渐强', symbol: '≺', description: '音量逐渐增大' },
+  decrescendo: { name: '渐弱', symbol: '≻', description: '音量逐渐减小' },
+  ritardando: { name: '渐慢', symbol: 'rit.', description: '速度逐渐减慢' },
+  accelerando: { name: '渐快', symbol: 'accel.', description: '速度逐渐加快' },
+  rubato: { name: '自由节奏', symbol: 'rub.', description: '弹性速度处理' },
+  fermata: { name: '延长', symbol: '𝄐', description: '延长音符时值' },
+  daCapo: { name: '从头反复', symbol: 'D.C.', description: '回到乐曲开头' },
+  fine: { name: '结束', symbol: 'Fine', description: '乐曲结束' }
+};
+
+const KEY_SIGNATURES = {
+  'C': { name: 'C大调', sharps: 0, flats: 0, chinese: 'C大调', relativeMinor: 'a小调' },
+  'G': { name: 'G大调', sharps: 1, flats: 0, chinese: 'G大调', relativeMinor: 'e小调' },
+  'D': { name: 'D大调', sharps: 2, flats: 0, chinese: 'D大调', relativeMinor: 'b小调' },
+  'A': { name: 'A大调', sharps: 3, flats: 0, chinese: 'A大调', relativeMinor: 'f♯小调' },
+  'E': { name: 'E大调', sharps: 4, flats: 0, chinese: 'E大调', relativeMinor: 'c♯小调' },
+  'F': { name: 'F大调', sharps: 0, flats: 1, chinese: 'F大调', relativeMinor: 'd小调' },
+  'B♭': { name: 'B♭大调', sharps: 0, flats: 2, chinese: '降B大调', relativeMinor: 'g小调' },
+  'E♭': { name: 'E♭大调', sharps: 0, flats: 3, chinese: '降E大调', relativeMinor: 'c小调' },
+  'A♭': { name: 'A♭大调', sharps: 0, flats: 4, chinese: '降A大调', relativeMinor: 'f小调' },
+  'D♭': { name: 'D♭大调', sharps: 0, flats: 5, chinese: '降D大调', relativeMinor: 'b♭小调' }
+};
+
+const CHORD_PROGRESSIONS = {
+  pop: ['I-IV-V', 'I-vi-IV-V', 'vi-IV-I-V', 'I-V-vi-IV'],
+  ballad: ['I-vi-ii-V', 'I-IV-viio-V', 'viio-iii-vi-ii-V'],
+  rock: ['I-V-vi-IV', 'I-bVII-IV', 'I-IV-bIII-bII'],
+  jazz: ['ii-V-I', 'I-vi-ii-V', 'viio-iii-vi-ii-V'],
+  blues: ['I-I-I-I', 'IV-IV-I-I', 'I-IV-I-V'],
+  chinese_classical: ['I-vi-IV-V', 'I-IV-vi-IV', 'vi-IV-I-V'],
+  tango: ['I-V-vi-iii-IV-I-IV-V', 'i-vi-iv-V', 'i-III-vi-III'],
+  electronic: ['I-IV-V', 'I-vi-IV-V', 'I-V-vi-IV', 'i-VII-III-vi']
+};
+
+const FSM_TRIGGERS = {
+  'intro_to_verse': {
+    condition: '当进入主歌段落',
+    action: '鼓组加入轻拍，合成器渐入，人声从叙事转为深情',
+    transition: 'pp → p'
+  },
+  'verse_to_prechorus': {
+    condition: '当进入预副歌段落',
+    action: '弦乐铺垫增强，节奏加快，人声张力提升',
+    transition: 'p → mf'
+  },
+  'prechorus_to_chorus': {
+    condition: '当进入副歌段落',
+    action: '鼓组全力投入，弦乐团全编制，人声爆发',
+    transition: 'mf → f → ff'
+  },
+  'chorus_to_verse': {
+    condition: '当回到主歌段落',
+    action: '乐器精简，保留核心旋律，人声回归叙事',
+    transition: 'ff → mp'
+  },
+  'verse_to_bridge': {
+    condition: '当进入桥段段落',
+    action: '切换乐器组合，引入新音色，人声转为低语或独白',
+    transition: 'mp → p → pp'
+  },
+  'bridge_to_final_chorus': {
+    condition: '当进入最终副歌段落',
+    action: '全曲最高潮，所有乐器齐奏，人声最强爆发',
+    transition: 'pp → mf → f → ff'
+  },
+  'chorus_to_outro': {
+    condition: '当进入尾声段落',
+    action: '乐器逐渐退出，人声渐弱，环境音效渐入',
+    transition: 'ff → mf → p → pp'
+  },
+  'key_change': {
+    condition: '当需要转调时',
+    action: '升高一个半音或全音，重新调整乐器音色',
+    transition: '调性转换'
+  },
+  'dynamic_shift': {
+    condition: '当情感需要突变时',
+    action: '突然切换动态级别，制造戏剧化效果',
+    transition: 'f → pp 或 pp → ff'
+  },
+  'instrument_swap': {
+    condition: '当需要音色变化时',
+    action: '替换核心乐器，保持旋律不变',
+    transition: '乐器转换'
+  }
+};
+
+const MUSICAL_TERMS = {
+  tempo: {
+    largo: '广板', lento: '慢板', adagio: '柔板', andante: '行板',
+    moderato: '中板', allegretto: '小快板', allegro: '快板',
+    vivace: '活泼', presto: '急板', prestissimo: '最急板'
+  },
+  dynamics: {
+    ppp: '极弱', pp: '很弱', p: '弱', mp: '中弱',
+    mf: '中强', f: '强', ff: '很强', fff: '极强',
+    cresc: '渐强', decresc: '渐弱', dim: '渐弱',
+    sf: '突强', sfz: '突强', fp: '强后即弱'
+  },
+  expression: {
+    espressivo: '富有表情', legato: '连奏', staccato: '断奏',
+    tenuto: '保持', marcato: '强调', rubato: '自由节奏',
+    dolce: '甜美', cantabile: '如歌', maestoso: '庄严'
+  },
+  form: {
+    intro: '前奏', verse: '主歌', prechorus: '预副歌',
+    chorus: '副歌', bridge: '桥段', outro: '尾声',
+    interlude: '间奏', finale: '终曲', coda: '尾声'
   }
 };
 
@@ -874,8 +1193,6 @@ export function generateSection(sectionType, themeBank, styleConfig, complexity 
   const scheme = _RHYME_SCHEME_PATTERNS[rhymeScheme] || _RHYME_SCHEME_PATTERNS.ABAB;
 
   const lines = [];
-  // Track rhyme anchor characters per letter so lines with the same letter
-  // actually rhyme with each other.
   const rhymeAnchors = {};
 
   for (let i = 0; i < lineCount; i++) {
@@ -883,7 +1200,6 @@ export function generateSection(sectionType, themeBank, styleConfig, complexity 
     let rhymeTarget = null;
 
     if (rhymeAnchors[letter]) {
-      // Need to rhyme with the existing anchor for this letter
       rhymeTarget = rhymeAnchors[letter];
     }
 
@@ -891,7 +1207,6 @@ export function generateSection(sectionType, themeBank, styleConfig, complexity 
       banks, weights, usedWords, rhyme: rhymeTarget
     });
 
-    // If we had no anchor yet for this letter, record this line's ending
     if (!rhymeAnchors[letter] && line.length > 0) {
       rhymeAnchors[letter] = line.slice(-1);
     }
@@ -899,7 +1214,57 @@ export function generateSection(sectionType, themeBank, styleConfig, complexity 
     lines.push(line);
   }
 
-  return lines;
+  return {
+    lines,
+    productionMetadata: {
+      instrumentation: styleConfig.instrumentation || [],
+      dynamics: styleConfig.dynamics || [],
+      vocal: styleConfig.vocal || {},
+      effects: styleConfig.effects || [],
+      sfx: styleConfig.sfx || []
+    },
+    rhymeScheme: scheme.slice(0, lineCount).join(''),
+    lineCount,
+    sectionType
+  };
+}
+
+export function generateTimeMarkers(structure, duration = 270) {
+  const markers = [];
+  let currentTime = 0;
+  const totalSections = structure.length;
+
+  structure.forEach((sectionType, index) => {
+    const baseDuration = duration / totalSections;
+    const variance = baseDuration * 0.2;
+    const sectionDuration = baseDuration + (Math.random() * variance * 2 - variance);
+
+    const startTime = _formatTime(currentTime);
+    const endTime = _formatTime(currentTime + sectionDuration);
+
+    let dynamicLevel = 'mp';
+    if (sectionType.includes('intro')) dynamicLevel = 'pp';
+    else if (sectionType.includes('verse')) dynamicLevel = index < totalSections * 0.3 ? 'p' : 'mp';
+    else if (sectionType.includes('pre_chorus')) dynamicLevel = 'mf';
+    else if (sectionType.includes('chorus')) dynamicLevel = index > totalSections * 0.7 ? 'ff' : 'f';
+    else if (sectionType.includes('bridge')) dynamicLevel = 'p→mp';
+    else if (sectionType.includes('outro') || sectionType.includes('finale')) dynamicLevel = 'p→pp';
+
+    markers.push({
+      section: sectionType,
+      startTime: currentTime,
+      endTime: currentTime + sectionDuration,
+      startTimeFormatted: startTime,
+      endTimeFormatted: endTime,
+      duration: sectionDuration,
+      dynamicLevel,
+      index
+    });
+
+    currentTime += sectionDuration;
+  });
+
+  return markers;
 }
 
 /* =========================================================================
@@ -1294,8 +1659,16 @@ function _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity)
 
   const sections = structure.map((sectionType) => {
     const normalized = _normalizeSectionType(sectionType);
-    const lines = generateSection(normalized, themeBank, styleConfig, complexity, rhymeScheme);
-    return { type: sectionType, content: lines.join('\n') };
+    const sectionResult = generateSection(normalized, themeBank, styleConfig, complexity, rhymeScheme);
+    const lines = sectionResult.lines || sectionResult;
+    return {
+      type: sectionType,
+      content: lines.join('\n'),
+      lines,
+      productionMetadata: sectionResult.productionMetadata || {},
+      rhymeScheme: sectionResult.rhymeScheme || rhymeScheme,
+      lineCount: sectionResult.lineCount || lines.length
+    };
   });
 
   return {
@@ -1305,11 +1678,25 @@ function _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity)
     sections,
     fullText: sections.map((s) => `[${s.type.toUpperCase()}]\n${s.content}`).join('\n\n'),
     generatedAt: new Date().toISOString(),
+    productionMetadata: {
+      instrumentation: styleConfig.instrumentation || [],
+      dynamics: styleConfig.dynamics || [],
+      vocal: styleConfig.vocal || {},
+      effects: styleConfig.effects || [],
+      sfx: styleConfig.sfx || []
+    },
     meta: {
       engine: 'dynamic',
       sectionCount: sections.length,
-      totalLines: sections.reduce((sum, s) => sum + s.content.split('\n').filter((l) => l.trim()).length, 0),
-      literaryAnalysis: _analyzeLiteraryDevices(sections)
+      totalLines: sections.reduce((sum, s) => sum + (s.lineCount || s.content.split('\n').filter((l) => l.trim()).length), 0),
+      literaryAnalysis: _analyzeLiteraryDevices(sections),
+      productionMetadata: {
+        instrumentation: styleConfig.instrumentation || [],
+        dynamics: styleConfig.dynamics || [],
+        vocal: styleConfig.vocal || {},
+        effects: styleConfig.effects || [],
+        sfx: styleConfig.sfx || []
+      }
     }
   };
 }
@@ -1367,13 +1754,19 @@ export function generateDynamicLyrics(params) {
   let effectiveGenre = genre;
   if (mixStyles && mixStyles.length > 0) {
     const styleConfigs = mixStyles.map((s) => _getStyleConfig(s));
-    // Merge: combine vocabularyBias, sentencePatterns; pick rhymePreference from
-    // the first style, average lineLength, use the most common tone.
     const mergedBias = [];
     const mergedPatterns = [];
+    const allInstrumentation = [];
+    const allDynamics = [];
+    const allEffects = [];
+    const allSfx = [];
     styleConfigs.forEach((sc) => {
       if (sc.vocabularyBias) mergedBias.push(...sc.vocabularyBias);
       if (sc.sentencePatterns) mergedPatterns.push(...sc.sentencePatterns);
+      if (sc.instrumentation) allInstrumentation.push(...sc.instrumentation);
+      if (sc.dynamics) allDynamics.push(...sc.dynamics);
+      if (sc.effects) allEffects.push(...sc.effects);
+      if (sc.sfx) allSfx.push(...sc.sfx);
     });
     const avgMin = Math.round(styleConfigs.reduce((s, sc) => s + sc.lineLength[0], 0) / styleConfigs.length);
     const avgMax = Math.round(styleConfigs.reduce((s, sc) => s + sc.lineLength[1], 0) / styleConfigs.length);
@@ -1382,7 +1775,12 @@ export function generateDynamicLyrics(params) {
       sentencePatterns: [...new Set(mergedPatterns)],
       rhymePreference: styleConfigs[0].rhymePreference,
       lineLength: [avgMin, avgMax],
-      tone: styleConfigs[0].tone
+      tone: styleConfigs[0].tone,
+      instrumentation: [...new Set(allInstrumentation)].slice(0, 4),
+      dynamics: [...new Set(allDynamics)].slice(0, 3),
+      vocal: styleConfigs[0].vocal || {},
+      effects: [...new Set(allEffects)].slice(0, 3),
+      sfx: [...new Set(allSfx)].slice(0, 3)
     };
     effectiveGenre = 'mix:' + mixStyles.join('+');
   } else {
@@ -1419,7 +1817,8 @@ export function generateDynamicLyrics(params) {
       const startTime = _formatTime(currentTime);
       const endTime = _formatTime(currentTime + durationSec);
 
-      const lines = generateSection(normalizedType, themeBank, styleConfig, complexity, styleConfig.rhymePreference);
+      const sectionResult = generateSection(normalizedType, themeBank, styleConfig, complexity, styleConfig.rhymePreference);
+      const lines = sectionResult.lines || sectionResult;
 
       const dynamic = _getDynamicForSection(sectionType, index, structure.length);
       const instruments = _getInstrumentsForSection(sectionType, params);
@@ -1435,7 +1834,9 @@ export function generateDynamicLyrics(params) {
         dynamicLevel: DYNAMIC_LEVELS[dynamic.split('→')[0]] || DYNAMIC_LEVELS.mp,
         instruments,
         timeSpace,
-        content: lines.join('\n')
+        content: lines.join('\n'),
+        lines,
+        productionMetadata: sectionResult.productionMetadata || {}
       });
 
       currentTime += durationSec;
@@ -1449,12 +1850,26 @@ export function generateDynamicLyrics(params) {
       sections,
       fullText: _formatTimeSectionOutput(sections),
       generatedAt: new Date().toISOString(),
+      productionMetadata: {
+        instrumentation: styleConfig.instrumentation || [],
+        dynamics: styleConfig.dynamics || [],
+        vocal: styleConfig.vocal || {},
+        effects: styleConfig.effects || [],
+        sfx: styleConfig.sfx || []
+      },
       meta: {
         engine: 'dynamic',
         literaryAnalysis: _analyzeLiteraryDevices(sections),
         emotionalArc: _analyzeEmotionalArc(sections),
         rhymeAnalysis: _analyzeRhymeScheme(sections),
-        instrumentTimeline: _buildInstrumentTimeline(sections)
+        instrumentTimeline: _buildInstrumentTimeline(sections),
+        productionMetadata: {
+          instrumentation: styleConfig.instrumentation || [],
+          dynamics: styleConfig.dynamics || [],
+          vocal: styleConfig.vocal || {},
+          effects: styleConfig.effects || [],
+          sfx: styleConfig.sfx || []
+        }
       }
     };
   }
@@ -1507,4 +1922,450 @@ export function getDynamicStyles() {
 
 export function getDynamicGenres() {
   return Object.keys(STRUCTURES);
+}
+
+export function getMusicalNotations() {
+  return {
+    timeSignatures: TIME_SIGNATURES,
+    tempoMarkings: TEMPO_MARKINGS,
+    articulationMarks: ARTICULATION_MARKS,
+    expressionMarks: EXPRESSION_MARKS,
+    keySignatures: KEY_SIGNATURES,
+    chordProgressions: CHORD_PROGRESSIONS,
+    fsmTriggers: FSM_TRIGGERS,
+    musicalTerms: MUSICAL_TERMS
+  };
+}
+
+/* =========================================================================
+ * 17. OUTPUT FORMATTERS
+ * ========================================================================= */
+
+export function formatSunoOutput(result) {
+  const lyrics = result.sections.map(section => {
+    let content;
+    if (section.content) {
+      content = section.content;
+    } else if (section.lines) {
+      content = section.lines.join('\n');
+    } else {
+      content = '';
+    }
+    return `[${section.type.toUpperCase()}]
+${content}`;
+  }).join('\n\n');
+
+  const production = result.productionMetadata || (result.meta && result.meta.productionMetadata) || {};
+  const vocal = production.vocal || {};
+
+  return `【Suno风格音乐生成指令】
+
+🎵 风格：${result.genre || '流行'}
+🎯 主题：${result.theme || '爱情'}
+
+---
+
+【歌词】
+${lyrics}
+
+---
+
+【制作参数】
+
+🎹 乐器配置：${production.instrumentation ? production.instrumentation.join(', ') : '默认'}
+🎙️ 人声设定：
+  - 性别：${vocal.gender || '默认'}
+  - 情感等级：${vocal.emotionLevel || '情感5级'}
+  - 演唱方式：${vocal.tone || '叙事'}
+  - 语言：${vocal.dialect || '普通话'}
+  - 麦克风技术：${vocal.micTechnique || '贴近麦克风'}
+  - 人声叠加：${vocal.layering || '单层人声'}
+
+🎚️ 动态控制：${production.dynamics ? production.dynamics.join(', ') : 'mf'}
+✨ 效果处理：${production.effects ? production.effects.join(', ') : '混响'}
+🎧 音效元素：${production.sfx && production.sfx.length > 0 ? production.sfx.join(', ') : '无'}
+
+---
+
+💡 提示：生成时请保持歌词的韵律感和情感表达，注意段落之间的过渡。`;
+}
+
+export function formatMuseOutput(result) {
+  const sections = result.sections.map(section => {
+    let lines;
+    if (section.content) {
+      lines = section.content.split('\n').filter(l => l.trim());
+    } else if (section.lines) {
+      lines = section.lines;
+    } else {
+      lines = [];
+    }
+
+    const lineEntries = lines.map((line, idx) => `      "${line.replace(/"/g, '\\"')}"`).join(',\n');
+
+    return `    {
+      "type": "${section.type}",
+      "lines": [
+${lineEntries}
+      ]
+    }`;
+  }).join(',\n');
+
+  const production = result.productionMetadata || (result.meta && result.meta.productionMetadata) || {};
+  const vocal = production.vocal || {};
+
+  return JSON.stringify({
+    version: '1.0',
+    metadata: {
+      genre: result.genre || 'pop',
+      theme: result.theme || 'love',
+      generatedAt: result.generatedAt || new Date().toISOString(),
+      engine: 'dynamicLyricsEngine'
+    },
+    production: {
+      instrumentation: production.instrumentation || [],
+      dynamics: production.dynamics || [],
+      vocal: {
+        gender: vocal.gender || '男声',
+        emotionLevel: vocal.emotionLevel || '情感5级',
+        tone: vocal.tone || '叙事',
+        dialect: vocal.dialect || '普通话',
+        micTechnique: vocal.micTechnique || '贴近麦克风',
+        layering: vocal.layering || '单层人声'
+      },
+      effects: production.effects || [],
+      sfx: production.sfx || []
+    },
+    lyrics: {
+      structure: result.structure || [],
+      sections: JSON.parse(`[${sections}]`)
+    },
+    analysis: {
+      totalLines: result.meta ? result.meta.totalLines : 0,
+      sectionCount: result.meta ? result.meta.sectionCount : 0
+    }
+  }, null, 2);
+}
+
+/* =========================================================================
+ * 18. MUSICAL NOTATION GENERATOR
+ * ========================================================================= */
+
+function _getTempoByGenre(genre) {
+  const genreTempos = {
+    pop: ['moderato', 'allegretto'],
+    rock: ['allegro', 'vivace'],
+    ballad: ['andante', 'adagio'],
+    chinese_classical: ['andante', 'moderato'],
+    tango: ['andante', 'moderato'],
+    electronic: ['allegretto', 'allegro'],
+    hip_hop: ['moderato', 'allegretto'],
+    jazz: ['andante', 'moderato'],
+    classical: ['andante', 'moderato'],
+    love_song: ['andante', 'moderato'],
+    heartbreaking: ['adagio', 'lento'],
+    healing: ['andante', 'moderato'],
+    epic: ['moderato', 'allegretto'],
+    dark: ['adagio', 'andante'],
+    romantic: ['andante', 'moderato'],
+    nostalgic: ['andante', 'moderato'],
+    energetic: ['allegro', 'vivace'],
+    dreamy: ['andante', 'moderato'],
+    ancient: ['adagio', 'andante'],
+    indie: ['andante', 'moderato'],
+    folk: ['andante', 'moderato'],
+    kpop: ['allegretto', 'allegro'],
+    reggae: ['moderato', 'allegretto'],
+    ambient: ['largo', 'adagio'],
+    gothic_rock: ['allegro', 'vivace'],
+    ancient_modern: ['andante', 'moderato']
+  };
+  const options = genreTempos[genre] || genreTempos.pop;
+  return _pickRandom(options);
+}
+
+function _getTimeSignatureByGenre(genre) {
+  const genreSignatures = {
+    pop: ['4/4'],
+    rock: ['4/4'],
+    ballad: ['4/4', '6/8'],
+    chinese_classical: ['4/4', '3/4'],
+    tango: ['4/4', '3/4'],
+    electronic: ['4/4'],
+    hip_hop: ['4/4'],
+    jazz: ['4/4', '6/8'],
+    classical: ['4/4', '3/4', '6/8'],
+    love_song: ['4/4'],
+    heartbreaking: ['4/4', '6/8'],
+    healing: ['4/4', '6/8'],
+    epic: ['4/4', '3/4'],
+    dark: ['4/4', '6/8'],
+    romantic: ['4/4', '3/4'],
+    nostalgic: ['4/4', '6/8'],
+    energetic: ['4/4'],
+    dreamy: ['4/4', '6/8'],
+    ancient: ['4/4', '3/4'],
+    indie: ['4/4'],
+    folk: ['4/4', '3/4'],
+    kpop: ['4/4'],
+    reggae: ['4/4'],
+    ambient: ['4/4', '6/8'],
+    gothic_rock: ['4/4'],
+    ancient_modern: ['4/4', '3/4']
+  };
+  const options = genreSignatures[genre] || genreSignatures.pop;
+  return _pickRandom(options);
+}
+
+function _getKeySignatureByTheme(theme) {
+  const themeKeys = {
+    love: ['C', 'G', 'F'],
+    loneliness: ['F', 'B♭', 'E♭'],
+    sadness: ['D♭', 'A♭', 'E♭'],
+    dreams: ['C', 'G', 'D'],
+    memory: ['F', 'C', 'G'],
+    nature: ['G', 'D', 'A'],
+    friendship: ['C', 'G', 'D'],
+    success: ['D', 'A', 'E'],
+    hope: ['C', 'G', 'D'],
+    life: ['C', 'F', 'G'],
+    lunatic: ['E♭', 'B♭', 'D'],
+    tango: ['D', 'A', 'G'],
+    heartbreak: ['E♭', 'A♭', 'D♭'],
+    healing: ['C', 'F', 'G'],
+    time_travel: ['G', 'D', 'C'],
+    epic_journey: ['D', 'A', 'E'],
+    dark_mystery: ['E♭', 'B♭', 'D♭'],
+    romantic_night: ['C', 'G', 'F'],
+    nostalgic_memory: ['F', 'C', 'G'],
+    energetic_party: ['D', 'A', 'G'],
+    dreamy_fantasy: ['C', 'G', 'F'],
+    modern_city: ['E♭', 'B♭', 'F'],
+    ancient_legend: ['G', 'D', 'A'],
+    indie_story: ['C', 'F', 'G'],
+    folk_tale: ['G', 'D', 'C'],
+    summer_vibes: ['D', 'A', 'G'],
+    winter_solitude: ['E♭', 'B♭', 'A♭'],
+    spring_awakening: ['C', 'G', 'D'],
+    autumn_melancholy: ['F', 'B♭', 'E♭'],
+    ocean_dreams: ['C', 'G', 'F']
+  };
+  const options = themeKeys[theme] || themeKeys.love;
+  return _pickRandom(options);
+}
+
+export function generateMusicalNotation(genre, theme) {
+  const tempoKey = _getTempoByGenre(genre);
+  const tempo = TEMPO_MARKINGS[tempoKey];
+  const timeSigKey = _getTimeSignatureByGenre(genre);
+  const timeSig = TIME_SIGNATURES[timeSigKey];
+  const keySigKey = _getKeySignatureByTheme(theme);
+  const keySig = KEY_SIGNATURES[keySigKey];
+  const progression = CHORD_PROGRESSIONS[genre] || CHORD_PROGRESSIONS.pop;
+
+  return {
+    tempo: {
+      italian: tempoKey,
+      chinese: tempo.name,
+      bpm: tempo.bpm,
+      description: tempo.description
+    },
+    timeSignature: {
+      notation: timeSigKey,
+      name: timeSig.name,
+      chinese: timeSig.chinese,
+      feel: timeSig.feel,
+      description: timeSig.description
+    },
+    keySignature: {
+      notation: keySigKey,
+      name: keySig.name,
+      chinese: keySig.chinese,
+      sharps: keySig.sharps,
+      flats: keySig.flats,
+      relativeMinor: keySig.relativeMinor
+    },
+    chordProgression: _pickRandom(progression),
+    structure: STRUCTURES[genre] || STRUCTURES.pop
+  };
+}
+
+/* =========================================================================
+ * 19. FSM PRODUCTION TRANSITIONS
+ * ========================================================================= */
+
+export function generateFSMProductionTransitions(structure) {
+  const transitions = [];
+  const triggers = Object.keys(FSM_TRIGGERS);
+
+  for (let i = 0; i < structure.length - 1; i++) {
+    const from = structure[i];
+    const to = structure[i + 1];
+
+    let triggerKey = null;
+    if (from.includes('intro') && to.includes('verse')) triggerKey = 'intro_to_verse';
+    else if (from.includes('verse') && to.includes('pre_chorus')) triggerKey = 'verse_to_prechorus';
+    else if (from.includes('pre_chorus') && to.includes('chorus')) triggerKey = 'prechorus_to_chorus';
+    else if (from.includes('chorus') && to.includes('verse')) triggerKey = 'chorus_to_verse';
+    else if (from.includes('verse') && to.includes('bridge')) triggerKey = 'verse_to_bridge';
+    else if (from.includes('bridge') && (to.includes('final') || to.includes('chorus'))) triggerKey = 'bridge_to_final_chorus';
+    else if (from.includes('chorus') && (to.includes('outro') || to.includes('finale'))) triggerKey = 'chorus_to_outro';
+
+    if (triggerKey && FSM_TRIGGERS[triggerKey]) {
+      transitions.push({
+        from,
+        to,
+        trigger: FSM_TRIGGERS[triggerKey],
+        transitionKey: triggerKey,
+        sectionIndex: i
+      });
+    } else {
+      transitions.push({
+        from,
+        to,
+        trigger: {
+          condition: `当从${from}进入${to}`,
+          action: '自然过渡，保持乐器和动态连贯',
+          transition: '平滑过渡'
+        },
+        transitionKey: 'default',
+        sectionIndex: i
+      });
+    }
+  }
+
+  return transitions;
+}
+
+/* =========================================================================
+ * 20. SHEET MUSIC OUTPUT FORMATTER
+ * ========================================================================= */
+
+export function formatSheetMusicOutput(result) {
+  const notation = generateMusicalNotation(result.genre, result.theme);
+  const transitions = generateFSMProductionTransitions(result.structure);
+  const production = result.productionMetadata || (result.meta && result.meta.productionMetadata) || {};
+  const vocal = production.vocal || {};
+
+  let sheetMusic = `【乐谱总谱】\n\n`;
+  sheetMusic += `┌─────────────────────────────────────────────────────┐\n`;
+  sheetMusic += `│  🎵 曲谱标题：${result.theme || '无题'} × ${result.genre || '流行'}              │\n`;
+  sheetMusic += `│  🎯 调性：${notation.keySignature.chinese} (${notation.keySignature.notation})        │\n`;
+  sheetMusic += `│  ⏱️ 拍号：${notation.timeSignature.notation} (${notation.timeSignature.chinese})       │\n`;
+  sheetMusic += `│  🚀 速度：${notation.tempo.chinese} (${notation.tempo.bpm} BPM)                  │\n`;
+  sheetMusic += `│  📊 和弦进行：${notation.chordProgression}                                       │\n`;
+  sheetMusic += `└─────────────────────────────────────────────────────┘\n\n`;
+
+  sheetMusic += `【段落结构】\n\n`;
+  result.sections.forEach((section, idx) => {
+    const timeMarker = section.timeSection || `${idx + 1}. ${section.type}`;
+    const dynamic = section.dynamic || _getDynamicForSection(section.type, idx, result.sections.length);
+    const instruments = section.instruments || production.instrumentation || [];
+
+    sheetMusic += `╔══════════════════════════════════════════════════════════════╗\n`;
+    sheetMusic += `║ ${timeMarker}\n`;
+    sheetMusic += `║ [动态: ${dynamic}] [乐器: ${instruments.join(', ')}]\n`;
+    sheetMusic += `╚══════════════════════════════════════════════════════════════╝\n`;
+
+    if (section.content) {
+      const lines = section.content.split('\n').filter(l => l.trim());
+      lines.forEach(line => {
+        sheetMusic += `    ${line}\n`;
+      });
+    } else if (section.lines) {
+      section.lines.forEach(line => {
+        sheetMusic += `    ${line}\n`;
+      });
+    }
+    sheetMusic += '\n';
+  });
+
+  sheetMusic += `【FSM 状态转换】\n\n`;
+  sheetMusic += `状态机设计：段落 → 条件 → 动作 → 动态变化\n\n`;
+  transitions.forEach(t => {
+    sheetMusic += `  ${t.from} → ${t.to}\n`;
+    sheetMusic += `    ├─ 条件：${t.trigger.condition}\n`;
+    sheetMusic += `    ├─ 动作：${t.trigger.action}\n`;
+    sheetMusic += `    └─ 动态：${t.trigger.transition}\n\n`;
+  });
+
+  sheetMusic += `【人声与制作参数】\n\n`;
+  sheetMusic += `🎙️ 人声设定：\n`;
+  sheetMusic += `  - 性别：${vocal.gender || '默认'}\n`;
+  sheetMusic += `  - 情感等级：${vocal.emotionLevel || '情感5级'}\n`;
+  sheetMusic += `  - 演唱方式：${vocal.tone || '叙事'}\n`;
+  sheetMusic += `  - 语言：${vocal.dialect || '普通话'}\n`;
+  sheetMusic += `  - 麦克风技术：${vocal.micTechnique || '贴近麦克风'}\n`;
+  sheetMusic += `  - 人声叠加：${vocal.layering || '单层人声'}\n\n`;
+
+  sheetMusic += `🎚️ 动态控制：${production.dynamics ? production.dynamics.join(', ') : 'mf'}\n`;
+  sheetMusic += `✨ 效果处理：${production.effects ? production.effects.join(', ') : '混响'}\n`;
+  sheetMusic += `🎧 音效元素：${production.sfx && production.sfx.length > 0 ? production.sfx.join(', ') : '无'}\n`;
+
+  return sheetMusic;
+}
+
+/* =========================================================================
+ * 21. VARIATION GENERATOR
+ * ========================================================================= */
+
+export function generateVariation(baseResult, variationType = 'default') {
+  const scheme = STYLE_VARIATION_SCHEMES[variationType] || STYLE_VARIATION_SCHEMES.default;
+  const production = baseResult.productionMetadata || (baseResult.meta && baseResult.meta.productionMetadata) || {};
+  const vocal = production.vocal || {};
+
+  let modifiedProduction = { ...production };
+
+  if (variationType === 'enhanced') {
+    modifiedProduction.dynamics = production.dynamics ?
+      production.dynamics.map(d => d === 'mf' ? 'f' : d === 'f' ? 'ff' : d === 'p' ? 'mp' : d) :
+      ['f', 'ff'];
+
+    if (vocal.emotionLevel) {
+      const levels = ['情感3级', '情感4级', '情感5级', '情感6级', '情感7级', '情感8级'];
+      const currentIdx = levels.indexOf(vocal.emotionLevel);
+      modifiedProduction.vocal = {
+        ...vocal,
+        emotionLevel: levels[Math.min(currentIdx + 1, levels.length - 1)]
+      };
+    }
+
+    modifiedProduction.effects = [...(production.effects || []), '合唱'];
+  } else if (variationType === 'transformed') {
+    const chineseInst = CHINESE_INSTRUMENTS.slice(0, 2);
+    const westernInst = WESTERN_INSTRUMENTS.slice(0, 2);
+    const electronicInst = ELECTRONIC_INSTRUMENTS.slice(0, 2);
+
+    if (production.instrumentation) {
+      modifiedProduction.instrumentation = production.instrumentation.map(inst => {
+        if (CHINESE_INSTRUMENTS.includes(inst)) {
+          return _pickRandom(electronicInst);
+        } else if (WESTERN_INSTRUMENTS.includes(inst)) {
+          return _pickRandom(chineseInst);
+        }
+        return inst;
+      });
+    }
+
+    if (vocal.micTechnique) {
+      modifiedProduction.vocal = {
+        ...vocal,
+        micTechnique: vocal.micTechnique === '贴近麦克风' ? '空荡大厅' : '贴近麦克风'
+      };
+    }
+  }
+
+  return {
+    ...baseResult,
+    variation: {
+      type: variationType,
+      name: scheme.name,
+      description: scheme.description
+    },
+    productionMetadata: modifiedProduction,
+    fullText: formatSunoOutput({
+      ...baseResult,
+      productionMetadata: modifiedProduction
+    })
+  };
 }

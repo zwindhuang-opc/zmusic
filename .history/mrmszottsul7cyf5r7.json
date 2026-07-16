@@ -1,0 +1,39 @@
+{
+  "id": "mrmszottsul7cyf5r7",
+  "type": "lyrics",
+  "timestamp": "2026-07-16T01:01:23.441Z",
+  "params": {
+    "method": "network_layer",
+    "theme": "time_travel",
+    "style": "romantic",
+    "bpm": 120,
+    "duration": 270,
+    "complexity": 10,
+    "subject": "我",
+    "object": "你 , 他",
+    "language": "zh",
+    "variation": "A",
+    "reference": "",
+    "referenceSong": "",
+    "script": "以 D minor 起調, 只需要浪漫, 自由創作故事"
+  },
+  "result": {
+    "taskId": "network-1784163683423",
+    "method": "network_layer",
+    "result": {
+      "theme": "time_travel",
+      "style": "romantic",
+      "bpm": 120,
+      "language": "zh",
+      "script": "以 D minor 起調, 只需要浪漫, 自由創作故事",
+      "layers": {
+        "foundation": "底层节拍: 120bpm基础律动, 围绕time_travel主题构建稳定的4/4拍子流行节拍",
+        "melody": "旋律层: 流畅的旋律线条主旋律线条, 表达宿命与轮回情绪, 配合现代流行元素",
+        "expression": "表现层: 深情人声与和声, 深度诠释青春与梦想, 体现流行音乐特色",
+        "effects": "效果层: 混响、延迟、调制效果, 营造现代氛围, 整合现代音效设计"
+      },
+      "fullText": "[LAYER: FOUNDATION]\n底层节拍: 120bpm基础律动, 围绕time_travel主题构建稳定的4/4拍子流行节拍\n\n[LAYER: MELODY]\n旋律层: 流畅的旋律线条主旋律线条, 表达宿命与轮回情绪, 配合现代流行元素\n\n[LAYER: EXPRESSION]\n表现层: 深情人声与和声, 深度诠释青春与梦想, 体现流行音乐特色\n\n[LAYER: EFFECTS]\n效果层: 混响、延迟、调制效果, 营造现代氛围, 整合现代音效设计\n\n【用户创作意图】\n以 D minor 起調, 只需要浪漫, 自由創作故事\n\n【歌词内容】\n相册翻到那一页停住\n照片里的我们笑得太年轻\n那一年海边的风很大\n你的头发飞进我的嘴里\n快门按下的那一秒\n我们都以为这只是普通的一秒\n指尖摩挲过你的轮廓\n温暖却摸不到你了\n照片会褪色 寂寥不会\n有些瞬间 被定格成永远\n我们在相纸里永远年轻\n而镜中人 一年年走远\n后来相册换了三本\n后来身边的人 换了几轮\n可每次翻到这一页\n海风的味道 又扑面而来\n照片会褪色 寂寥不会\n有些瞬间 被定格成永远\n我们在相纸里永远年轻\n而镜中人 一年年走远\n时间是个残酷的修图师\n它只修别人 不修你\n你永远停在了那一秒\n照片会褪色 寂寥不会\n有些瞬间 被定格成永远\n我们在相纸里永远年轻\n而镜中人 一年年走远\n再唱一遍这一句 委屈\n合上相册 关上灯\n梦里我们 还在海边",
+      "generatedAt": "2026-07-16T01:01:23.441Z"
+    }
+  }
+}
