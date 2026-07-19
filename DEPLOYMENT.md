@@ -10,7 +10,7 @@ This guide provides multiple deployment options to share ZMusic with friends via
 1. Push latest code to GitHub (already done via `npm run backup`)
 2. Click this one-click deploy link:
    ```
-   https://render.com/deploy?repo=https://github.com/vcfhuang/zmusic
+   https://render.com/deploy?repo=https://github.com/zwindhuang-opc/zmusic
    ```
 3. Sign in with GitHub account
 4. Render will detect `render.yaml` blueprint and create 2 services:
@@ -77,8 +77,8 @@ npx cap open ios  # then Archive in Xcode
 
 After deployment, share these links with friends:
 - **Web App:** `https://zmusic-web.onrender.com` (after Render deployment)
-- **GitHub Repo:** `https://github.com/vcfhuang/zmusic`
-- **Latest Release APK:** `https://github.com/vcfhuang/zmusic/releases/latest`
+- **GitHub Repo:** `https://github.com/zwindhuang-opc/zmusic`
+- **Latest Release APK:** `https://github.com/zwindhuang-opc/zmusic/releases/latest`
 
 ---
 
