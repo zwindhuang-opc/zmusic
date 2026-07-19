@@ -319,6 +319,26 @@ const THEME_BANKS = {
     locations: ['海边', '深海', '船上', '彼岸', '海岸', '海面', '灯塔下', '远方'],
     timeWords: ['永恒', '此刻', '潮起', '潮落', '黎明', '黄昏', '整夜', '长久'],
     descriptors: ['辽阔', '深邃', '蔚蓝', '澎湃', '梦幻', '自由', '神秘', '浩瀚', '宁静', '壮阔']
+  },
+  ghost_love: {
+    imagery: ['幽魂', '磷火', '残月', '阴风', '纸钱', '孤坟', '迷雾', '残烛', '魅影', '黄泉'],
+    emotions: ['痴缠', '幽怨', '凄婉', '执念', '怅惘', '缱绻', '哀恸', '缠绵', '眷恋', '不舍'],
+    actions: ['流连', '守望', '追寻', '萦绕', '飘散', '低诉', '穿越', '守候', '呢喃', '消散'],
+    subjects: ['幽魂', '孤魂', '魅影', '残梦', '旧约', '黄泉路', '奈何桥', '三生石', '彼岸花', '忘川'],
+    objects: ['前缘', '执念', '残愿', '旧约', '夙愿', '离恨', '情丝', '残魂', '余温', '遗愿'],
+    locations: ['黄泉', '奈何桥', '三生石畔', '忘川边', '孤坟前', '幽冥', '残梦中', '旧宅深处'],
+    timeWords: ['千年', '永世', '轮回', '前生', '今世', '彼岸', '永夜', '生生世世'],
+    descriptors: ['缥缈', '幽冷', '凄美', '缱绻', '幽怨', '执念', '缠绵', '凄婉', '痴绝', '苍茫']
+  },
+  supernatural: {
+    imagery: ['鬼火', '幽魂', '咒语', '符咒', '异象', '残响', '迷雾', '暗影', '通灵', '异界'],
+    emotions: ['诡秘', '战栗', '敬畏', '不安', '迷惑', '震撼', '痴迷', '惶恐', '躁动', '恍惚'],
+    actions: ['召唤', '驱散', '穿越', '窥探', '封印', '觉醒', '附身', '显灵', '感应', '破解'],
+    subjects: ['幽灵', '咒印', '法阵', '异相', '残魂', '灵媒', '结界', '异象', '秘宝', '预言'],
+    objects: ['咒语', '符纸', '灵力', '秘宝', '结界', '预言', '残响', '印记', '契约', '诅咒'],
+    locations: ['异界', '结界内', '废墟深处', '密室', '墓地', '阴阳交界', '虚空', '古宅'],
+    timeWords: ['千年', '永夜', '破晓前', '月圆夜', '此刻', '轮回', '混沌', '创世'],
+    descriptors: ['诡谲', '神秘', '幽森', '空灵', '妖异', '禁忌', '苍茫', '洪荒', '寂灭', '重生']
   }
 };
 
@@ -342,8 +362,16 @@ const STYLE_MODIFIERS = {
     sfx: []
   },
   rock: {
-    vocabularyBias: ['撕裂', '火焰', '反叛', '自由', '呐喊', '热血'],
-    sentencePatterns: ['{subject}{action}天，{emotion}燃烧', '{imagery}{action}，{subject}永不{action}'],
+    vocabularyBias: ['撕裂', '火焰', '反叛', '自由', '呐喊', '热血', '爆发', '嘶吼', '震撼', '不屈'],
+    sentencePatterns: [
+      '{subject}{action}天，{emotion}燃烧',
+      '{imagery}{action}，{subject}永不{action}',
+      '{descriptor}{imagery}中，{subject}{action}',
+      '{emotion}的{object}，{action}到{timeWord}',
+      '{location}里{subject}{action}，{emotion}沸腾',
+      '哪怕{imagery}{action}，{subject}也要{action}',
+      '{subject}{action}，{emotion}刻进{object}'
+    ],
     rhymePreference: 'ABAB',
     lineLength: [6, 11],
     tone: 'urban',
@@ -378,8 +406,16 @@ const STYLE_MODIFIERS = {
     sfx: []
   },
   ballad: {
-    vocabularyBias: ['深情', '钢琴', '思念', '月光', '永恒', '温柔'],
-    sentencePatterns: ['{subject}{action}，{emotion}蔓延', '{imagery}里{action}，{object}还在'],
+    vocabularyBias: ['深情', '钢琴', '思念', '月光', '永恒', '温柔', '泪光', '心跳', '呢喃', '低语'],
+    sentencePatterns: [
+      '{subject}{action}，{emotion}蔓延',
+      '{imagery}里{action}，{object}还在',
+      '{timeWord}的{location}，{subject}独自{action}',
+      '{emotion}的{subject}，{action}在{location}',
+      '{descriptor}{imagery}下，{subject}静静{action}',
+      '{subject}啊，{action}这{descriptor}{object}',
+      '{imagery}{action}，{emotion}永不{action}'
+    ],
     rhymePreference: 'ABAB',
     lineLength: [7, 12],
     tone: 'formal',
@@ -1046,32 +1082,30 @@ function _getWordForSlot(slot, banks, weights, usedWords, styleConfig) {
   const category = SLOT_TO_CATEGORY[slot];
   if (!category) return '';
 
-  // 40% chance to inject a style-bias word for descriptor/emotion/object slots
   if (styleConfig && styleConfig.vocabularyBias && styleConfig.vocabularyBias.length) {
     const biasSlots = ['descriptor', 'emotion', 'object', 'subject'];
-    if (biasSlots.includes(slot) && Math.random() < 0.4) {
-      const biasWord = _pickRandom(styleConfig.vocabularyBias);
-      if (biasWord && !usedWords.has(biasWord)) {
-        usedWords.add(biasWord);
-        return biasWord;
+    if (biasSlots.includes(slot) && Math.random() < 0.2) {
+      const shuffled = [...styleConfig.vocabularyBias].sort(() => Math.random() - 0.5);
+      for (const biasWord of shuffled) {
+        if (biasWord && !usedWords.has(biasWord)) {
+          usedWords.add(biasWord);
+          return biasWord;
+        }
       }
     }
   }
 
-  // Weighted selection across blended banks
   const bank = weights && weights.length > 1 ? _pickWeighted(banks, weights) : banks[0];
   const list = bank ? bank[category] : null;
   if (!list || list.length === 0) return '';
 
-  // Try a few times to find an unused word
-  for (let attempt = 0; attempt < Math.min(list.length, 5); attempt++) {
-    const word = _pickRandom(list);
+  const shuffled = [...list].sort(() => Math.random() - 0.5);
+  for (const word of shuffled) {
     if (!usedWords.has(word)) {
       usedWords.add(word);
       return word;
     }
   }
-  // Fallback: allow reuse
   return _pickRandom(list);
 }
 
@@ -1122,8 +1156,11 @@ function _enforceLineLength(line, styleConfig) {
     out = out.slice(0, max);
   }
   if (out.length < min) {
-    // Pad with an ellipsis-like continuation that fits Chinese lyric style
-    const fillers = ['……', '，无止境', '，不停歇', '，在心中'];
+    const fillers = [
+      '……', '，无止境', '，不停歇', '，在心中', '，永不散',
+      '，到永远', '，在梦里', '，绕心间', '，难入眠', '，意未断',
+      '，人未还', '，泪未干', '，情未了', '，缘未尽', '，夜未央'
+    ];
     out += _pickRandom(fillers);
     out = out.slice(0, max);
   }
@@ -1184,10 +1221,10 @@ const _RHYME_SCHEME_PATTERNS = {
  * @param {string} rhymeScheme - AABB|ABAB|ABCB
  * @returns {Array<string>} generated lines
  */
-export function generateSection(sectionType, themeBank, styleConfig, complexity = 5, rhymeScheme = 'ABAB') {
+export function generateSection(sectionType, themeBank, styleConfig, complexity = 5, rhymeScheme = 'ABAB', usedWords = null) {
   const banks = Array.isArray(themeBank) ? themeBank : [themeBank];
   const weights = banks.map(() => 1);
-  const usedWords = new Set();
+  const globalUsed = usedWords instanceof Set ? usedWords : new Set();
 
   const lineCount = complexity >= 7 ? 4 : complexity >= 4 ? 3 : 2;
   const scheme = _RHYME_SCHEME_PATTERNS[rhymeScheme] || _RHYME_SCHEME_PATTERNS.ABAB;
@@ -1204,7 +1241,7 @@ export function generateSection(sectionType, themeBank, styleConfig, complexity 
     }
 
     const line = generateLine(sectionType, themeBank, styleConfig, {
-      banks, weights, usedWords, rhyme: rhymeTarget
+      banks, weights, usedWords: globalUsed, rhyme: rhymeTarget
     });
 
     if (!rhymeAnchors[letter] && line.length > 0) {
@@ -1549,7 +1586,7 @@ function _translateTheme(theme) {
     folk_tale: '民间故事', summer_vibes: '夏日氛围', winter_solitude: '冬日孤寂',
     spring_awakening: '春日觉醒', autumn_melancholy: '秋日忧郁', ocean_dreams: '海洋之梦',
     dark: '暗黑', epic: '史诗', romantic: '浪漫', nostalgic: '怀旧', energetic: '活力',
-    dreamy: '梦幻', modern: '现代'
+    dreamy: '梦幻', modern: '现代', ghost_love: '人鬼情未了', supernatural: '灵异超自然'
   };
   return translations[theme] || theme;
 }
@@ -1656,10 +1693,11 @@ function _buildInstrumentTimeline(sections) {
 function _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity) {
   const structure = STRUCTURES[genre] || STRUCTURES.pop;
   const rhymeScheme = styleConfig.rhymePreference || 'ABAB';
+  const globalUsedWords = new Set();
 
   const sections = structure.map((sectionType) => {
     const normalized = _normalizeSectionType(sectionType);
-    const sectionResult = generateSection(normalized, themeBank, styleConfig, complexity, rhymeScheme);
+    const sectionResult = generateSection(normalized, themeBank, styleConfig, complexity, rhymeScheme, globalUsedWords);
     const lines = sectionResult.lines || sectionResult;
     return {
       type: sectionType,
@@ -1806,6 +1844,7 @@ export function generateDynamicLyrics(params) {
     const structure = STRUCTURES[genre] || STRUCTURES.pop;
     const sections = [];
     let currentTime = 0;
+    const globalUsedWords = new Set();
 
     structure.forEach((sectionType, index) => {
       const normalizedType = _normalizeSectionType(sectionType);
@@ -1817,7 +1856,7 @@ export function generateDynamicLyrics(params) {
       const startTime = _formatTime(currentTime);
       const endTime = _formatTime(currentTime + durationSec);
 
-      const sectionResult = generateSection(normalizedType, themeBank, styleConfig, complexity, styleConfig.rhymePreference);
+      const sectionResult = generateSection(normalizedType, themeBank, styleConfig, complexity, styleConfig.rhymePreference, globalUsedWords);
       const lines = sectionResult.lines || sectionResult;
 
       const dynamic = _getDynamicForSection(sectionType, index, structure.length);

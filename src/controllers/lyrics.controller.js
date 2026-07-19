@@ -12,6 +12,7 @@
 
 import LyricsService from '../services/lyrics.service.js';
 import Logger from '../utils/logger.js';
+import generationHistory from '../services/generation.history.js';
 
 /**
  * 日志记录器实例
@@ -108,13 +109,51 @@ export class LyricsController {
    */
   async generate(req, res) {
     try {
-      const { genre = 'pop', theme = 'love', ...params } = req.body || {};
-      logger.info(`Generate lyrics: genre=${genre}, theme=${theme}`);
-      const result = lyricsService.generate(genre, theme, params);
+      const { genre = 'pop', theme = 'love', method = 'basic', ...params } = req.body || {};
+      logger.info(`Generate lyrics: genre=${genre}, theme=${theme}, method=${method}`);
+
+      let result;
+      switch (method) {
+        case 'fsm':
+        case 'basic':
+          result = lyricsService.generate(genre, theme, params);
+          break;
+        case 'network':
+        case 'network_layer':
+          result = lyricsService.generateNetworkLayer(genre, theme, params);
+          break;
+        case 'time':
+        case 'muse':
+          result = lyricsService.generateTimeSection(genre, theme, params);
+          break;
+        case 'variation':
+        case 'suno':
+          result = lyricsService.generateStyleVariation(genre, theme, params.styleType || genre, params.variation || 'A', params);
+          break;
+        default:
+          result = lyricsService.generate(genre, theme, params);
+      }
+
+      this._saveHistory(genre, theme, method, params, result);
       return res.json({ success: true, data: result });
     } catch (error) {
       logger.error(`Generate error: ${error.message}`);
       return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  _saveHistory(genre, theme, method, params, result) {
+    try {
+      generationHistory.add('lyrics', {
+        genre,
+        theme,
+        method,
+        style: genre,
+        params,
+        result
+      });
+    } catch (e) {
+      logger.warn(`Save history failed: ${e.message}`);
     }
   }
 }

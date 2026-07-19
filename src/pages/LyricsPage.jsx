@@ -72,6 +72,8 @@ function LyricsPage({ onNavigate }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [showCommands, setShowCommands] = useState(true);
+  const [showLyrics, setShowLyrics] = useState(true);
 
   /* --- UI state for tabbed/categorized interface --- */
   const [activeTab, setActiveTab] = useState('style'); // 'style' | 'method' | 'advanced'
@@ -560,53 +562,103 @@ function LyricsPage({ onNavigate }) {
                 </div>
               )}
 
-              {result.command && (
-                <div className="p-3 rounded-lg bg-white/5 border border-white/5">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">{t('lyrics.generated_command')}</div>
-                    <button onClick={() => copyToClipboard(result.command)}
-                      className="flex items-center gap-1 px-2 py-1 rounded bg-white/5 text-xs text-gray-400 hover:bg-white/10 transition-colors"
-                    >
-                      <Copy className="w-3 h-3" />{t('common.copy')}
-                    </button>
-                  </div>
-                  <pre className="text-xs text-pink-300 font-mono whitespace-pre-wrap break-words">{result.command}</pre>
+              {/* Commands Section */}
+              {(result.command || result.result?.fullCommand) && (
+                <div className="rounded-lg bg-white/5 border border-white/5 overflow-hidden">
+                  <button
+                    onClick={() => setShowCommands(prev => !prev)}
+                    className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-pink-400" />
+                      <span className="text-xs font-semibold text-white uppercase tracking-wider">{t('lyrics.generated_command')}</span>
+                      <span className="text-[10px] text-gray-500">({[result.command, result.result?.fullCommand].filter(Boolean).length})</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const allCommands = [result.command, result.result?.fullCommand].filter(Boolean).join('\n\n---\n\n');
+                          copyToClipboard(allCommands);
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-pink-500/10 border border-pink-500/30 text-[10px] text-pink-300 hover:bg-pink-500/20 transition-colors"
+                      >
+                        <Copy className="w-3 h-3" />{t('lyrics.copy_commands') || '复制全部命令'}
+                      </button>
+                      {showCommands ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-500" />}
+                    </div>
+                  </button>
+                  {showCommands && (
+                    <div className="p-3 pt-0 space-y-3">
+                      {result.command && (
+                        <div className="rounded-md bg-black/30 border border-white/5 overflow-hidden">
+                          <div className="flex items-center justify-between px-2.5 py-1.5 bg-white/5 border-b border-white/5">
+                            <span className="text-[10px] text-gray-500 uppercase tracking-wider">{t('lyrics.fsm_command') || 'FSM命令'}</span>
+                            <button onClick={() => copyToClipboard(result.command)}
+                              className="flex items-center gap-1 px-2 py-0.5 rounded bg-white/5 text-[10px] text-gray-400 hover:bg-white/10 transition-colors"
+                            >
+                              <Copy className="w-3 h-3" />{t('common.copy')}
+                            </button>
+                          </div>
+                          <pre className="p-2.5 text-xs text-pink-300 font-mono whitespace-pre-wrap break-words max-h-60 overflow-y-auto">{result.command}</pre>
+                        </div>
+                      )}
+                      {result.result?.fullCommand && (
+                        <div className="rounded-md bg-black/30 border border-white/5 overflow-hidden">
+                          <div className="flex items-center justify-between px-2.5 py-1.5 bg-white/5 border-b border-white/5">
+                            <span className="text-[10px] text-gray-500 uppercase tracking-wider">{t('lyrics.suno_command') || 'Suno命令'}</span>
+                            <button onClick={() => copyToClipboard(result.result.fullCommand)}
+                              className="flex items-center gap-1 px-2 py-0.5 rounded bg-white/5 text-[10px] text-gray-400 hover:bg-white/10 transition-colors"
+                            >
+                              <Copy className="w-3 h-3" />{t('common.copy')}
+                            </button>
+                          </div>
+                          <pre className="p-2.5 text-xs text-violet-300 font-mono whitespace-pre-wrap break-words max-h-60 overflow-y-auto">{result.result.fullCommand}</pre>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
+              {/* Lyrics Section */}
               {result.result?.fullText && (
-                <div className="p-3 md:p-4 rounded-lg bg-white/5 border border-white/5 max-h-[50vh] overflow-y-auto">
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">{t('lyrics.lyrics_output')}</div>
-                    <div className="flex items-center gap-1.5">
-                      <button onClick={() => copyToClipboard(result.result.fullText)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-xs text-gray-300"
-                        title={t('common.copy')}
+                <div className="rounded-lg bg-white/5 border border-white/5 overflow-hidden">
+                  <button
+                    onClick={() => setShowLyrics(prev => !prev)}
+                    className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-violet-400" />
+                      <span className="text-xs font-semibold text-white uppercase tracking-wider">{t('lyrics.lyrics_output')}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); copyToClipboard(result.result.fullText); }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-violet-500/10 border border-violet-500/30 text-[10px] text-violet-300 hover:bg-violet-500/20 transition-colors"
                       >
-                        <Copy className="w-3 h-3" />{t('common.copy')}
+                        <Copy className="w-3 h-3" />{t('lyrics.copy_lyrics') || '复制歌词'}
                       </button>
-                      <button onClick={() => { setPendingLyrics(result.result.fullText); onNavigate?.('music'); }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/30 hover:bg-violet-500/20 transition-colors text-xs text-violet-300"
-                        title={t('lyrics.send_to_music')}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setPendingLyrics(result.result.fullText); onNavigate?.('music'); }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-pink-500/10 border border-pink-500/30 text-[10px] text-pink-300 hover:bg-pink-500/20 transition-colors"
                       >
                         <Music className="w-3 h-3" />{t('lyrics.send_to_music')}
                       </button>
-                      <button onClick={() => { setPendingLyrics(result.result.fullText); onNavigate?.('mv'); }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 transition-colors text-xs text-blue-300"
-                        title={t('lyrics.send_to_mv')}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setPendingLyrics(result.result.fullText); onNavigate?.('mv'); }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/30 text-[10px] text-blue-300 hover:bg-blue-500/20 transition-colors"
                       >
                         <Video className="w-3 h-3" />{t('lyrics.send_to_mv')}
                       </button>
+                      {showLyrics ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-500" />}
                     </div>
-                  </div>
-                  <pre className="text-sm text-white whitespace-pre-wrap font-sans leading-relaxed">{result.result.fullText}</pre>
-                </div>
-              )}
-
-              {result.result?.fullCommand && (
-                <div className="p-4 rounded-lg bg-white/5 border border-white/5 max-h-96 overflow-y-auto">
-                  <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">{t('lyrics.generated_command')}</div>
-                  <pre className="text-xs text-pink-300 font-mono whitespace-pre-wrap break-words">{result.result.fullCommand}</pre>
+                  </button>
+                  {showLyrics && (
+                    <div className="p-3 pt-0">
+                      <pre className="p-3 rounded-md bg-black/30 text-sm text-white whitespace-pre-wrap font-sans leading-relaxed max-h-[50vh] overflow-y-auto">{result.result.fullText}</pre>
+                    </div>
+                  )}
                 </div>
               )}
 

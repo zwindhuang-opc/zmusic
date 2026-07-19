@@ -217,7 +217,9 @@ function _translateTheme(theme) {
     nostalgic: '怀旧',
     energetic: '活力',
     dreamy: '梦幻',
-    modern: '现代'
+    modern: '现代',
+    ghost_love: '人鬼情未了',
+    supernatural: '灵异超自然'
   };
   return translations[theme] || theme;
 }

@@ -97,15 +97,19 @@ export async function handleRoute(req, res, url, method, body) {
     return historyController.getStats(req, res);
   }
 
-  if (path === '/api/history/:id' && method === 'GET') {
+  const historyIdMatch = path.match(/^\/api\/history\/(.+)$/);
+  if (historyIdMatch && method === 'GET') {
+    req.params = { id: historyIdMatch[1] };
     return historyController.getById(req, res);
   }
 
-  if (path === '/api/history/:id' && method === 'DELETE') {
+  if (historyIdMatch && method === 'DELETE') {
+    req.params = { id: historyIdMatch[1] };
     return historyController.delete(req, res);
   }
 
   if (path === '/api/history/clear' && method === 'POST') {
+    req.body = body;
     return historyController.clear(req, res);
   }
 

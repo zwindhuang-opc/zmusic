@@ -1,0 +1,44 @@
+# Render Blueprint for ZMusic - One-click cloud deployment
+# After pushing this to GitHub, visit:
+# https://render.com/deploy?repo=https://github.com/vcfhuang/zmusic
+# This will spin up both the backend API and frontend automatically.
+
+services:
+  # Backend API service (Node.js Express server)
+  - type: web
+    name: zmusic-api
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm install
+    startCommand: npm run server
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5501
+      - key: HOST
+        value: 0.0.0.0
+      - key: SUNO_CN_API_KEY
+        sync: false  # Set this in Render dashboard (secret)
+
+  # Frontend static site (Vite build)
+  - type: web
+    name: zmusic-web
+    runtime: static
+    plan: free
+    region: singapore
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: false
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://zmusic-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://zmusic-api.onrender.com/api

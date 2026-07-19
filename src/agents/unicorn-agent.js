@@ -1260,7 +1260,102 @@ const THEME_CONFIG = {
   energetic: { emotion: '活力与热血', emotionTheme: '活力永不熄灭', atmosphere: '活力热血氛围', beatType: '4/4拍子' },
   dreamy: { emotion: '梦幻与纯真', emotionTheme: '魔法不是幻觉是心中的纯真', atmosphere: '梦幻纯真氛围', beatType: '4/4拍子' },
   modern: { emotion: '现代与潮流', emotionTheme: '个性从不被定义', atmosphere: '现代潮流氛围', beatType: '4/4拍子' },
-  ancient: { emotion: '古风与江湖', emotionTheme: '江湖路远情义长', atmosphere: '古风江湖氛围', beatType: '古典韵律' }
+  ancient: { emotion: '古风与江湖', emotionTheme: '江湖路远情义长', atmosphere: '古风江湖氛围', beatType: '古典韵律' },
+  ghost_love: { emotion: '人鬼情未了', emotionTheme: '陰魂不散餘情未了', atmosphere: '幽冥凄美氛围', beatType: '古典韵律' },
+  supernatural: { emotion: '灵异与宿命', emotionTheme: '阴阳交界处的执念', atmosphere: '神秘诡异氛围', beatType: '4/4拍子' }
+};
+
+const EMOTIONAL_ARC = {
+  intro: {
+    '悲伤与深情交织': '悠远的思念，深情初现',
+    '彻骨的悲伤': '压抑的低吟，痛在深处',
+    '心碎与绝望': '死寂的开场，心碎无声',
+    '温暖与重生': '微光初现，温暖萌芽',
+    '宿命与轮回': '命运的低语，轮回开启',
+    '人鬼情未了': '幽冥的呼唤，魂魄初聚',
+    '古风与江湖': '江湖悠远，笛声初起',
+    'default': '意境铺陈，情绪铺垫'
+  },
+  verse1: {
+    '悲伤与深情交织': '克制的深情，往事回忆',
+    '彻骨的悲伤': '隐忍的痛，往事浮现',
+    '心碎与绝望': '孤独的诉说，伤口撕裂',
+    '温暖与重生': '温柔的叙事，希望种子',
+    '宿命与轮回': '前世记忆，缓缓展开',
+    '人鬼情未了': '阴阳相隔的思念，轻声诉说',
+    '古风与江湖': '江湖初涉，少年意气',
+    'default': '叙事展开，情绪递进'
+  },
+  verse2: {
+    '悲伤与深情交织': '压抑升级，情感涌动',
+    '彻骨的悲伤': '痛楚加深，无法呼吸',
+    '心碎与绝望': '绝望蔓延，灵魂颤抖',
+    '温暖与重生': '温暖加深，信心增长',
+    '宿命与轮回': '宿命逼近，挣扎加剧',
+    '人鬼情未了': '执念加深，魂魄流连',
+    '古风与江湖': '江湖险恶，情义两难',
+    'default': '情感深化，张力累积'
+  },
+  pre_chorus: {
+    '悲伤与深情交织': '情感的涌动，泪在眼眶',
+    '彻骨的悲伤': '情绪临界点，痛到麻木',
+    '心碎与绝望': '绝望的边缘，即将崩溃',
+    '温暖与重生': '希望的升起，曙光初现',
+    '宿命与轮回': '命运的交汇，抉择时刻',
+    '人鬼情未了': '阴阳交界的悸动，魂魄共鸣',
+    '古风与江湖': '剑拔弩张，情义对决',
+    'default': '张力累积，即将爆发'
+  },
+  chorus1: {
+    '悲伤与深情交织': '深情的爆发，泪水决堤',
+    '彻骨的悲伤': '悲伤的呐喊，撕心裂肺',
+    '心碎与绝望': '心碎的咆哮，万念俱灰',
+    '温暖与重生': '温暖的释放，拥抱希望',
+    '宿命与轮回': '宿命的对决，破茧而出',
+    '人鬼情未了': '人鬼殊途的恸哭，情缘难断',
+    '古风与江湖': '豪情万丈，剑指苍穹',
+    'default': '情感释放，第一次高潮'
+  },
+  chorus2: {
+    '悲伤与深情交织': '悲伤与深情的极致交融',
+    '彻骨的悲伤': '痛彻骨髓，灵魂出窍',
+    '心碎与绝望': '彻底崩溃，深渊凝视',
+    '温暖与重生': '温暖的高潮，光芒万丈',
+    '宿命与轮回': '轮回的高潮，命运交响',
+    '人鬼情未了': '阴魂不散，余情未了的爆发',
+    '古风与江湖': '江湖巅峰，生死对决',
+    'default': '情感巅峰，第二次高潮'
+  },
+  bridge: {
+    '悲伤与深情交织': '痛苦的挣扎，情与理的碰撞',
+    '彻骨的悲伤': '最黑暗的时刻，直面痛苦',
+    '心碎与绝望': '绝望的深渊，最后的呐喊',
+    '温暖与重生': '蜕变的时刻，旧我死去',
+    '宿命与轮回': '轮回的转折，顿悟时刻',
+    '人鬼情未了': '魂魄的抉择，消散还是停留',
+    '古风与江湖': '顿悟时刻，看破江湖',
+    'default': '情绪转折，内心挣扎'
+  },
+  final_chorus: {
+    '悲伤与深情交织': '全部情感的终极释放，笑着流泪',
+    '彻骨的悲伤': '悲伤的终结，与痛苦和解',
+    '心碎与绝望': '绝望过后的平静，重生之光',
+    '温暖与重生': '重生的辉煌，光芒普照',
+    '宿命与轮回': '打破宿命，我命由我',
+    '人鬼情未了': '阴销魂散，此情永恒',
+    '古风与江湖': '江湖一笑，情义千秋',
+    'default': '终极爆发，情感顶点'
+  },
+  outro: {
+    '悲伤与深情交织': '释然的余韵，温柔散场',
+    '彻骨的悲伤': '痛楚远去，余韵悠长',
+    '心碎与绝望': '归于平静，伤口愈合',
+    '温暖与重生': '温暖留存，希望永续',
+    '宿命与轮回': '轮回落幕，归于宁静',
+    '人鬼情未了': '魂魄消散，此情长存',
+    '古风与江湖': '江湖远去，余音绕梁',
+    'default': '情绪消散，余韵悠长'
+  }
 };
 
 export class UnicornAgent {
@@ -2311,7 +2406,7 @@ export class UnicornAgent {
     command += `风格：${style}\n`;
     command += `BPM：${bpm}\n`;
     command += `语言：${language === 'zh' ? '中文' : language === 'en' ? 'English' : '中英混合'}\n`;
-    command += `情绪：${themeConfig.emotion}\n\n`;
+    command += `整体情绪：${themeConfig.emotion}\n\n`;
 
     if (script) {
       command += `【用户创作意图】\n${script}\n\n`;
@@ -2319,7 +2414,8 @@ export class UnicornAgent {
 
     command += `【状态定义】\n`;
     states.forEach((state, i) => {
-      command += `${i}. ${state.state}: ${state.description}\n`;
+      const sectionEmotion = this._getEmotionForSection(state.state, themeConfig.emotion);
+      command += `${i}. ${state.state}: ${state.description} [情绪：${sectionEmotion}]\n`;
     });
 
     command += `\n【状态转换规则】\n`;
@@ -2332,7 +2428,8 @@ export class UnicornAgent {
 
     command += `【歌词内容】\n`;
     Object.entries(lyrics).forEach(([state, lines]) => {
-      command += `${state}:\n`;
+      const sectionEmotion = this._getEmotionForSection(state, themeConfig.emotion);
+      command += `${state} [情绪：${sectionEmotion}]:\n`;
       lines.forEach(line => {
         command += `  ${line}\n`;
       });
@@ -2765,43 +2862,177 @@ export class UnicornAgent {
   }
 
   _getInstrumentsForSection(sectionType, style) {
+    const s = sectionType;
+    const inst = (intro, verse, pre, chorus, bridge, outro) => ({
+      intro: intro, verse: verse, verse1: verse, verse2: verse,
+      pre_chorus: pre, chorus: chorus, chorus1: chorus, chorus2: chorus,
+      final_chorus: chorus, bridge: bridge, outro: outro,
+      interlude: pre, finale: outro, ending: outro
+    });
     const instrumentMap = {
-      tango: {
-        intro: ['古琴泛音独奏', 'Rain SFX', 'Wind SFX'],
-        verse: ['Cello backing', 'Bandoneon'],
-        pre_chorus: ['Bandoneon enters', 'Strings swelling'],
-        chorus: ['Full Classical Tango ensemble', 'Shimmer Reverb'],
-        bridge: ['Cello Solo', 'Vocals'],
-        outro: ['Rain continuing', 'Footsteps fading']
-      },
-      ancient_modern: {
-        intro: ['古琴泛音独奏'],
-        verse1: ['古琴按音散音', '箫长音点缀'],
-        interlude: ['电子脉冲渐入', 'Synth Pad低沉嗡鸣'],
-        verse2: ['钢琴高音单音', 'Synth Pad', '弦乐团极弱铺底'],
-        chorus: ['古琴散音轮奏', '合成器大气弦乐Pad', '弦乐团全编制', '合唱团'],
-        bridge: ['古琴泛音', '风声采样'],
-        finale: ['钢琴单音', '电子脉冲渐弱', '古琴最后一个按音'],
-        outro: ['古琴单音三声', '弦乐团最后一个和弦']
-      },
-      pop: {
-        intro: ['钢琴前奏', '合成器Pad'],
-        verse: ['钢琴伴奏', '轻柔鼓点'],
-        pre_chorus: ['合成器升调', '鼓点加强'],
-        chorus: ['完整乐队', '和声'],
-        bridge: ['钢琴独奏', '人声'],
-        outro: ['渐弱收束']
-      },
-      rock: {
-        intro: ['吉他Riff', '鼓点'],
-        verse: ['节奏吉他', '贝斯', '鼓'],
-        pre_chorus: ['吉他失真', '鼓点密集'],
-        chorus: ['重型吉他', '强力鼓点', '人声爆发'],
-        bridge: ['吉他独奏', '贝斯'],
-        outro: ['渐弱收束']
-      }
+      tango: inst(
+        ['Bandoneon', 'Cello Solo'],
+        ['Cello', 'Pizzicato Strings'],
+        ['Bandoneon swells', 'Vibrato Strings'],
+        ['Full Tango Orchestra', 'Percussive Accents'],
+        ['Bandoneon Cadenza', 'Cello Harmonics'],
+        ['Bandoneon fading', 'Footsteps on Cobblestone']
+      ),
+      ancient_modern: inst(
+        ['古琴泛音', '滴水采样'],
+        ['古琴按音', '箫长音'],
+        ['电子脉冲', '弦乐铺垫'],
+        ['古琴+合成器', '弦乐团', '合唱团'],
+        ['古琴泛音', '风声采样'],
+        ['古琴最后一音', '电子脉冲渐弱']
+      ),
+      chinese_classical: inst(
+        ['古琴独奏', '箫'],
+        ['古筝', '琵琶', '二胡'],
+        ['笙', '竹笛'],
+        ['民族管弦乐团', '编钟'],
+        ['二胡独奏', '古琴泛音'],
+        ['古琴余韵', '箫渐弱']
+      ),
+      pop: inst(
+        ['Piano Arpeggio', 'Synth Pad'],
+        ['Acoustic Guitar', 'Light Drums', 'Bass'],
+        ['Synth Build-up', 'Drum Fill'],
+        ['Full Pop Band', 'Backing Vocals', 'Synth Lead'],
+        ['Piano Solo', 'Vocal Ad-lib'],
+        ['Reverb Tail', 'Fade-out']
+      ),
+      rock: inst(
+        ['Distorted Guitar Riff', 'Drum Fill'],
+        ['Rhythm Guitar', 'Bass', 'Drums'],
+        ['Guitar Distortion Build', 'Double Bass Drums'],
+        ['Heavy Guitars', 'Power Drums', 'Screaming Vocals'],
+        ['Guitar Solo', 'Bass Walk'],
+        ['Feedback', 'Cymbal Crash Fade']
+      ),
+      ballad: inst(
+        ['Solo Piano', 'Soft Strings Pad'],
+        ['Piano', 'Acoustic Guitar', 'Soft Kick'],
+        ['Strings Build', 'Piano Crescendo'],
+        ['Full Strings', 'Piano', 'Vocal Harmony'],
+        ['Piano Solo', 'Cello Obligato'],
+        ['Piano Last Note', 'Strings Fade']
+      ),
+      electronic: inst(
+        ['Synth Arpeggio', 'Sub Bass'],
+        ['Beat Loop', 'Synth Bass', 'Arpeggiator'],
+        ['Build-up Synth', 'White Noise Rise'],
+        ['Full Drop: Synths', 'Heavy Bass', 'Drum Machine'],
+        ['Ambient Pad', 'Glitch FX'],
+        ['Reverb Tail', 'Synth Decay']
+      ),
+      jazz: inst(
+        ['Piano Intro', 'Brass Muted'],
+        ['Jazz Guitar', 'Walking Bass', 'Brushes'],
+        ['Brass Swells', 'Piano Comping'],
+        ['Big Band', 'Brass Section', 'Sax Solo'],
+        ['Piano Solo', 'Bass Solo'],
+        ['Brass Mute Fade', 'Brush Swirl']
+      ),
+      hip_hop: inst(
+        ['808 Kick', 'Sample Chop'],
+        ['Beat Loop', '808 Bass', 'Synth Pad'],
+        ['Ad-lib Build', 'Drum Fill'],
+        ['Full Beat', 'Bass Heavy', 'Backing Ad-libs'],
+        ['Beat Switch', 'Spoken Word'],
+        ['808 Fade', 'Sample Echo']
+      ),
+      rnb: inst(
+        ['Electric Piano', 'Subtle Beat'],
+        ['Rhodes Piano', 'Smooth Bass', 'Finger Snap'],
+        ['Strings Swell', 'Harmony Build'],
+        ['Full R&B Band', 'Backing Vocals', 'Synth Lead'],
+        ['Rhodes Solo', 'Vocal Run'],
+        ['Reverb Fade', 'Last Chord']
+      ),
+      country: inst(
+        ['Acoustic Guitar', 'Harmonica'],
+        ['Acoustic Guitar', 'Fiddle', 'Snare Brush'],
+        ['Steel Guitar Build', 'Drum Fill'],
+        ['Full Country Band', 'Steel Guitar', 'Fiddle Solo'],
+        ['Acoustic Solo', 'Harmonica'],
+        ['Guitar Strum Fade', 'Harmonica Last Note']
+      ),
+      classical: inst(
+        ['Piano Cadenza', 'Strings Tremolo'],
+        ['String Quartet', 'Piano Accompaniment'],
+        ['Orchestra Build', 'Timpani Roll'],
+        ['Full Symphony Orchestra', 'Choir'],
+        ['Solo Violin', 'Piano Cadenza'],
+        ['Final Chord', 'Timpani Fade']
+      ),
+      folk: inst(
+        ['Acoustic Fingerpicking', 'Harmonica'],
+        ['Acoustic Guitar', 'Mandolin', 'Bodhran'],
+        ['Fiddle Build', 'Drum Pattern'],
+        ['Full Folk Band', 'Fiddle', 'Tin Whistle'],
+        ['Acoustic Solo', 'Bodhran'],
+        ['Guitar Fade-out', 'Whistle Last Note']
+      ),
+      indie: inst(
+        ['Clean Guitar Arpeggio', 'Ambient Pad'],
+        ['Jangly Guitar', 'Bass', 'Light Drums'],
+        ['Guitar Build', 'Drum Fill'],
+        ['Full Indie Band', 'Guitar Fuzz', 'Synth Pad'],
+        ['Guitar Solo', 'Ambient FX'],
+        ['Reverb Fade', 'Guitar String Buzz']
+      ),
+      kpop: inst(
+        ['Synth Hook', 'Drum Break'],
+        ['Electronic Beat', 'Synth Bass', 'Vocal Chop'],
+        ['Build-up Synth', 'Snare Roll'],
+        ['Full K-pop Production', 'Synth Lead', 'Group Vocals'],
+        ['Beat Switch', 'Rap Section'],
+        ['Fade-out with Hook', 'Vocal Ad-lib']
+      ),
+      reggae: inst(
+        ['Guitar Skank', 'Organ Bubbling'],
+        ['Rhythm Guitar', 'Bass Line', 'One Drop Drums'],
+        ['Horn Build', 'Organ Swell'],
+        ['Full Reggae Band', 'Horn Section', 'Backing Vocals'],
+        ['Guitar Solo', 'Dub FX'],
+        ['Echo Fade', 'Last Skank']
+      ),
+      gothic_rock: inst(
+        ['Organ Intro', 'Guitar Chord'],
+        ['Distorted Guitar', 'Bass', 'Tribal Drums'],
+        ['Choir Build', 'Organ Crescendo'],
+        ['Gothic Rock Ensemble', 'Choir', 'Symphonic Elements'],
+        ['Guitar Solo', 'Operatic Vocals'],
+        ['Church Bell', 'Reverb Fade']
+      ),
+      love_song: inst(
+        ['Piano Romantic', 'Strings Pad'],
+        ['Piano', 'Acoustic Guitar', 'Soft Beat'],
+        ['Strings Swell', 'Harmony Build'],
+        ['Full Ballad Band', 'Strings', 'Duo Vocals'],
+        ['Piano Solo', 'Saxophone Soft'],
+        ['Warm Reverb Fade', 'Heartbeat Sound']
+      ),
+      chinese_traditional: inst(
+        ['古筝', '琵琶'],
+        ['二胡', '扬琴', '笛子'],
+        ['笙', '唢呐'],
+        ['民族乐团全编制', '锣鼓'],
+        ['二胡独奏', '古筝泛音'],
+        ['古琴余韵', '箫渐弱']
+      ),
+      anime: inst(
+        ['Piano Melodic', 'Strings Tremolo'],
+        ['Electric Guitar', 'Synth Bass', 'Fast Drums'],
+        ['Strings Build-up', 'Drum Roll'],
+        ['Full Anime Soundtrack', 'Orchestra + Rock'],
+        ['Violin Solo', 'Piano Cadenza'],
+        ['Epic Chord Fade', 'Vocal Humming']
+      )
     };
-    return instrumentMap[style]?.[sectionType] || ['Piano', 'Strings'];
+    const styleMap = instrumentMap[style] || instrumentMap.pop || instrumentMap.ballad;
+    return styleMap[sectionType] || styleMap.verse || ['Piano', 'Strings'];
   }
 
   _getVocalsForSection(sectionType, style) {
@@ -2871,11 +3102,35 @@ export class UnicornAgent {
     return language === 'en' ? this._generateEnglishVerse(4, theme, style) : this._generateRandomVerse(4, theme, style);
   }
 
+  _getStyleLabels(style) {
+    const STYLE_LABELS = {
+      ancient_modern: '古今对话,古风电音,诗意叙事',
+      tango: '探戈华尔兹,暗黑浪漫,古典交融',
+      pop: '流行音乐,现代制作,情感真挚',
+      rock: '摇滚音乐,力量感,爆发力',
+      ballad: '抒情叙事,钢琴弦乐,深情演唱',
+      chinese_classical: '中国古典,民族乐器,诗意盎然',
+      chinese_traditional: '中国传统,民乐合奏,古风雅韵',
+      electronic: '电子音乐,合成器,节拍律动',
+      jazz: '爵士风格,即兴演奏,铜管萨克斯',
+      hip_hop: '嘻哈说唱,节拍律动,街头文化',
+      rnb: '节奏布鲁斯,灵魂唱腔,柔滑贝斯',
+      country: '乡村民谣,木吉他,质朴真诚',
+      classical: '古典交响,管弦乐团,庄严宏大',
+      folk: '民谣风格,原声乐器,故事讲述',
+      indie: '独立音乐,另类摇滚,实验精神',
+      kpop: '韩流音乐,流行舞曲,团体合唱',
+      reggae: '雷鬼音乐,ska节奏,牙买加风情',
+      gothic_rock: '哥特摇滚,暗黑氛围,交响元素',
+      love_song: '情歌对唱,浪漫旋律,温馨甜蜜',
+      anime: '动漫配乐,热血燃曲,史诗感'
+    };
+    return STYLE_LABELS[style] || STYLE_LABELS.pop || '原创音乐,自由风格,真情实感';
+  }
+
   _buildSunoCommand(sections, theme, style, bpm, themeConfig, script = '', language = 'zh', reference = '', referenceSong = '') {
-    let command = `[风格标签：${style === 'ancient_modern' ? '古今对话,古风电音,诗意叙事' :
-      style === 'tango' ? '探戈华尔兹,暗黑浪漫,古典交融' :
-        style === 'pop' ? '流行音乐,现代制作,情感真挚' : '摇滚音乐,力量感,爆发力'}]\n`;
-    command += `[情绪：${themeConfig.emotion}]\n`;
+    let command = `[风格标签：${this._getStyleLabels(style)}]\n`;
+    command += `[整体情绪：${themeConfig.emotion}]\n`;
     command += `[节奏：${bpm} BPM]\n`;
     command += `[语言：${language === 'zh' ? '中文' : language === 'en' ? 'English' : '中英混合'}]\n`;
 
@@ -2895,6 +3150,8 @@ export class UnicornAgent {
 
     sections.forEach(section => {
       command += `${section.timeSection}\n`;
+      const sectionEmotion = this._getEmotionForSection(section.type, themeConfig.emotion);
+      command += `[情绪：${sectionEmotion}]\n`;
       command += `[动态：${DYNAMIC_LEVELS[section.dynamic]?.name || section.dynamic}]\n`;
       command += `[乐器：${section.instruments.join('、')}]\n`;
       command += `[人声：${section.vocals}]\n`;
@@ -3005,12 +3262,27 @@ export class UnicornAgent {
 
   _translateTheme(theme, lang = 'zh') {
     const translations = {
-      zh: { love: '爱情', loneliness: '孤独', sadness: '悲伤', dreams: '梦想', memory: '回忆', nature: '自然', friendship: '友情', success: '成功', hope: '希望', life: '人生', lunatic: '疯癫', tango: '探戈' },
-      en: { love: 'love', loneliness: 'loneliness', sadness: 'sadness', dreams: 'dreams', memory: 'memory', nature: 'nature', friendship: 'friendship', success: 'success', hope: 'hope', life: 'life', lunatic: 'lunatic', tango: 'tango' },
-      mix: { love: '爱情', loneliness: '孤独', sadness: '悲伤', dreams: '梦想', memory: '回忆', nature: '自然', friendship: '友情', success: '成功', hope: '希望', life: '人生', lunatic: '疯癫', tango: '探戈' }
+      zh: { love: '爱情', loneliness: '孤独', sadness: '悲伤', dreams: '梦想', memory: '回忆', nature: '自然', friendship: '友情', success: '成功', hope: '希望', life: '人生', lunatic: '疯癫', tango: '探戈', ghost_love: '人鬼情未了', supernatural: '灵异超自然' },
+      en: { love: 'love', loneliness: 'loneliness', sadness: 'sadness', dreams: 'dreams', memory: 'memory', nature: 'nature', friendship: 'friendship', success: 'success', hope: 'hope', life: 'life', lunatic: 'lunatic', tango: 'tango', ghost_love: 'ghost_love', supernatural: 'supernatural' },
+      mix: { love: '爱情', loneliness: '孤独', sadness: '悲伤', dreams: '梦想', memory: '回忆', nature: '自然', friendship: '友情', success: '成功', hope: '希望', life: '人生', lunatic: '疯癫', tango: '探戈', ghost_love: '人鬼情未了', supernatural: '灵异超自然' }
     };
     const langKey = translations[lang] ? lang : 'zh';
     return translations[langKey][theme] || theme;
+  }
+
+  _getEmotionForSection(sectionKey, baseEmotion) {
+    const lower = sectionKey.toLowerCase();
+    let key;
+    if (lower.includes('finale') || lower.includes('final_chorus') || lower.includes('finalchorus')) key = 'final_chorus';
+    else if (lower.includes('chorus')) key = lower.includes('2') ? 'chorus2' : 'chorus1';
+    else if (lower.includes('pre_chorus') || lower.includes('prechorus') || lower.includes('pre-chorus')) key = 'pre_chorus';
+    else if (lower.includes('verse')) key = lower.includes('2') ? 'verse2' : 'verse1';
+    else if (lower.includes('bridge')) key = 'bridge';
+    else if (lower.includes('outro') || lower.includes('ending')) key = 'outro';
+    else if (lower.includes('intro')) key = 'intro';
+    else key = 'verse1';
+    const arcMap = EMOTIONAL_ARC[key] || EMOTIONAL_ARC.verse1;
+    return arcMap[baseEmotion] || arcMap.default || baseEmotion;
   }
 
   _analyzeLiteraryDevices(lyrics, theme) {

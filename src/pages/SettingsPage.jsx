@@ -19,11 +19,11 @@ function SettingsPage() {
     try {
       const health = await api.health();
       if (health.success) {
-        setConfig(health.data);
+        setConfig(health.data || health);
       }
       const agent = await api.agentStatus();
       if (agent.success) {
-        setAgentStatus(agent.data);
+        setAgentStatus(agent.data || agent);
       }
     } catch (error) {
       console.error('Load failed:', error);

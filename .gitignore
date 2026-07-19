@@ -52,5 +52,20 @@ debug/
 # Vite
 .vite/
 
+# VS Code Local History (editor backups)
+.history/
+
+# Native build outputs (large binaries)
+android/app/build/
+ios/App/build/
+release/
+*.apk
+*.ipa
+*.dmg
+*.exe
+*.deb
+*.rpm
+*.AppImage
+
 # Screenshots (large PNG files, track separately if needed)
 # screenshots/

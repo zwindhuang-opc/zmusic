@@ -73,7 +73,11 @@ export class SunoService {
    * }
    */
   isConfigured() {
-    return Boolean(this.apiKey && this.apiKey.length > 0 && this.apiKey.startsWith('sk-'));
+    if (!this.apiKey || this.apiKey.length === 0) return false;
+    if (!this.apiKey.startsWith('sk-')) return false;
+    if (this.apiKey.includes('your-api-key') || this.apiKey.includes('placeholder')) return false;
+    if (this.apiKey.length < 20) return false;
+    return true;
   }
 
   /**

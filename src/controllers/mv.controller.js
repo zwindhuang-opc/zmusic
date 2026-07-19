@@ -12,6 +12,7 @@
 
 import MVService from '../services/mv.service.js';
 import Logger from '../utils/logger.js';
+import generationHistory from '../services/generation.history.js';
 
 /**
  * 日志记录器实例
@@ -99,6 +100,17 @@ export class MVController {
       const { genre = 'pop', duration = 180, ...params } = req.body || {};
       logger.info(`Generate MV: genre=${genre}, duration=${duration}`);
       const result = mvService.generate(genre, duration, params);
+      try {
+        generationHistory.add('mv', {
+          genre,
+          duration,
+          style: genre,
+          params,
+          result
+        });
+      } catch (e) {
+        logger.warn(`Save history failed: ${e.message}`);
+      }
       return res.json({ success: true, data: result });
     } catch (error) {
       logger.error(`Generate error: ${error.message}`);
