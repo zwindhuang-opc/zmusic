@@ -69,3 +69,6 @@ release/
 
 # Screenshots (large PNG files, track separately if needed)
 # screenshots/
+
+# Local Netlify folder
+.netlify
