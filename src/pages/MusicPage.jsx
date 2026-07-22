@@ -118,7 +118,7 @@ function MusicPage() {
   const currentMethod = AGENT_METHODS.find(m => m.id === method);
 
   return (
-    <div className="space-y-4 md:space-y-6 animate-slide-in pb-28 md:pb-6">
+    <div className="space-y-4 md:space-y-6 animate-slide-in pb-52 md:pb-8">
       <div className="gradient-border p-4 md:p-6">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 md:gap-3">
@@ -362,12 +362,12 @@ function MusicPage() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0f] via-[#0f0a1a] to-transparent pt-12 md:pt-16 pb-6 md:pb-4 px-4 md:px-6 z-40">
+      <div className="fixed bottom-[72px] md:bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0f] via-[#0f0a1a]/95 to-transparent pt-6 md:pt-12 pb-3 md:pb-3 px-4 md:px-6 z-40 safe-area-bottom md:safe-area-bottom">
         <div className="max-w-7xl mx-auto">
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="w-full py-3.5 md:py-4 rounded-xl bg-gradient-to-r from-violet-500 to-pink-500 text-white font-semibold text-sm md:text-base flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 shadow-lg shadow-purple-500/20"
+            className="w-full py-3 md:py-3.5 rounded-xl bg-gradient-to-r from-violet-500 to-pink-500 text-white font-semibold text-sm md:text-base flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 shadow-lg shadow-purple-500/20 active:scale-[0.98] transition-transform"
           >
             {isGenerating ? (
               <>

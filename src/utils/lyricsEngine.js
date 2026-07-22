@@ -317,55 +317,301 @@ function _pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+/* =========================================================================
+ * STYLE-SPECIFIC VOCABULARY POOLS
+ * Different styles use entirely different language patterns and words.
+ * ========================================================================= */
+
+const STYLE_VOCAB = {
+  pop: {
+    foundationBeats: ['4/4拍流行律动', '流行电子鼓点', '轻快流行节拍', '都市流行律动'],
+    foundationWords: ['青春气息', '都市感', '朗朗上口', '记忆点强烈', '抓耳副歌'],
+    melodyWords: ['流畅上口', '甜美动听', '明亮悦耳', '轻快跳跃'],
+    expressionWords: ['清新自然', '真挚直白', '流行唱腔', '少年感'],
+    effectsWords: ['明亮混响', '清新延迟', '立体声场', '干净通透']
+  },
+  rock: {
+    foundationBeats: ['重拍摇滚律动', '失真吉他驱动', '强力鼓点', '车库摇滚节拍'],
+    foundationWords: ['爆发力', '冲击力', '硬核质感', '粗犷有力'],
+    melodyWords: ['激昂高亢', '嘶吼式旋律', '吉他riff驱动', '叛逆张扬'],
+    expressionWords: ['撕裂唱腔', '情感爆发', '嘶吼宣泄', '力量感十足'],
+    effectsWords: ['过载失真', '强烈压缩', '大厅混响', '磁带饱和']
+  },
+  electronic: {
+    foundationBeats: ['电子合成器律动', 'EDM四四拍', '合成器贝斯线', 'Future Bass节拍'],
+    foundationWords: ['未来感', '科技感', '霓虹氛围', '赛博朋克'],
+    melodyWords: ['合成器主音', '琶音旋律', '像素风旋律', '梦幻电子'],
+    expressionWords: ['电音人声切片', '自动调谐', '机器人声', '电子吟唱'],
+    effectsWords: ['Sidechain压缩', '滤波器扫频', '延迟反馈', '混响尾音']
+  },
+  hip_hop: {
+    foundationBeats: ['嘻哈鼓点律动', 'Trap 808贝斯', 'Boom Bap节拍', '爵士嘻哈律动'],
+    foundationWords: ['街头感', '地下氛围', '节奏感强烈', 'Flow驱动'],
+    melodyWords: ['采样旋律', 'Loop循环', '爵士和弦', '灵魂乐采样'],
+    expressionWords: ['说唱Flow', '押韵节奏', '即兴演唱', '人声叠录'],
+    effectsWords: ['黑胶唱片噪声', '磁带抖晃', '空间混响', '滤波器效果']
+  },
+  ballad: {
+    foundationBeats: ['抒情钢琴律动', '慢板三拍子', '弦乐铺垫', '轻柔吉他分解'],
+    foundationWords: ['娓娓道来', '细腻动人', '温情脉脉', '如泣如诉'],
+    melodyWords: ['婉转悠扬', '柔美抒情', '如歌如诉', '荡气回肠'],
+    expressionWords: ['气声演唱', '情感细腻', '柔情万种', '深情款款'],
+    effectsWords: ['大厅混响', '柔和延迟', '空气感', '温暖磁带感']
+  },
+  chinese_traditional: {
+    foundationBeats: ['五声调式律动', '古筝琵琶节拍', '民族打击乐', '戏曲板眼'],
+    foundationWords: ['古韵悠长', '典雅大气', '国风意境', '文人气息'],
+    melodyWords: ['古筝悠扬', '琵琶婉转', '笛子清远', '古琴幽深'],
+    expressionWords: ['戏曲唱腔', '民族唱法', '古韵吟唱', '诗词吟诵'],
+    effectsWords: ['自然空间混响', '山水意境', '古宅回声', '竹林清风']
+  },
+  gothic_rock: {
+    foundationBeats: ['哥特摇滚律动', '阴暗后朋节拍', '死亡摇滚鼓点', '厄运金属慢板'],
+    foundationWords: ['暗黑压抑', '神秘诡谲', '末日氛围', '宗教感'],
+    melodyWords: ['阴暗低沉', '圣咏式旋律', '管风琴肃穆', '死亡金属riff'],
+    expressionWords: ['嘶吼低吟', '圣咏合唱', '恶魔低语', '哥特唱腔'],
+    effectsWords: ['教堂混响', '失真墙', '延迟回响', '氛围铺垫']
+  },
+  ancient: {
+    foundationBeats: ['古风云板节拍', '编钟雅乐', '古琴散板', '宫廷雅乐'],
+    foundationWords: ['古韵流芳', '意境悠远', '禅意空灵', '山水写意'],
+    melodyWords: ['古琴泛音', '箫声清远', '编钟叮咚', '琵琶如歌'],
+    expressionWords: ['古风吟唱', '诗词吟诵', '戏曲念白', '文人雅唱'],
+    effectsWords: ['山林空响', '溪水潺潺', '古寺钟声', '松风竹影']
+  },
+  jazz: {
+    foundationBeats: ['爵士摇摆律动', ' Bebop 快拍', '冷爵士慢板', ' Modal Jazz'],
+    foundationWords: ['即兴感', '蓝调色彩', '优雅慵懒', '夜店氛围'],
+    melodyWords: ['爵士即兴', '蓝调音阶', '铜管嘹亮', '萨克斯风'],
+    expressionWords: ['低吟浅唱', '爵士演唱', '即兴哼唱', '沙哑质感'],
+    effectsWords: ['俱乐部混响', '温暖磁带', '真空管音色', '轻微过载']
+  },
+  rnb: {
+    foundationBeats: ['R&B 律动', '新灵魂节拍', '90年代 R&B', '陷阱蓝调'],
+    foundationWords: ['性感慵懒', '都市夜晚', '丝滑柔顺', '深夜氛围'],
+    melodyWords: ['蓝调转音', '流畅婉转', '灵魂乐旋律', '柔滑如丝'],
+    expressionWords: ['转音演唱', '气声演绎', '灵魂唱腔', '即兴装饰音'],
+    effectsWords: ['温暖混响', '立体声加倍', '柔和延迟', '磁带温暖感']
+  },
+  kpop: {
+    foundationBeats: ['K-Pop 律动', '电子流行节拍', '多元混合节奏', 'G-Funk 风格'],
+    foundationWords: ['潮流前卫', '多元融合', '舞台感强烈', '视觉化音乐'],
+    melodyWords: ['抓耳副歌', '多变旋律', '洗脑循环', '层次感强'],
+    expressionWords: ['团体和声', '说唱段落', '主唱爆发', '偶像唱腔'],
+    effectsWords: ['电子音效', '人声切片', '快速过渡', '冲击感强']
+  },
+  tango: {
+    foundationBeats: ['探戈华尔兹', '班多钮手风琴律动', '3/4拍探戈', '布宜诺斯艾利斯节拍'],
+    foundationWords: ['暧昧纠缠', '优雅冷峻', '热情与克制', '戏剧张力'],
+    melodyWords: ['班多钮幽怨', '大提琴低吟', '探戈旋律线', '哀怨缠绵'],
+    expressionWords: ['探戈唱腔', '情感张力', '低吟高唱', '戏剧化演绎'],
+    effectsWords: ['老唱片质感', '舞厅混响', '手风琴共鸣', '怀旧磁带感']
+  },
+  indie: {
+    foundationBeats: ['独立摇滚律动', '低保真节拍', '车库摇滚', '梦幻流行'],
+    foundationWords: ['独立精神', '文艺气息', '疏离感', '城市边缘'],
+    melodyWords: ['吉他旋律', '梦幻音墙', '低保真旋律', '漫不经心'],
+    expressionWords: ['懒散演唱', '漫不经心', '神经质唱腔', '童稚感'],
+    effectsWords: ['低保真噪声', '房间混响', '磁带抖动', '复古效果']
+  },
+  dreamy: {
+    foundationBeats: ['梦幻律动', '漂浮节拍', '慢板氛围', '沉浸式铺垫'],
+    foundationWords: ['如梦似幻', '云雾缭绕', '超脱现实', '意识流动'],
+    melodyWords: ['漂浮旋律', '梦幻音墙', '空灵飘逸', '层层叠叠'],
+    expressionWords: ['梦幻吟唱', '气声飘渺', '不食人间烟火', '如在云端'],
+    effectsWords: ['长尾混响', '空间延迟', '反向音效', '立体声环绕']
+  },
+  dark: {
+    foundationBeats: ['黑暗律动', '工业节拍', '死亡金属慢板', '阴暗氛围'],
+    foundationWords: ['黑暗压抑', '末日审判', '深渊凝视', '虚无主义'],
+    melodyWords: ['阴暗低沉', '不协和音', '死亡riff', '压迫感旋律'],
+    expressionWords: ['死亡低吼', '黑金属嘶吼', '恶魔般吟唱', '绝望哀鸣'],
+    effectsWords: ['失真过载', '洞穴混响', '工业噪声', '破碎音效']
+  },
+  epic: {
+    foundationBeats: ['史诗交响律动', '军鼓行进', '宏大管弦乐', '电影配乐级节拍'],
+    foundationWords: ['波澜壮阔', '史诗叙事', '英雄气概', '山河壮丽'],
+    melodyWords: ['交响旋律', '铜管辉煌', '弦乐激昂', '英雄主题'],
+    expressionWords: ['英雄高歌', '史诗合唱', '庄严吟唱', '气吞山河'],
+    effectsWords: ['大厅混响', '交响声场', '铜管辉煌', '定音鼓震撼']
+  },
+  romantic: {
+    foundationBeats: ['浪漫华尔兹', '柔情钢琴', '烛光晚餐节拍', '心随律动'],
+    foundationWords: ['浪漫温馨', '甜蜜幸福', '花前月下', '柔情蜜意'],
+    melodyWords: ['甜美悦耳', '浪漫钢琴', '小提琴如歌', '柔情旋律'],
+    expressionWords: ['温柔低唱', '深情告白', '甜蜜对唱', '浪漫吟唱'],
+    effectsWords: ['温暖混响', '柔和延迟', '烛光氛围', '心跳节奏']
+  },
+  healing: {
+    foundationBeats: ['治愈系律动', '自然节拍', '冥想铺垫', '雨声白噪音'],
+    foundationWords: ['温暖治愈', '抚慰心灵', '阳光普照', '宁静安详'],
+    melodyWords: ['柔和悦耳', '钢琴轻弹', '八音盒旋律', '自然之音'],
+    expressionWords: ['治愈吟唱', '温柔耳语', '安抚之声', '宁静哼唱'],
+    effectsWords: ['自然白噪', '雨声风声', '温暖混响', '空气感十足']
+  },
+  heartbreaking: {
+    foundationBeats: ['心碎律动', '慢板哀歌', '沉默节拍', '泪滴节奏'],
+    foundationWords: ['痛彻心扉', '肝肠寸断', '无法呼吸', '心如刀绞'],
+    melodyWords: ['哀怨旋律', '断弦之音', '泣不成声', '悲歌一曲'],
+    expressionWords: ['泣声演唱', '哽咽低吟', '心碎独白', '以泪洗面'],
+    effectsWords: ['空房间混响', '电话音效果', '心碎音效', '沉默留白']
+  },
+  energetic: {
+    foundationBeats: ['活力律动', '高速节拍', '舞曲节奏', '肾上腺素飙升'],
+    foundationWords: ['热血沸腾', '活力四射', '激情澎湃', '嗨翻全场'],
+    melodyWords: ['昂扬向上', '爆发式旋律', '电音高潮', '燃爆全场'],
+    expressionWords: ['高唱入云', '爆发演唱', '激情呐喊', '活力满满'],
+    effectsWords: ['冲击感强', '快速延迟', '明亮混响', '节拍器效应']
+  },
+  nostalgic: {
+    foundationBeats: ['怀旧律动', '老唱片节拍', '泛黄回忆', '岁月静好'],
+    foundationWords: ['往昔岁月', '旧日时光', '泛黄照片', '流年似水'],
+    melodyWords: ['怀旧旋律', '老歌风味', '温暖回忆', '旧日重现'],
+    expressionWords: ['怀旧演唱', '岁月质感', '低回吟唱', '往事如歌'],
+    effectsWords: ['黑胶唱片噪声', '磁带抖晃', '老旧混响', '收音机效果']
+  },
+  time_travel: {
+    foundationBeats: ['时空穿越律动', '古今交汇节拍', '时光隧道', '维度转换'],
+    foundationWords: ['千年一瞬', '古今交错', '时光倒流', '前世今生'],
+    melodyWords: ['时空交错旋律', '古今对话', '时光倒流之音', '维度跳跃'],
+    expressionWords: ['千年吟唱', '古今对唱', '时空旅行者', '穿越时空的声音'],
+    effectsWords: ['时空扭曲效果', '反向混响', '收音机调台', '维度穿越声']
+  }
+};
+
+const STYLE_KEYWORDS = Object.keys(STYLE_VOCAB);
+
+function _getStyleVocab(style) {
+  return STYLE_VOCAB[style] || STYLE_VOCAB.pop;
+}
+
+/* =========================================================================
+ * MULTIPLE SENTENCE TEMPLATES per layer
+ * Each layer has 5+ completely different sentence structures instead of 1.
+ * ========================================================================= */
+
+const FOUNDATION_TEMPLATES = [
+  (bpm, beat, styleWord, themeDesc, imagery, vocab) =>
+    `${vocab ? vocab.foundationWords[0] : '底层节拍'}: ${bpm}BPM${beat}, 以${styleWord}为底色，围绕${themeDesc}主题铺展，${imagery}意象贯穿始终`,
+  (bpm, beat, styleWord, themeDesc, imagery, vocab) =>
+    `基础层设定: ${bpm}拍${beat}，核心情绪锚定${themeDesc}，${vocab ? vocab.foundationWords[1] : '律动'}驱动，${styleWord}质感与${imagery}相交融`,
+  (bpm, beat, styleWord, themeDesc, imagery, vocab) =>
+    `节拍根基: ${bpm}BPM的${beat}，${vocab ? vocab.foundationWords[2] : '简洁有力'}的${styleWord}骨架，承载${themeDesc}的情感重量，${imagery}为其注入灵魂`,
+  (bpm, beat, styleWord, themeDesc, imagery, vocab) =>
+    `律动底座: ${bpm}拍${beat}铺底，${vocab ? vocab.foundationWords[0] : '稳定'}的${styleWord}根基，${themeDesc}主题层层递进，${imagery}意象在节拍中回响`,
+  (bpm, beat, styleWord, themeDesc, imagery, vocab) =>
+    `节奏架构: ${bpm}BPM，${beat}驱动，${vocab ? vocab.foundationWords[3] : '层次分明'}的${styleWord}设计，${themeDesc}为情感核心，${imagery}点缀其间`
+];
+
+const MELODY_TEMPLATES = [
+  (melodyStyle, feeling, element, reference, action, vocab) =>
+    `${vocab ? '旋律线条' : '旋律层'}: ${melodyStyle}，${vocab ? vocab.melodyWords[0] : '情感饱满'}的表达，${feeling}情绪在${element}中流淌，${reference}${action}的意象呼之欲出`,
+  (melodyStyle, feeling, element, reference, action, vocab) =>
+    `旋律设计: ${vocab ? vocab.melodyWords[1] : '如歌如诉'}的${melodyStyle}，${element}为其增色，${feeling}如潮水般涌动，${reference}${action}成为旋律的注脚`,
+  (melodyStyle, feeling, element, reference, action, vocab) =>
+    `主旋律走向: ${melodyStyle}贯穿全曲，${vocab ? vocab.melodyWords[2] : '张弛有度'}，${feeling}的起伏在${element}中得以呈现，${reference}${action}的画面感十足`,
+  (melodyStyle, feeling, element, reference, action, vocab) =>
+    `旋律架构: ${vocab ? vocab.melodyWords[3] : '层次丰富'}的${melodyStyle}，${element}铺陈，${feeling}层层递进，${reference}${action}成为旋律的情感锚点`,
+  (melodyStyle, feeling, element, reference, action, vocab) =>
+    `曲调走向: ${melodyStyle}为主线，${vocab ? vocab.melodyWords[0] : '优美动听'}，${element}与${feeling}交织，${reference}${action}在旋律中低吟浅唱`
+];
+
+const EXPRESSION_TEMPLATES = [
+  (vocal, harmony, emotionTheme, feature, sfxItem, vocab) =>
+    `${vocab ? '人声演绎' : '表现层'}: ${vocal}配合${harmony}，${vocab ? vocab.expressionWords[0] : '深情款款'}地诠释${emotionTheme}，${feature}是其最大亮点，${sfxItem}增添氛围感`,
+  (vocal, harmony, emotionTheme, feature, sfxItem, vocab) =>
+    `表现设计: ${vocab ? vocab.expressionWords[1] : '情感丰富'}的${vocal}，${harmony}层层包裹，${emotionTheme}的情绪在${feature}中爆发，${sfxItem}巧妙融入`,
+  (vocal, harmony, emotionTheme, feature, sfxItem, vocab) =>
+    `演唱风格: ${vocal}担当主角，${vocab ? vocab.expressionWords[2] : '张弛有度'}，${harmony}烘托，${emotionTheme}通过${feature}精准传达，${sfxItem}画龙点睛`,
+  (vocal, harmony, emotionTheme, feature, sfxItem, vocab) =>
+    `情感表达: ${vocab ? vocab.expressionWords[3] : '细腻入微'}的${vocal}演绎，${harmony}如影随形，${emotionTheme}是核心情感，${feature}令人印象深刻，${sfxItem}自然融入`,
+  (vocal, harmony, emotionTheme, feature, sfxItem, vocab) =>
+    `人声设计: ${vocal}与${harmony}交相辉映，${vocab ? vocab.expressionWords[0] : '真挚动人'}，${emotionTheme}的情感浓度通过${feature}层层递进，${sfxItem}为其增色`
+];
+
+const EFFECTS_TEMPLATES = [
+  (introEffect, atmosphere, finalElement, effectsItem, vocab) =>
+    `${vocab ? '声音设计' : '效果层'}: ${introEffect}开场，${vocab ? vocab.effectsWords[0] : '精心设计'}的${atmosphere}，${finalElement}贯穿全曲，${effectsItem}收束，整体听感完整`,
+  (introEffect, atmosphere, finalElement, effectsItem, vocab) =>
+    `效果处理: ${introEffect}奠定基调，${atmosphere}${vocab ? vocab.effectsWords[1] : '层次丰富'}，${finalElement}巧妙运用，${effectsItem}锦上添花`,
+  (introEffect, atmosphere, finalElement, effectsItem, vocab) =>
+    `音效架构: ${introEffect}构建空间感，${atmosphere}${vocab ? vocab.effectsWords[2] : '立体饱满'}，${finalElement}整合全局，${effectsItem}形成记忆点`,
+  (introEffect, atmosphere, finalElement, effectsItem, vocab) =>
+    `混音设计: ${introEffect}铺陈，${atmosphere}${vocab ? vocab.effectsWords[3] : '精致考究'}，${finalElement}贯穿始终，${effectsItem}作为收尾，余韵悠长`,
+  (introEffect, atmosphere, finalElement, effectsItem, vocab) =>
+    `声场塑造: ${introEffect}构建声音世界，${atmosphere}营造${vocab ? vocab.effectsWords[0] : '独特氛围'}，${finalElement}整体统筹，${effectsItem}留下余韵`
+];
+
 function _buildFoundationLayer(bpm, theme, params) {
   const bank = getThemeBank(theme);
-  const beats = ['4/4拍子基础节拍', 'waltz三拍子探戈节拍', '电子碎拍', '古典华尔兹3/4拍'];
-  const rhythms = ['稳定律动', '跳转节奏', '摇摆节奏', '断奏节奏'];
   const styles = getDynamicStyles();
-  const beat = _pick(beats);
-  const rhythm = _pick(rhythms);
   const styleName = params.style || _pick(styles) || '流行';
+  const vocab = _getStyleVocab(styleName);
   const themeDesc = _translateTheme(theme);
+
+  const beats = vocab.foundationBeats;
+  const beat = _pick(beats);
+  const styleWord = _pick(vocab.foundationWords);
   const imagery = _pick(bank.imagery);
-  return `底层节拍: ${bpm}bpm基础律动, 围绕${themeDesc}主题构建稳定的${beat}, ${rhythm}搭配${styleName}风格, 以${imagery}意象铺底`;
+
+  const template = _pick(FOUNDATION_TEMPLATES);
+  return template(bpm, beat, styleWord, themeDesc, imagery, vocab);
 }
 
 function _buildMelodyLayer(theme, params) {
   const bank = getThemeBank(theme);
-  const melodyStyles = ['跳转的主旋律', '流畅的旋律线条', '戏剧性的旋律起伏', '空灵的旋律'];
-  const elements = ['classical elements', 'surrounding element的空灵和穿透感', '电子合成器铺底', '弦乐伴奏'];
+  const styles = getDynamicStyles();
+  const styleName = params.style || _pick(styles) || '流行';
+  const vocab = _getStyleVocab(styleName);
+
+  const melodyStyles = ['跳转的主旋律', '流畅的旋律线条', '戏剧性的旋律起伏', '空灵的旋律', '如歌的旋律线', '层叠的旋律走向'];
+  const elements = ['classical elements', 'surrounding element的空灵和穿透感', '电子合成器铺底', '弦乐伴奏', '吉他分解', '钢琴琶音'];
   const melodyStyle = _pick(melodyStyles);
   const element = _pick(elements);
   const feeling = _pick(bank.emotions);
   const reference = _pick(bank.subjects);
   const action = _pick(bank.actions);
-  return `旋律层: ${melodyStyle}, 表达${feeling}情绪, 配合${element}, 呼应${reference}${action}的意象`;
+
+  const template = _pick(MELODY_TEMPLATES);
+  return template(melodyStyle, feeling, element, reference, action, vocab);
 }
 
 function _buildExpressionLayer(theme, params) {
   const bank = getThemeBank(theme);
-  const vocals = ['人声', '多重人声叠录', '气声呢喃', '戏剧化唱腔'];
-  const harmonies = ['和声层层叠叠递进', '合唱团烘托', '独唱与合唱交替', '男女混唱'];
-  const sfx = ['环境音效与人声交织', '教堂混响', '电影级Foley音效', '空间混响'];
-  const features = ['情感层次分明', '动态对比强烈', '细腻叙事', '爆发式释放'];
+  const styles = getDynamicStyles();
+  const styleName = params.style || _pick(styles) || '流行';
+  const vocab = _getStyleVocab(styleName);
+
+  const vocals = ['人声', '多重人声叠录', '气声呢喃', '戏剧化唱腔', '低吟浅唱', '真情独白'];
+  const harmonies = ['和声层层叠叠递进', '合唱团烘托', '独唱与合唱交替', '男女混唱', '和声呼应', '和声包裹'];
+  const sfx = ['环境音效与人声交织', '教堂混响', '电影级Foley音效', '空间混响', '自然白噪', '氛围铺陈'];
+  const features = ['情感层次分明', '动态对比强烈', '细腻叙事', '爆发式释放', '张弛有度', '以情带声'];
   const emotionTheme = _pick(bank.emotions);
   const vocal = _pick(vocals);
   const harmony = _pick(harmonies);
   const sfxItem = _pick(sfx);
   const feature = _pick(features);
-  return `表现层: ${vocal}与${harmony}, 深度诠释${emotionTheme}情绪, 体现${feature}, ${sfxItem}点缀`;
+
+  const template = _pick(EXPRESSION_TEMPLATES);
+  return template(vocal, harmony, emotionTheme, feature, sfxItem, vocab);
 }
 
 function _buildEffectsLayer(params) {
-  const introEffects = ['混响、延迟、调制效果', 'Shimmer Reverb星光混响', 'Di-Da Delay滴答延迟', '空间混响渐入'];
-  const atmospheres = ['柔和氛围', '空灵氛围', '暗黑压抑氛围', '教堂空旷声场'];
-  const finalElements = ['surrounding elements的声音设计', '电影级音效设计', '立体声场包裹', '层次化音效整合'];
-  const effectsList = ['Church Acoustics教堂声场', 'Shimmer Reverb星光混响', 'Di-Da Delay滴答延迟', 'Stereo Field立体声场'];
+  const styles = getDynamicStyles();
+  const styleName = params.style || _pick(styles) || '流行';
+  const vocab = _getStyleVocab(styleName);
+
+  const introEffects = ['混响、延迟、调制效果', 'Shimmer Reverb星光混响', 'Di-Da Delay滴答延迟', '空间混响渐入', '磁带饱和暖身', '白噪渐入'];
+  const atmospheres = ['柔和氛围', '空灵氛围', '暗黑压抑氛围', '教堂空旷声场', '温暖空间', '赛博朋克感'];
+  const finalElements = ['surrounding elements的声音设计', '电影级音效设计', '立体声场包裹', '层次化音效整合', '三维空间设计', '沉浸式声场'];
+  const effectsList = ['Church Acoustics教堂声场', 'Shimmer Reverb星光混响', 'Di-Da Delay滴答延迟', 'Stereo Field立体声场', 'Tape Saturation磁带饱和', 'Spring Reverb弹簧混响'];
   const introEffect = _pick(introEffects);
   const atmosphere = _pick(atmospheres);
   const finalElement = _pick(finalElements);
   const effectsItem = _pick(effectsList);
-  return `效果层: ${introEffect}, 营造${atmosphere}, 整合${finalElement}, ${effectsItem}收尾`;
+
+  const template = _pick(EFFECTS_TEMPLATES);
+  return template(introEffect, atmosphere, finalElement, effectsItem, vocab);
 }
 
 /* =========================================================================

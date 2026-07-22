@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useTranslation } from './i18n/index.js';
 import {
   LayoutDashboard, Music, Mic, Video, Settings, Sparkles, TrendingUp,
   Activity, Cpu, Zap, BarChart3, Server, Bot, Globe, ArrowLeft
 } from 'lucide-react';
 import api, { isMobileEnvironment } from './services/api.client.js';
-import Dashboard from './pages/Dashboard.jsx';
-import MusicPage from './pages/MusicPage.jsx';
-import LyricsPage from './pages/LyricsPage.jsx';
-import MVPage from './pages/MVPage.jsx';
-import SettingsPage from './pages/SettingsPage.jsx';
+const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
+const MusicPage = lazy(() => import('./pages/MusicPage.jsx'));
+const LyricsPage = lazy(() => import('./pages/LyricsPage.jsx'));
+const MVPage = lazy(() => import('./pages/MVPage.jsx'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 import FloatingChatBall from './components/FloatingChatBall.jsx';
 
 function App() {
@@ -186,14 +186,20 @@ function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-[#0a0a0f] via-[#0f0a1a] to-[#0a0a0f]">
-          {currentPage === 'dashboard' && <Dashboard apiStatus={apiStatus} agentStatus={agentStatus} onNavigate={setCurrentPage} />}
-          {currentPage === 'music' && <MusicPage />}
-          {currentPage === 'lyrics' && <LyricsPage onNavigate={setCurrentPage} />}
-          {currentPage === 'mv' && <MVPage />}
-          {currentPage === 'settings' && <SettingsPage />}
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-48">
+              <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          }>
+            {currentPage === 'dashboard' && <Dashboard apiStatus={apiStatus} agentStatus={agentStatus} onNavigate={setCurrentPage} />}
+            {currentPage === 'music' && <MusicPage />}
+            {currentPage === 'lyrics' && <LyricsPage onNavigate={setCurrentPage} />}
+            {currentPage === 'mv' && <MVPage />}
+            {currentPage === 'settings' && <SettingsPage />}
+          </Suspense>
         </div>
 
-        <nav className="mobile-bottom-nav safe-area-bottom glass border-t border-purple-500/10 px-2 py-3 justify-around items-center">
+        <nav className="mobile-bottom-nav safe-area-bottom glass border-t border-purple-500/10 px-2 py-3 justify-around items-center z-50 relative">
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;

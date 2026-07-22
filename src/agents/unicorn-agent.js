@@ -1497,7 +1497,9 @@ export class UnicornAgent {
     }
 
     const lyrics = this._generateDynamicLyrics(theme, style, states, language);
-    const fsmCommand = this._buildFSMCommand(states, transitions, lyrics, theme, style, bpm, themeConfig, script, language);
+    const fsmCommand = this._buildFSMCommand(states, transitions, lyrics, theme, style, bpm, themeConfig, script, language, false);
+    const fsmCommandOnly = this._buildFSMCommand(states, transitions, lyrics, theme, style, bpm, themeConfig, script, language, true);
+    const lyricsOnlyText = Object.values(lyrics).flat().join('\n');
 
     return {
       theme,
@@ -1509,7 +1511,9 @@ export class UnicornAgent {
       transitions: transitions.length,
       script: script,
       fsmDefinition: { states, transitions },
+      fullCommand: fsmCommandOnly,
       fullText: fsmCommand,
+      lyricsText: lyricsOnlyText,
       generatedAt: new Date().toISOString(),
       meta: {
         literaryAnalysis: this._analyzeLiteraryDevices(lyrics, theme),
@@ -2400,7 +2404,7 @@ export class UnicornAgent {
     return lines;
   }
 
-  _buildFSMCommand(states, transitions, lyrics, theme, style, bpm, themeConfig, script = '', language = 'zh') {
+  _buildFSMCommand(states, transitions, lyrics, theme, style, bpm, themeConfig, script = '', language = 'zh', commandsOnly = false) {
     let command = `[FSM状态机定义]\n\n`;
     command += `主题：${this._translateTheme(theme, language)}\n`;
     command += `风格：${style}\n`;
@@ -2427,14 +2431,21 @@ export class UnicornAgent {
     });
 
     command += `【歌词内容】\n`;
-    Object.entries(lyrics).forEach(([state, lines]) => {
-      const sectionEmotion = this._getEmotionForSection(state, themeConfig.emotion);
-      command += `${state} [情绪：${sectionEmotion}]:\n`;
-      lines.forEach(line => {
-        command += `  ${line}\n`;
+    if (commandsOnly) {
+      Object.entries(lyrics).forEach(([state, lines]) => {
+        const sectionEmotion = this._getEmotionForSection(state, themeConfig.emotion);
+        command += `${state} [情绪：${sectionEmotion}]:\n\n`;
       });
-      command += '\n';
-    });
+    } else {
+      Object.entries(lyrics).forEach(([state, lines]) => {
+        const sectionEmotion = this._getEmotionForSection(state, themeConfig.emotion);
+        command += `${state} [情绪：${sectionEmotion}]:\n`;
+        lines.forEach(line => {
+          command += `  ${line}\n`;
+        });
+        command += '\n';
+      });
+    }
 
     command += `【FSM执行逻辑】\n`;
     command += `BEGIN\n`;
@@ -2667,13 +2678,13 @@ export class UnicornAgent {
     const lyrics = this._generateDynamicLyrics(theme, style, fsmTemplate, language);
     const lyricsText = Object.values(lyrics).flat().join('\n');
 
-    let fullCommand = `[LAYER: FOUNDATION]\n${foundation}\n\n[LAYER: MELODY]\n${melody}\n\n[LAYER: EXPRESSION]\n${expression}\n\n[LAYER: EFFECTS]\n${effects}\n\n`;
+    let fullCommand = `[LAYER: FOUNDATION]\n${foundation}\n\n[LAYER: MELODY]\n${melody}\n\n[LAYER: EXPRESSION]\n${expression}\n\n[LAYER: EFFECTS]\n${effects}\n`;
 
     if (script) {
-      fullCommand += `【用户创作意图】\n${script}\n\n`;
+      fullCommand += `\n【用户创作意图】\n${script}\n`;
     }
 
-    fullCommand += `【歌词内容】\n${lyricsText}`;
+    let fullText = fullCommand + `\n\n【歌词内容】\n${lyricsText}`;
 
     return {
       theme,
@@ -2682,7 +2693,9 @@ export class UnicornAgent {
       language,
       script,
       layers: { foundation, melody, expression, effects },
-      fullText: fullCommand,
+      fullCommand,
+      fullText,
+      lyricsText,
       generatedAt: new Date().toISOString()
     };
   }
@@ -2760,6 +2773,9 @@ export class UnicornAgent {
     const lyrics = this._generateDynamicLyrics(theme, style, fsmTemplate, language);
     const lyricsText = Object.values(lyrics).flat().join('\n');
 
+    const fullCommand = `[MUSE-COMMAND] ${command}`;
+    const fullText = `${fullCommand}\n\n【歌词内容】\n${lyricsText}`;
+
     return {
       theme,
       style,
@@ -2768,7 +2784,9 @@ export class UnicornAgent {
       script,
       reference,
       expression,
-      fullText: `[MUSE-COMMAND] ${command}\n\n【歌词内容】\n${lyricsText}`,
+      fullCommand,
+      fullText,
+      lyricsText,
       generatedAt: new Date().toISOString()
     };
   }
@@ -2817,7 +2835,9 @@ export class UnicornAgent {
       time += sectionDuration;
     });
 
-    const fullCommand = this._buildSunoCommand(sections, theme, style, bpm, themeConfig, script, language, reference, referenceSong);
+    const fullCommand = this._buildSunoCommand(sections, theme, style, bpm, themeConfig, script, language, reference, referenceSong, true);
+    const fullText = this._buildSunoCommand(sections, theme, style, bpm, themeConfig, script, language, reference, referenceSong, false);
+    const lyricsText = sections.map(s => s.content).flat().filter(Boolean).join('\n');
 
     return {
       theme,
@@ -2827,7 +2847,9 @@ export class UnicornAgent {
       script,
       totalDuration: duration,
       sections,
-      fullText: fullCommand,
+      fullCommand,
+      fullText,
+      lyricsText,
       generatedAt: new Date().toISOString()
     };
   }
@@ -3128,7 +3150,7 @@ export class UnicornAgent {
     return STYLE_LABELS[style] || STYLE_LABELS.pop || '原创音乐,自由风格,真情实感';
   }
 
-  _buildSunoCommand(sections, theme, style, bpm, themeConfig, script = '', language = 'zh', reference = '', referenceSong = '') {
+  _buildSunoCommand(sections, theme, style, bpm, themeConfig, script = '', language = 'zh', reference = '', referenceSong = '', commandsOnly = false) {
     let command = `[风格标签：${this._getStyleLabels(style)}]\n`;
     command += `[整体情绪：${themeConfig.emotion}]\n`;
     command += `[节奏：${bpm} BPM]\n`;
@@ -3155,7 +3177,7 @@ export class UnicornAgent {
       command += `[动态：${DYNAMIC_LEVELS[section.dynamic]?.name || section.dynamic}]\n`;
       command += `[乐器：${section.instruments.join('、')}]\n`;
       command += `[人声：${section.vocals}]\n`;
-      if (section.content && section.content.length > 0) {
+      if (!commandsOnly && section.content && section.content.length > 0) {
         command += `${section.content.join('\n')}\n`;
       }
       command += '\n';
