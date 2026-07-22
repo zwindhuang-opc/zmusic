@@ -67,6 +67,16 @@ function getApiBase() {
     return `http://${host}:5501/api`;
   }
 
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host.includes('github.io')) {
+      return 'https://z-music-z.netlify.app/api';
+    }
+    if (host.includes('netlify.app') || host === 'localhost' || host === '127.0.0.1') {
+      return '/api';
+    }
+  }
+
   return '/api';
 }
 
