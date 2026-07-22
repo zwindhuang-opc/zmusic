@@ -12,10 +12,12 @@ const MVPage = lazy(() => import('./pages/MVPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 import FloatingChatBall from './components/FloatingChatBall.jsx';
 
+const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '1.0.0';
+
 function App() {
   const { t, i18n } = useTranslation();
   const [currentPage, setCurrentPage] = useState('dashboard');
-  const [apiStatus, setApiStatus] = useState({ configured: false, version: '1.0.0', uptime: 0 });
+  const [apiStatus, setApiStatus] = useState({ configured: false, version: BUILD_VERSION, uptime: 0 });
   const [agentStatus, setAgentStatus] = useState(null);
 
   useEffect(() => {
@@ -39,7 +41,7 @@ function App() {
         setApiStatus({
           configured: health.apiConfigured || health.data?.apiConfigured,
           museConfigured: health.museConfigured || health.data?.museConfigured || false,
-          version: health.version || health.data?.version || '1.0.0',
+          version: health.version || health.data?.version || BUILD_VERSION,
           uptime: health.uptime || health.data?.uptime || 0
         });
       }
