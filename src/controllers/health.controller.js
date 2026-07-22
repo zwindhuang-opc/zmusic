@@ -37,7 +37,7 @@ function loadVersionFile() {
       // try next
     }
   }
-  return { version: '5.5.4', build: 21, date: new Date().toISOString().split('T')[0] };
+  return { version: '5.5.5', build: 22, date: new Date().toISOString().split('T')[0] };
 }
 
 const versionFile = loadVersionFile();

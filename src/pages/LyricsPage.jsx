@@ -72,7 +72,7 @@ function LyricsPage({ onNavigate }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [viewMode, setViewMode] = useState('commands'); // 'commands' | 'lyrics'
+  const [viewMode, setViewMode] = useState('both'); // 'both' | 'commands' | 'lyrics'
 
   /* --- UI state for tabbed/categorized interface --- */
   const [activeTab, setActiveTab] = useState('style'); // 'style' | 'method' | 'advanced'
@@ -553,35 +553,35 @@ function LyricsPage({ onNavigate }) {
               </div>
 
               <div className="flex items-center justify-between mb-2">
-                <div className="flex gap-2 p-1 rounded-xl bg-white/5 border border-white/10">
+                <div className="flex gap-1 p-1 rounded-xl bg-white/5 border border-white/10">
+                  <button
+                    onClick={() => setViewMode('both')}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'both'
+                      ? 'bg-gradient-to-r from-emerald-500/30 to-teal-500/20 text-emerald-200 border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />{t('lyrics.view_both')}
+                  </button>
                   <button
                     onClick={() => setViewMode('commands')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'commands'
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'commands'
                       ? 'bg-gradient-to-r from-pink-500/30 to-rose-500/20 text-pink-200 border border-pink-500/40 shadow-lg shadow-pink-500/10'
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
                       }`}
                   >
-                    <Cpu className="w-4 h-4" />{t('lyrics.generated_command')}
+                    <Cpu className="w-3.5 h-3.5" />{t('lyrics.view_commands')}
                   </button>
                   <button
                     onClick={() => setViewMode('lyrics')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'lyrics'
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'lyrics'
                       ? 'bg-gradient-to-r from-violet-500/30 to-purple-500/20 text-violet-200 border border-violet-500/40 shadow-lg shadow-violet-500/10'
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
                       }`}
                   >
-                    <FileText className="w-4 h-4" />{t('lyrics.lyrics_output')}
+                    <FileText className="w-3.5 h-3.5" />{t('lyrics.view_lyrics')}
                   </button>
                 </div>
-                <button
-                  onClick={() => {
-                    const allContent = [result.result?.fullText, result.command].filter(Boolean).join('\n\n==========\n\n');
-                    copyToClipboard(allContent || result.result?.fullText || '');
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all"
-                >
-                  <Copy className="w-3.5 h-3.5" />{t('common.copy')}
-                </button>
               </div>
 
               {result.result?.script && (
@@ -593,35 +593,50 @@ function LyricsPage({ onNavigate }) {
                 </div>
               )}
 
+              {/* Both Tab - Command + Lyrics */}
+              {viewMode === 'both' && result.result?.fullText && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => copyToClipboard(result.result.fullText)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-xs text-emerald-300 hover:bg-emerald-500/25 transition-all"
+                    >
+                      <Copy className="w-3.5 h-3.5" />{t('lyrics.copy_all')}
+                    </button>
+                    <button
+                      onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('music'); }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-500/15 border border-pink-500/30 text-xs text-pink-300 hover:bg-pink-500/25 transition-all"
+                    >
+                      <Music className="w-3.5 h-3.5" />{t('lyrics.send_to_music')}
+                    </button>
+                    <button
+                      onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('mv'); }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-xs text-blue-300 hover:bg-blue-500/25 transition-all"
+                    >
+                      <Video className="w-3.5 h-3.5" />{t('lyrics.send_to_mv')}
+                    </button>
+                  </div>
+                  <div className="rounded-xl bg-black/30 border border-emerald-500/20 overflow-hidden">
+                    <pre className="p-5 text-sm text-white whitespace-pre-wrap font-mono leading-relaxed max-h-[70vh] overflow-y-auto">{result.result.fullText}</pre>
+                  </div>
+                </div>
+              )}
+
               {/* Commands Tab */}
               {viewMode === 'commands' && (result.result?.fullCommand || result.command) && (
                 <div className="space-y-3">
-                  {result.result?.fullCommand && (
-                    <div className="rounded-xl bg-black/30 border border-pink-500/20 overflow-hidden">
-                      <div className="flex items-center justify-between px-3 py-2 bg-pink-500/5 border-b border-white/5">
-                        <span className="text-xs font-medium text-pink-300">{t('lyrics.generated_command')}</span>
-                        <button onClick={() => copyToClipboard(result.result.fullCommand)}
-                          className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 text-[10px] text-gray-400 hover:bg-white/10 transition-colors"
-                        >
-                          <Copy className="w-3 h-3" />{t('common.copy')}
-                        </button>
-                      </div>
-                      <pre className="p-4 text-xs text-pink-200 font-mono whitespace-pre-wrap break-words max-h-[65vh] overflow-y-auto leading-relaxed">{result.result.fullCommand}</pre>
-                    </div>
-                  )}
-                  {result.command && result.command !== result.result?.fullCommand && (
-                    <div className="rounded-xl bg-black/30 border border-violet-500/20 overflow-hidden">
-                      <div className="flex items-center justify-between px-3 py-2 bg-violet-500/5 border-b border-white/5">
-                        <span className="text-xs font-medium text-violet-300">{t('lyrics.fsm_command')}</span>
-                        <button onClick={() => copyToClipboard(result.command)}
-                          className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 text-[10px] text-gray-400 hover:bg-white/10 transition-colors"
-                        >
-                          <Copy className="w-3 h-3" />{t('common.copy')}
-                        </button>
-                      </div>
-                      <pre className="p-4 text-xs text-violet-200 font-mono whitespace-pre-wrap break-words max-h-[55vh] overflow-y-auto leading-relaxed">{result.command}</pre>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">{t('lyrics.commands_only')}</span>
+                    <button
+                      onClick={() => copyToClipboard(result.result?.fullCommand || result.command)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-500/15 border border-pink-500/30 text-xs text-pink-300 hover:bg-pink-500/25 transition-all"
+                    >
+                      <Copy className="w-3.5 h-3.5" />{t('lyrics.copy_commands')}
+                    </button>
+                  </div>
+                  <div className="rounded-xl bg-black/30 border border-pink-500/20 overflow-hidden">
+                    <pre className="p-4 text-xs text-pink-200 font-mono whitespace-pre-wrap break-words max-h-[70vh] overflow-y-auto leading-relaxed">{result.result?.fullCommand || result.command}</pre>
+                  </div>
                 </div>
               )}
 
@@ -630,26 +645,26 @@ function LyricsPage({ onNavigate }) {
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={(e) => { e.stopPropagation(); copyToClipboard(result.result.lyricsText || result.result.fullText); }}
+                      onClick={() => copyToClipboard(result.result.lyricsText || result.result.fullText)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/15 border border-violet-500/30 text-xs text-violet-300 hover:bg-violet-500/25 transition-all"
                     >
                       <Copy className="w-3.5 h-3.5" />{t('lyrics.copy_lyrics')}
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('music'); }}
+                      onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('music'); }}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-500/15 border border-pink-500/30 text-xs text-pink-300 hover:bg-pink-500/25 transition-all"
                     >
                       <Music className="w-3.5 h-3.5" />{t('lyrics.send_to_music')}
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('mv'); }}
+                      onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('mv'); }}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-xs text-blue-300 hover:bg-blue-500/25 transition-all"
                     >
                       <Video className="w-3.5 h-3.5" />{t('lyrics.send_to_mv')}
                     </button>
                   </div>
                   <div className="rounded-xl bg-black/30 border border-violet-500/20 overflow-hidden">
-                    <pre className="p-5 text-sm text-white whitespace-pre-wrap font-sans leading-loose max-h-[65vh] overflow-y-auto">{result.result.lyricsText || result.result.fullText}</pre>
+                    <pre className="p-5 text-sm text-white whitespace-pre-wrap font-sans leading-loose max-h-[70vh] overflow-y-auto">{result.result.lyricsText || result.result.fullText}</pre>
                   </div>
                 </div>
               )}
@@ -671,10 +686,10 @@ function LyricsPage({ onNavigate }) {
             </div>
           )}
         </div>
-      </div>
+      </div >
 
       {/* Sticky Generate Button */}
-      <div className="fixed bottom-[72px] md:bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0f] via-[#0f0a1a]/95 to-transparent pt-6 md:pt-12 pb-3 md:pb-3 px-4 md:px-6 z-40 safe-area-bottom md:safe-area-bottom">
+      < div className="fixed bottom-[72px] md:bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0f] via-[#0f0a1a]/95 to-transparent pt-6 md:pt-12 pb-3 md:pb-3 px-4 md:px-6 z-40 safe-area-bottom md:safe-area-bottom" >
         <div className="max-w-7xl mx-auto">
           <button
             onClick={handleGenerate}
@@ -688,10 +703,10 @@ function LyricsPage({ onNavigate }) {
             )}
           </button>
         </div>
-      </div>
+      </div >
 
       <HistoryPanel isOpen={showHistory} onClose={() => setShowHistory(false)} />
-    </div>
+    </div >
   );
 }
 
