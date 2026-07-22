@@ -72,3 +72,11 @@ release/
 
 # Local Netlify folder
 .netlify
+
+# Netlify function build artifacts
+netlify/functions/api/_server_bundle.cjs
+netlify/functions/api/VERSION.json
+
+# GitHub auth temp files
+.gh_auth_output.txt
+.gh_refresh.txt

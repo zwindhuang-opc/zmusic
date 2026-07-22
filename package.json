@@ -1,12 +1,13 @@
 {
   "name": "zmusic",
-  "version": "5.5.0",
+  "version": "5.5.1",
   "description": "ZMusic - Real AI Music Generation Platform with MVC Architecture",
   "main": "electron/main.js",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run bundle:api && vite build",
+    "bundle:api": "node -e \"require('fs').copyFileSync('VERSION.json', 'netlify/functions/api/VERSION.json')\" && npx esbuild netlify/functions/api/_server_entry.cjs --bundle --platform=node --format=cjs --outfile=netlify/functions/api/_server_bundle.cjs --external:express --external:cors --log-level=warning",
     "preview": "vite preview",
     "server": "node src/server.js",
     "dev:full": "concurrently \"npm run server\" \"npm run dev\"",

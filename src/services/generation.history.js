@@ -7,13 +7,32 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const HISTORY_DIR = path.join(__dirname, '../../.history');
-const MAX_HISTORY_SIZE = 200;
+const _historyDir = typeof __dirname !== 'undefined' ? __dirname : (import.meta.url ? path.dirname(fileURLToPath(import.meta.url)) : process.cwd());
 
-if (!fs.existsSync(HISTORY_DIR)) {
-  fs.mkdirSync(HISTORY_DIR, { recursive: true });
+function resolveHistoryDir() {
+  const tmpDir = (typeof process !== 'undefined' && process.env?.TMPDIR) || '/tmp';
+  const candidates = [
+    path.join(process.cwd(), '.history'),
+    path.join(_historyDir, '../../.history'),
+    path.join(tmpDir, 'zmusic-history'),
+  ];
+  for (const dir of candidates) {
+    try {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.accessSync(dir, fs.constants.W_OK);
+      return dir;
+    } catch (e) {
+      // try next
+    }
+  }
+  return null;
 }
+
+const HISTORY_DIR = resolveHistoryDir();
+const MAX_HISTORY_SIZE = 200;
+const _memoryFallback = [];
 
 export class GenerationHistory {
   constructor() {
@@ -21,6 +40,7 @@ export class GenerationHistory {
   }
 
   _load() {
+    if (!HISTORY_DIR) return [];
     try {
       const files = fs.readdirSync(HISTORY_DIR);
       const entries = files
@@ -49,17 +69,23 @@ export class GenerationHistory {
       ...data
     };
 
-    const filePath = path.join(HISTORY_DIR, `${entry.id}.json`);
-    fs.writeFileSync(filePath, JSON.stringify(entry, null, 2));
+    if (HISTORY_DIR) {
+      try {
+        const filePath = path.join(HISTORY_DIR, `${entry.id}.json`);
+        fs.writeFileSync(filePath, JSON.stringify(entry, null, 2));
+      } catch { }
+    }
 
     this._history.unshift(entry);
     if (this._history.length > MAX_HISTORY_SIZE) {
       const oldEntries = this._history.slice(MAX_HISTORY_SIZE);
-      oldEntries.forEach(old => {
-        try {
-          fs.unlinkSync(path.join(HISTORY_DIR, `${old.id}.json`));
-        } catch {}
-      });
+      if (HISTORY_DIR) {
+        oldEntries.forEach(old => {
+          try {
+            fs.unlinkSync(path.join(HISTORY_DIR, `${old.id}.json`));
+          } catch { }
+        });
+      }
       this._history = this._history.slice(0, MAX_HISTORY_SIZE);
     }
 
@@ -82,9 +108,11 @@ export class GenerationHistory {
     const index = this._history.findIndex(item => item.id === id);
     if (index !== -1) {
       const item = this._history[index];
-      try {
-        fs.unlinkSync(path.join(HISTORY_DIR, `${item.id}.json`));
-      } catch {}
+      if (HISTORY_DIR) {
+        try {
+          fs.unlinkSync(path.join(HISTORY_DIR, `${item.id}.json`));
+        } catch { }
+      }
       this._history.splice(index, 1);
       return true;
     }
@@ -92,12 +120,16 @@ export class GenerationHistory {
   }
 
   clear() {
-    const files = fs.readdirSync(HISTORY_DIR);
-    files.filter(f => f.endsWith('.json')).forEach(f => {
+    if (HISTORY_DIR) {
       try {
-        fs.unlinkSync(path.join(HISTORY_DIR, f));
-      } catch {}
-    });
+        const files = fs.readdirSync(HISTORY_DIR);
+        files.filter(f => f.endsWith('.json')).forEach(f => {
+          try {
+            fs.unlinkSync(path.join(HISTORY_DIR, f));
+          } catch { }
+        });
+      } catch { }
+    }
     this._history = [];
   }
 

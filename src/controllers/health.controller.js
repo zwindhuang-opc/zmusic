@@ -17,11 +17,30 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const _currentFile = typeof __filename !== 'undefined' ? __filename : (import.meta.url ? fileURLToPath(import.meta.url) : process.cwd());
+const _currentDir = typeof __dirname !== 'undefined' ? __dirname : path.dirname(_currentFile);
 
-// Read version from VERSION.json
-const versionFile = JSON.parse(fs.readFileSync(path.join(__dirname, '../../VERSION.json'), 'utf-8'));
+function loadVersionFile() {
+  const candidates = [
+    path.join(_currentDir, '../../VERSION.json'),
+    path.join(_currentDir, '../VERSION.json'),
+    path.join(_currentDir, 'VERSION.json'),
+    path.join(process.cwd(), 'VERSION.json'),
+    path.join(process.cwd(), 'netlify/functions/api/VERSION.json'),
+  ];
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) {
+        return JSON.parse(fs.readFileSync(p, 'utf-8'));
+      }
+    } catch (e) {
+      // try next
+    }
+  }
+  return { version: '5.5.1', build: 17, date: new Date().toISOString().split('T')[0] };
+}
+
+const versionFile = loadVersionFile();
 
 /**
  * 日志记录器实例
