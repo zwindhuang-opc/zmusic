@@ -9,6 +9,7 @@ on:
       - 'src/**'
       - 'public/**'
       - 'netlify/**'
+      - 'VERSION.json'
       - 'index.html'
       - 'package.json'
       - 'vite.config.*'
@@ -32,7 +33,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build frontend
         run: npm run build
