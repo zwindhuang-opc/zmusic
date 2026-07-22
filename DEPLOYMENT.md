@@ -2,29 +2,71 @@
 
 This guide provides multiple deployment options to share ZMusic with friends via a public link.
 
-## Option 1: Render Free Tier (Recommended - One-Click Deploy)
+---
 
-**Why Render?** Free tier supports both Node.js backend + static frontend, with 24/7 uptime (spins down after 15min idle, wakes on request).
+## Option 1: Vercel (Recommended - Easiest One-Click Deploy)
+
+**Why Vercel?** Best GitHub integration, fastest builds, most reliable free tier, zero signup friction.
 
 ### Steps:
-1. Push latest code to GitHub (already done via `npm run backup`)
-2. Click this one-click deploy link:
+1. Code is already pushed to GitHub
+2. **Click this one-click deploy link:**
    ```
-   https://render.com/deploy?repo=https://github.com/zwindhuang-opc/zmusic
+   https://vercel.com/new/clone?repository-url=https://github.com/zwindhuang-opc/zmusic
    ```
-3. Sign in with GitHub account
-4. Render will detect `render.yaml` blueprint and create 2 services:
-   - `zmusic-api` - Backend Node.js service (free)
-   - `zmusic-web` - Frontend static site (free)
-5. Set the `SUNO_CN_API_KEY` secret in the `zmusic-api` service dashboard
-6. Wait ~5 minutes for first build to complete
-7. Your shareable link will be: `https://zmusic-web.onrender.com`
+3. Sign in with **GitHub** (one click, no form to fill)
+4. Set the `SUNO_CN_API_KEY` environment variable in the Vercel dashboard:
+   - Go to your project → Settings → Environment Variables
+   - Add: `SUNO_CN_API_KEY` = your API key
+5. Wait ~3 minutes for first build
+6. Your shareable link will be: `https://zmusic-xxxx.vercel.app` (shown in dashboard)
 
-**Note:** Render free tier sleeps after 15min of inactivity. First request after sleep takes ~30s to wake up.
+**What gets deployed:**
+- Frontend (React + Vite) → static CDN hosting
+- Backend API (Express) → Vercel Serverless Functions at `/api/*`
+- All configured automatically via `vercel.json`
+
+**Vercel Free Tier:** Unlimited bandwidth, 100GB/month bandwidth, 10s max function execution, never sleeps.
 
 ---
 
-## Option 2: Run Without Server Startup (Local Desktop App)
+## Option 2: Netlify (Alternative One-Click Deploy)
+
+**Why Netlify?** Great if Vercel is slow in your region, excellent form handling and CDN.
+
+### Steps:
+1. **Click this one-click deploy link:**
+   ```
+   https://app.netlify.com/start/deploy?repository=https://github.com/zwindhuang-opc/zmusic
+   ```
+2. Sign in with **GitHub** (authorize Netlify to access your repo)
+3. Set the `SUNO_CN_API_KEY` environment variable:
+   - Site settings → Build & deploy → Environment → Add: `SUNO_CN_API_KEY`
+4. Wait ~3 minutes for build
+5. Your shareable link will be: `https://zmusic-xxxx.netlify.app`
+
+**Netlify Free Tier:** 100GB bandwidth/month, 300 build minutes/month, unlimited serverless invocations, never sleeps.
+
+---
+
+## Option 3: Render (Full Node Server)
+
+**Why Render?** Runs a proper Node.js server (not serverless), no cold starts, no execution time limits.
+
+### Steps:
+1. Click:
+   ```
+   https://render.com/deploy?repo=https://github.com/zwindhuang-opc/zmusic
+   ```
+2. Sign in with GitHub/Google
+3. Set `SUNO_CN_API_KEY` in environment variables
+4. Wait ~5 minutes
+
+**Note:** Render free tier sleeps after 15min idle. First request takes ~30s to wake up.
+
+---
+
+## Option 4: Run Without Server Startup (Local Desktop App)
 
 If you just want to use ZMusic locally without starting the dev server each time, build the Electron desktop app:
 
@@ -40,18 +82,9 @@ This produces a Windows installer at `release/ZMusic Setup 5.5.0.exe` that:
 
 ---
 
-## Option 3: Vercel + Railway (Alternative)
-
-If Render is slow from your region:
-1. Frontend: Deploy `dist/` to Vercel via GitHub integration
-2. Backend: Deploy `src/server.js` to Railway (free $5/month credit)
-3. Update `VITE_API_BASE_URL` in Vercel env vars to Railway backend URL
-
----
-
 ## Mobile App Sync
 
-Versions are now synced across all platforms:
+Versions are synced across all platforms:
 - Web: 5.5.0 (package.json + VERSION.json)
 - Android: versionCode 7, versionName 5.5.0 (android/app/build.gradle)
 - iOS: MARKETING_VERSION 5.5.0, CURRENT_PROJECT_VERSION 5 (ios/App/App.xcodeproj)
@@ -68,17 +101,20 @@ Output: `android/app/build/outputs/apk/release/app-release.apk`
 ```bash
 npm run build
 npx cap sync ios
-npx cap open ios  # then Archive in Xcode
+npx cap open ios
 ```
 
 ---
 
 ## Quick Share Links
 
-After deployment, share these links with friends:
-- **Web App:** `https://zmusic-web.onrender.com` (after Render deployment)
-- **GitHub Repo:** `https://github.com/zwindhuang-opc/zmusic`
-- **Latest Release APK:** `https://github.com/zwindhuang-opc/zmusic/releases/latest`
+| Platform | Link |
+|----------|------|
+| **Vercel Deploy** | https://vercel.com/new/clone?repository-url=https://github.com/zwindhuang-opc/zmusic |
+| **Netlify Deploy** | https://app.netlify.com/start/deploy?repository=https://github.com/zwindhuang-opc/zmusic |
+| **Render Deploy** | https://render.com/deploy?repo=https://github.com/zwindhuang-opc/zmusic |
+| **GitHub Repo** | https://github.com/zwindhuang-opc/zmusic |
+| **Latest APK** | https://github.com/zwindhuang-opc/zmusic/releases/latest |
 
 ---
 
@@ -86,6 +122,5 @@ After deployment, share these links with friends:
 
 Required for production:
 - `SUNO_CN_API_KEY` - Suno.cn API key (for real music generation)
-- `PORT` - Backend port (default 5501)
 - `NODE_ENV` - Set to `production` for deployed environments
-- `VITE_API_BASE_URL` - Backend URL for frontend to call (e.g. `https://zmusic-api.onrender.com/api`)
+- `VITE_API_BASE_URL` - Backend URL (not needed for Vercel/Netlify since API is on same domain)
