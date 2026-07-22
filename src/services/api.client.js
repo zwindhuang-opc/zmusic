@@ -72,9 +72,19 @@ function getApiBase() {
     if (host.includes('github.io')) {
       return 'https://z-music-z.netlify.app/api';
     }
+    if (host.includes('vercel.app')) {
+      return 'https://' + host + '/api';
+    }
+    if (host.includes('onrender.com')) {
+      return 'https://' + host + '/api';
+    }
     if (host.includes('netlify.app') || host === 'localhost' || host === '127.0.0.1') {
       return '/api';
     }
+    if (host === '') {
+      return '/api';
+    }
+    return '/api';
   }
 
   return '/api';
@@ -85,40 +95,40 @@ const API_BASE = getApiBase();
 class ApiClient {
   async request(path, options = {}, signal) {
     const url = `${API_BASE}${path}`;
-    
+
     try {
       const response = await fetch(url, {
         headers: { 'Content-Type': 'application/json' },
         ...options,
         signal
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text().catch(() => '');
         logger.warn(`HTTP ${response.status}: ${errorText || 'Unknown error'} for ${url}`);
         return { success: false, error: `HTTP ${response.status}`, status: response.status };
       }
-      
+
       const text = await response.text();
       if (!text) {
         logger.warn(`Empty response for ${url}`);
         return { success: false, error: 'Empty response' };
       }
-      
+
       const result = JSON.parse(text);
       return result;
-      
+
     } catch (error) {
       if (error.name === 'AbortError') {
         throw error;
       }
-      
+
       if (error.message?.includes('Failed to fetch') || error.message?.includes('ERR_CONNECTION_REFUSED')) {
         logger.debug(`Backend unreachable: ${url}`);
       } else {
         logger.error(`Request failed: ${url} - ${error.message}`);
       }
-      
+
       return { success: false, error: error.message };
     }
   }

@@ -7,7 +7,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
-  base: '/zmusic/',
+  base: './',
   server: {
     port: 5500,
     strictPort: true,
