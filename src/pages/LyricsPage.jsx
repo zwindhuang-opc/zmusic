@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Mic, Sparkles, Loader, FileText, Cpu, Network, BookOpen, Settings as SettingsIcon, Wand2, Clock, Music2, User, History, Copy, Music, Video, AlertCircle, Search, ChevronDown, ChevronRight, Sliders, Palette, Layers } from 'lucide-react';
+import { Mic, Sparkles, Loader, FileText, Cpu, Network, BookOpen, Settings as SettingsIcon, Wand2, Clock, Music2, User, History, Copy, Music, Video, AlertCircle, Search, ChevronDown, ChevronRight, Sliders, Palette, Layers, Image as ImageIcon, Upload, X, Check } from 'lucide-react';
 import { useTranslation } from '../i18n/index.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
 import { useGeneration } from '../stores/generationStore.jsx';
@@ -75,11 +75,20 @@ function LyricsPage({ onNavigate }) {
   const [viewMode, setViewMode] = useState('both'); // 'both' | 'commands' | 'lyrics'
 
   /* --- UI state for tabbed/categorized interface --- */
-  const [activeTab, setActiveTab] = useState('style'); // 'style' | 'method' | 'advanced'
+  const [activeTab, setActiveTab] = useState('style'); // 'style' | 'method' | 'advanced' | 'image'
   const [styleSearch, setStyleSearch] = useState('');
   const [themeSearch, setThemeSearch] = useState('');
   const [expandedStyleCats, setExpandedStyleCats] = useState({ emotional: true });
   const [expandedThemeCats, setExpandedThemeCats] = useState({ emotional: true });
+
+  /* --- Image upload & analysis state --- */
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [visionResult, setVisionResult] = useState(null);
+  const [visionError, setVisionError] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [appliedSuggestions, setAppliedSuggestions] = useState(false);
 
   const getComplexityLabel = (level) => {
     if (level <= 2) return t('lyrics.simple');
@@ -163,10 +172,111 @@ function LyricsPage({ onNavigate }) {
     setExpandedThemeCats(prev => ({ ...prev, [cat]: !prev[cat] }));
   };
 
+  /* --- Image upload handlers --- */
+  const handleFileSelect = (file) => {
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      setVisionError(t('lyrics.image_upload_supported'));
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setVisionError('Image too large. Max 10MB');
+      return;
+    }
+
+    setVisionError(null);
+    setImageFile(file);
+    setAppliedSuggestions(false);
+    setVisionResult(null);
+
+    const reader = new FileReader();
+    reader.onload = (e) => setImagePreview(e.target.result);
+    reader.readAsDataURL(file);
+
+    analyzeImage(file);
+  };
+
+  const analyzeImage = async (file) => {
+    setIsAnalyzing(true);
+    setVisionError(null);
+    try {
+      const data = await api.analyzeImage(file, file.type);
+      if (data.success) {
+        setVisionResult(data.data);
+      } else {
+        setVisionError(data.error || t('common.error_unknown'));
+      }
+    } catch (err) {
+      setVisionError(err.message || t('common.error_connection'));
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const applyVisionSuggestions = () => {
+    if (!visionResult) return;
+
+    if (visionResult.suggestions?.genre) {
+      const validGenre = genres.includes(visionResult.suggestions.genre)
+        ? visionResult.suggestions.genre
+        : (visionResult.styles?.find(s => genres.includes(s)) || genre);
+      setGenre(validGenre);
+    }
+
+    if (visionResult.suggestions?.theme) {
+      const validTheme = themes.includes(visionResult.suggestions.theme)
+        ? visionResult.suggestions.theme
+        : (visionResult.themes?.find(th => themes.includes(th)) || theme);
+      setTheme(validTheme);
+    }
+
+    if (visionResult.suggestions?.bpm) {
+      setBpm(visionResult.suggestions.bpm);
+    }
+
+    if (visionResult.description) {
+      const existingScript = script ? script + '\n\n' : '';
+      setScript(existingScript + t('lyrics.image_description') + ': ' + visionResult.description);
+    }
+
+    setAppliedSuggestions(true);
+    setTimeout(() => setAppliedSuggestions(false), 2000);
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setVisionResult(null);
+    setVisionError(null);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      handleFileSelect(files[0]);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
   /* --- Tab configuration --- */
   const TABS = [
     { id: 'style', label: t('lyrics.tab_style_theme'), icon: Palette },
     { id: 'method', label: t('lyrics.tab_method'), icon: Layers },
+    { id: 'image', label: t('lyrics.tab_image'), icon: ImageIcon },
     { id: 'advanced', label: t('lyrics.tab_advanced'), icon: Sliders }
   ];
 
@@ -406,6 +516,180 @@ function LyricsPage({ onNavigate }) {
                   </div>
                   <p className="text-[10px] text-gray-600">{t('lyrics.complexity_hint')}</p>
                 </div>
+              </div>
+            </>
+          )}
+
+          {/* Tab: Image Upload & Analysis */}
+          {activeTab === 'image' && (
+            <>
+              <div className="gradient-border p-4 md:p-5">
+                <label className="text-xs font-medium text-gray-300 mb-3 block">{t('lyrics.image_upload_title')}</label>
+
+                {!imagePreview ? (
+                  <div
+                    onClick={() => document.getElementById('image-file-input')?.click()}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    className={`relative border-2 border-dashed rounded-xl p-6 md:p-8 text-center cursor-pointer transition-all ${isDragging
+                        ? 'border-violet-500 bg-violet-500/10'
+                        : 'border-white/20 bg-white/5 hover:border-violet-500/50 hover:bg-white/10'
+                      }`}
+                  >
+                    <input
+                      id="image-file-input"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileSelect(file);
+                      }}
+                    />
+                    <div className="w-14 h-14 mx-auto mb-3 rounded-xl bg-gradient-to-br from-violet-500/20 to-pink-500/20 flex items-center justify-center">
+                      {isAnalyzing ? (
+                        <Loader className="w-7 h-7 text-violet-400 animate-spin" />
+                      ) : (
+                        <Upload className="w-7 h-7 text-violet-400" />
+                      )}
+                    </div>
+                    <div className="text-sm font-medium text-white mb-1">
+                      {isAnalyzing ? t('lyrics.image_analyzing') : t('lyrics.image_upload_hint')}
+                    </div>
+                    <div className="text-[10px] text-gray-500">{t('lyrics.image_upload_supported')}</div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="relative rounded-xl overflow-hidden bg-black/30 border border-white/10">
+                      <img src={imagePreview} alt="Preview" className="w-full h-48 object-contain" />
+                      <button
+                        onClick={clearImage}
+                        className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {isAnalyzing && (
+                      <div className="flex items-center justify-center gap-2 py-3 text-violet-400 text-xs">
+                        <Loader className="w-4 h-4 animate-spin" />
+                        {t('lyrics.image_analyzing')}
+                      </div>
+                    )}
+
+                    {visionError && (
+                      <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs">
+                        {visionError}
+                      </div>
+                    )}
+
+                    {visionResult && !isAnalyzing && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-white">{t('lyrics.image_analysis_result')}</span>
+                          <button
+                            onClick={applyVisionSuggestions}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${appliedSuggestions
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                : 'bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30'
+                              }`}
+                          >
+                            {appliedSuggestions ? (
+                              <><Check className="w-3.5 h-3.5" />{t('lyrics.image_applied')}</>
+                            ) : (
+                              <><Sparkles className="w-3.5 h-3.5" />{t('lyrics.image_apply')}</>
+                            )}
+                          </button>
+                        </div>
+
+                        {visionResult.dominantColor && (
+                          <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/5">
+                            <div
+                              className="w-10 h-10 rounded-lg border border-white/20"
+                              style={{ backgroundColor: visionResult.dominantColor.hex }}
+                            />
+                            <div>
+                              <div className="text-[10px] text-gray-500 uppercase tracking-wider">{t('lyrics.image_dominant_color')}</div>
+                              <div className="text-xs text-white font-medium">{visionResult.dominantColor.hex}</div>
+                            </div>
+                          </div>
+                        )}
+
+                        {visionResult.mood && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="p-2.5 rounded-lg bg-pink-500/5 border border-pink-500/20">
+                              <div className="text-[10px] text-pink-400 uppercase tracking-wider mb-0.5">{t('lyrics.image_mood')}</div>
+                              <div className="text-xs text-white font-medium">{visionResult.mood}</div>
+                            </div>
+                            {visionResult.scene?.category && (
+                              <div className="p-2.5 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                                <div className="text-[10px] text-blue-400 uppercase tracking-wider mb-0.5">{t('lyrics.image_scene')}</div>
+                                <div className="text-xs text-white font-medium">{visionResult.scene.category}</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {visionResult.styles && visionResult.styles.length > 0 && (
+                          <div>
+                            <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5">{t('lyrics.image_styles')}</div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {visionResult.styles.map((s, i) => (
+                                <span key={i} className="px-2.5 py-1 rounded-md bg-violet-500/10 text-violet-300 text-[11px] border border-violet-500/20">
+                                  {t(`lyrics_styles.${s}`) || t(`styles.${s}`) || s}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {visionResult.themes && visionResult.themes.length > 0 && (
+                          <div>
+                            <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5">{t('lyrics.image_themes')}</div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {visionResult.themes.map((th, i) => (
+                                <span key={i} className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-300 text-[11px] border border-emerald-500/20">
+                                  {t(`lyrics_themes.${th}`) || t(`themes.${th}`) || th}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {visionResult.suggestions?.bpm && (
+                          <div className="p-2.5 rounded-lg bg-white/5">
+                            <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">{t('lyrics.image_bpm')}</div>
+                            <div className="text-sm text-white font-semibold">{visionResult.suggestions.bpm}</div>
+                          </div>
+                        )}
+
+                        {visionResult.colorPalette && visionResult.colorPalette.length > 0 && (
+                          <div>
+                            <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5">{t('lyrics.image_color_palette')}</div>
+                            <div className="flex gap-1.5">
+                              {visionResult.colorPalette.map((c, i) => (
+                                <div
+                                  key={i}
+                                  title={c.hex}
+                                  className="w-8 h-8 rounded-md border border-white/20"
+                                  style={{ backgroundColor: c.hex }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {visionResult.description && (
+                          <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                            <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{t('lyrics.image_description')}</div>
+                            <p className="text-xs text-gray-300 leading-relaxed">{visionResult.description}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </>
           )}

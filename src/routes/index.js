@@ -9,6 +9,7 @@ import lyricsController from '../controllers/lyrics.controller.js';
 import mvController from '../controllers/mv.controller.js';
 import agentController from '../controllers/agent.controller.js';
 import historyController from '../controllers/history.controller.js';
+import visionController from '../controllers/vision.controller.js';
 import Logger from '../utils/logger.js';
 
 const logger = new Logger('Routes');
@@ -45,6 +46,12 @@ export async function handleRoute(req, res, url, method, body) {
   if (path === '/api/agent/mv' && method === 'POST') {
     req.body = body;
     return agentController.generateMV(req, res);
+  }
+
+  // Vision endpoints
+  if (path === '/api/vision/analyze' && method === 'POST') {
+    req.body = body;
+    return visionController.analyze(req, res);
   }
 
   // Music endpoints

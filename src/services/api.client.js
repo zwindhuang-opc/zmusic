@@ -97,8 +97,17 @@ class ApiClient {
     const url = `${API_BASE}${path}`;
 
     try {
+      const defaultHeaders = { 'Content-Type': 'application/json' };
+      const mergedHeaders = options.headers
+        ? { ...defaultHeaders, ...options.headers }
+        : defaultHeaders;
+
+      if (options._skipJsonHeader) {
+        delete mergedHeaders['Content-Type'];
+      }
+
       const response = await fetch(url, {
-        headers: { 'Content-Type': 'application/json' },
+        headers: mergedHeaders,
         ...options,
         signal
       });
@@ -199,6 +208,29 @@ class ApiClient {
   // Analytics
   analytics() {
     return this.request('/business/analytics');
+  }
+
+  // Vision
+  analyzeImage(imageData, mimeType = 'image/jpeg') {
+    let body;
+    let headers = { 'Content-Type': 'application/json' };
+
+    if (typeof imageData === 'string' && imageData.startsWith('data:image')) {
+      body = JSON.stringify({ image: imageData });
+    } else if (imageData instanceof File || imageData instanceof Blob) {
+      body = imageData;
+      headers = { 'Content-Type': imageData.type || mimeType };
+    } else if (typeof imageData === 'string') {
+      body = JSON.stringify({ image: imageData });
+    } else {
+      body = JSON.stringify({ image: imageData });
+    }
+
+    return this.request('/vision/analyze', {
+      method: 'POST',
+      body,
+      headers: headers['Content-Type'] === 'application/json' ? undefined : headers
+    });
   }
 }
 
