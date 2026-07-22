@@ -12,6 +12,8 @@ on:
       - 'VERSION.json'
       - 'index.html'
       - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-netlify.yml'
       - 'vite.config.*'
       - 'netlify.toml'
       - 'tailwind.config.*'
