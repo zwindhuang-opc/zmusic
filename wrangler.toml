@@ -1,0 +1,14 @@
+name = "zmusic"
+type = "static"
+
+[site]
+bucket = "./dist"
+entry-point = "workers"
+
+[[routes]]
+pattern = "zmusic.pages.dev/*"
+type = "static"
+
+[build]
+command = "npm install && npm run build"
+cwd = "."

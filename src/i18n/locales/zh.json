@@ -140,6 +140,8 @@
     "muse_desc": "自然语言命令",
     "suno_name": "Suno风格",
     "suno_desc": "结构化参数",
+    "melo_name": "MELO风格",
+    "melo_desc": "字节旋律生成",
     "click_to_start": "点击\"生成歌词\"开始",
     "creating_with": "正在使用{method}创建歌词...",
     "generated_command": "生成的命令",

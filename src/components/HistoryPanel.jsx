@@ -20,7 +20,8 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
       fsm: Sparkles,
       network_layer: Zap,
       muse: Piano,
-      suno: Music
+      suno: Music,
+      melo: Music
     };
     return methodIcons[method] || Sparkles;
   };
@@ -35,7 +36,8 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
       fsm: 'from-violet-500 to-purple-500',
       network_layer: 'from-blue-500 to-cyan-500',
       muse: 'from-pink-500 to-rose-500',
-      suno: 'from-green-500 to-emerald-500'
+      suno: 'from-green-500 to-emerald-500',
+      melo: 'from-orange-500 to-amber-500'
     };
     return methodColors[method] || 'from-gray-500 to-gray-600';
   };
@@ -45,7 +47,8 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
       fsm: 'from-violet-500 to-purple-500',
       network_layer: 'from-blue-500 to-cyan-500',
       muse: 'from-pink-500 to-rose-500',
-      suno: 'from-green-500 to-emerald-500'
+      suno: 'from-green-500 to-emerald-500',
+      melo: 'from-orange-500 to-amber-500'
     };
     return colors[method] || 'from-gray-500 to-gray-600';
   };
@@ -55,7 +58,8 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
       fsm: t('lyrics.fsm_name'),
       network_layer: t('lyrics.network_name'),
       muse: t('lyrics.muse_name'),
-      suno: t('lyrics.suno_name')
+      suno: t('lyrics.suno_name'),
+      melo: t('lyrics.melo_name')
     };
     return names[method] || method;
   };
@@ -78,14 +82,37 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
     });
   };
 
-  const getPreviewText = (fullText) => {
+  const getPreviewText = (item) => {
+    const fullText = item.result?.result?.fullText || item.result?.fullText || '';
     if (!fullText) return '';
     const lines = fullText.split('\n').filter(line => line.trim() && !line.includes('[') && !line.includes('【'));
     return lines.slice(0, 3).join('\n') + (lines.length > 3 ? '...' : '');
   };
 
-  const handleCopy = async (item) => {
-    const text = item.result?.fullText || '';
+  const getLyricsText = (item) => {
+    return item.result?.result?.lyricsText || item.result?.lyricsText || item.result?.result?.fullText || item.result?.fullText || '';
+  };
+
+  const getCommandText = (item) => {
+    return item.result?.result?.fullCommand || item.result?.fullCommand || item.result?.command || '';
+  };
+
+  const getFullText = (item) => {
+    return item.result?.result?.fullText || item.result?.fullText || '';
+  };
+
+  const handleCopy = async (item, mode = 'full') => {
+    let text = '';
+    if (mode === 'commands') {
+      text = getCommandText(item);
+    } else if (mode === 'lyrics') {
+      text = getLyricsText(item);
+    } else {
+      text = getFullText(item);
+    }
+    if (!text) {
+      text = getLyricsText(item);
+    }
     const success = await copyToClipboard(text);
     if (success) {
       alert(t('common.copy') + t('common.success'));
@@ -189,23 +216,50 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
                     </span>
                   </div>
 
-                  {item.result?.fullText && (
+                  {item.result?.fullText || item.result?.result?.fullText ? (
                     <div className="text-xs text-gray-400 mb-3 line-clamp-3">
-                      {getPreviewText(item.result.fullText)}
+                      {getPreviewText(item)}
                     </div>
-                  )}
+                  ) : null}
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCopy(item);
-                      }}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 transition-colors text-xs"
-                    >
-                      <Copy className="w-3 h-3" />
-                      {t('common.copy')}
-                    </button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {item.type === 'lyrics' ? (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopy(item, 'commands');
+                          }}
+                          className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 py-2 rounded-lg bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 transition-colors text-xs"
+                          title={t('lyrics.view_commands')}
+                        >
+                          <Copy className="w-3 h-3" />
+                          {t('lyrics.view_commands')}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopy(item, 'lyrics');
+                          }}
+                          className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 py-2 rounded-lg bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 transition-colors text-xs"
+                          title={t('lyrics.view_lyrics')}
+                        >
+                          <Copy className="w-3 h-3" />
+                          {t('lyrics.view_lyrics')}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopy(item, 'full');
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 transition-colors text-xs"
+                      >
+                        <Copy className="w-3 h-3" />
+                        {t('common.copy')}
+                      </button>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -225,16 +279,6 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
                       title="Send to Suno AI"
                     >
                       <Music className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSendToAI(item, 'melo');
-                      }}
-                      className="flex items-center justify-center gap-1 py-2 px-3 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors text-xs"
-                      title="Send to Melo AI"
-                    >
-                      <ExternalLink className="w-3 h-3" />
                     </button>
                   </div>
                 </div>

@@ -140,6 +140,8 @@
     "muse_desc": "Natural Language Commands",
     "suno_name": "Suno Style",
     "suno_desc": "Structured Parameters",
+    "melo_name": "MELO Style",
+    "melo_desc": "ByteDance Melody Generation",
     "click_to_start": "Click \"Generate Lyrics\" to start",
     "creating_with": "Creating lyrics with {method}...",
     "generated_command": "Generated Command",

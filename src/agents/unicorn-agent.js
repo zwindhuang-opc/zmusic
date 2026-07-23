@@ -1377,7 +1377,7 @@ export class UnicornAgent {
     return {
       name: 'Unicorn Agent',
       version: '7.0.0',
-      features: ['FSM编程', '网络层架构', 'Muse命令', 'Suno命令', '时间分段', '风格变体'],
+      features: ['FSM编程', '网络层架构', 'Muse命令', 'Suno命令', 'MELO命令', '时间分段', '风格变体'],
       fsmStructures: Object.keys(FSM_TEMPLATES).length,
       networkLayers: 4
     };
@@ -1399,6 +1399,8 @@ export class UnicornAgent {
         return { taskId: `muse-${Date.now()}`, method: 'muse', result: this.generateMuseCommand(theme, style, params) };
       case 'suno':
         return { taskId: `suno-${Date.now()}`, method: 'suno', result: this.generateSunoCommand(theme, style, params) };
+      case 'melo':
+        return { taskId: `melo-${Date.now()}`, method: 'melo', result: this.generateMeloCommand(theme, style, params) };
       case 'time_section':
         return { taskId: `time-${Date.now()}`, method: 'time_section', result: this.generateTimeSectionLyrics(theme, style, params) };
       case 'style_variation':
@@ -2847,6 +2849,124 @@ export class UnicornAgent {
       script,
       totalDuration: duration,
       sections,
+      fullCommand,
+      fullText,
+      lyricsText,
+      generatedAt: new Date().toISOString()
+    };
+  }
+
+  generateMeloCommand(theme, style, params = {}) {
+    const bpm = params.bpm || this.config.defaultBpm;
+    const themeConfig = THEME_CONFIG[theme] || THEME_CONFIG.love;
+    const script = params.script || '';
+    const language = params.language || 'zh';
+    const reference = params.reference || '';
+    const referenceSong = params.referenceSong || '';
+
+    const styleDescriptions = {
+      tango: { genre: '探戈华尔兹', mood: '凄美而癫狂', instruments: '班多纽手风琴,大提琴,钢琴' },
+      chinese_classical: { genre: '中国风古典', mood: '清冷惆怅', instruments: '古琴,古筝,箫,琵琶,二胡' },
+      pop: { genre: '流行', mood: '都市情感', instruments: '合成器,吉他,鼓组,贝斯' },
+      rock: { genre: '摇滚', mood: '热血激昂', instruments: '电吉他,贝斯,架子鼓' },
+      ancient_modern: { genre: '古今融合', mood: '跨越时空', instruments: '古琴,合成器,弦乐团,合唱团' },
+      jazz: { genre: '爵士', mood: '慵懒浪漫', instruments: '萨克斯,钢琴,贝斯,鼓刷' },
+      electronic: { genre: '电子', mood: '迷幻律动', instruments: '合成器,电子鼓,贝斯' },
+      hip_hop: { genre: '嘻哈说唱', mood: '街头真实', instruments: '808鼓,采样,贝斯' },
+      ballad: { genre: '抒情民谣', mood: '深情治愈', instruments: '钢琴,弦乐,木吉他' },
+      country: { genre: '乡村', mood: '质朴乡愁', instruments: '木吉他,小提琴,口琴' },
+      rnb: { genre: '节奏蓝调', mood: '性感温柔', instruments: '贝斯,键盘,鼓机' },
+      classical: { genre: '古典', mood: '庄重优雅', instruments: '管弦乐团,钢琴,小提琴' },
+      folk: { genre: '民谣', mood: '温暖质朴', instruments: '木吉他,口琴,手鼓' },
+      indie: { genre: '独立音乐', mood: '孤独真实', instruments: '原声吉他,贝斯,鼓组' },
+      ambient: { genre: '氛围音乐', mood: '空灵冥想', instruments: '合成器Pad,环境音效,人声吟唱' },
+      gothic_rock: { genre: '哥特摇滚', mood: '暗黑神秘', instruments: '暗黑吉他,交响弦乐,沉重鼓点' },
+      reggae: { genre: '雷鬼', mood: '自由悠闲', instruments: '电吉他,贝斯,打击乐' },
+      kpop: { genre: 'K-pop', mood: '青春活力', instruments: '电子合成器,舞曲节奏,和声' },
+      anime: { genre: '动漫风格', mood: '热血青春', instruments: '钢琴,弦乐,电子合成器' },
+      romantic: { genre: '浪漫情歌', mood: '甜蜜温柔', instruments: '钢琴,弦乐,木吉他' },
+      healing: { genre: '治愈系', mood: '温暖治愈', instruments: '钢琴,风铃,弦乐Pad' },
+      heartbreaking: { genre: '心碎情歌', mood: '悲伤凄凉', instruments: '钢琴,大提琴,弦乐' },
+      nostalgic: { genre: '怀旧金曲', mood: '回忆往事', instruments: '老式钢琴,弦乐,口琴' },
+      dark: { genre: '暗黑风格', mood: '沉郁神秘', instruments: '低音吉他,合成器,工业音效' },
+      dreamy: { genre: '梦幻风格', mood: '飘渺梦幻', instruments: '合成器Pad,竖琴,空灵人声' },
+      energetic: { genre: '活力四射', mood: '充满能量', instruments: '电吉他,电子鼓,合成器' },
+      epic: { genre: '史诗风格', mood: '宏大壮阔', instruments: '管弦乐团,合唱团,打击乐' },
+      time_travel: { genre: '时空穿越', mood: '神秘宿命', instruments: '合成器,古琴,弦乐团' }
+    };
+
+    const styleInfo = styleDescriptions[style] || styleDescriptions.pop;
+
+    const themeKeywords = {
+      love: '爱情,爱恋,心动,告白',
+      heartbreak: '心碎,离别,分手,伤痛',
+      healing: '治愈,温暖,重生,希望',
+      sadness: '悲伤,哀愁,泪水,思念',
+      loneliness: '孤独,寂寞,独处,空荡',
+      hope: '希望,光明,曙光,未来',
+      nature: '自然,山水,森林,大海',
+      summer_vibes: '夏日,阳光,海滩,派对',
+      winter_solitude: '冬日,寒冷,寂静,独处',
+      spring_awakening: '春天,苏醒,新生,花开',
+      autumn_melancholy: '秋天,落叶,惆怅,思念',
+      ocean_dreams: '海洋,梦想,远方,自由',
+      time_travel: '时空,穿越,轮回,宿命',
+      epic_journey: '冒险,旅程,征途,远方',
+      dark_mystery: '神秘,黑暗,悬疑,迷局',
+      ancient_legend: '传说,神话,古老,传奇',
+      indie_story: '故事,青春,成长,回忆',
+      folk_tale: '童话,民间,传说,奇幻',
+      romantic_night: '浪漫,夜晚,星空,约会',
+      nostalgic_memory: '回忆,怀旧,往事,旧时光',
+      energetic_party: '派对,狂欢,活力,激情',
+      dreamy_fantasy: '梦幻,幻想,奇幻,梦境',
+      modern_city: '都市,城市,霓虹,夜晚',
+      life: '人生,命运,成长,感悟',
+      memory: '回忆,记忆,时光,往昔',
+      friendship: '友情,朋友,陪伴,知己',
+      success: '成功,荣耀,胜利,巅峰',
+      dreams: '梦想,追逐,希望,远方',
+      lunatic: '疯狂,痴狂,失控,边缘',
+      tango: '探戈,激情,孤独,优雅'
+    };
+
+    const keywords = themeKeywords[theme] || '情感,故事,音乐';
+    const translatedTheme = this._translateTheme(theme, language);
+
+    let prompt = `风格: ${styleInfo.genre}\n`;
+    prompt += `主题: ${translatedTheme}\n`;
+    prompt += `情绪: ${styleInfo.mood}\n`;
+    prompt += `BPM: ${bpm}\n`;
+    prompt += `乐器: ${styleInfo.instruments}\n`;
+    prompt += `关键词: ${keywords}\n`;
+
+    if (reference) {
+      prompt += `参考艺术家: ${reference}\n`;
+    }
+    if (referenceSong) {
+      prompt += `参考歌曲: ${referenceSong}\n`;
+    }
+    if (script) {
+      prompt += `创作背景: ${script}\n`;
+    }
+
+    const fsmTemplate = FSM_TEMPLATES[style === 'tango' ? 'tango' : style === 'ancient_modern' ? 'ancient_modern' : 'standard'];
+    const lyrics = this._generateDynamicLyrics(theme, style, fsmTemplate, language);
+    const lyricsText = Object.values(lyrics).flat().join('\n');
+
+    const fullCommand = `[MELO-PROMPT]\n${prompt}`;
+    const fullText = `${fullCommand}\n\n【歌词内容】\n${lyricsText}`;
+
+    return {
+      theme,
+      style,
+      bpm,
+      language,
+      script,
+      reference,
+      genre: styleInfo.genre,
+      mood: styleInfo.mood,
+      instruments: styleInfo.instruments,
       fullCommand,
       fullText,
       lyricsText,

@@ -41,7 +41,8 @@ function LyricsPage({ onNavigate }) {
     { id: 'fsm', name: t('lyrics.fsm_name'), desc: t('lyrics.fsm_desc'), icon: Cpu },
     { id: 'network_layer', name: t('lyrics.network_name'), desc: t('lyrics.network_desc'), icon: Network },
     { id: 'muse', name: t('lyrics.muse_name'), desc: t('lyrics.muse_desc'), icon: BookOpen },
-    { id: 'suno', name: t('lyrics.suno_name'), desc: t('lyrics.suno_desc'), icon: SettingsIcon }
+    { id: 'suno', name: t('lyrics.suno_name'), desc: t('lyrics.suno_desc'), icon: SettingsIcon },
+    { id: 'melo', name: t('lyrics.melo_name'), desc: t('lyrics.melo_desc'), icon: Music }
   ];
 
   const LANGUAGES = [
@@ -345,7 +346,7 @@ function LyricsPage({ onNavigate }) {
                   />
                 </div>
                 {/* Category accordion */}
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1 pb-2">
                   {Object.entries(filteredStyleCats).map(([cat, styles]) => {
                     const isExpanded = expandedStyleCats[cat] || !!styleSearch.trim();
                     return (
@@ -394,7 +395,7 @@ function LyricsPage({ onNavigate }) {
                     className="w-full pl-9 pr-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50"
                   />
                 </div>
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1 pb-2">
                   {Object.entries(filteredThemeCats).map(([cat, themeList]) => {
                     const isExpanded = expandedThemeCats[cat] || !!themeSearch.trim();
                     return (
@@ -533,8 +534,8 @@ function LyricsPage({ onNavigate }) {
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     className={`relative border-2 border-dashed rounded-xl p-6 md:p-8 text-center cursor-pointer transition-all ${isDragging
-                        ? 'border-violet-500 bg-violet-500/10'
-                        : 'border-white/20 bg-white/5 hover:border-violet-500/50 hover:bg-white/10'
+                      ? 'border-violet-500 bg-violet-500/10'
+                      : 'border-white/20 bg-white/5 hover:border-violet-500/50 hover:bg-white/10'
                       }`}
                   >
                     <input
@@ -591,8 +592,8 @@ function LyricsPage({ onNavigate }) {
                           <button
                             onClick={applyVisionSuggestions}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${appliedSuggestions
-                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                : 'bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30'
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                              : 'bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30'
                               }`}
                           >
                             {appliedSuggestions ? (
