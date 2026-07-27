@@ -22,21 +22,19 @@ function App() {
 
   useEffect(() => {
     if (!isMobileEnvironment()) {
-      const controller = new AbortController();
-      loadStatus(controller.signal);
+      loadStatus();
       const interval = setInterval(() => {
-        loadStatus(controller.signal);
+        loadStatus();
       }, 60000);
       return () => {
-        controller.abort();
         clearInterval(interval);
       };
     }
   }, []);
 
-  const loadStatus = async (signal) => {
+  const loadStatus = async () => {
     try {
-      const health = await api.health(signal);
+      const health = await api.health();
       if (health?.success) {
         setApiStatus({
           configured: health.apiConfigured || health.data?.apiConfigured,
@@ -45,14 +43,12 @@ function App() {
           uptime: health.uptime || health.data?.uptime || 0
         });
       }
-      const agent = await api.agentStatus(signal);
+      const agent = await api.agentStatus();
       if (agent?.success) {
         setAgentStatus(agent.data || agent);
       }
     } catch (error) {
-      if (error.name !== 'AbortError') {
-        // Silent fail - status will retry on next interval
-      }
+      // Silent fail - status will retry on next interval
     }
   };
 
