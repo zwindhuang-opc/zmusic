@@ -91,9 +91,14 @@ jobs:
           VERSION="${{ steps.version.outputs.new_version }}"
           BUILD="${{ steps.version.outputs.build_number }}"
           if [ -f android/app/build.gradle ]; then
-            sed -i "s/versionCode .*/versionCode ${BUILD}/" android/app/build.gradle
-            sed -i "s/versionName .*/versionName \"${VERSION}\"/" android/app/build.gradle"
-            echo "Updated build.gradle: versionCode=${BUILD}, versionName=${VERSION}"
+            node -e "
+              const fs = require('fs');
+              let c = fs.readFileSync('android/app/build.gradle', 'utf8');
+              c = c.replace(/versionCode .*/, 'versionCode ${BUILD}');
+              c = c.replace(/versionName .*/, 'versionName \"${VERSION}\"');
+              fs.writeFileSync('android/app/build.gradle', c);
+              console.log('Updated build.gradle: versionCode=${BUILD}, versionName=${VERSION}');
+            "
           fi
 
       - name: Build frontend
