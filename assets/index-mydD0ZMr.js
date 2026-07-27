@@ -1,0 +1,1 @@
+import{r as o}from"./index-DO6PjTPZ.js";import"./lucide-CfP_M8EV.js";import"./vendor-CWYuY55K.js";var t;(function(r){r.Dark="DARK",r.Light="LIGHT",r.Default="DEFAULT"})(t||(t={}));var a;(function(r){r.None="NONE",r.Slide="SLIDE",r.Fade="FADE"})(a||(a={}));const D=o("StatusBar");export{a as Animation,D as StatusBar,t as Style};
