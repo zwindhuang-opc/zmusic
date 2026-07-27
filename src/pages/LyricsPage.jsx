@@ -108,14 +108,19 @@ function LyricsPage({ onNavigate }) {
         complexity, language, variation, reference, referenceSong, script
       };
 
+      const methodMap = { 'fsm': 'basic', 'network_layer': 'network', 'muse': 'time', 'suno': 'variation', 'melo': 'basic' };
+      const localMethod = methodMap[method] || 'basic';
       let data;
+
       if (isMobileEnvironment()) {
-        const methodMap = { 'fsm': 'basic', 'network_layer': 'network', 'muse': 'time', 'suno': 'variation' };
-        const localMethod = methodMap[method] || 'basic';
         const lyricsResult = generateLyrics({ ...params, method: localMethod });
         data = { success: true, data: { taskId: `local-${Date.now()}`, method, result: lyricsResult } };
       } else {
         data = await api.agentLyrics(params);
+        if (!data?.success) {
+          const lyricsResult = generateLyrics({ ...params, method: localMethod });
+          data = { success: true, data: { taskId: `local-${Date.now()}`, method, result: lyricsResult, local: true } };
+        }
       }
 
       if (data.success) {
@@ -954,27 +959,29 @@ function LyricsPage({ onNavigate }) {
                 </div>
               )}
 
-              {result.result?.meta && (
+              {result.result?.meta && viewMode !== 'commands' && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {Object.entries(result.result.meta).map(([key, value]) => (
-                    <div key={key} className="p-2 rounded-lg bg-white/5 border border-white/5 text-center">
-                      <div className="text-[10px] text-gray-500 uppercase tracking-wider">
-                        {t(`lyrics_meta.${key}`) || key}
+                  {Object.entries(result.result.meta)
+                    .filter(([key]) => !['productionMetadata', 'mixed', 'mixThemes', 'mixStyles'].includes(key))
+                    .map(([key, value]) => (
+                      <div key={key} className="p-2 rounded-lg bg-white/5 border border-white/5 text-center">
+                        <div className="text-[10px] text-gray-500 uppercase tracking-wider">
+                          {t(`lyrics_meta.${key}`) || key}
+                        </div>
+                        <div className="text-sm text-white font-semibold mt-0.5">
+                          {typeof value === 'object' && value !== null ? Object.keys(value).length : String(value)}
+                        </div>
                       </div>
-                      <div className="text-sm text-white font-semibold mt-0.5">
-                        {typeof value === 'object' ? Object.keys(value).length : value}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
             </div>
           )}
         </div>
-      </div >
+      </div>
 
       {/* Sticky Generate Button */}
-      < div className="fixed bottom-[72px] md:bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0f] via-[#0f0a1a]/95 to-transparent pt-6 md:pt-12 pb-3 md:pb-3 px-4 md:px-6 z-40 safe-area-bottom md:safe-area-bottom" >
+      <div className="fixed bottom-[72px] md:bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0f] via-[#0f0a1a]/95 to-transparent pt-6 md:pt-12 pb-3 md:pb-3 px-4 md:px-6 z-40 safe-area-bottom md:safe-area-bottom">
         <div className="max-w-7xl mx-auto">
           <button
             onClick={handleGenerate}
@@ -988,10 +995,10 @@ function LyricsPage({ onNavigate }) {
             )}
           </button>
         </div>
-      </div >
+      </div>
 
       <HistoryPanel isOpen={showHistory} onClose={() => setShowHistory(false)} />
-    </div >
+    </div>
   );
 }
 

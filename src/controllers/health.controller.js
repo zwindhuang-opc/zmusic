@@ -15,10 +15,13 @@ import Logger from '../utils/logger.js';
 import { config } from '../config/index.js';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const _currentFile = typeof __filename !== 'undefined' ? __filename : (import.meta.url ? fileURLToPath(import.meta.url) : process.cwd());
-const _currentDir = typeof __dirname !== 'undefined' ? __dirname : path.dirname(_currentFile);
+const _currentDir = (() => {
+  try {
+    if (typeof __dirname !== 'undefined') return __dirname;
+  } catch (e) { /* ignore */ }
+  return process.cwd();
+})();
 
 function loadVersionFile() {
   const candidates = [

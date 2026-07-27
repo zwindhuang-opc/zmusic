@@ -28,10 +28,8 @@ export const LogLevel = {
 
 let globalLevel = LogLevel.INFO;
 try {
-  if (typeof window !== 'undefined') {
-    globalLevel = import.meta.env?.MODE === 'development' ? LogLevel.DEBUG : LogLevel.INFO;
-  } else if (typeof process !== 'undefined') {
-    globalLevel = process.env?.NODE_ENV === 'development' ? LogLevel.DEBUG : LogLevel.INFO;
+  if (typeof process !== 'undefined' && process.env) {
+    globalLevel = process.env.NODE_ENV === 'development' ? LogLevel.DEBUG : LogLevel.INFO;
   }
 } catch {
   globalLevel = LogLevel.INFO;

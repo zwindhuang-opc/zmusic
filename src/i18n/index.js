@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import zhTranslations from './locales/zh.json';
 import enTranslations from './locales/en.json';
 
@@ -48,8 +49,6 @@ export function changeLanguage(lng) {
 export function getCurrentLanguage() {
   return currentLang;
 }
-
-import { useState, useEffect } from 'react';
 
 export function useTranslation() {
   const [lang, setLang] = useState(currentLang);

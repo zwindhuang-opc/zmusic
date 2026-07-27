@@ -1832,12 +1832,13 @@ export function generateDynamicLyrics(params) {
     const melody = _buildMelodyLayer(theme, params);
     const expression = _buildExpressionLayer(theme, params);
     const effects = _buildEffectsLayer(params);
-    return {
+    const networkResult = {
       ...baseResult,
       networkLayer: { foundation, melody, expression, effects },
       fullCommand: _formatNetworkLayerOutput(baseResult, foundation, melody, expression, effects),
       generatedAt: new Date().toISOString()
     };
+    return _normalizeResult(networkResult, 'network', params);
   }
 
   if (method === 'time') {
@@ -1881,7 +1882,7 @@ export function generateDynamicLyrics(params) {
       currentTime += durationSec;
     });
 
-    return {
+    const timeResult = {
       genre: effectiveGenre,
       theme: effectiveTheme,
       totalDuration: duration,
@@ -1911,13 +1912,14 @@ export function generateDynamicLyrics(params) {
         }
       }
     };
+    return _normalizeResult(timeResult, 'time', params);
   }
 
   if (method === 'variation') {
     const variations = STYLE_VARIATIONS[genre] || STYLE_VARIATIONS.tango;
     const variationConfig = variations[variation] || variations.A;
     const baseResult = _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity);
-    return {
+    const variationResult = {
       ...baseResult,
       variation: {
         key: variation,
@@ -1933,6 +1935,7 @@ export function generateDynamicLyrics(params) {
       fullText: _formatVariationOutput(baseResult, variationConfig),
       generatedAt: new Date().toISOString()
     };
+    return _normalizeResult(variationResult, 'variation', params);
   }
 
   // ---- basic (default) ----
@@ -1944,7 +1947,153 @@ export function generateDynamicLyrics(params) {
     if (mixThemes) base.meta.mixThemes = mixThemes;
     if (mixStyles) base.meta.mixStyles = mixStyles;
   }
-  return base;
+  return _normalizeResult(base, method, params);
+}
+
+/**
+ * Normalize result to ensure consistent output across all methods:
+ * - fullText: commands + lyrics combined (for "copy all")
+ * - fullCommand: production commands only (for "commands only" view)
+ * - lyricsText: lyrics with section markers (for "lyrics only" view)
+ */
+function _normalizeResult(result, method, params) {
+  const production = result.productionMetadata || (result.meta && result.meta.productionMetadata) || {};
+  const vocal = production.vocal || {};
+  const genre = result.genre || (params && params.genre) || 'pop';
+  const theme = result.theme || (params && params.theme) || 'love';
+
+  // Build lyricsText (lyrics with section markers)
+  let lyricsText = result.fullText || '';
+  if (result.sections && result.sections.length > 0) {
+    lyricsText = result.sections.map((s) => `[${s.type.toUpperCase()}]\n${s.content}`).join('\n\n');
+  }
+
+  // Build fullCommand based on method
+  let fullCommand = result.fullCommand || '';
+  if (!fullCommand) {
+    const instrList = production.instrumentation && production.instrumentation.length > 0
+      ? production.instrumentation.join(', ')
+      : '默认配置';
+    const dynList = production.dynamics && production.dynamics.length > 0
+      ? production.dynamics.join(', ')
+      : 'mf (中强)';
+    const effList = production.effects && production.effects.length > 0
+      ? production.effects.join(', ')
+      : '混响、延迟';
+    const sfxList = production.sfx && production.sfx.length > 0
+      ? production.sfx.join(', ')
+      : '无';
+
+    if (method === 'network') {
+      fullCommand = result.fullCommand || '';
+    } else if (method === 'time') {
+      fullCommand = `【时间轴制作指令】
+
+🎵 风格：${genre}
+🎯 主题：${theme}
+⏱️ 总时长：${result.totalDuration || (params && params.duration) || 270}秒
+
+---
+
+【制作参数】
+🎹 乐器配置：${instrList}
+🎙️ 人声设定：
+  - 性别：${vocal.gender || '默认'}
+  - 情感等级：${vocal.emotionLevel || '情感5级'}
+  - 演唱方式：${vocal.tone || '叙事'}
+  - 语言：${vocal.dialect || '普通话'}
+🎚️ 动态控制：${dynList}
+✨ 效果处理：${effList}
+🎧 音效元素：${sfxList}
+
+---
+
+【时间轴段落】
+${result.sections ? result.sections.map((s, i) => {
+        const time = s.timeSection || `${s.startTime || 0}s - ${s.endTime || 0}s`;
+        return `${i + 1}. [${s.type.toUpperCase()}] ${time}
+   力度：${s.dynamic || 'mf'}
+   乐器：${s.instruments ? (Array.isArray(s.instruments) ? s.instruments.join(', ') : s.instruments) : '默认'}
+   时空：${s.timeSpace || '现代'}`;
+      }).join('\n') : ''}
+
+---
+
+💡 提示：各段落之间注意情绪过渡，保持整体的叙事连贯性。`;
+    } else if (method === 'variation') {
+      const v = result.variation || {};
+      fullCommand = `【变奏制作指令 - ${v.name || '变体 ' + (params && params.variation) || 'A'}】
+
+🎵 风格：${genre}
+🎯 主题：${theme}
+🎭 变奏：${v.name || '原味复刻'}
+
+---
+
+【变奏设计】
+📝 设计理念：${v.description || '保持原曲精髓，加入独特风格元素'}
+🎤 人声处理：${v.vocals || '标准人声'}
+🎸 乐器编配：${v.instruments ? (Array.isArray(v.instruments) ? v.instruments.join(', ') : v.instruments) : '标准配置'}
+✨ 效果处理：${v.effects ? (Array.isArray(v.effects) ? v.effects.join(', ') : v.effects) : '标准效果'}
+🔊 音效元素：${v.sfx ? (Array.isArray(v.sfx) ? v.sfx.join(', ') : v.sfx) : '无'}
+🌐 语言风格：${v.language || '普通话'}
+
+---
+
+【制作参数】
+🎹 乐器配置：${instrList}
+🎚️ 动态控制：${dynList}
+✨ 效果处理：${effList}
+
+---
+
+💡 提示：变奏版本应在保持原曲辨识度的基础上，展现出独特的风格特点。`;
+    } else {
+      // basic / fsm method
+      fullCommand = `【FSM状态机制作指令】
+
+🎵 风格：${genre}
+🎯 主题：${theme}
+⚙️ 生成方法：FSM编程 (Finite State Machine)
+
+---
+
+【状态机结构】
+${result.sections ? result.sections.map((s, i) => {
+        return `STATE_${i}: ${s.type.toUpperCase()}
+  ├─ 韵式：${s.rhymeScheme || 'ABAB'}
+  ├─ 行数：${s.lineCount || (s.content ? s.content.split('\n').filter(l => l.trim()).length : 0)}
+  └─ 制作元数据：${s.productionMetadata ? Object.keys(s.productionMetadata).length + '项' : '默认'}`;
+      }).join('\n\n') : ''}
+
+---
+
+【制作参数】
+🎹 乐器配置：${instrList}
+🎙️ 人声设定：
+  - 性别：${vocal.gender || '默认'}
+  - 情感等级：${vocal.emotionLevel || '情感5级'}
+  - 演唱方式：${vocal.tone || '叙事'}
+  - 语言：${vocal.dialect || '普通话'}
+🎚️ 动态控制：${dynList}
+✨ 效果处理：${effList}
+🎧 音效元素：${sfxList}
+
+---
+
+💡 提示：状态机驱动的生成确保了结构的严谨性和情感的递进层次。`;
+    }
+  }
+
+  // Build fullText = fullCommand + lyrics
+  const fullText = `${fullCommand}\n\n【歌词内容】\n\n${lyricsText}`;
+
+  return {
+    ...result,
+    fullCommand,
+    lyricsText,
+    fullText
+  };
 }
 
 /* =========================================================================

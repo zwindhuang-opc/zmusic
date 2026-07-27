@@ -1,3 +1,4 @@
+import React from 'react';
 import { useTranslation } from '../i18n/index.js';
 import { useGeneration } from '../stores/generationStore.jsx';
 import { History, Copy, Music, Trash2, X, ChevronRight, Sparkles, Zap, Piano, ExternalLink } from 'lucide-react';
@@ -98,7 +99,11 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
   };
 
   const getFullText = (item) => {
-    return item.result?.result?.fullText || item.result?.fullText || '';
+    const r = item.result?.result || item.result;
+    if (r?.fullCommand && r?.lyricsText) {
+      return `${r.fullCommand}\n\n【歌词内容】\n\n${r.lyricsText}`;
+    }
+    return r?.fullText || '';
   };
 
   const handleCopy = async (item, mode = 'full') => {
@@ -228,24 +233,35 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleCopy(item, 'commands');
+                            handleCopy(item, 'full');
                           }}
-                          className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 py-2 rounded-lg bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 transition-colors text-xs"
-                          title={t('lyrics.view_commands')}
+                          className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition-colors text-xs"
+                          title={t('lyrics.copy_all')}
                         >
                           <Copy className="w-3 h-3" />
-                          {t('lyrics.view_commands')}
+                          {t('lyrics.copy_all')}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopy(item, 'commands');
+                          }}
+                          className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 py-2 rounded-lg bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 transition-colors text-xs"
+                          title={t('lyrics.copy_commands')}
+                        >
+                          <Copy className="w-3 h-3" />
+                          {t('lyrics.commands_only')}
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleCopy(item, 'lyrics');
                           }}
-                          className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 py-2 rounded-lg bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 transition-colors text-xs"
-                          title={t('lyrics.view_lyrics')}
+                          className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 py-2 rounded-lg bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 transition-colors text-xs"
+                          title={t('lyrics.copy_lyrics')}
                         >
                           <Copy className="w-3 h-3" />
-                          {t('lyrics.view_lyrics')}
+                          {t('lyrics.view_lyrics_only')}
                         </button>
                       </>
                     ) : (
@@ -266,7 +282,7 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
                         handleSendToAI(item, 'muse');
                       }}
                       className="flex items-center justify-center gap-1 py-2 px-3 rounded-lg bg-pink-500/10 text-pink-400 hover:bg-pink-500/20 transition-colors text-xs"
-                      title="Send to Muse AI"
+                      title={t('common.send_to_muse')}
                     >
                       <Piano className="w-3 h-3" />
                     </button>
@@ -276,7 +292,7 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
                         handleSendToAI(item, 'suno');
                       }}
                       className="flex items-center justify-center gap-1 py-2 px-3 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors text-xs"
-                      title="Send to Suno AI"
+                      title={t('common.send_to_suno')}
                     >
                       <Music className="w-3 h-3" />
                     </button>

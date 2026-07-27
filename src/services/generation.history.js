@@ -5,9 +5,13 @@
 
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const _historyDir = typeof __dirname !== 'undefined' ? __dirname : (import.meta.url ? path.dirname(fileURLToPath(import.meta.url)) : process.cwd());
+const _historyDir = (() => {
+  try {
+    if (typeof __dirname !== 'undefined') return __dirname;
+  } catch (e) { /* ignore */ }
+  return process.cwd();
+})();
 
 function resolveHistoryDir() {
   const tmpDir = (typeof process !== 'undefined' && process.env?.TMPDIR) || '/tmp';

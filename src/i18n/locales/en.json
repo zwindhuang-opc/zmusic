@@ -393,7 +393,11 @@
     "close": "Close",
     "copy": "Copy",
     "download": "Download",
-    "retry": "Retry"
+    "retry": "Retry",
+    "clear": "Clear",
+    "delete": "Delete",
+    "send_to_muse": "Send to Muse AI",
+    "send_to_suno": "Send to Suno AI"
   },
   "styles": {
     "pop": "Pop",
@@ -556,8 +560,16 @@
     "literaryAnalysis": "Literary Analysis",
     "emotionalArc": "Emotional Arc",
     "totalLines": "Total Lines",
+    "sectionCount": "Section Count",
     "transitions": "Transitions",
-    "states": "States"
+    "states": "States",
+    "engine": "Engine",
+    "productionMetadata": "Production",
+    "rhymeAnalysis": "Rhyme Analysis",
+    "instrumentTimeline": "Instrument Timeline",
+    "mixed": "Mixed Mode",
+    "mixThemes": "Mixed Themes",
+    "mixStyles": "Mixed Styles"
   },
   "literary_terms": {
     "metaphor": "Metaphor",

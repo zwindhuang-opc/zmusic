@@ -1,0 +1,233 @@
+name: Auto Deploy & APK Build
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'index.html'
+      - 'package.json'
+      - 'capacitor.config.*'
+      - 'VERSION.json'
+      - 'vite.config.*'
+      - '.github/workflows/**'
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Version bump type'
+        required: false
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - patch
+          - minor
+          - major
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version.outputs.version }}
+      build_number: ${{ steps.version.outputs.build_number }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bump version
+        id: version
+        run: |
+          if [ -f VERSION.json ]; then
+            CURRENT_VERSION=$(node -e "const v=require('./VERSION.json'); console.log(v.version)")
+            MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+            MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
+            PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
+            BUILD=$(node -e "const v=require('./VERSION.json'); console.log(v.buildNumber || 0)")
+            
+            case "${{ github.event.inputs.bump_type || 'none' }}" in
+              major) MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0; BUILD=$((BUILD+1)) ;;
+              minor) MINOR=$((MINOR+1)); PATCH=0; BUILD=$((BUILD+1)) ;;
+              patch) PATCH=$((PATCH+1)); BUILD=$((BUILD+1)) ;;
+              *) ;;
+            esac
+            
+            NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            
+            if [ "${{ github.event.inputs.bump_type || 'none' }}" != "none" ]; then
+              node -e "
+                const fs = require('fs');
+                const pkg = require('./VERSION.json');
+                pkg.version = '${NEW_VERSION}';
+                pkg.major = ${MAJOR};
+                pkg.minor = ${MINOR};
+                pkg.patch = ${PATCH};
+                pkg.buildNumber = ${BUILD};
+                pkg.releaseDate = new Date().toISOString().split('T')[0];
+                pkg.changes.unshift('v${NEW_VERSION} - Auto-deploy build #${BUILD} via CI/CD');
+                fs.writeFileSync('VERSION.json', JSON.stringify(pkg, null, 2));
+              "
+            fi
+            
+            echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+            echo "build_number=${BUILD}" >> $GITHUB_OUTPUT
+            echo "Version: ${NEW_VERSION} (build #${BUILD})"
+          else
+            echo "version=0.0.0" >> $GITHUB_OUTPUT
+            echo "build_number=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update version in build.gradle
+        run: |
+          VERSION="${{ steps.version.outputs.new_version }}"
+          BUILD="${{ steps.version.outputs.build_number }}"
+          if [ -f android/app/build.gradle ]; then
+            sed -i "s/versionCode .*/versionCode ${BUILD}/" android/app/build.gradle
+            sed -i "s/versionName .*/versionName \"${VERSION}\"/" android/app/build.gradle"
+            echo "Updated build.gradle: versionCode=${BUILD}, versionName=${VERSION}"
+          fi
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Sync Capacitor iOS
+        run: npx cap sync ios
+
+      - name: Upload web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zmusic-web-${{ steps.version.outputs.version }}
+          path: dist/
+          retention-days: 30
+
+      - name: Upload version info artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zmusic-version-info
+          path: |
+            VERSION.json
+            android/app/build.gradle
+          retention-days: 30
+
+  deploy-pages:
+    runs-on: ubuntu-latest
+    needs: build-web
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download web build
+        uses: actions/download-artifact@v4
+        with:
+          name: zmusic-web-${{ needs.build-web.outputs.new_version }}
+          path: dist/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  build-android:
+    runs-on: ubuntu-latest
+    needs: build-web
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download web build
+        uses: actions/download-artifact@v4
+        with:
+          name: zmusic-web-${{ needs.build-web.outputs.new_version }}
+          path: dist/
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Build release APK
+        id: release_build
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+          APK_PATH=$(find app/build/outputs/apk -name "*.apk" | head -1)
+          echo "apk_path=${APK_PATH}" >> $GITHUB_OUTPUT
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zmusic-android-${{ needs.build-web.outputs.new_version }}
+          path: ${{ steps.release_build.outputs.apk_path }}
+          retention-days: 90
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [build-web, build-android]
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: zmusic-android-${{ needs.build-web.outputs.new_version }}
+          path: apk/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build-web.outputs.new_version }}
+          name: ZMusic v${{ needs.build-web.outputs.new_version }} (Build #${{ needs.build-web.outputs.build_number }})
+          body: |
+            ## ZMusic v${{ needs.build-web.outputs.new_version }}
+
+            **Build Number**: ${{ needs.build-web.outputs.build_number }}
+            **Version**: ${{ needs.build-web.outputs.new_version }}
+
+            ### Changes
+            - Auto-deploy build triggered by push to main
+            - Synchronized web and mobile versions
+            - Consistent output format across all generation methods
+            - Fixed copy buttons and i18n
+          files: apk/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

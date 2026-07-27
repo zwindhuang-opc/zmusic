@@ -393,7 +393,11 @@
     "close": "关闭",
     "copy": "复制",
     "download": "下载",
-    "retry": "重试"
+    "retry": "重试",
+    "clear": "清空",
+    "delete": "删除",
+    "send_to_muse": "发送到Muse AI",
+    "send_to_suno": "发送到Suno AI"
   },
   "styles": {
     "pop": "流行",
@@ -558,7 +562,14 @@
     "totalLines": "总行数",
     "sectionCount": "段落数",
     "transitions": "转换次数",
-    "states": "状态数"
+    "states": "状态数",
+    "engine": "引擎",
+    "productionMetadata": "制作元数据",
+    "rhymeAnalysis": "韵式分析",
+    "instrumentTimeline": "乐器时间线",
+    "mixed": "混合模式",
+    "mixThemes": "混合主题",
+    "mixStyles": "混合风格"
   },
   "literary_terms": {
     "metaphor": "隐喻",

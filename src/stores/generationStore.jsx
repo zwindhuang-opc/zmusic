@@ -18,7 +18,7 @@
  * @author ZMusic Team
  */
 
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { isMobileEnvironment } from '../services/api.client.js';
 
 /**
