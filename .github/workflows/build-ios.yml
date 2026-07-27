@@ -14,11 +14,9 @@ on:
           - app-store
   push:
     branches:
-      - main
+      - master
     paths:
-      - 'src/**'
       - 'ios/**'
-      - 'package.json'
       - 'capacitor.config.*'
 
 jobs:
