@@ -1365,6 +1365,31 @@ export function blendBanks(banks, weights) {
   return merged;
 }
 
+/**
+ * Create a theme bank from visual context (image analysis results).
+ * This maps image-derived features into the standard theme bank structure,
+ * allowing lyrics generation to use imagery/emotions extracted from the picture.
+ *
+ * @param {Object} visualContext - from visionAnalyzer.fullImageAnalysis()
+ * @returns {Object} theme bank compatible with blendBanks()
+ */
+export function createVisualBank(visualContext) {
+  if (!visualContext) return null;
+
+  const { imagery = [], emotions = [], subjects = [], actions = [], locations = [] } = visualContext;
+
+  return {
+    imagery: [...new Set(imagery)].slice(0, 15),
+    emotions: [...new Set(emotions)].slice(0, 10),
+    actions: [...new Set(actions)].slice(0, 10),
+    subjects: [...new Set(subjects)].slice(0, 10),
+    objects: [...new Set(imagery)].slice(5, 15),
+    locations: [...new Set(locations)].slice(0, 8),
+    timeWords: ['此刻', '眼前', '当下', '瞬间', '此刻', '今朝', '今日', '当下'],
+    descriptors: [...new Set(emotions)].slice(0, 8)
+  };
+}
+
 /* =========================================================================
  * 10. STRUCTURE DEFINITIONS (per genre)
  * ========================================================================= */
@@ -1772,7 +1797,8 @@ export function generateDynamicLyrics(params) {
     mixThemes = null,
     mixStyles = null,
     themeWeights = null,
-    styleWeights = null
+    styleWeights = null,
+    visualContext = null
   } = params || {};
 
   // ---- Resolve theme bank (single or blended) ----
@@ -1785,6 +1811,15 @@ export function generateDynamicLyrics(params) {
     effectiveTheme = 'mix:' + mixThemes.join('+');
   } else {
     themeBank = getThemeBank(theme);
+  }
+
+  // ---- Blend visual context bank if provided ----
+  if (visualContext) {
+    const visualBank = createVisualBank(visualContext);
+    if (visualBank) {
+      themeBank = blendBanks([themeBank, visualBank], [0.35, 0.65]);
+      effectiveTheme = 'visual:' + (visualContext.sceneId || theme);
+    }
   }
 
   // ---- Resolve style config (single or blended) ----

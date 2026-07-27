@@ -4,6 +4,7 @@ import { useTranslation } from '../i18n/index.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
 import { useGeneration } from '../stores/generationStore.jsx';
 import { generateLyrics } from '../utils/lyricsEngine.js';
+import { fullImageAnalysis } from '../utils/visionAnalyzer.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 import { LYRICS_STYLES, LYRICS_THEMES } from '../config/lyricsStyles.js';
 
@@ -90,6 +91,7 @@ function LyricsPage({ onNavigate }) {
   const [visionError, setVisionError] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [appliedSuggestions, setAppliedSuggestions] = useState(false);
+  const [visualContext, setVisualContext] = useState(null);
 
   const getComplexityLabel = (level) => {
     if (level <= 2) return t('lyrics.simple');
@@ -105,7 +107,8 @@ function LyricsPage({ onNavigate }) {
     try {
       const params = {
         genre, theme, method, bpm, duration, subject, object,
-        complexity, language, variation, reference, referenceSong, script
+        complexity, language, variation, reference, referenceSong, script,
+        ...(visualContext ? { visualContext } : {})
       };
 
       const methodMap = { 'fsm': 'basic', 'network_layer': 'network', 'muse': 'time', 'suno': 'variation', 'melo': 'basic' };
@@ -127,7 +130,8 @@ function LyricsPage({ onNavigate }) {
         setResult(data.data);
         addToHistory({
           type: 'lyrics', method, theme, style: genre, bpm, language, variation, reference, script,
-          result: data.data
+          result: data.data,
+          ...(visualContext ? { visualContext: visualContext.sceneId || 'image' } : {})
         });
       } else {
         setError(data.error || t('common.error_unknown'));
@@ -179,7 +183,7 @@ function LyricsPage({ onNavigate }) {
   };
 
   /* --- Image upload handlers --- */
-  const handleFileSelect = (file) => {
+  const handleFileSelect = async (file) => {
     if (!file) return;
 
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
@@ -198,25 +202,64 @@ function LyricsPage({ onNavigate }) {
     setAppliedSuggestions(false);
     setVisionResult(null);
 
-    const reader = new FileReader();
-    reader.onload = (e) => setImagePreview(e.target.result);
-    reader.readAsDataURL(file);
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
 
-    analyzeImage(file);
+    setImagePreview(dataUrl);
+    await analyzeImage(dataUrl);
   };
 
-  const analyzeImage = async (file) => {
+  const analyzeImage = async (dataUrl) => {
     setIsAnalyzing(true);
     setVisionError(null);
     try {
-      const data = await api.analyzeImage(file, file.type);
-      if (data.success) {
-        setVisionResult(data.data);
-      } else {
-        setVisionError(data.error || t('common.error_unknown'));
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = dataUrl;
+
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error('Failed to load image'));
+      });
+
+      const result = await fullImageAnalysis(img);
+
+      setVisionResult(result);
+      setVisualContext(result.visualContext);
+
+      // Auto-apply suggestions
+      if (result.suggestions?.genre) {
+        const validGenre = genres.includes(result.suggestions.genre)
+          ? result.suggestions.genre
+          : (result.styles?.find(s => genres.includes(s)) || genre);
+        setGenre(validGenre);
       }
+      if (result.suggestions?.theme) {
+        const validTheme = themes.includes(result.suggestions.theme)
+          ? result.suggestions.theme
+          : (result.themes?.find(th => themes.includes(th)) || theme);
+        setTheme(validTheme);
+      }
+      if (result.suggestions?.bpm) {
+        setBpm(result.suggestions.bpm);
+      }
+      if (result.description) {
+        setScript(prev => {
+          const prefix = '[图片灵感]';
+          return prev ? `${prefix} ${result.description}\n\n${prev}` : `${prefix} ${result.description}`;
+        });
+      }
+
+      setAppliedSuggestions(true);
+      setTimeout(() => setAppliedSuggestions(false), 2000);
     } catch (err) {
-      setVisionError(err.message || t('common.error_connection'));
+      console.error('Image analysis failed:', err);
+      setVisionError(err.message || 'Image analysis failed');
+      setVisualContext(null);
     } finally {
       setIsAnalyzing(false);
     }
@@ -224,6 +267,8 @@ function LyricsPage({ onNavigate }) {
 
   const applyVisionSuggestions = () => {
     if (!visionResult) return;
+
+    setVisualContext(visionResult.visualContext);
 
     if (visionResult.suggestions?.genre) {
       const validGenre = genres.includes(visionResult.suggestions.genre)
@@ -245,7 +290,7 @@ function LyricsPage({ onNavigate }) {
 
     if (visionResult.description) {
       const existingScript = script ? script + '\n\n' : '';
-      setScript(existingScript + t('lyrics.image_description') + ': ' + visionResult.description);
+      setScript(existingScript + '[图片灵感]: ' + visionResult.description);
     }
 
     setAppliedSuggestions(true);
@@ -257,6 +302,7 @@ function LyricsPage({ onNavigate }) {
     setImagePreview(null);
     setVisionResult(null);
     setVisionError(null);
+    setVisualContext(null);
   };
 
   const handleDrop = (e) => {
@@ -683,6 +729,43 @@ function LyricsPage({ onNavigate }) {
                                 />
                               ))}
                             </div>
+                          </div>
+                        )}
+
+                        {visionResult.visualContext && (
+                          <div className="p-3 rounded-lg bg-violet-500/5 border border-violet-500/20">
+                            <div className="text-[10px] text-violet-400 uppercase tracking-wider mb-2 font-semibold">
+                              🎨 {t('lyrics.image_visual_context') || 'Visual Context (used for lyrics)'}
+                            </div>
+                            {visionResult.visualContext.sceneId && (
+                              <div className="text-[10px] text-violet-300 mb-2">
+                                Scene: {visionResult.visualContext.sceneId}
+                              </div>
+                            )}
+                            {visionResult.visualContext.imagery?.length > 0 && (
+                              <div className="mb-1.5">
+                                <span className="text-[10px] text-gray-500">Imagery:</span>
+                                <span className="text-[11px] text-violet-200 ml-1">{visionResult.visualContext.imagery.slice(0, 8).join('、')}</span>
+                              </div>
+                            )}
+                            {visionResult.visualContext.emotions?.length > 0 && (
+                              <div className="mb-1.5">
+                                <span className="text-[10px] text-gray-500">Emotions:</span>
+                                <span className="text-[11px] text-pink-200 ml-1">{visionResult.visualContext.emotions.slice(0, 6).join('、')}</span>
+                              </div>
+                            )}
+                            {visionResult.visualContext.subjects?.length > 0 && (
+                              <div className="mb-1.5">
+                                <span className="text-[10px] text-gray-500">Subjects:</span>
+                                <span className="text-[11px] text-blue-200 ml-1">{visionResult.visualContext.subjects.slice(0, 6).join('、')}</span>
+                              </div>
+                            )}
+                            {visionResult.visualContext.locations?.length > 0 && (
+                              <div>
+                                <span className="text-[10px] text-gray-500">Locations:</span>
+                                <span className="text-[11px] text-emerald-200 ml-1">{visionResult.visualContext.locations.slice(0, 6).join('、')}</span>
+                              </div>
+                            )}
                           </div>
                         )}
 
