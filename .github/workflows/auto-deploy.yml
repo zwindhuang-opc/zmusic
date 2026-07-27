@@ -3,7 +3,7 @@ name: Auto Deploy & APK Build
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - 'src/**'
       - 'index.html'
