@@ -76,3 +76,34 @@ Based on analysis of current AI music generation trends and Xiaohongshu content 
 - `src/services/muse.service.js` - Muse AI integration
 - `src/config/musicStyles.js` - Music style configurations
 - `src/config/lyricsStyles.js` - Lyrics style configurations
+
+## UX Requirements - Elderly & Non-Technical Users
+
+### Key Requirement
+The system MUST be usable by elderly users and people with NO prior computer or music knowledge.
+
+### Design Principles
+1. **Dual Mode System**: 
+   - **简洁模式 (Easy Mode)**: 3-step wizard with emoji icons, large fonts (16px+), big touch targets (48px+), auto-defaults for all technical parameters
+   - **专业模式 (Expert Mode)**: Full-featured interface for advanced users
+
+2. **Easy Mode Features**:
+   - Step 1: Choose type (写歌词 / 做BGM / 看图写歌) with large icon cards
+   - Step 2: Pick mood via emoji selector (12 moods) or upload picture
+   - Step 3: One big "一键生成" button → results with copy/share
+   - All technical params (method, BPM, instruments, sections) auto-selected
+
+3. **UI Requirements for Easy Mode**:
+   - Minimum font size: 16px for body, 18px+ for headings
+   - Minimum touch target: 48x48px
+   - High contrast colors (4.5:1 minimum)
+   - Chinese-first language with English toggle
+   - No technical jargon (FSM, BPM, section presets hidden)
+   - Clear visual feedback on all actions
+   - Error messages in simple, non-technical language
+
+4. **Accessibility**:
+   - Screen reader support (aria-labels)
+   - Keyboard navigation for all interactive elements
+   - Visual focus indicators (not just outline)
+   - Motion reduction support

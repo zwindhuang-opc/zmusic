@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Key, Save, RefreshCw, Server, Bot, Cpu, CheckCircle, AlertCircle } from 'lucide-react';
+import { Settings, Key, Save, RefreshCw, Server, Bot, Cpu, CheckCircle, AlertCircle, Sparkles, Wand2, Sliders } from 'lucide-react';
 import { useTranslation } from '../i18n/index.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
+
+const UI_MODE_KEY = 'zmusic-ui-mode';
 
 function SettingsPage() {
   const { t } = useTranslation();
@@ -84,6 +86,49 @@ function SettingsPage() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* UI Mode Selection */}
+        <div className="gradient-border p-4 md:p-5">
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
+            <Sliders className="w-4 h-4 text-amber-400" />
+            {t('settings.ui_mode')}
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => {
+                localStorage.setItem(UI_MODE_KEY, 'easy');
+                window.dispatchEvent(new CustomEvent('zmusic-ui-mode', { detail: 'easy' }));
+                window.location.reload();
+              }}
+              className={`p-4 rounded-xl border-2 transition-all text-left ${localStorage.getItem(UI_MODE_KEY) === 'easy'
+                  ? 'border-violet-400 bg-violet-500/20'
+                  : 'border-white/10 bg-white/5 hover:border-white/30'
+                }`}
+            >
+              <div className="text-3xl mb-2">😊</div>
+              <div className="text-sm font-bold text-white mb-1">{t('settings.easy_mode')}</div>
+              <div className="text-[10px] text-gray-400">{t('settings.easy_mode_desc')}</div>
+            </button>
+            <button
+              onClick={() => {
+                localStorage.setItem(UI_MODE_KEY, 'expert');
+                window.dispatchEvent(new CustomEvent('zmusic-ui-mode', { detail: 'expert' }));
+                window.location.reload();
+              }}
+              className={`p-4 rounded-xl border-2 transition-all text-left ${localStorage.getItem(UI_MODE_KEY) !== 'easy'
+                  ? 'border-violet-400 bg-violet-500/20'
+                  : 'border-white/10 bg-white/5 hover:border-white/30'
+                }`}
+            >
+              <div className="flex items-center gap-1 mb-2">
+                <Wand2 className="w-5 h-5 text-pink-400" />
+                <Cpu className="w-4 h-4 text-violet-400" />
+              </div>
+              <div className="text-sm font-bold text-white mb-1">{t('settings.expert_mode')}</div>
+              <div className="text-[10px] text-gray-400">{t('settings.expert_mode_desc')}</div>
+            </button>
+          </div>
         </div>
 
         <div className="gradient-border p-4 md:p-5">

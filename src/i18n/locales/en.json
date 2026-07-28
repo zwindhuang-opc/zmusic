@@ -389,7 +389,12 @@
     "muse_ai_api_key": "Muse AI API Key",
     "agent_mode_active": "Agent Mode Active",
     "agent_mode_description": "Unicorn Agent's FSM and network layer functions are fully available. Configure API keys to enable real music generation from Suno AI and Muse AI.",
-    "available_api_endpoints": "Available API Endpoints"
+    "available_api_endpoints": "Available API Endpoints",
+    "ui_mode": "Interface Mode",
+    "easy_mode": "Easy Mode",
+    "easy_mode_desc": "3-step wizard, suitable for everyone",
+    "expert_mode": "Expert Mode",
+    "expert_mode_desc": "Full controls for advanced users"
   },
   "common": {
     "loading": "Loading...",

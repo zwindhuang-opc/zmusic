@@ -389,7 +389,12 @@
     "muse_ai_api_key": "Muse AI API密钥",
     "agent_mode_active": "代理模式已激活",
     "agent_mode_description": "独角兽代理的FSM和网络层功能完全可用。配置API密钥以启用Suno AI和Muse AI的真实音乐生成。",
-    "available_api_endpoints": "可用API接口"
+    "available_api_endpoints": "可用API接口",
+    "ui_mode": "界面模式",
+    "easy_mode": "简洁模式",
+    "easy_mode_desc": "三步向导，适合所有人",
+    "expert_mode": "专业模式",
+    "expert_mode_desc": "完整功能，适合进阶用户"
   },
   "common": {
     "loading": "加载中...",

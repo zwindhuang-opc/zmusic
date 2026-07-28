@@ -1,12 +1,13 @@
 {
-  "version": "5.6.0",
+  "version": "5.7.0",
   "major": 5,
-  "minor": 6,
+  "minor": 7,
   "patch": 0,
   "releaseDate": "2026-07-28",
-  "buildNumber": 24,
+  "buildNumber": 25,
   "status": "production-ready",
   "changes": [
+    "v5.7.0 - Added Easy Mode (简洁模式) - 3-step wizard for elderly and non-technical users, UI mode toggle in sidebar and settings, persistent mode preference, accessibility-friendly design with large fonts and touch targets, elderly-friendly UX requirements documented (build #25)",
     "v5.6.0 - Added social media BGM generator, prompt engineering assistant, visual style recommendations from image analysis, Xiaohongshu reference integration with platform-specific templates (小红书/抖音/Bilibili), structured prompt template generation with section presets, instrument selection UI, and comprehensive i18n updates (build #24)",
     "v5.5.6 - Web-mobile feature parity fix, consistent output format across all generation methods",
     "Fixed dynamicLyricsEngine: ALL methods (basic/network/time/variation) now return fullCommand + lyricsText + fullText consistently",
@@ -55,7 +56,6 @@
     "Added TEMPO_MARKINGS with 10 tempo levels (Largo to Prestissimo)",
     "Added ARTICULATION_MARKS with 7 articulation types (Legato, Staccato, Tenuto, etc.)",
     "Added EXPRESSION_MARKS with 8 expression marks (Crescendo, Rubato, Fermata, etc.)",
-    "Added KEY_SIGNATURES with 10 key signatures (C, G, D, A, E, F, B♭, E♭, A♭, D♭)",
-    "Added CHORD_PROGRESSIONS with 8 genre-specific progression patterns"
+    "Added KEY_SIGNATURES with 10 key signatures (C, G, D, A, E, F, B♭, E♭, A♭, D♭)"
   ]
 }

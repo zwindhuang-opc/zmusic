@@ -2,7 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useTranslation } from './i18n/index.js';
 import {
   LayoutDashboard, Music, Mic, Video, Settings, Sparkles, TrendingUp,
-  Activity, Cpu, Zap, BarChart3, Server, Bot, Globe, ArrowLeft
+  Activity, Cpu, Zap, BarChart3, Server, Bot, Globe, ArrowLeft, Wand2, Sliders
 } from 'lucide-react';
 import api, { isMobileEnvironment } from './services/api.client.js';
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
@@ -11,7 +11,9 @@ const LyricsPage = lazy(() => import('./pages/LyricsPage.jsx'));
 const MVPage = lazy(() => import('./pages/MVPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 import FloatingChatBall from './components/FloatingChatBall.jsx';
+import EasyMode from './components/EasyMode.jsx';
 
+const UI_MODE_KEY = 'zmusic-ui-mode';
 const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '1.0.0';
 
 function App() {
@@ -19,6 +21,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [apiStatus, setApiStatus] = useState({ configured: false, version: BUILD_VERSION, uptime: 0 });
   const [agentStatus, setAgentStatus] = useState(null);
+  const [uiMode, setUiMode] = useState(() => localStorage.getItem(UI_MODE_KEY) || 'expert');
 
   useEffect(() => {
     if (!isMobileEnvironment()) {
@@ -56,6 +59,12 @@ function App() {
     i18n.changeLanguage(lng);
     localStorage.setItem('zmusic-lang', lng);
     window.location.reload();
+  };
+
+  const toggleUiMode = () => {
+    const newMode = uiMode === 'easy' ? 'expert' : 'easy';
+    setUiMode(newMode);
+    localStorage.setItem(UI_MODE_KEY, newMode);
   };
 
   const navigationItems = [
@@ -125,6 +134,19 @@ function App() {
         </div>
 
         <div className="p-4 border-t border-purple-500/10 space-y-3">
+          {/* UI Mode Toggle */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-400 flex items-center gap-1.5">
+              {uiMode === 'easy' ? <Sparkles className="w-3 h-3 text-violet-400" /> : <Wand2 className="w-3 h-3 text-pink-400" />}
+              {uiMode === 'easy' ? '简洁模式' : '专业模式'}
+            </span>
+            <button
+              onClick={toggleUiMode}
+              className={`w-10 h-5 rounded-full p-0.5 transition-all ${uiMode === 'easy' ? 'bg-gradient-to-r from-violet-500 to-pink-500' : 'bg-white/10'}`}
+            >
+              <div className={`w-4 h-4 rounded-full bg-white transition-transform ${uiMode === 'easy' ? 'translate-x-5' : 'translate-x-0'}`} />
+            </button>
+          </div>
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-400">{t('header.api')}</span>
             <div className={`flex items-center gap-1.5 ${apiStatus.configured ? 'text-emerald-400' : 'text-amber-400'}`}>
@@ -190,8 +212,12 @@ function App() {
             </div>
           }>
             {currentPage === 'dashboard' && <Dashboard apiStatus={apiStatus} agentStatus={agentStatus} onNavigate={setCurrentPage} />}
-            {currentPage === 'music' && <MusicPage />}
-            {currentPage === 'lyrics' && <LyricsPage onNavigate={setCurrentPage} />}
+            {currentPage === 'music' && uiMode === 'easy'
+              ? <EasyMode onSwitchToExpert={toggleUiMode} />
+              : <MusicPage />}
+            {currentPage === 'lyrics' && uiMode === 'easy'
+              ? <EasyMode onSwitchToExpert={toggleUiMode} />
+              : <LyricsPage onNavigate={setCurrentPage} />}
             {currentPage === 'mv' && <MVPage />}
             {currentPage === 'settings' && <SettingsPage />}
           </Suspense>
