@@ -211,7 +211,17 @@
     "image_description": "图片描述",
     "image_color_palette": "色彩调色板",
     "image_remove": "移除图片",
-    "image_another": "上传另一张"
+    "image_another": "上传另一张",
+    "tab_social": "BGM",
+    "bgm_platform": "BGM平台",
+    "bgm_duration": "时长预设",
+    "bgm_templates": "风格模板",
+    "prompt_template": "专业提示词生成",
+    "section_structure": "段落结构",
+    "instruments": "乐器选择",
+    "visual_recommendations": "视觉风格推荐",
+    "visual_reco_desc": "基于上传图片分析，推荐以下音乐风格",
+    "image_style_reco": "AI风格推荐"
   },
   "mv": {
     "title": "MV时间线生成器",
@@ -434,7 +444,15 @@
     "concert": "演唱会",
     "cinematic": "电影感",
     "retro": "复古",
-    "anime": "动漫"
+    "anime": "动漫",
+    "xiaohongshu_vlog": "小红书Vlog",
+    "commercial_ad": "商业广告",
+    "emotional_story": "情感叙事",
+    "dance_party": "舞曲派对",
+    "podcast_intro": "播客开场",
+    "nature_documentary": "自然纪录片",
+    "tech_explainer": "科技解说",
+    "food_vlog": "美食Vlog"
   },
   "layers": {
     "foundation": "基础层",
@@ -522,7 +540,15 @@
     "love_song": "情歌",
     "gothic_rock": "哥特摇滚",
     "ancient_modern": "古风现代",
-    "reggae": "雷鬼"
+    "reggae": "雷鬼",
+    "xiaohongshu_vlog": "小红书Vlog",
+    "commercial_ad": "商业广告",
+    "emotional_story": "情感叙事",
+    "dance_party": "舞曲派对",
+    "podcast_intro": "播客开场",
+    "nature_documentary": "自然纪录片",
+    "tech_explainer": "科技解说",
+    "food_vlog": "美食Vlog"
   },
   "lyrics_themes": {
     "heartbreak": "心碎",

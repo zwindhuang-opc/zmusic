@@ -229,7 +229,7 @@ jobs:
             **Version**: ${{ needs.build-web.outputs.new_version }}
 
             ### Changes
-            - Auto-deploy build triggered by push to main
+            - Auto-deploy build triggered by push to master
             - Synchronized web and mobile versions
             - Consistent output format across all generation methods
             - Fixed copy buttons and i18n

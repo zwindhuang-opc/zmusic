@@ -238,6 +238,122 @@ export const MUSIC_STYLES = {
     mood: '氛围、冥想',
     bpmRange: [40, 60],
     description: '氛围音乐风格，沉浸式的环境音景'
+  },
+
+  // Social Media BGM Templates (2026 Updated)
+  xiaohongshu_vlog: {
+    name: 'styles.xiaohongshu_vlog',
+    sunoTags: 'lo-fi hip hop, acoustic guitar, warm piano, cozy, lazy afternoon, soft beat, 75 BPM',
+    instruments: ['Acoustic Guitar', 'Warm Piano', 'Drum Machine', 'Subtle Bass'],
+    mood: '舒适、慵懒、生活化',
+    bpmRange: [70, 84],
+    description: '小红书Vlog背景音乐，温暖舒适的日常生活氛围',
+    useCase: '小红书Vlog、生活记录、美食分享',
+    promptTemplate: `[Intro] acoustic guitar, warm piano, soft kick drum
+[Verse] lo-fi beat, cozy vibe, lazy afternoon feel
+[Chorus] add bassline, slightly increase tempo by 3 BPM
+[Outro] fade out with piano only`
+  },
+
+  commercial_ad: {
+    name: 'styles.commercial_ad',
+    sunoTags: 'upbeat, positive, clean production, energetic, 120 BPM, bright synths, crisp percussion',
+    instruments: ['Synthesizer', 'Digital Drums', 'Bass', 'Bright Piano'],
+    mood: '积极、活力、专业',
+    bpmRange: [115, 125],
+    description: '商业广告音乐，积极向上充满活力',
+    useCase: '商业广告、品牌宣传、产品发布',
+    promptTemplate: `[Intro] bright synth arpeggio, 2 seconds build-up
+[Verse] clean percussion, upbeat synth, positive mood
+[Chorus] full ensemble, increase energy, add vocal hook
+[Bridge] breakdown with piano solo, then build up
+[Outro] grand finale, all instruments, 3-second fade`
+  },
+
+  emotional_story: {
+    name: 'styles.emotional_story',
+    sunoTags: 'piano, strings, minor key, emotional, storytelling, 72 BPM, haunting',
+    instruments: ['Piano', 'Strings', 'Cello', 'Soft Vocals'],
+    mood: '深情、感动、叙事',
+    bpmRange: [68, 80],
+    description: '情感叙事音乐，适合故事类内容',
+    useCase: '情感Vlog、故事短片、回忆分享',
+    promptTemplate: `[Intro] solo piano, slow and gentle
+[Verse] add soft strings, emotional build
+[Chorus] full string ensemble, passionate climax
+[Bridge] quiet piano only, reflection moment
+[Outro] piano fade, unresolved ending for emotion`
+  },
+
+  dance_party: {
+    name: 'styles.dance_party',
+    sunoTags: 'EDM, synth bass, strong beat, 128 BPM, club, danceable, energetic drops',
+    instruments: ['Synthesizer', 'Drum Machine', 'Sub Bass', 'Vocals'],
+    mood: '动感、兴奋、派对',
+    bpmRange: [125, 135],
+    description: '舞曲风格，充满能量的派对音乐',
+    useCase: '派对视频、舞蹈教学、健身内容',
+    promptTemplate: `[Intro] build-up with synth, 4 bars
+[Verse] strong beat, synth bass, dance rhythm
+[Chorus] DROP, full energy, all instruments
+[Bridge] breakdown, minimal, then build-up
+[Outro] final drop, then fade out`
+  },
+
+  podcast_intro: {
+    name: 'styles.podcast_intro',
+    sunoTags: 'short, catchy, professional, 15 seconds, branded, memorable, clean',
+    instruments: ['Piano', 'Synth', 'Bass', 'Soft Drums'],
+    mood: '专业、简洁、易记',
+    bpmRange: [100, 120],
+    description: '播客/短视频开场音乐，简短有记忆点',
+    useCase: '播客开场、短视频片头、频道ID',
+    promptTemplate: `[Intro] catchy piano motif, 2 seconds
+[Main] full band, 10 seconds, memorable theme
+[Outro] resolve to tonic, 3 seconds`
+  },
+
+  nature_documentary: {
+    name: 'styles.nature_documentary',
+    sunoTags: 'ambient, orchestral, strings, natural, peaceful, 60 BPM, bird sounds, flowing',
+    instruments: ['Strings', 'Flute', 'Harp', 'Nature Sounds'],
+    mood: '宁静、壮阔、自然',
+    bpmRange: [55, 70],
+    description: '自然纪录片风格，壮阔宁静',
+    useCase: '自然纪录片、旅行Vlog、风景展示',
+    promptTemplate: `[Intro] flute + bird sounds, gentle
+[Verse] strings slowly build, harp arpeggios
+[Chorus] full orchestra, majestic moment
+[Bridge] solo instrument, intimate moment
+[Outro] fade back to nature sounds`
+  },
+
+  tech_explainer: {
+    name: 'styles.tech_explainer',
+    sunoTags: 'modern, clean, synth, 110 BPM, professional, subtle, supportive',
+    instruments: ['Synth', 'Piano', 'Subtle Drums', 'Bass'],
+    mood: '专业、现代、支持',
+    bpmRange: [105, 115],
+    description: '科技解说视频背景音乐，现代专业',
+    useCase: '科技解说、教程视频、产品演示',
+    promptTemplate: `[Intro] clean synth note, 1 second
+[Verse] subtle beat, supportive piano, not distracting
+[Chorus] slightly more energy for key moments
+[Outro] gentle fade`
+  },
+
+  food_vlog: {
+    name: 'styles.food_vlog',
+    sunoTags: 'jazzy, swing, 90 BPM, upbeat, playful, brass section, warm',
+    instruments: ['Saxophone', 'Piano', 'Drums', 'Bass'],
+    mood: '愉快、俏皮、温暖',
+    bpmRange: [85, 95],
+    description: '美食Vlog背景音乐，愉快俏皮',
+    useCase: '美食Vlog、烹饪教程、餐厅展示',
+    promptTemplate: `[Intro] sax motif, 2 bars
+[Verse] swing rhythm, playful piano
+[Chorus] full brass section, energetic
+[Outro] quick fade on final chord`
   }
 };
 
@@ -307,14 +423,49 @@ export const MUSIC_THEMES = {
   ocean_dreams: { name: 'themes.ocean_dreams', sunoTags: 'ocean dreams, sea, waves, freedom, vastness' }
 };
 
+// Visual-to-Music Style Mapping (based on image analysis)
+export const VISUAL_STYLE_MAP = {
+  // Dark/cool colors → Melancholic, Electronic, Lo-fi
+  'dark_cool': ['heartbreaking', 'electronic', 'xiaohongshu_vlog'],
+  // Bright/warm colors → Happy, Acoustic, Pop
+  'bright_warm': ['energetic', 'folk', 'pop', 'love_song'],
+  // Nature/green → Folk, Ambient, Acoustic
+  'nature_green': ['folk', 'ambient', 'healing', 'nature_documentary'],
+  // Urban/neon → Synthwave, Electronic, Phonk
+  'urban_neon': ['electronic', 'time_travel', 'dance_party', 'modern'],
+  // Pastel/soft → Dreamy, Ambient, Ballad
+  'pastel_soft': ['dreamy', 'ambient', 'ballad', 'healing'],
+  // Vibrant/saturated → Energetic, Dance, K-pop
+  'vibrant_saturated': ['energetic', 'dance_party', 'kpop', 'pop'],
+  // Monochrome/gray → Ambient, Minimalist, Electronic
+  'monochrome_gray': ['ambient', 'electronic', 'modern', 'tech_explainer'],
+  // Gold/royal → Epic, Classical, Dramatic
+  'gold_royal': ['epic', 'classical', 'ancient', 'ancient_modern']
+};
+
+// Section structure presets for FSM-based generation
+export const SECTION_PRESETS = {
+  standard_song: ['[Intro]', '[Verse]', '[Pre-Chorus]', '[Chorus]', '[Verse]', '[Pre-Chorus]', '[Chorus]', '[Bridge]', '[Chorus]', '[Outro]'],
+  short_bgm: ['[Intro]', '[Main]', '[Outro]'],
+  loopable_bgm: ['[Intro]', '[Verse]', '[Chorus]', '[Loop]'],
+  commercial_jingle: ['[Hook]', '[Verse]', '[Hook]', '[Bridge]', '[Hook]'],
+  storytelling: ['[Intro]', '[Scene 1]', '[Scene 2]', '[Climax]', '[Resolution]', '[Outro]'],
+  dance_track: ['[Intro]', '[Build-up]', '[Drop]', '[Verse]', '[Build-up]', '[Drop]', '[Breakdown]', '[Final Drop]', '[Outro]']
+};
+
 export function buildSunoPrompt(params) {
-  const { prompt, style, genre, theme, bpm, duration } = params;
+  const { prompt, style, genre, theme, bpm, duration, usePromptTemplate } = params;
 
   const styleInfo = MUSIC_STYLES[style] || MUSIC_STYLES.pop;
   const genreInfo = MUSIC_GENRES[genre] || MUSIC_GENRES.pop;
   const themeInfo = MUSIC_THEMES[theme] || MUSIC_THEMES.love;
 
   const instrumentList = styleInfo.instruments.join(', ');
+
+  // Use structured prompt template if available and requested
+  if (usePromptTemplate && styleInfo.promptTemplate) {
+    return `${styleInfo.promptTemplate}\n\nAdditional context: ${prompt}\nStyle: ${styleInfo.sunoTags}\nTheme: ${themeInfo.sunoTags}\nBpm: ${bpm}`;
+  }
 
   return `A ${styleInfo.name} ${genreInfo.name} song with ${instrumentList}, ${styleInfo.mood} mood, ${themeInfo.name} theme, ${bpm} BPM, ${duration} seconds duration. ${styleInfo.sunoTags}. ${genreInfo.sunoTags}. ${themeInfo.sunoTags}. ${prompt}`;
 }
@@ -324,7 +475,10 @@ export function getStyleOptions() {
     id: key,
     name: value.name,
     mood: value.mood,
-    bpmRange: value.bpmRange
+    bpmRange: value.bpmRange,
+    description: value.description,
+    hasPromptTemplate: !!value.promptTemplate,
+    useCase: value.useCase || null
   }));
 }
 
@@ -339,5 +493,62 @@ export function getThemeOptions() {
   return Object.entries(MUSIC_THEMES).map(([key, value]) => ({
     id: key,
     name: value.name
+  }));
+}
+
+// Get style recommendations based on visual features
+export function getStyleRecommendation(visualFeatures) {
+  if (!visualFeatures) return ['pop', 'ballad'];
+
+  const { colorTone, saturation, subject } = visualFeatures;
+
+  // Determine visual category
+  let category = 'bright_warm';
+
+  if (colorTone === 'dark' && saturation === 'high') {
+    category = 'urban_neon';
+  } else if (colorTone === 'dark') {
+    category = 'dark_cool';
+  } else if (saturation === 'low' && colorTone === 'bright') {
+    category = 'pastel_soft';
+  } else if (saturation === 'low') {
+    category = 'monochrome_gray';
+  } else if (saturation === 'high') {
+    category = 'vibrant_saturated';
+  }
+
+  // Check for nature subject
+  if (subject && /nature|tree|forest|mountain|outdoor/i.test(subject)) {
+    category = 'nature_green';
+  }
+
+  // Check for gold/royal
+  if (saturation === 'high' && /gold|royal|luxury|elegant/i.test(subject || '')) {
+    category = 'gold_royal';
+  }
+
+  return VISUAL_STYLE_MAP[category] || ['pop', 'ballad'];
+}
+
+// Get all social media BGM styles
+export function getSocialMediaStyles() {
+  return Object.entries(MUSIC_STYLES)
+    .filter(([key, value]) => value.useCase)
+    .map(([key, value]) => ({
+      id: key,
+      name: value.name,
+      useCase: value.useCase,
+      description: value.description,
+      bpmRange: value.bpmRange,
+      hasPromptTemplate: !!value.promptTemplate
+    }));
+}
+
+// Get section structure presets
+export function getSectionPresets() {
+  return Object.entries(SECTION_PRESETS).map(([key, value]) => ({
+    id: key,
+    sections: value,
+    name: key.replace(/_/g, ' ')
   }));
 }

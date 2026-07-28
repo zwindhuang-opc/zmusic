@@ -211,7 +211,17 @@
     "image_description": "Description",
     "image_color_palette": "Color Palette",
     "image_remove": "Remove Image",
-    "image_another": "Upload Another"
+    "image_another": "Upload Another",
+    "tab_social": "BGM",
+    "bgm_platform": "BGM Platform",
+    "bgm_duration": "Duration Preset",
+    "bgm_templates": "Style Templates",
+    "prompt_template": "Professional Prompt Generator",
+    "section_structure": "Section Structure",
+    "instruments": "Instrument Selection",
+    "visual_recommendations": "Visual Style Recommendations",
+    "visual_reco_desc": "Based on uploaded image analysis, recommended music styles",
+    "image_style_reco": "AI Style Recommendations"
   },
   "mv": {
     "title": "MV Timeline Generator",
@@ -434,7 +444,15 @@
     "concert": "Concert",
     "cinematic": "Cinematic",
     "retro": "Retro",
-    "anime": "Anime"
+    "anime": "Anime",
+    "xiaohongshu_vlog": "Xiaohongshu Vlog",
+    "commercial_ad": "Commercial Ad",
+    "emotional_story": "Emotional Story",
+    "dance_party": "Dance Party",
+    "podcast_intro": "Podcast Intro",
+    "nature_documentary": "Nature Documentary",
+    "tech_explainer": "Tech Explainer",
+    "food_vlog": "Food Vlog"
   },
   "layers": {
     "foundation": "Foundation",
@@ -522,7 +540,15 @@
     "love_song": "Love Song",
     "gothic_rock": "Gothic Rock",
     "ancient_modern": "Ancient Modern",
-    "reggae": "Reggae"
+    "reggae": "Reggae",
+    "xiaohongshu_vlog": "Xiaohongshu Vlog",
+    "commercial_ad": "Commercial Ad",
+    "emotional_story": "Emotional Story",
+    "dance_party": "Dance Party",
+    "podcast_intro": "Podcast Intro",
+    "nature_documentary": "Nature Documentary",
+    "tech_explainer": "Tech Explainer",
+    "food_vlog": "Food Vlog"
   },
   "lyrics_themes": {
     "heartbreak": "Heartbreak",

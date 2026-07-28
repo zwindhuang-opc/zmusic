@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Mic, Sparkles, Loader, FileText, Cpu, Network, BookOpen, Settings as SettingsIcon, Wand2, Clock, Music2, User, History, Copy, Music, Video, AlertCircle, Search, ChevronDown, ChevronRight, Sliders, Palette, Layers, Image as ImageIcon, Upload, X, Check } from 'lucide-react';
+import { Mic, Sparkles, Loader, FileText, Cpu, Network, BookOpen, Settings as SettingsIcon, Wand2, Clock, Music2, User, History, Copy, Music, Video, AlertCircle, Search, ChevronDown, ChevronRight, Sliders, Palette, Layers, Image as ImageIcon, Upload, X, Check, Share2, Layout, Music4 } from 'lucide-react';
 import { useTranslation } from '../i18n/index.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
 import { useGeneration } from '../stores/generationStore.jsx';
@@ -7,6 +7,7 @@ import { generateLyrics } from '../utils/lyricsEngine.js';
 import { fullImageAnalysis } from '../utils/visionAnalyzer.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 import { LYRICS_STYLES, LYRICS_THEMES } from '../config/lyricsStyles.js';
+import { getStyleRecommendation, buildSunoPrompt, MUSIC_STYLES, SECTION_PRESETS } from '../config/musicStyles.js';
 
 /**
  * Style categories - groups 30 styles into 5 logical categories for cleaner UI.
@@ -93,6 +94,26 @@ function LyricsPage({ onNavigate }) {
   const [appliedSuggestions, setAppliedSuggestions] = useState(false);
   const [visualContext, setVisualContext] = useState(null);
 
+  /* --- Social Media BGM & Prompt Engineering state --- */
+  const [platform, setPlatform] = useState('xiaohongshu'); // xiaohongshu | douyin | bilibili | youtube | generic
+  const [durationPreset, setDurationPreset] = useState('standard'); // 15s | 30s | 60s | standard
+  const [usePromptTemplate, setUsePromptTemplate] = useState(false);
+  const [selectedInstruments, setSelectedInstruments] = useState([]);
+  const [sectionPreset, setSectionPreset] = useState('standard_song');
+  const [bgmPlatforms] = useState([
+    { id: 'xiaohongshu', name: '小红书', icon: Share2, styles: ['xiaohongshu_vlog', 'food_vlog', 'commercial_ad', 'emotional_story'] },
+    { id: 'douyin', name: '抖音/TikTok', icon: Music4, styles: ['dance_party', 'energetic', 'pop', 'kpop'] },
+    { id: 'bilibili', name: 'Bilibili', icon: Video, styles: ['tech_explainer', 'podcast_intro', 'nature_documentary', 'indie'] },
+    { id: 'youtube', name: 'YouTube', icon: Music2, styles: ['commercial_ad', 'podcast_intro', 'tech_explainer', 'nature_documentary'] },
+    { id: 'generic', name: '通用', icon: Layout, styles: ['pop', 'ballad', 'electronic', 'folk', 'ambient'] }
+  ]);
+  const [durationPresets] = useState([
+    { id: '15s', label: '15s', desc: '超短BGM' },
+    { id: '30s', label: '30s', desc: '短视频' },
+    { id: '60s', label: '60s', desc: '标准Vlog' },
+    { id: 'standard', label: '标准', desc: '完整歌曲' }
+  ]);
+
   const getComplexityLabel = (level) => {
     if (level <= 2) return t('lyrics.simple');
     if (level <= 5) return t('lyrics.medium');
@@ -108,7 +129,11 @@ function LyricsPage({ onNavigate }) {
       const params = {
         genre, theme, method, bpm, duration, subject, object,
         complexity, language, variation, reference, referenceSong, script,
-        ...(visualContext ? { visualContext } : {})
+        ...(visualContext ? { visualContext } : {}),
+        ...(usePromptTemplate ? { usePromptTemplate } : {}),
+        ...(platform ? { platform } : {}),
+        ...(selectedInstruments.length > 0 ? { selectedInstruments } : {}),
+        ...(sectionPreset ? { sectionPreset } : {}),
       };
 
       const methodMap = { 'fsm': 'basic', 'network_layer': 'network', 'muse': 'time', 'suno': 'variation', 'melo': 'basic' };
@@ -131,7 +156,8 @@ function LyricsPage({ onNavigate }) {
         addToHistory({
           type: 'lyrics', method, theme, style: genre, bpm, language, variation, reference, script,
           result: data.data,
-          ...(visualContext ? { visualContext: visualContext.sceneId || 'image' } : {})
+          ...(visualContext ? { visualContext: visualContext.sceneId || 'image' } : {}),
+          ...(platform ? { platform } : {}),
         });
       } else {
         setError(data.error || t('common.error_unknown'));
@@ -142,6 +168,96 @@ function LyricsPage({ onNavigate }) {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  /* --- Social Media & Prompt Engineering helpers --- */
+
+  /** Get recommended styles for the selected platform */
+  const getPlatformStyles = () => {
+    const platformConfig = bgmPlatforms.find(p => p.id === platform);
+    return platformConfig?.styles || [];
+  };
+
+  /** Toggle instrument selection */
+  const toggleInstrument = (instrument) => {
+    setSelectedInstruments(prev =>
+      prev.includes(instrument)
+        ? prev.filter(i => i !== instrument)
+        : [...prev, instrument]
+    );
+  };
+
+  /** Apply a social media style template (sets genre, bpm, duration, script) */
+  const applySocialMediaStyle = (styleKey) => {
+    const styleInfo = MUSIC_STYLES[styleKey];
+    if (!styleInfo) return;
+
+    setGenre(styleKey);
+    if (styleInfo.bpmRange) {
+      setBpm(Math.round((styleInfo.bpmRange[0] + styleInfo.bpmRange[1]) / 2));
+    }
+    if (styleInfo.promptTemplate) {
+      setScript(prev => {
+        const prefix = usePromptTemplate ? '' : '[模板提示]\n';
+        return prev ? `${prefix}${styleInfo.promptTemplate}\n\n${prev}` : `${prefix}${styleInfo.promptTemplate}`;
+      });
+    }
+    if (styleInfo.instruments) {
+      setSelectedInstruments(styleInfo.instruments.slice(0, 3));
+    }
+    setUsePromptTemplate(true);
+  };
+
+  /** Generate a structured command from prompt template */
+  const generateStructuredCommand = () => {
+    const params = {
+      prompt: script || '',
+      style: genre,
+      theme,
+      bpm,
+      duration,
+      usePromptTemplate,
+    };
+    return buildSunoPrompt(params);
+  };
+
+  /** Get visual style recommendations based on current vision result */
+  const getVisualStyleRecommendations = () => {
+    if (!visionResult?.visualContext) return [];
+    const features = {
+      colorTone: visionResult.colorTone || (visionResult.dominantColor?.hex && isDarkColor(visionResult.dominantColor.hex) ? 'dark' : 'bright'),
+      saturation: visionResult.saturation || 'medium',
+      subject: visionResult.scene?.category || '',
+    };
+    return getStyleRecommendation(features);
+  };
+
+  /** Simple dark/light color detection */
+  const isDarkColor = (hex) => {
+    if (!hex || hex.length < 7) return false;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance < 0.5;
+  };
+
+  /** Get all available instruments for the current style */
+  const getAvailableInstruments = () => {
+    const styleInfo = MUSIC_STYLES[genre];
+    if (styleInfo?.instruments) return styleInfo.instruments;
+    // Default set of instruments
+    return ['Acoustic Guitar', 'Electric Guitar', 'Piano', 'Synthesizer', 'Drums', 'Drum Machine', 'Bass', 'Strings', 'Vocals', 'Soft Vocals', 'Saxophone', 'Brass Section', 'Harmonica', 'Banjo', 'Mandolin'];
+  };
+
+  /** Get all social media style options for the current platform */
+  const getSocialStyleOptions = () => {
+    const platformStyles = getPlatformStyles();
+    return platformStyles.map(key => ({
+      key,
+      ...MUSIC_STYLES[key],
+      name: MUSIC_STYLES[key]?.name || key
+    }));
   };
 
   /* --- Filtered styles based on search --- */
@@ -329,6 +445,7 @@ function LyricsPage({ onNavigate }) {
     { id: 'style', label: t('lyrics.tab_style_theme'), icon: Palette },
     { id: 'method', label: t('lyrics.tab_method'), icon: Layers },
     { id: 'image', label: t('lyrics.tab_image'), icon: ImageIcon },
+    { id: 'social', label: t('lyrics.tab_social') || 'BGM', icon: Share2 },
     { id: 'advanced', label: t('lyrics.tab_advanced'), icon: Sliders }
   ];
 
@@ -709,6 +826,26 @@ function LyricsPage({ onNavigate }) {
                           </div>
                         )}
 
+                        {/* AI 风格推荐 (基于VISUAL_STYLE_MAP) */}
+                        {getVisualStyleRecommendations().length > 0 && (
+                          <div className="p-2.5 rounded-lg bg-pink-500/5 border border-pink-500/20">
+                            <div className="text-[10px] text-pink-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                              <Sparkles className="w-3 h-3" />{t('lyrics.image_style_reco') || 'AI风格推荐'}
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {getVisualStyleRecommendations().map((s, i) => (
+                                <button
+                                  key={i}
+                                  onClick={() => setGenre(s)}
+                                  className="px-2 py-1 rounded-md bg-pink-500/10 text-pink-300 text-[11px] border border-pink-500/20 hover:bg-pink-500/20 transition-all"
+                                >
+                                  {t(`lyrics_styles.${s}`) || t(`styles.${s}`) || s}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {visionResult.suggestions?.bpm && (
                           <div className="p-2.5 rounded-lg bg-white/5">
                             <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">{t('lyrics.image_bpm')}</div>
@@ -780,6 +917,216 @@ function LyricsPage({ onNavigate }) {
                   </div>
                 )}
               </div>
+            </>
+          )}
+
+          {/* Tab: Social Media BGM & Prompt Engineering */}
+          {activeTab === 'social' && (
+            <>
+              {/* Platform Selector */}
+              <div className="gradient-border p-4 md:p-5">
+                <label className="text-xs font-medium text-gray-300 mb-3 block">{t('lyrics.bgm_platform') || 'BGM平台'}</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {bgmPlatforms.map(p => {
+                    const Icon = p.icon;
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => setPlatform(p.id)}
+                        className={`flex flex-col items-center gap-1.5 p-2.5 rounded-lg text-xs font-medium transition-all ${platform === p.id
+                          ? 'bg-gradient-to-r from-violet-500/30 to-pink-500/30 text-white border border-violet-500/40'
+                          : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
+                          }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{p.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Duration Presets */}
+              <div className="gradient-border p-4 md:p-5">
+                <label className="text-xs font-medium text-gray-300 mb-3 block">{t('lyrics.bgm_duration') || '时长预设'}</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {durationPresets.map(d => (
+                    <button
+                      key={d.id}
+                      onClick={() => setDurationPreset(d.id)}
+                      className={`flex flex-col items-center p-2.5 rounded-lg text-xs transition-all ${durationPreset === d.id
+                        ? 'bg-gradient-to-r from-violet-500/30 to-pink-500/30 text-white border border-violet-500/40'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
+                        }`}
+                    >
+                      <span className="font-semibold">{d.label}</span>
+                      <span className="text-[10px] opacity-70">{d.desc}</span>
+                    </button>
+                  ))}
+                </div>
+                {durationPreset !== 'standard' && (
+                  <div className="mt-3 p-2.5 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
+                    <div className="text-[10px] text-yellow-400 mb-1">自动调整</div>
+                    <div className="text-xs text-yellow-200">
+                      时长: {durationPreset === '15s' ? 15 : durationPreset === '30s' ? 30 : 60}秒
+                      {bpm > 0 && <> · BPM建议: {bpm}</>}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Platform Style Templates */}
+              <div className="gradient-border p-4 md:p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-medium text-gray-300 block">
+                    {t('lyrics.bgm_templates') || '风格模板'}
+                  </label>
+                  <span className="text-[10px] text-gray-500">{getPlatformStyles().length} 个模板</span>
+                </div>
+                <div className="space-y-2">
+                  {getSocialStyleOptions().map(style => (
+                    <button
+                      key={style.key}
+                      onClick={() => applySocialMediaStyle(style.key)}
+                      className={`w-full text-left p-3 rounded-lg transition-all ${genre === style.key
+                        ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30'
+                        : 'bg-white/5 border border-white/5 hover:bg-white/10'
+                        }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-white">
+                          {t(`lyrics_styles.${style.key}`) || t(`styles.${style.key}`) || style.description}
+                        </span>
+                        {genre === style.key && <Check className="w-4 h-4 text-violet-400" />}
+                      </div>
+                      <p className="text-[10px] text-gray-400 mb-1">{style.description}</p>
+                      <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                        <span className="px-1.5 py-0.5 rounded bg-white/5">{style.bpmRange?.[0]}-{style.bpmRange?.[1]} BPM</span>
+                        {style.instruments?.slice(0, 2).map((inst, i) => (
+                          <span key={i} className="px-1.5 py-0.5 rounded bg-white/5">{inst}</span>
+                        ))}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Prompt Template Generator */}
+              <div className="gradient-border p-4 md:p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-medium text-gray-300 block flex items-center gap-2">
+                    <Wand2 className="w-3.5 h-3.5 text-pink-400" />
+                    {t('lyrics.prompt_template') || '专业提示词生成'}
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={usePromptTemplate}
+                      onChange={(e) => setUsePromptTemplate(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 text-violet-500 focus:ring-violet-500/50"
+                    />
+                    <span className="text-[10px] text-gray-400">启用</span>
+                  </label>
+                </div>
+
+                {usePromptTemplate && (
+                  <>
+                    {/* Section Presets */}
+                    <div className="mb-3">
+                      <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5">
+                        {t('lyrics.section_structure') || '段落结构'}
+                      </label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {Object.entries(SECTION_PRESETS).map(([key, sections]) => (
+                          <button
+                            key={key}
+                            onClick={() => setSectionPreset(key)}
+                            className={`p-2 rounded-lg text-[11px] transition-all ${sectionPreset === key
+                              ? 'bg-violet-500/20 text-violet-200 border border-violet-500/30'
+                              : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
+                              }`}
+                          >
+                            {key.replace(/_/g, ' ')}
+                            <div className="text-[9px] opacity-70">{sections.length}段</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Instrument Selection */}
+                    <div className="mb-3">
+                      <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5">
+                        {t('lyrics.instruments') || '乐器选择'}
+                        {selectedInstruments.length > 0 && (
+                          <span className="ml-1.5 text-violet-400">({selectedInstruments.length})</span>
+                        )}
+                      </label>
+                      <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto">
+                        {getAvailableInstruments().map(inst => (
+                          <button
+                            key={inst}
+                            onClick={() => toggleInstrument(inst)}
+                            className={`px-2 py-1 rounded text-[10px] transition-all ${selectedInstruments.includes(inst)
+                              ? 'bg-violet-500/20 text-violet-200 border border-violet-500/30'
+                              : 'bg-white/5 text-gray-500 hover:bg-white/10'
+                              }`}
+                          >
+                            {inst}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Generated Command Preview */}
+                    <div className="p-3 rounded-lg bg-black/30 border border-violet-500/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] text-violet-400 uppercase tracking-wider">
+                          {t('lyrics.generated_command') || '生成的提示词'}
+                        </span>
+                        <button
+                          onClick={() => copyToClipboard(generateStructuredCommand())}
+                          className="text-[10px] text-violet-300 hover:text-violet-200 flex items-center gap-1"
+                        >
+                          <Copy className="w-3 h-3" />
+                          {t('lyrics.copy') || '复制'}
+                        </button>
+                      </div>
+                      <pre className="text-[11px] text-violet-200 font-mono whitespace-pre-wrap max-h-[100px] overflow-y-auto">
+                        {generateStructuredCommand()}
+                      </pre>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Visual Style Recommendations */}
+              {visionResult && (
+                <div className="gradient-border p-4 md:p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Palette className="w-3.5 h-3.5 text-pink-400" />
+                    <label className="text-xs font-medium text-gray-300 block">
+                      {t('lyrics.visual_recommendations') || '视觉风格推荐'}
+                    </label>
+                  </div>
+                  <p className="text-[10px] text-gray-500 mb-3">
+                    {t('lyrics.visual_reco_desc') || '基于上传图片分析，推荐以下音乐风格'}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {getVisualStyleRecommendations().map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setGenre(s)}
+                        className={`px-2.5 py-1.5 rounded-lg text-[11px] transition-all ${genre === s
+                          ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                          : 'bg-pink-500/10 text-pink-300 border border-pink-500/20 hover:bg-pink-500/20'
+                          }`}
+                      >
+                        {t(`lyrics_styles.${s}`) || t(`styles.${s}`) || s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
 
