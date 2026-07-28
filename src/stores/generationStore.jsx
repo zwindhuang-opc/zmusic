@@ -105,6 +105,7 @@ export function GenerationProvider({ children }) {
    * @type {string}
    */
   const [sessionId] = useState(getOrCreateSessionId);
+  const [toast, setToast] = useState(null);
 
   /**
    * Load history from localStorage on mount
@@ -181,36 +182,123 @@ export function GenerationProvider({ children }) {
   }, [history, selectedId]);
 
   /**
-   * Copy text to clipboard using the Clipboard API
+   * Show a toast notification for user feedback
+   * @param {string} message - The toast message
+   * @param {'success'|'error'|'info'} type - Toast type
+   */
+  const showToast = useCallback((message, type = 'info') => {
+    setToast({ message, type, id: Date.now() });
+    setTimeout(() => setToast(null), 2500);
+  }, []);
+
+  /**
+   * Shows a dialog with text that user can long-press to select and copy manually
+   * This is the last resort for environments where all other copy methods fail
+   * @param {string} text
+   */
+  const showManualCopyDialog = useCallback((text) => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+    const dialog = document.createElement('div');
+    dialog.style.cssText = 'background:#1a1a2e;border-radius:16px;padding:24px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column;gap:16px;border:1px solid rgba(236,72,153,0.3);';
+
+    const title = document.createElement('div');
+    title.style.cssText = 'color:#ec4899;font-size:14px;font-weight:600;text-align:center;';
+    title.textContent = '长按选择复制 / Long press to copy';
+
+    const textContainer = document.createElement('div');
+    textContainer.style.cssText = 'background:rgba(0,0,0,0.4);border:1px solid rgba(236,72,153,0.2);border-radius:12px;padding:16px;overflow-y:auto;max-height:50vh;-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;font-family:monospace;font-size:12px;color:#fce7f3;line-height:1.6;white-space:pre-wrap;word-break:break-all;';
+    textContainer.textContent = text;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.style.cssText = 'background:linear-gradient(135deg,#ec4899,#a855f7);color:white;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:600;cursor:pointer;';
+    closeBtn.textContent = '关闭 / Close';
+    closeBtn.onclick = () => document.body.removeChild(overlay);
+
+    dialog.appendChild(title);
+    dialog.appendChild(textContainer);
+    dialog.appendChild(closeBtn);
+    overlay.appendChild(dialog);
+
+    overlay.onclick = (e) => {
+      if (e.target === overlay) document.body.removeChild(overlay);
+    };
+
+    document.body.appendChild(overlay);
+  }, []);
+
+  /**
+   * Copy text to clipboard using the best available strategy
+   * Supports: Capacitor Clipboard Plugin → Clipboard API → execCommand('copy') → Manual
+   *
    * @param {string} text - The text to copy
    * @returns {Promise<boolean>} True if successful, false otherwise
    */
   const copyToClipboard = useCallback(async (text) => {
-    try {
-      if (isMobileEnvironment()) {
+    if (!text) {
+      showToast('No text to copy', 'error');
+      return false;
+    }
+
+    const isMobile = isMobileEnvironment();
+
+    // Strategy 1: Capacitor Clipboard plugin (mobile native)
+    if (isMobile) {
+      try {
         const { Clipboard } = await import('@capacitor/clipboard');
         await Clipboard.write({ string: text });
+        showToast('Copied!', 'success');
         return true;
-      } else {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch (e) {
-      console.error('Failed to copy:', e);
-      try {
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        return true;
-      } catch (fallbackError) {
-        console.error('Fallback copy failed:', fallbackError);
-        return false;
+      } catch (capError) {
+        console.warn('Capacitor clipboard failed:', capError);
       }
     }
-  }, []);
+
+    // Strategy 2: Clipboard API (works on HTTPS, localhost, and capacitor://)
+    try {
+      if (navigator.clipboard) {
+        if (isMobile || window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          showToast('Copied!', 'success');
+          return true;
+        }
+      }
+    } catch (clipError) {
+      console.warn('Clipboard API failed:', clipError);
+    }
+
+    // Strategy 3: execCommand('copy') with focused textarea
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:0;opacity:0;pointer-events:none;-webkit-user-select:text;user-select:text;';
+      document.body.appendChild(textarea);
+
+      textarea.focus();
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+      const success = document.execCommand('copy');
+      document.body.removeChild(textarea);
+
+      if (success) {
+        showToast('Copied!', 'success');
+        return true;
+      }
+    } catch (fallbackError) {
+      console.warn('Fallback copy failed:', fallbackError);
+    }
+
+    // Strategy 4: Show copy dialog for manual long-press selection
+    try {
+      showManualCopyDialog(text);
+      return true;
+    } catch (e) {
+      showToast('Copy failed', 'error');
+      return false;
+    }
+  }, [showToast, showManualCopyDialog]);
 
   /**
    * Computed statistics from actual history data
@@ -265,6 +353,7 @@ export function GenerationProvider({ children }) {
     clearHistory,
     getSelected,
     copyToClipboard,
+    showToast,
     stats,
     getHistoryByType,
     pendingLyrics,
@@ -274,6 +363,18 @@ export function GenerationProvider({ children }) {
   return (
     <GenerationContext.Provider value={value}>
       {children}
+      {toast && (
+        <div
+          className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999] px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg backdrop-blur-sm animate-slide-in ${toast.type === 'success'
+            ? 'bg-emerald-500/90 text-white border border-emerald-400/50'
+            : toast.type === 'error'
+              ? 'bg-red-500/90 text-white border border-red-400/50'
+              : 'bg-violet-500/90 text-white border border-violet-400/50'
+            }`}
+        >
+          {toast.message}
+        </div>
+      )}
     </GenerationContext.Provider>
   );
 }

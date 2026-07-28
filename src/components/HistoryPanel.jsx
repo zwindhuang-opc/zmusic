@@ -5,7 +5,7 @@ import { History, Copy, Music, Trash2, X, ChevronRight, Sparkles, Zap, Piano, Ex
 
 function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
   const { t } = useTranslation();
-  const { history, selectedId, setSelectedId, removeFromHistory, clearHistory, copyToClipboard, getHistoryByType } = useGeneration();
+  const { history, selectedId, setSelectedId, removeFromHistory, clearHistory, copyToClipboard, showToast, getHistoryByType } = useGeneration();
 
   const displayHistory = filterType ? getHistoryByType(filterType) : history;
 
@@ -120,7 +120,7 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
     }
     const success = await copyToClipboard(text);
     if (success) {
-      alert(t('common.copy') + t('common.success'));
+      showToast(t('common.copy') + ' ' + t('common.success'), 'success');
     }
   };
 

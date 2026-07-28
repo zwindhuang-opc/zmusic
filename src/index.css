@@ -17,8 +17,22 @@ body,
   background: #0a0a0f;
   color: #ffffff;
   -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
+}
+
+/* Mobile: prevent accidental text selection on buttons/interactive elements
+   but allow selection in result display areas for copying */
+button, [role="button"], .no-select {
+  -webkit-user-select: none;
   user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Allow text selection in result display areas for copy functionality */
+.allow-select,
+.allow-select * {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 .safe-area-top {

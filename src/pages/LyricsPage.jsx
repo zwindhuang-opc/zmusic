@@ -989,7 +989,7 @@ function LyricsPage({ onNavigate }) {
                       <Video className="w-3.5 h-3.5" />{t('lyrics.send_to_mv')}
                     </button>
                   </div>
-                  <div className="rounded-xl bg-black/30 border border-emerald-500/20 overflow-hidden">
+                  <div className="rounded-xl bg-black/30 border border-emerald-500/20 overflow-hidden allow-select">
                     <pre className="p-5 text-sm text-white whitespace-pre-wrap font-mono leading-relaxed max-h-[70vh] overflow-y-auto">{result.result.fullText}</pre>
                   </div>
                 </div>
@@ -1007,7 +1007,7 @@ function LyricsPage({ onNavigate }) {
                       <Copy className="w-3.5 h-3.5" />{t('lyrics.copy_commands')}
                     </button>
                   </div>
-                  <div className="rounded-xl bg-black/30 border border-pink-500/20 overflow-hidden">
+                  <div className="rounded-xl bg-black/30 border border-pink-500/20 overflow-hidden allow-select">
                     <pre className="p-4 text-xs text-pink-200 font-mono whitespace-pre-wrap break-words max-h-[70vh] overflow-y-auto leading-relaxed">{result.result?.fullCommand || result.command}</pre>
                   </div>
                 </div>
@@ -1036,7 +1036,7 @@ function LyricsPage({ onNavigate }) {
                       <Video className="w-3.5 h-3.5" />{t('lyrics.send_to_mv')}
                     </button>
                   </div>
-                  <div className="rounded-xl bg-black/30 border border-violet-500/20 overflow-hidden">
+                  <div className="rounded-xl bg-black/30 border border-violet-500/20 overflow-hidden allow-select">
                     <pre className="p-5 text-sm text-white whitespace-pre-wrap font-sans leading-loose max-h-[70vh] overflow-y-auto">{result.result.lyricsText || result.result.fullText}</pre>
                   </div>
                 </div>
