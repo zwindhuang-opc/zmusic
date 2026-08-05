@@ -81,8 +81,8 @@ function LyricsPage({ onNavigate, defaultMode }) {
   const [activeTab, setActiveTab] = useState('style'); // 'style' | 'method' | 'advanced' | 'image'
   const [styleSearch, setStyleSearch] = useState('');
   const [themeSearch, setThemeSearch] = useState('');
-  const [expandedStyleCats, setExpandedStyleCats] = useState({ emotional: true });
-  const [expandedThemeCats, setExpandedThemeCats] = useState({ emotional: true });
+  const [expandedStyleCats, setExpandedStyleCats] = useState({});
+  const [expandedThemeCats, setExpandedThemeCats] = useState({});
 
   /* --- Guided mode wizard state --- */
   const [guidedStep, setGuidedStep] = useState(0); // 0: select emotion, 1: upload image or pick style, 2: generate
@@ -93,9 +93,25 @@ function LyricsPage({ onNavigate, defaultMode }) {
     { id: 'healing', label: '🌱 治愈成长', style: 'folk' },
     { id: 'dreams', label: '✨ 梦想远方', style: 'energetic' },
     { id: 'nostalgic_memory', label: '🌅 怀旧时光', style: 'nostalgic' },
-    { id: 'friendship', label: '🤝 友情陪伴', style: 'pop' },
-    { id: 'sadness', label: '🌧️ 悲伤难过', style: 'ballad' },
     { id: 'hope', label: '🌈 希望之光', style: 'pop' }
+  ];
+
+  const POPULAR_STYLES = [
+    { id: 'pop', label: '流行' },
+    { id: 'indie', label: '独立' },
+    { id: 'ballad', label: '民谣' },
+    { id: 'rnb', label: 'R&B' },
+    { id: 'electronic', label: '电子' },
+    { id: 'kpop', label: '韩流' }
+  ];
+
+  const POPULAR_THEMES = [
+    { id: 'love', label: '爱情' },
+    { id: 'heartbreak', label: '心碎' },
+    { id: 'hope', label: '希望' },
+    { id: 'dreams', label: '梦想' },
+    { id: 'memory', label: '回忆' },
+    { id: 'friendship', label: '友情' }
   ];
 
   /* --- Image upload & analysis state --- */
@@ -575,16 +591,16 @@ function LyricsPage({ onNavigate, defaultMode }) {
                 <div className="pt-2 border-t border-white/10">
                   <p className="text-xs text-gray-500 mb-2">当前选择: <span className="text-pink-400">{theme}</span> · <span className="text-purple-400">{genre}</span></p>
                   <div className="flex gap-2 flex-wrap">
-                    {['pop', 'ballad', 'folk', 'indie', 'rnb', 'kpop'].map((g) => (
+                    {POPULAR_STYLES.slice(0, 6).map((g) => (
                       <button
-                        key={g}
-                        onClick={() => setGenre(g)}
-                        className={`px-3 py-1.5 rounded-lg text-xs transition-all ${genre === g
+                        key={g.id}
+                        onClick={() => setGenre(g.id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs transition-all ${genre === g.id
                           ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
                           : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
                           }`}
                       >
-                        {g}
+                        {g.label}
                       </button>
                     ))}
                   </div>
@@ -722,29 +738,52 @@ function LyricsPage({ onNavigate, defaultMode }) {
               {/* Tab: Style & Theme */}
               {activeTab === 'style' && (
                 <>
-                  {/* Style Selection with Categories */}
+                  {/* Style Selection */}
                   <div className="gradient-border p-4 md:p-5">
-                    <label className="text-xs font-medium text-gray-300 mb-3 block">{t('lyrics.genre')}</label>
-                    {/* Search box */}
-                    <div className="relative mb-3">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-                      <input
-                        type="text"
-                        value={styleSearch}
-                        onChange={(e) => setStyleSearch(e.target.value)}
-                        placeholder={t('lyrics.search_style')}
-                        className="w-full pl-9 pr-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50"
-                      />
+                    <label className="text-xs font-medium text-gray-300 mb-2 block">{t('lyrics.genre')}</label>
+
+                    {/* Popular quick picks */}
+                    <div className="mb-3">
+                      <p className="text-[10px] text-gray-500 mb-1.5">🔥 热门选择</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {POPULAR_STYLES.map(s => (
+                          <button
+                            key={s.id}
+                            onClick={() => setGenre(s.id)}
+                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${genre === s.id
+                              ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
+                              : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                              }`}
+                          >
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    {/* Category accordion */}
-                    <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1 pb-2">
+
+                    {/* Search + categories toggle */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                        <input
+                          type="text"
+                          value={styleSearch}
+                          onChange={(e) => setStyleSearch(e.target.value)}
+                          placeholder={t('lyrics.search_style')}
+                          className="w-full pl-9 pr-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Collapsible categories */}
+                    <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1 pb-2">
                       {Object.entries(filteredStyleCats).map(([cat, styles]) => {
                         const isExpanded = expandedStyleCats[cat] || !!styleSearch.trim();
                         return (
                           <div key={cat} className="rounded-lg border border-white/5 overflow-hidden">
                             <button
                               onClick={() => toggleStyleCat(cat)}
-                              className="w-full flex items-center justify-between px-3 py-2 bg-white/5 hover:bg-white/10 transition-colors"
+                              className="w-full flex items-center justify-between px-3 py-1.5 bg-white/5 hover:bg-white/10 transition-colors"
                             >
                               <span className="text-xs font-medium text-gray-300">
                                 {t(`lyrics.cat_${cat}`)} <span className="text-gray-600">({styles.length})</span>
@@ -752,12 +791,12 @@ function LyricsPage({ onNavigate, defaultMode }) {
                               {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-gray-500" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-500" />}
                             </button>
                             {isExpanded && (
-                              <div className="p-2 grid grid-cols-2 gap-1.5">
+                              <div className="p-2 grid grid-cols-3 gap-1">
                                 {styles.map(s => (
                                   <button
                                     key={s}
                                     onClick={() => setGenre(s)}
-                                    className={`px-2.5 py-2 rounded-lg text-[11px] font-medium transition-all ${genre === s
+                                    className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all ${genre === s
                                       ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
                                       : 'bg-white/5 text-gray-400 hover:bg-white/10'
                                       }`}
@@ -773,27 +812,50 @@ function LyricsPage({ onNavigate, defaultMode }) {
                     </div>
                   </div>
 
-                  {/* Theme Selection with Categories */}
+                  {/* Theme Selection */}
                   <div className="gradient-border p-4 md:p-5">
-                    <label className="text-xs font-medium text-gray-300 mb-3 block">{t('lyrics.theme')}</label>
-                    <div className="relative mb-3">
+                    <label className="text-xs font-medium text-gray-300 mb-2 block">{t('lyrics.theme')}</label>
+
+                    {/* Popular quick picks */}
+                    <div className="mb-3">
+                      <p className="text-[10px] text-gray-500 mb-1.5">🔥 热门选择</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {POPULAR_THEMES.map(th => (
+                          <button
+                            key={th.id}
+                            onClick={() => setTheme(th.id)}
+                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${theme === th.id
+                              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
+                              : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                              }`}
+                          >
+                            {th.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Search */}
+                    <div className="relative mb-2">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
                       <input
                         type="text"
                         value={themeSearch}
                         onChange={(e) => setThemeSearch(e.target.value)}
                         placeholder={t('lyrics.search_theme')}
-                        className="w-full pl-9 pr-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50"
+                        className="w-full pl-9 pr-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50"
                       />
                     </div>
-                    <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1 pb-2">
+
+                    {/* Collapsible categories */}
+                    <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1 pb-2">
                       {Object.entries(filteredThemeCats).map(([cat, themeList]) => {
                         const isExpanded = expandedThemeCats[cat] || !!themeSearch.trim();
                         return (
                           <div key={cat} className="rounded-lg border border-white/5 overflow-hidden">
                             <button
                               onClick={() => toggleThemeCat(cat)}
-                              className="w-full flex items-center justify-between px-3 py-2 bg-white/5 hover:bg-white/10 transition-colors"
+                              className="w-full flex items-center justify-between px-3 py-1.5 bg-white/5 hover:bg-white/10 transition-colors"
                             >
                               <span className="text-xs font-medium text-gray-300">
                                 {t(`lyrics.cat_${cat}`)} <span className="text-gray-600">({themeList.length})</span>
@@ -801,12 +863,12 @@ function LyricsPage({ onNavigate, defaultMode }) {
                               {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-gray-500" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-500" />}
                             </button>
                             {isExpanded && (
-                              <div className="p-2 grid grid-cols-2 gap-1.5">
+                              <div className="p-2 grid grid-cols-3 gap-1">
                                 {themeList.map(tm => (
                                   <button
                                     key={tm}
                                     onClick={() => setTheme(tm)}
-                                    className={`px-2.5 py-2 rounded-lg text-[11px] font-medium transition-all ${theme === tm
+                                    className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all ${theme === tm
                                       ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
                                       : 'bg-white/5 text-gray-400 hover:bg-white/10'
                                       }`}

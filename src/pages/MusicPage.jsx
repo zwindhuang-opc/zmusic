@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Music, Play, Sparkles, Loader, Download, Wand2, Cpu, Zap, History, Copy } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
@@ -7,8 +7,8 @@ import { generateMusic } from '../utils/musicEngine.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 import { MUSIC_STYLES, MUSIC_GENRES, MUSIC_THEMES } from '../config/musicStyles.js';
 
-const STYLES = Object.keys(MUSIC_STYLES);
-const GENRES = Object.keys(MUSIC_GENRES);
+const POPULAR_STYLES = ['pop', 'rock', 'electronic', 'folk', 'indie', 'rnb'];
+const POPULAR_GENRES = ['pop', 'ballad', 'folk', 'indie', 'kpop', 'electronic'];
 
 const MUSIC_LAYERS = [
   { id: 'foundation', name: 'layers.foundation', icon: Cpu },
@@ -55,6 +55,8 @@ function MusicPage() {
   const [selectedLayers, setSelectedLayers] = useState(['foundation', 'melody', 'expression', 'effects']);
   const [selectedEffects, setSelectedEffects] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showAllStyles, setShowAllStyles] = useState(false);
+  const [showAllGenres, setShowAllGenres] = useState(false);
 
   const AGENT_METHODS = [
     { id: 'fsm', name: t('music.fsm_programming'), desc: t('music.state_machine') },
@@ -152,13 +154,13 @@ function MusicPage() {
         </div>
 
         <div className="gradient-border p-4 md:p-5">
-          <label className="text-xs font-medium text-gray-300 mb-3 block">{t('music.music_style')}</label>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-2.5">
-            {STYLES.map(s => (
+          <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.music_style')}</label>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {POPULAR_STYLES.map(s => (
               <button
                 key={s}
                 onClick={() => setStyle(s)}
-                className={`px-3 py-2.5 md:py-2 rounded-lg text-xs font-medium transition-all ${style === s
+                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${style === s
                   ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
                   : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
                   }`}
@@ -167,16 +169,38 @@ function MusicPage() {
               </button>
             ))}
           </div>
+          {showAllStyles && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 max-h-48 overflow-y-auto pt-2 border-t border-white/10">
+              {Object.keys(MUSIC_STYLES).filter(s => !POPULAR_STYLES.includes(s)).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setStyle(s)}
+                  className={`px-2.5 py-2 rounded-lg text-[11px] font-medium transition-all ${style === s
+                    ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
+                    }`}
+                >
+                  {t(`styles.${s}`)}
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={() => setShowAllStyles(!showAllStyles)}
+            className="mt-1 text-[10px] text-violet-400 hover:text-violet-300 transition-colors"
+          >
+            {showAllStyles ? '收起 ▲' : '展开更多 ▼'}
+          </button>
         </div>
 
         <div className="gradient-border p-4 md:p-5">
-          <label className="text-xs font-medium text-gray-300 mb-3 block">{t('lyrics.genre')}</label>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-2.5">
-            {GENRES.map(g => (
+          <label className="text-xs font-medium text-gray-300 mb-2 block">{t('lyrics.genre')}</label>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {POPULAR_GENRES.map(g => (
               <button
                 key={g}
                 onClick={() => setGenre(g)}
-                className={`px-3 py-2.5 md:py-2 rounded-lg text-xs font-medium transition-all ${genre === g
+                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${genre === g
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
                   : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
                   }`}
@@ -185,6 +209,28 @@ function MusicPage() {
               </button>
             ))}
           </div>
+          {showAllGenres && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 max-h-48 overflow-y-auto pt-2 border-t border-white/10">
+              {Object.keys(MUSIC_GENRES).filter(g => !POPULAR_GENRES.includes(g)).map(g => (
+                <button
+                  key={g}
+                  onClick={() => setGenre(g)}
+                  className={`px-2.5 py-2 rounded-lg text-[11px] font-medium transition-all ${genre === g
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
+                    }`}
+                >
+                  {t(`styles.${g}`) || g}
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={() => setShowAllGenres(!showAllGenres)}
+            className="mt-1 text-[10px] text-emerald-400 hover:text-emerald-300 transition-colors"
+          >
+            {showAllGenres ? '收起 ▲' : '展开更多 ▼'}
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
