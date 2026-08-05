@@ -10,19 +10,46 @@ import { LYRICS_STYLES, LYRICS_THEMES } from '../config/lyricsStyles.js';
 import { getStyleRecommendation, buildSunoPrompt, MUSIC_STYLES, SECTION_PRESETS } from '../config/musicStyles.js';
 
 /**
- * Style categories - groups 30 styles into 5 logical categories for cleaner UI.
- * Users can expand/collapse each category instead of seeing all 30 buttons at once.
+ * Visual metadata for each style category — provides unique emoji + color accent
+ * so the 7 main groups feel equally weighted and visually distinct.
  */
-const STYLE_CATEGORIES = {
-  emotional: ['heartbreaking', 'healing', 'romantic', 'love_song', 'ballad', 'nostalgic'],
-  modern: ['pop', 'rock', 'electronic', 'hip_hop', 'modern', 'indie', 'kpop', 'reggae'],
-  classical: ['ancient', 'chinese_traditional', 'chinese_classical', 'classical', 'folk'],
-  atmospheric: ['dark', 'dreamy', 'ambient', 'jazz', 'rnb', 'country', 'gothic_rock'],
-  special: ['time_travel', 'epic', 'energetic', 'tango', 'ancient_modern']
+const STYLE_CAT_META = {
+  mainstream: { emoji: '🌟', gradient: 'from-pink-500/30 to-rose-500/30', border: 'border-pink-500/40', ring: 'ring-pink-500/60' },
+  rock: { emoji: '🎸', gradient: 'from-red-500/30 to-orange-500/30', border: 'border-red-500/40', ring: 'ring-red-500/60' },
+  electronic: { emoji: '🎹', gradient: 'from-violet-500/30 to-indigo-500/30', border: 'border-violet-500/40', ring: 'ring-violet-500/60' },
+  emotional: { emoji: '💖', gradient: 'from-rose-500/30 to-fuchsia-500/30', border: 'border-rose-500/40', ring: 'ring-rose-500/60' },
+  classical: { emoji: '🏯', gradient: 'from-amber-500/30 to-yellow-500/30', border: 'border-amber-500/40', ring: 'ring-amber-500/60' },
+  rhythm: { emoji: '🎶', gradient: 'from-emerald-500/30 to-teal-500/30', border: 'border-emerald-500/40', ring: 'ring-emerald-500/60' },
+  specialty: { emoji: '✨', gradient: 'from-sky-500/30 to-cyan-500/30', border: 'border-sky-500/40', ring: 'ring-sky-500/60' }
 };
 
 /**
- * Theme categories - groups 30 themes into 5 logical categories for cleaner UI.
+ * Visual metadata for each theme category.
+ */
+const THEME_CAT_META = {
+  emotional: { emoji: '💭', gradient: 'from-rose-500/30 to-pink-500/30', border: 'border-rose-500/40' },
+  story: { emoji: '📖', gradient: 'from-indigo-500/30 to-violet-500/30', border: 'border-indigo-500/40' },
+  mood: { emoji: '🌙', gradient: 'from-purple-500/30 to-fuchsia-500/30', border: 'border-purple-500/40' },
+  nature: { emoji: '🌿', gradient: 'from-emerald-500/30 to-green-500/30', border: 'border-emerald-500/40' },
+  life: { emoji: '🎯', gradient: 'from-amber-500/30 to-orange-500/30', border: 'border-amber-500/40' }
+};
+
+/**
+ * Style categories - groups all 35+ styles into 7 logical categories for cleaner UI.
+ * Each card shows 3–8 inner styles directly — no expand/collapse needed.
+ */
+const STYLE_CATEGORIES = {
+  mainstream: ['pop', 'modern', 'kpop', 'jpop', 'cantopop'],
+  rock: ['rock', 'indierock', 'gothic_rock', 'indie'],
+  electronic: ['electronic', 'ambient', 'lofi', 'dreamy', 'reggae'],
+  emotional: ['heartbreaking', 'healing', 'romantic', 'love_song', 'ballad', 'nostalgic', 'blues', 'rnb'],
+  classical: ['ancient', 'chinese_traditional', 'chinese_classical', 'classical', 'folk', 'ancient_modern', 'country'],
+  rhythm: ['hip_hop', 'jazz', 'tango'],
+  specialty: ['dark', 'time_travel', 'epic', 'energetic', 'cinematic']
+};
+
+/**
+ * Theme categories - groups all themes into 5 logical categories for cleaner UI.
  */
 const THEME_CATEGORIES = {
   emotional: ['heartbreak', 'healing', 'love', 'sadness', 'loneliness', 'hope'],
@@ -78,7 +105,7 @@ function LyricsPage({ onNavigate, defaultMode }) {
   const [viewMode, setViewMode] = useState('both'); // 'both' | 'commands' | 'lyrics'
 
   /* --- UI state for tabbed/categorized interface --- */
-  const [activeTab, setActiveTab] = useState('style'); // 'style' | 'method' | 'advanced' | 'image'
+  const [activeTab, setActiveTab] = useState('image'); // 'image' | 'style' | 'method' | 'advanced' | 'social'
   const [styleSearch, setStyleSearch] = useState('');
   const [themeSearch, setThemeSearch] = useState('');
   const [expandedStyleCats, setExpandedStyleCats] = useState({});
@@ -102,7 +129,8 @@ function LyricsPage({ onNavigate, defaultMode }) {
     { id: 'ballad', label: '民谣' },
     { id: 'rnb', label: 'R&B' },
     { id: 'electronic', label: '电子' },
-    { id: 'kpop', label: '韩流' }
+    { id: 'kpop', label: '韩流' },
+    { id: 'jpop', label: '日流' }
   ];
 
   const POPULAR_THEMES = [
@@ -472,9 +500,9 @@ function LyricsPage({ onNavigate, defaultMode }) {
 
   /* --- Tab configuration --- */
   const TABS = [
+    { id: 'image', label: t('lyrics.tab_image'), icon: ImageIcon },
     { id: 'style', label: t('lyrics.tab_style_theme'), icon: Palette },
     { id: 'method', label: t('lyrics.tab_method'), icon: Layers },
-    { id: 'image', label: t('lyrics.tab_image'), icon: ImageIcon },
     { id: 'social', label: t('lyrics.tab_social') || 'BGM', icon: Share2 },
     { id: 'advanced', label: t('lyrics.tab_advanced'), icon: Sliders }
   ];
@@ -738,20 +766,36 @@ function LyricsPage({ onNavigate, defaultMode }) {
               {/* Tab: Style & Theme */}
               {activeTab === 'style' && (
                 <>
+                  {/* Quick entry: Start from image */}
+                  <div
+                    onClick={() => setActiveTab('image')}
+                    className="gradient-border p-3 md:p-4 mb-3 cursor-pointer hover:scale-[1.01] transition-transform"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-pink-500/20 flex items-center justify-center flex-shrink-0">
+                        <ImageIcon className="w-5 h-5 text-violet-400" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-white">📷 {t('lyrics.image_upload_title')}</div>
+                        <div className="text-[10px] text-gray-400">{t('lyrics.image_upload_hint')}</div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-500" />
+                    </div>
+                  </div>
+
                   {/* Style Selection */}
                   <div className="gradient-border p-4 md:p-5">
-                    <label className="text-xs font-medium text-gray-300 mb-2 block">{t('lyrics.genre')}</label>
+                    <label className="text-xs font-medium text-gray-300 mb-2 block">🎨 {t('lyrics.genre')} <span className="text-gray-600">({FALLBACK_GENRES.length} {t('lyrics.styles_available') || 'total'})</span></label>
 
-                    {/* Popular quick picks */}
+                    {/* Popular quick picks — single line */}
                     <div className="mb-3">
-                      <p className="text-[10px] text-gray-500 mb-1.5">🔥 热门选择</p>
                       <div className="flex flex-wrap gap-1.5">
                         {POPULAR_STYLES.map(s => (
                           <button
                             key={s.id}
                             onClick={() => setGenre(s.id)}
-                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${genre === s.id
-                              ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${genre === s.id
+                              ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-lg shadow-violet-500/20'
                               : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
                               }`}
                           >
@@ -761,51 +805,49 @@ function LyricsPage({ onNavigate, defaultMode }) {
                       </div>
                     </div>
 
-                    {/* Search + categories toggle */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-                        <input
-                          type="text"
-                          value={styleSearch}
-                          onChange={(e) => setStyleSearch(e.target.value)}
-                          placeholder={t('lyrics.search_style')}
-                          className="w-full pl-9 pr-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50"
-                        />
-                      </div>
+                    {/* Search */}
+                    <div className="relative mb-3">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                      <input
+                        type="text"
+                        value={styleSearch}
+                        onChange={(e) => setStyleSearch(e.target.value)}
+                        placeholder={t('lyrics.search_style')}
+                        className="w-full pl-9 pr-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50"
+                      />
                     </div>
 
-                    {/* Collapsible categories */}
-                    <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1 pb-2">
+                    {/* 7 Balanced Category Cards (no collapse needed — each card 3–8 styles) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                       {Object.entries(filteredStyleCats).map(([cat, styles]) => {
-                        const isExpanded = expandedStyleCats[cat] || !!styleSearch.trim();
+                        if (styles.length === 0) return null;
+                        const meta = STYLE_CAT_META[cat] || { emoji: '🎵', gradient: 'from-gray-500/20 to-gray-500/20', border: 'border-gray-500/30' };
                         return (
-                          <div key={cat} className="rounded-lg border border-white/5 overflow-hidden">
-                            <button
-                              onClick={() => toggleStyleCat(cat)}
-                              className="w-full flex items-center justify-between px-3 py-1.5 bg-white/5 hover:bg-white/10 transition-colors"
-                            >
-                              <span className="text-xs font-medium text-gray-300">
-                                {t(`lyrics.cat_${cat}`)} <span className="text-gray-600">({styles.length})</span>
-                              </span>
-                              {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-gray-500" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-500" />}
-                            </button>
-                            {isExpanded && (
-                              <div className="p-2 grid grid-cols-3 gap-1">
-                                {styles.map(s => (
-                                  <button
-                                    key={s}
-                                    onClick={() => setGenre(s)}
-                                    className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all ${genre === s
-                                      ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
-                                      : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                                      }`}
-                                  >
-                                    {t(`lyrics_styles.${s}`) || t(`styles.${s}`) || s}
-                                  </button>
-                                ))}
+                          <div
+                            key={cat}
+                            className={`rounded-xl border ${meta.border} bg-gradient-to-br ${meta.gradient} overflow-hidden backdrop-blur-sm`}
+                          >
+                            <div className="px-3 py-1.5 flex items-center justify-between border-b border-white/5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-sm">{meta.emoji}</span>
+                                <span className="text-[11px] font-semibold text-gray-200">{t(`lyrics.cat_${cat}`)}</span>
                               </div>
-                            )}
+                              <span className="text-[9px] text-gray-500 bg-black/20 px-1.5 py-0.5 rounded-full">{styles.length}</span>
+                            </div>
+                            <div className="p-2 grid grid-cols-2 gap-1">
+                              {styles.map(s => (
+                                <button
+                                  key={s}
+                                  onClick={() => setGenre(s)}
+                                  className={`px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all truncate ${genre === s
+                                    ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-sm'
+                                    : 'bg-black/20 text-gray-300 hover:bg-black/30 hover:text-white'
+                                    }`}
+                                >
+                                  {t(`lyrics_styles.${s}`) || t(`styles.${s}`) || s}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                         );
                       })}
@@ -814,18 +856,17 @@ function LyricsPage({ onNavigate, defaultMode }) {
 
                   {/* Theme Selection */}
                   <div className="gradient-border p-4 md:p-5">
-                    <label className="text-xs font-medium text-gray-300 mb-2 block">{t('lyrics.theme')}</label>
+                    <label className="text-xs font-medium text-gray-300 mb-2 block">✨ {t('lyrics.theme')} <span className="text-gray-600">({FALLBACK_THEMES.length} total)</span></label>
 
-                    {/* Popular quick picks */}
+                    {/* Popular quick picks — single line */}
                     <div className="mb-3">
-                      <p className="text-[10px] text-gray-500 mb-1.5">🔥 热门选择</p>
                       <div className="flex flex-wrap gap-1.5">
                         {POPULAR_THEMES.map(th => (
                           <button
                             key={th.id}
                             onClick={() => setTheme(th.id)}
-                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${theme === th.id
-                              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${theme === th.id
+                              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20'
                               : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
                               }`}
                           >
@@ -836,48 +877,48 @@ function LyricsPage({ onNavigate, defaultMode }) {
                     </div>
 
                     {/* Search */}
-                    <div className="relative mb-2">
+                    <div className="relative mb-3">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
                       <input
                         type="text"
                         value={themeSearch}
                         onChange={(e) => setThemeSearch(e.target.value)}
                         placeholder={t('lyrics.search_theme')}
-                        className="w-full pl-9 pr-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50"
+                        className="w-full pl-9 pr-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50"
                       />
                     </div>
 
-                    {/* Collapsible categories */}
-                    <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1 pb-2">
+                    {/* 5 Theme Category Cards — directly visible, no collapse */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                       {Object.entries(filteredThemeCats).map(([cat, themeList]) => {
-                        const isExpanded = expandedThemeCats[cat] || !!themeSearch.trim();
+                        if (themeList.length === 0) return null;
+                        const meta = THEME_CAT_META[cat] || { emoji: '🎵', gradient: 'from-gray-500/20 to-gray-500/20', border: 'border-gray-500/30' };
                         return (
-                          <div key={cat} className="rounded-lg border border-white/5 overflow-hidden">
-                            <button
-                              onClick={() => toggleThemeCat(cat)}
-                              className="w-full flex items-center justify-between px-3 py-1.5 bg-white/5 hover:bg-white/10 transition-colors"
-                            >
-                              <span className="text-xs font-medium text-gray-300">
-                                {t(`lyrics.cat_${cat}`)} <span className="text-gray-600">({themeList.length})</span>
-                              </span>
-                              {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-gray-500" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-500" />}
-                            </button>
-                            {isExpanded && (
-                              <div className="p-2 grid grid-cols-3 gap-1">
-                                {themeList.map(tm => (
-                                  <button
-                                    key={tm}
-                                    onClick={() => setTheme(tm)}
-                                    className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all ${theme === tm
-                                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
-                                      : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                                      }`}
-                                  >
-                                    {t(`lyrics_themes.${tm}`) || t(`themes.${tm}`) || tm}
-                                  </button>
-                                ))}
+                          <div
+                            key={cat}
+                            className={`rounded-xl border ${meta.border} bg-gradient-to-br ${meta.gradient} overflow-hidden backdrop-blur-sm`}
+                          >
+                            <div className="px-3 py-1.5 flex items-center justify-between border-b border-white/5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-sm">{meta.emoji}</span>
+                                <span className="text-[11px] font-semibold text-gray-200">{t(`lyrics.cat_${cat}`)}</span>
                               </div>
-                            )}
+                              <span className="text-[9px] text-gray-500 bg-black/20 px-1.5 py-0.5 rounded-full">{themeList.length}</span>
+                            </div>
+                            <div className="p-2 grid grid-cols-2 gap-1">
+                              {themeList.map(tm => (
+                                <button
+                                  key={tm}
+                                  onClick={() => setTheme(tm)}
+                                  className={`px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all truncate ${theme === tm
+                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm'
+                                    : 'bg-black/20 text-gray-300 hover:bg-black/30 hover:text-white'
+                                    }`}
+                                >
+                                  {t(`lyrics_themes.${tm}`) || t(`themes.${tm}`) || tm}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                         );
                       })}

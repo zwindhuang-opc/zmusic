@@ -52,6 +52,8 @@ function MVPage() {
       }
     } catch (error) {
       console.error('Genres load failed, using fallback:', error);
+      const { getMVGenres } = await import('../utils/mvEngine.js');
+      setGenres(getMVGenres());
     }
   };
 
@@ -65,6 +67,9 @@ function MVPage() {
         data = { success: true, data: generateMV({ genre, duration, style, colorPalette, effects: selectedEffects }) };
       } else {
         data = await api.generateMV({ genre, duration, style, colorPalette, effects: selectedEffects });
+        if (!data?.success) {
+          data = { success: true, data: generateMV({ genre, duration, style, colorPalette, effects: selectedEffects }) };
+        }
       }
       if (data.success) {
         setResult(data.data);

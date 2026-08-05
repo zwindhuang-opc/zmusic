@@ -278,6 +278,14 @@ export const LYRICS_STYLES = {
     structure: ['verse_chill', 'prechorus_smooth', 'chorus_vibe', 'bridge_float', 'outro_dissolve'],
     rhymeScheme: 'ABAB, AABB',
     imagery: ['黑胶', '雨声', '台灯', '蒸汽', '书页', '窗口']
+  },
+  jpop: {
+    name: 'lyrics_styles.jpop',
+    description: '日流风格，精致流行的歌词',
+    poeticFeatures: ['青春', '梦想', '友情', '爱情', '成长', '舞台'],
+    structure: ['verse_verse', 'prechorus_pre', 'chorus_refrain', 'bridge_rap', 'outro_fade'],
+    rhymeScheme: 'AABB, ABAB',
+    imagery: ['樱花', '星空', '练习室', '应援', '梦想', '青春']
   }
 };
 

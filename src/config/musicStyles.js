@@ -354,6 +354,15 @@ export const MUSIC_STYLES = {
 [Verse] swing rhythm, playful piano
 [Chorus] full brass section, energetic
 [Outro] quick fade on final chord`
+  },
+
+  jpop: {
+    name: 'styles.jpop',
+    sunoTags: 'j-pop, japanese pop, upbeat, catchy, polished production, vocal harmonies, modern',
+    instruments: ['Synthesizer', 'Drums', 'Bass', 'Vocals', 'Electric Guitar'],
+    mood: '日流、活力',
+    bpmRange: [110, 140],
+    description: '日流风格，精致制作的日本流行音乐'
   }
 };
 
@@ -380,6 +389,7 @@ export const MUSIC_GENRES = {
   indie: { name: 'styles.indie', sunoTags: 'indie, alternative, authentic' },
   folk: { name: 'styles.folk', sunoTags: 'folk, acoustic, storytelling' },
   kpop: { name: 'styles.kpop', sunoTags: 'kpop, dance, polished' },
+  jpop: { name: 'styles.jpop', sunoTags: 'jpop, japanese pop, catchy' },
   reggae: { name: 'styles.reggae', sunoTags: 'reggae, chill, laid back' },
   ambient: { name: 'styles.ambient', sunoTags: 'ambient, atmospheric, meditative' },
   jazz: { name: 'styles.jazz', sunoTags: 'jazz, swing, improvisation' },
