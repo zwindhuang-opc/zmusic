@@ -1,0 +1,11 @@
+ux: major redesign - dedicated image-lyrics page, progressive disclosure, simplified panel
+
+- NEW: Dedicated ImageLyricsPage.jsx as standalone page for image-to-lyrics generation
+- NEW: Added to sidebar navigation between 歌词生成 and MV视频
+- SIMPLIFIED: Expert mode left panel reduced from 5 tabs to 2 (风格 + 主题)
+- PROGRESSIVE DISCLOSURE: Style/theme tabs show 6-8 popular pills + "探索全部" modal
+- EXPLORE MODAL: Full-screen searchable overlay with all 7/5 category cards
+- ADVANCED ACCORDION: Method, Image Upload, BGM, Advanced Parameters collapsed into one expandable section
+- WIZARD: Confirm & Generate card moved to top, always accessible
+- Mobile bottom nav auto-includes new page
+- LyricsPage reduced from 117KB to 106KB (removed inline category grids)
