@@ -7,12 +7,26 @@ import './init.js';
 
 import express from 'express';
 import cors from 'cors';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { config } from './config/index.js';
 import Logger from './utils/logger.js';
 import { handleRoute } from './routes/index.js';
 
 const logger = new Logger('BackendServer');
 const app = express();
+
+// Load version from VERSION.json (single source of truth for web + mobile + server)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+let APP_VERSION = '0.0.0';
+try {
+  const versionFile = JSON.parse(readFileSync(join(__dirname, '..', 'VERSION.json'), 'utf8'));
+  APP_VERSION = versionFile.version || '0.0.0';
+} catch (e) {
+  logger.warn('Could not read VERSION.json, using fallback version');
+}
 
 // Middleware
 app.use(cors());
@@ -46,7 +60,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     apiConfigured: true,
-    version: '5.3.3'
+    version: APP_VERSION
   });
 });
 
