@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { MessageCircle, ChevronUp, ChevronDown, Bot, Sparkles, Zap, Music, Send, X } from 'lucide-react';
-import { useTranslation } from '../i18n/index.js';
+import { useTranslation } from '../i18n/useTranslation.js';
 import { UnicornAgent } from '../agents/unicorn-agent.js';
 
 const AI_AGENTS = [

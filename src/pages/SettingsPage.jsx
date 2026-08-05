@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Settings, Key, Save, RefreshCw, Server, Bot, Cpu, CheckCircle, AlertCircle, Sparkles, Wand2, Sliders } from 'lucide-react';
-import { useTranslation } from '../i18n/index.js';
+import { useTranslation } from '../i18n/useTranslation.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
 
 const UI_MODE_KEY = 'zmusic-ui-mode';

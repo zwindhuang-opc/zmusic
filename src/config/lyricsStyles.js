@@ -238,6 +238,46 @@ export const LYRICS_STYLES = {
     structure: ['verse_riff', 'prechorus_build', 'chorus_hook', 'bridge_solo', 'outro_chill'],
     rhymeScheme: 'AABB, ABAB',
     imagery: ['海滩', '椰树', '阳光', '雷鬼', '节奏', '自由']
+  },
+  blues: {
+    name: 'lyrics_styles.blues',
+    description: '布鲁斯风格，深情忧郁的表达',
+    poeticFeatures: ['布鲁斯', '忧郁', '深夜', '灵魂', '倾诉', '真实'],
+    structure: ['verse_tell', 'prechorus_build', 'chorus_moan', 'bridge_solo', 'outro_whisper'],
+    rhymeScheme: 'AABB, ABAB',
+    imagery: ['萨克斯', '酒吧', '烟雾', '月光', '酒瓶', '灵魂']
+  },
+  cinematic: {
+    name: 'lyrics_styles.cinematic',
+    description: '电影风格，宏大叙事的表达',
+    poeticFeatures: ['电影', '叙事', '高潮', '情感', '画面', '史诗'],
+    structure: ['verse_intro', 'prechorus_build', 'chorus_climax', 'bridge_catharsis', 'outro_fade'],
+    rhymeScheme: 'ABAB, AABB',
+    imagery: ['镜头', '光影', '场景', '交响', '序幕', '结局']
+  },
+  cantopop: {
+    name: 'lyrics_styles.cantopop',
+    description: '粤语流行，都市情感的表达',
+    poeticFeatures: ['粤语', '都市', '爱情', '怀旧', '温暖', '时尚'],
+    structure: ['verse_story', 'prechorus_build', 'chorus_hook', 'bridge_emotional', 'outro_fade'],
+    rhymeScheme: 'AABB, ABAB',
+    imagery: ['霓虹', '维港', '夜色', '茶餐厅', '旧歌', '星光']
+  },
+  indierock: {
+    name: 'lyrics_styles.indierock',
+    description: '独立摇滚，真实质朴的表达',
+    poeticFeatures: ['独立', '摇滚', '真实', '反叛', '自由', '思考'],
+    structure: ['verse_raw', 'prechorus_build', 'chorus_power', 'bridge_intense', 'outro_feedback'],
+    rhymeScheme: 'AABB, ABAB',
+    imagery: ['吉他', '舞台', '汗水', '呐喊', '砖墙', '音响']
+  },
+  lofi: {
+    name: 'lyrics_styles.lofi',
+    description: 'Lo-Fi风格，慵懒氛围的表达',
+    poeticFeatures: ['慵懒', '氛围', '雨夜', '咖啡', '放松', '怀旧'],
+    structure: ['verse_chill', 'prechorus_smooth', 'chorus_vibe', 'bridge_float', 'outro_dissolve'],
+    rhymeScheme: 'ABAB, AABB',
+    imagery: ['黑胶', '雨声', '台灯', '蒸汽', '书页', '窗口']
   }
 };
 

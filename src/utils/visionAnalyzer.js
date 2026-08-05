@@ -592,7 +592,9 @@ function extractTextureFeatures(pixels, w, h) {
 export function classifyScene(features) {
   for (const profile of SCENE_PROFILES) {
     if (profile.match(features)) {
-      return { ...profile.lyrics, profileId: profile.id };
+      const result = { ...profile.lyrics, profileId: profile.id };
+      result.vocalSuggestion = _inferVocalFromFeatures(features);
+      return result;
     }
   }
 
@@ -613,7 +615,8 @@ function generateFromFeatures(f) {
     actions: [],
     locations: [],
     tempos: [],
-    description: ''
+    description: '',
+    vocalSuggestion: null
   };
 
   // Genre from lighting + saturation
@@ -704,7 +707,105 @@ function generateFromFeatures(f) {
     `构图${f.symmetry > 0.8 ? '对称' : f.symmetry > 0.6 ? '平衡' : '动态不平衡'}，` +
     `视觉焦点位于${position}。建议风格：${lyrics.genre.slice(0, 2).join('/')}，主题：${lyrics.themes.slice(0, 2).join('/')}。`;
 
+  lyrics.vocalSuggestion = _inferVocalFromFeatures(f);
+
   return lyrics;
+}
+
+/**
+ * Infer vocal gender and characteristics from visual features.
+ * Uses color psychology, lighting, and composition to suggest
+ * a voice that matches the visual mood.
+ */
+function _inferVocalFromFeatures(f) {
+  let femaleScore = 0;
+  let maleScore = 0;
+  let femaleTraits = [];
+  let maleTraits = [];
+
+  // Color-based gender association (subtle cultural mappings)
+  const warmFeminineHues = ['#FF69B4', '#FF1493', '#FFC0CB', '#DDA0DD', '#FFA500', '#FFD700'];
+  const coolMasculineHues = ['#4169E1', '#000080', '#4682B4', '#8B4513', '#808080', '#2F4F4F'];
+  const neutralHues = ['#228B22', '#90EE90', '#87CEEB', '#FFFFFF', '#000000'];
+
+  for (const dc of f.dominantColors || []) {
+    const hex = dc.hex.toUpperCase();
+    const pct = dc.percentage || 0;
+    if (warmFeminineHues.includes(hex)) {
+      femaleScore += pct * 1.5;
+      femaleTraits.push(`暖色调 ${hex}`);
+    } else if (coolMasculineHues.includes(hex)) {
+      maleScore += pct * 1.5;
+      maleTraits.push(`冷色调 ${hex}`);
+    } else if (neutralHues.includes(hex)) {
+      // Neutral colors keep the race undecided
+    }
+  }
+
+  // Lighting-based gender association
+  if (f.lightingType === 'high_key' && f.brightness > 0.5) {
+    femaleScore += 20;
+    femaleTraits.push('明亮高调光线');
+  } else if (f.lightingType === 'low_key' && f.brightness < 0.35) {
+    maleScore += 20;
+    maleTraits.push('低沉暗调光线');
+  }
+
+  if (f.lightingType === 'soft_light') {
+    femaleScore += 15;
+    femaleTraits.push('柔和光线');
+  } else if (f.lightingType === 'high_contrast') {
+    maleScore += 15;
+    maleTraits.push('高对比光线');
+  }
+
+  // Texture-based
+  if (f.textureType === 'smooth') {
+    femaleScore += 10;
+    femaleTraits.push('平滑质感');
+  } else if (f.textureType === 'complex') {
+    maleScore += 10;
+    maleTraits.push('复杂纹理');
+  }
+
+  // Saturation-based
+  if (f.saturation > 0.55) {
+    femaleScore += 10;
+    femaleTraits.push('高饱和度');
+  } else if (f.saturation < 0.3) {
+    maleScore += 10;
+    maleTraits.push('低饱和度');
+  }
+
+  // Composition-based
+  if (f.symmetry > 0.75 && f.verticalRatio < 0.5) {
+    femaleScore += 5;
+  }
+  if (f.verticalRatio > 0.55) {
+    maleScore += 5;
+  }
+
+  const total = femaleScore + maleScore;
+  if (total === 0) {
+    return {
+      gender: '女声',
+      confidence: 0.3,
+      traits: ['视觉特征不明显，默认女声'],
+      reason: '无明显性别倾向视觉特征'
+    };
+  }
+
+  const femaleRatio = femaleScore / total;
+  const gender = femaleRatio > 0.55 ? '女声' : femaleRatio < 0.35 ? '男声' : '女声';
+  const confidence = Math.abs(femaleRatio - 0.5) * 2;
+  const traits = gender === '女声' ? femaleTraits : maleTraits;
+
+  return {
+    gender,
+    confidence: Math.round(confidence * 100) / 100,
+    traits: traits.length > 0 ? traits : [gender === '女声' ? '综合视觉特征偏向女声' : '综合视觉特征偏向男声'],
+    reason: `基于色彩、光线、纹理等${traits.length}项特征推断为${gender}`
+  };
 }
 
 /* =========================================================================
@@ -778,6 +879,9 @@ export async function fullImageAnalysis(imageElement) {
   const features = await analyzeImageVisuals(imageElement);
   const sceneLyrics = classifyScene(features);
 
+  // Apply vocalSuggestion from scene if available (e.g. from generateFromFeatures fallback)
+  const vocalSuggestion = sceneLyrics.vocalSuggestion || _inferVocalFromFeatures(features);
+
   return {
     success: true,
     features,
@@ -794,25 +898,31 @@ export async function fullImageAnalysis(imageElement) {
     themes: [...new Set(sceneLyrics.themes)],
     styles: [...new Set(sceneLyrics.genre)],
     description: sceneLyrics.description,
+    // Vocal recommendation based on visual analysis
+    vocalRecommendation: vocalSuggestion,
     suggestions: {
       genre: sceneLyrics.genre[0],
       theme: sceneLyrics.themes[0],
       mood: extractPrimaryMood(sceneLyrics.emotions),
       bpm: sceneLyrics.tempos[1] || 120,
+      // Include vocal suggestion in the suggestions object
+      vocal: vocalSuggestion,
       alternatives: {
         themes: sceneLyrics.themes,
         styles: sceneLyrics.genre,
         imageries: sceneLyrics.imagery.slice(0, 5)
       }
     },
-    // Enhanced data for lyrics generation
+    // Enhanced data for lyrics generation - includes vocal gender hint
     visualContext: {
       imagery: sceneLyrics.imagery,
       emotions: sceneLyrics.emotions,
       subjects: sceneLyrics.subjects,
       actions: sceneLyrics.actions,
       locations: sceneLyrics.locations,
-      sceneId: sceneLyrics.profileId
+      sceneId: sceneLyrics.profileId,
+      vocalGender: vocalSuggestion?.gender || null,
+      vocalConfidence: vocalSuggestion?.confidence || 0
     },
     colorPalette: features.dominantColors.map(c => ({ hex: c.hex, percentage: c.percentage })),
     processingTime: Date.now()

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * EasyMode.jsx - Elderly-friendly 3-step wizard
  * 
  * Designed for non-technical users and elderly users.
@@ -17,7 +17,7 @@ import {
   ArrowRight, ArrowLeft, RefreshCw, Share2, Heart, Smile, Frown,
   Sun, Moon, Cloud, Zap, Coffee, Music, Palette, Camera, X
 } from 'lucide-react';
-import { useTranslation } from '../i18n/index.js';
+import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
 import { generateLyrics } from '../utils/lyricsEngine.js';
 import { fullImageAnalysis } from '../utils/visionAnalyzer.js';

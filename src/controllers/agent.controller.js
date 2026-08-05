@@ -132,7 +132,17 @@ export class AgentController {
         variation: params.variation || 'A',
         reference: params.reference || '',
         referenceSong: params.referenceSong || '',
-        script: params.script || ''
+        script: params.script || '',
+        visualContext: params.visualContext || null,
+        vocalGender: params.vocalGender || null,
+        platform: params.platform || null,
+        selectedInstruments: params.selectedInstruments || [],
+        sectionPreset: params.sectionPreset || null,
+        usePromptTemplate: params.usePromptTemplate || false,
+        mixThemes: params.mixThemes || null,
+        mixStyles: params.mixStyles || null,
+        themeWeights: params.themeWeights || null,
+        styleWeights: params.styleWeights || null
       };
       logger.info(`Agent lyrics: method=${mappedParams.method}, style=${mappedParams.style}, theme=${mappedParams.theme}, language=${mappedParams.language}`);
       const result = await unicornAgent.generateLyrics(mappedParams);

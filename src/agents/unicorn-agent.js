@@ -1390,6 +1390,33 @@ export class UnicornAgent {
 
     logger.info(`Generating lyrics with method: ${method}, theme: ${theme}, style: ${style}`);
 
+    // When visualContext is provided, use the dynamic engine for proper gender/theme override
+    if (params.visualContext || params.vocalGender) {
+      try {
+        const { generateDynamicLyrics } = await import('../utils/dynamicLyricsEngine.js');
+        const dynamicParams = {
+          genre: style,
+          theme,
+          method: method === 'fsm' ? 'basic' : method,
+          bpm: params.bpm || 120,
+          duration: params.duration || 270,
+          complexity: params.complexity || 5,
+          variation: params.variation || 'A',
+          language: params.language || 'zh',
+          visualContext: params.visualContext || null,
+          vocalGender: params.vocalGender || null,
+          mixThemes: params.mixThemes || null,
+          mixStyles: params.mixStyles || null,
+          themeWeights: params.themeWeights || null,
+          styleWeights: params.styleWeights || null
+        };
+        const dynamicResult = generateDynamicLyrics(dynamicParams);
+        return { taskId: `dynamic-${Date.now()}`, method, result: dynamicResult };
+      } catch (e) {
+        logger.warn(`Dynamic engine failed, falling back to agent: ${e.message}`);
+      }
+    }
+
     switch (method) {
       case 'fsm':
         return { taskId: `fsm-${Date.now()}`, method: 'fsm', result: this.generateFSMLyrics(theme, style, params) };

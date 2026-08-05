@@ -1,6 +1,6 @@
-import React from 'react';
+﻿import React from 'react';
 import { Music, Mic, Video, Activity, TrendingUp, Cpu, Bot, Sparkles, BarChart3, Server, Zap, ChevronRight } from 'lucide-react';
-import { useTranslation } from '../i18n/index.js';
+import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
 
 function Dashboard({ apiStatus, agentStatus, onNavigate }) {

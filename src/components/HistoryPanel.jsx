@@ -1,5 +1,5 @@
-import React from 'react';
-import { useTranslation } from '../i18n/index.js';
+﻿import React from 'react';
+import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
 import { History, Copy, Music, Trash2, X, ChevronRight, Sparkles, Zap, Piano, ExternalLink } from 'lucide-react';
 

@@ -14,6 +14,16 @@
  * Exports: generateDynamicLyrics, getThemeBank, blendBanks, findRhymeWord
  */
 
+import {
+  generateMeloCommand,
+  generateSunoCommand,
+  generateMuseCommand,
+  findMatchingExample,
+  GENRE_PATTERNS,
+  THEME_KEYWORDS,
+  LYRIC_EXAMPLES
+} from './referenceData.js';
+
 /* =========================================================================
  * 1. THEME VOCABULARY BANKS
  * Each bank holds individual words / short phrases (NOT complete lines).
@@ -1208,7 +1218,12 @@ export function generateLine(sectionType, themeBank, styleConfig, options = {}) 
 const _RHYME_SCHEME_PATTERNS = {
   AABB: ['A', 'A', 'B', 'B'],
   ABAB: ['A', 'B', 'A', 'B'],
-  ABCB: ['A', 'B', 'C', 'B']
+  ABCB: ['A', 'B', 'C', 'B'],
+  ABC: ['A', 'B', 'C'],
+  AAB: ['A', 'A', 'B'],
+  ABA: ['A', 'B', 'A'],
+  AAA: ['A', 'A', 'A'],
+  AB: ['A', 'B']
 };
 
 /**
@@ -1221,12 +1236,13 @@ const _RHYME_SCHEME_PATTERNS = {
  * @param {string} rhymeScheme - AABB|ABAB|ABCB
  * @returns {Array<string>} generated lines
  */
-export function generateSection(sectionType, themeBank, styleConfig, complexity = 5, rhymeScheme = 'ABAB', usedWords = null) {
+export function generateSection(sectionType, themeBank, styleConfig, lineCountOrComplexity = 3, rhymeScheme = 'ABAB', usedWords = null) {
   const banks = Array.isArray(themeBank) ? themeBank : [themeBank];
   const weights = banks.map(() => 1);
   const globalUsed = usedWords instanceof Set ? usedWords : new Set();
 
-  const lineCount = complexity >= 7 ? 4 : complexity >= 4 ? 3 : 2;
+  // Support both old-style complexity number and new-style explicit lineCount
+  const lineCount = lineCountOrComplexity <= 10 ? lineCountOrComplexity : (lineCountOrComplexity >= 7 ? 4 : lineCountOrComplexity >= 4 ? 3 : 2);
   const scheme = _RHYME_SCHEME_PATTERNS[rhymeScheme] || _RHYME_SCHEME_PATTERNS.ABAB;
 
   const lines = [];
@@ -1703,6 +1719,56 @@ function _formatVariationOutput(baseResult, variation) {
   return header + baseResult.fullText;
 }
 
+function _formatMeloOutput(baseResult, meloCommand) {
+  const sections = meloCommand.sections.map((s) => {
+    const directives = s.aiDirectives.map(d => `（AI执行指令：${d}）`).join('\n');
+    const sectionContent = baseResult.sections.find(sec =>
+      sec.type.toLowerCase().includes(s.type.toLowerCase().replace(/[0-9]/g, ''))
+    );
+    const lyrics = sectionContent ? sectionContent.content : '';
+    return `[${s.type.toUpperCase()} | 情绪：${s.emotion} | 力度：${s.dynamics} | 演唱：${s.vocal} | 时长：${s.duration}]
+${directives}
+${lyrics}`;
+  }).join('\n\n');
+
+  const header = `【MELO 生成指令】
+
+🎵 标题：${meloCommand.title}
+🎼 风格：${meloCommand.style}
+⏱️ BPM：${meloCommand.bpm}
+🎹 调性：${meloCommand.key}
+
+🎯 整体关键词：
+${meloCommand.overallKeywords}
+
+---
+
+【分层结构】
+[LAYER: FOUNDATION]
+底层节拍：${meloCommand.bpm} 基础律动，围绕主题构建稳定节拍
+
+[LAYER: MELODY]
+旋律层：以核心乐器表达主题情绪，配合和声与织体
+
+[LAYER: EXPRESSION]
+表现层：人声与和声叠加，深度诠释情感内核
+
+[LAYER: EFFECTS]
+效果层：混响、延迟、调制效果，营造氛围
+
+---
+
+【段落详解】
+${sections}
+
+---
+
+💡 风格：${meloCommand.style}
+`;
+
+  return header;
+}
+
 function _buildInstrumentTimeline(sections) {
   return sections.map((s) => ({
     time: _formatTime(s.startTime),
@@ -1717,20 +1783,48 @@ function _buildInstrumentTimeline(sections) {
 
 function _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity) {
   const structure = STRUCTURES[genre] || STRUCTURES.pop;
-  const rhymeScheme = styleConfig.rhymePreference || 'ABAB';
+  const baseRhyme = styleConfig.rhymePreference || 'ABAB';
   const globalUsedWords = new Set();
 
-  const sections = structure.map((sectionType) => {
+  // Section-type-specific rhyme and line count variations
+  const sectionConfig = {
+    intro: { rhyme: 'ABC', lines: 2 },
+    pre_chorus: { rhyme: 'AAB', lines: 3 },
+    verse: { rhyme: 'ABC', lines: 3 },
+    chorus: { rhyme: 'AAB', lines: 4 },
+    bridge: { rhyme: 'ABA', lines: 3 },
+    breakdown: { rhyme: 'ABC', lines: 2 },
+    interlude: { rhyme: 'AAA', lines: 2 },
+    outro: { rhyme: 'ABC', lines: 2 },
+    hook: { rhyme: 'AAB', lines: 4 },
+    drop: { rhyme: 'ABAB', lines: 4 },
+    final_chorus: { rhyme: 'AAB', lines: 5 }
+  };
+
+  const _resolveSectionConfig = (sectionType, idx) => {
     const normalized = _normalizeSectionType(sectionType);
-    const sectionResult = generateSection(normalized, themeBank, styleConfig, complexity, rhymeScheme, globalUsedWords);
+    const base = sectionConfig[normalized] || { rhyme: baseRhyme, lines: 3 };
+    // Slight variation based on section index to avoid repetition
+    const variants = ['ABC', 'AAB', 'ABA', 'ABAB', 'AABB'];
+    const alternateRhyme = variants[idx % variants.length];
+    return {
+      rhyme: idx === 0 ? base.rhyme : (idx % 3 === 0 ? alternateRhyme : base.rhyme),
+      lines: idx === 0 ? base.lines : (Math.max(2, Math.min(4, base.lines + (idx % 2 === 0 ? 0 : 1))))
+    };
+  };
+
+  const sections = structure.map((sectionType, idx) => {
+    const normalized = _normalizeSectionType(sectionType);
+    const cfg = _resolveSectionConfig(sectionType, idx);
+    const sectionResult = generateSection(normalized, themeBank, styleConfig, cfg.lines, cfg.rhyme, globalUsedWords);
     const lines = sectionResult.lines || sectionResult;
     return {
       type: sectionType,
       content: lines.join('\n'),
       lines,
       productionMetadata: sectionResult.productionMetadata || {},
-      rhymeScheme: sectionResult.rhymeScheme || rhymeScheme,
-      lineCount: sectionResult.lineCount || lines.length
+      rhymeScheme: sectionResult.rhymeScheme || cfg.rhyme,
+      lineCount: cfg.lines
     };
   });
 
@@ -1798,7 +1892,8 @@ export function generateDynamicLyrics(params) {
     mixStyles = null,
     themeWeights = null,
     styleWeights = null,
-    visualContext = null
+    visualContext = null,
+    vocalGender = null
   } = params || {};
 
   // ---- Resolve theme bank (single or blended) ----
@@ -1857,7 +1952,28 @@ export function generateDynamicLyrics(params) {
     };
     effectiveGenre = 'mix:' + mixStyles.join('+');
   } else {
-    styleConfig = _getStyleConfig(genre);
+    styleConfig = JSON.parse(JSON.stringify(_getStyleConfig(genre)));
+  }
+
+  // ---- Override vocal gender from visual analysis if available ----
+  if (visualContext && visualContext.vocalGender) {
+    const originalVocal = styleConfig.vocal || {};
+    styleConfig.vocal = {
+      ...originalVocal,
+      gender: visualContext.vocalGender,
+      _visualOverride: true,
+      _visualConfidence: visualContext.vocalConfidence || 0
+    };
+  }
+
+  // ---- Allow explicit vocal gender override from params ----
+  if (params.vocalGender) {
+    const originalVocal = styleConfig.vocal || {};
+    styleConfig.vocal = {
+      ...originalVocal,
+      gender: params.vocalGender,
+      _explicitOverride: true
+    };
   }
 
   // ---- Dispatch by method ----
@@ -1876,6 +1992,28 @@ export function generateDynamicLyrics(params) {
     return _normalizeResult(networkResult, 'network', params);
   }
 
+  if (method === 'melo') {
+    const baseResult = _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity);
+    const meloCommand = generateMeloCommand({
+      genre,
+      theme,
+      bpm,
+      key: params.key || 'C',
+      duration,
+      language: params.language || 'zh',
+      title: params.title || ''
+    });
+    const matchedExample = findMatchingExample(theme, genre);
+    const meloResult = {
+      ...baseResult,
+      meloCommand,
+      referenceExample: matchedExample.length > 0 ? matchedExample[0] : null,
+      fullCommand: _formatMeloOutput(baseResult, meloCommand),
+      generatedAt: new Date().toISOString()
+    };
+    return _normalizeResult(meloResult, 'melo', params);
+  }
+
   if (method === 'time') {
     const structure = STRUCTURES[genre] || STRUCTURES.pop;
     const sections = [];
@@ -1892,7 +2030,15 @@ export function generateDynamicLyrics(params) {
       const startTime = _formatTime(currentTime);
       const endTime = _formatTime(currentTime + durationSec);
 
-      const sectionResult = generateSection(normalizedType, themeBank, styleConfig, complexity, styleConfig.rhymePreference, globalUsedWords);
+      // Use section-type-specific rhyme and line count
+      const sectionCfg = {
+        intro: { rhyme: 'ABC', lines: 2 }, verse: { rhyme: 'ABC', lines: 3 },
+        pre_chorus: { rhyme: 'AAB', lines: 3 }, chorus: { rhyme: 'AAB', lines: 4 },
+        bridge: { rhyme: 'ABA', lines: 3 }, outro: { rhyme: 'ABC', lines: 2 }
+      };
+      const timeSectionDefault = sectionCfg[normalizedType] || { rhyme: styleConfig.rhymePreference || 'ABAB', lines: 3 };
+
+      const sectionResult = generateSection(normalizedType, themeBank, styleConfig, timeSectionDefault.lines, timeSectionDefault.rhyme, globalUsedWords);
       const lines = sectionResult.lines || sectionResult;
 
       const dynamic = _getDynamicForSection(sectionType, index, structure.length);
@@ -2020,6 +2166,8 @@ function _normalizeResult(result, method, params) {
       : '无';
 
     if (method === 'network') {
+      fullCommand = result.fullCommand || '';
+    } else if (method === 'melo') {
       fullCommand = result.fullCommand || '';
     } else if (method === 'time') {
       fullCommand = `【时间轴制作指令】

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { useTranslation } from './i18n/index.js';
+import { useTranslation } from './i18n/useTranslation.js';
 import {
   LayoutDashboard, Music, Mic, Video, Settings, Sparkles, TrendingUp,
   Activity, Cpu, Zap, BarChart3, Server, Bot, Globe, ArrowLeft, Wand2, Sliders
@@ -65,6 +65,7 @@ function App() {
     const newMode = uiMode === 'easy' ? 'expert' : 'easy';
     setUiMode(newMode);
     localStorage.setItem(UI_MODE_KEY, newMode);
+    setCurrentPage('lyrics');
   };
 
   const navigationItems = [
@@ -138,15 +139,19 @@ function App() {
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-400 flex items-center gap-1.5">
               {uiMode === 'easy' ? <Sparkles className="w-3 h-3 text-violet-400" /> : <Wand2 className="w-3 h-3 text-pink-400" />}
-              {uiMode === 'easy' ? '简洁模式' : '专业模式'}
+              {uiMode === 'easy' ? '向导模式' : '专家模式'}
             </span>
             <button
               onClick={toggleUiMode}
+              title={uiMode === 'easy' ? '切换到专家模式' : '切换到向导模式'}
               className={`w-10 h-5 rounded-full p-0.5 transition-all ${uiMode === 'easy' ? 'bg-gradient-to-r from-violet-500 to-pink-500' : 'bg-white/10'}`}
             >
               <div className={`w-4 h-4 rounded-full bg-white transition-transform ${uiMode === 'easy' ? 'translate-x-5' : 'translate-x-0'}`} />
             </button>
           </div>
+          <p className="text-[10px] text-gray-600 leading-tight">
+            {uiMode === 'easy' ? '向导模式：三步生成，零门槛' : '专家模式：完整控件，精细调控'}
+          </p>
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-400">{t('header.api')}</span>
             <div className={`flex items-center gap-1.5 ${apiStatus.configured ? 'text-emerald-400' : 'text-amber-400'}`}>
@@ -215,9 +220,9 @@ function App() {
             {currentPage === 'music' && uiMode === 'easy'
               ? <EasyMode onSwitchToExpert={toggleUiMode} />
               : <MusicPage />}
-            {currentPage === 'lyrics' && uiMode === 'easy'
-              ? <EasyMode onSwitchToExpert={toggleUiMode} />
-              : <LyricsPage onNavigate={setCurrentPage} />}
+            {currentPage === 'lyrics' && (
+              <LyricsPage key={uiMode} onNavigate={setCurrentPage} defaultMode={uiMode === 'easy' ? 'guided' : 'expert'} />
+            )}
             {currentPage === 'mv' && <MVPage />}
             {currentPage === 'settings' && <SettingsPage />}
           </Suspense>

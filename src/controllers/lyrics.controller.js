@@ -130,6 +130,9 @@ export class LyricsController {
         case 'suno':
           result = lyricsService.generateStyleVariation(genre, theme, params.styleType || genre, params.variation || 'A', params);
           break;
+        case 'melo':
+          result = lyricsService.generateMelo(genre, theme, params);
+          break;
         default:
           result = lyricsService.generate(genre, theme, params);
       }

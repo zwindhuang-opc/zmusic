@@ -89,6 +89,18 @@ export class LyricsService {
     });
   }
 
+  generateMelo(genre, theme, params = {}) {
+    return generateDynamicLyrics({
+      genre,
+      theme,
+      method: 'melo',
+      bpm: params.bpm || 120,
+      duration: params.duration || 270,
+      complexity: params.complexity || 5,
+      ...params
+    });
+  }
+
   generatePoem(theme, params = {}) {
     const result = generateDynamicLyrics({
       genre: 'ballad',
