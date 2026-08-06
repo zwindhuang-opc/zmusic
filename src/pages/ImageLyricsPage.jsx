@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image as ImageIcon, Upload, Sparkles, Loader, X, Check, Wand2, History, Copy, Mic } from 'lucide-react';
+import { Image as ImageIcon, Upload, Sparkles, Loader, X, Check, Wand2, History, Copy, Mic, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
 import { fullImageAnalysis } from '../utils/visionAnalyzer.js';
@@ -27,6 +27,7 @@ export default function ImageLyricsPage({ onNavigate }) {
   const [theme, setTheme] = useState('love');
   const [language, setLanguage] = useState('zh');
   const [script, setScript] = useState('');
+  const [showAnalysis, setShowAnalysis] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -180,9 +181,8 @@ export default function ImageLyricsPage({ onNavigate }) {
                 onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                 onDragLeave={() => setIsDragging(false)}
                 onClick={() => document.getElementById('img-file').click()}
-                className={`relative cursor-pointer rounded-xl border-2 border-dashed transition-all ${
-                  isDragging ? 'border-violet-400 bg-violet-500/10' : 'border-white/20 hover:border-white/40 hover:bg-white/5'
-                } p-8 text-center`}
+                className={`relative cursor-pointer rounded-xl border-2 border-dashed transition-all ${isDragging ? 'border-violet-400 bg-violet-500/10' : 'border-white/20 hover:border-white/40 hover:bg-white/5'
+                  } p-8 text-center`}
               >
                 <input id="img-file" type="file" accept="image/*" className="hidden"
                   onChange={(e) => handleFileSelect(e.target.files?.[0])} />
@@ -252,11 +252,10 @@ export default function ImageLyricsPage({ onNavigate }) {
                   {SUGGESTED_STYLES.map((s) => (
                     <button key={typeof s === 'string' ? s : s.id}
                       onClick={() => setGenre(typeof s === 'string' ? s : s.id)}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
-                        genre === (typeof s === 'string' ? s : s.id)
-                          ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
-                          : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
-                      }`}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${genre === (typeof s === 'string' ? s : s.id)
+                        ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
+                        : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+                        }`}
                     >
                       {typeof s === 'string' ? (t(`lyrics_styles.${s}`) || t(`styles.${s}`) || s) : s.label}
                     </button>
@@ -271,11 +270,10 @@ export default function ImageLyricsPage({ onNavigate }) {
                   {['love', 'heartbreak', 'nostalgic', 'hope', 'dreams'].map((tm) => (
                     <button key={tm}
                       onClick={() => setTheme(tm)}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
-                        theme === tm
-                          ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
-                          : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
-                      }`}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${theme === tm
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
+                        : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+                        }`}
                     >
                       {t(`lyrics_themes.${tm}`) || t(`themes.${tm}`) || tm}
                     </button>
@@ -288,38 +286,25 @@ export default function ImageLyricsPage({ onNavigate }) {
 
         {/* Right: Generate */}
         <div className="space-y-4">
-          {/* Configuration */}
+          {/* Generate Bar (top) */}
           <div className="gradient-border p-4">
-            <label className="text-xs font-medium text-gray-300 mb-2 block">3. 确认参数并生成</label>
+            <label className="text-xs font-medium text-gray-300 mb-2 block">确认参数并生成</label>
 
-            {/* Selected summary */}
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <div className="p-2 rounded-lg bg-white/5">
-                <span className="text-gray-500 text-[10px]">主题</span>
-                <p className="text-white text-sm font-medium truncate">{t(`lyrics_themes.${theme}`) || t(`themes.${theme}`) || theme}</p>
-              </div>
-              <div className="p-2 rounded-lg bg-white/5">
-                <span className="text-gray-500 text-[10px]">风格</span>
-                <p className="text-white text-sm font-medium truncate">{t(`lyrics_styles.${genre}`) || t(`styles.${genre}`) || genre}</p>
-              </div>
-            </div>
-
-            {/* Language picker */}
-            <div className="mb-3">
-              <span className="text-[10px] text-gray-500 mb-1.5 block">语言</span>
-              <div className="flex gap-1.5">
+            {/* Selected summary + language inline */}
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <span className="px-2 py-1 rounded bg-violet-500/10 text-violet-300 text-[11px]">{t(`lyrics_themes.${theme}`) || theme}</span>
+              <span className="px-2 py-1 rounded bg-pink-500/10 text-pink-300 text-[11px]">{t(`lyrics_styles.${genre}`) || genre}</span>
+              <div className="flex gap-1">
                 {[
                   { id: 'zh', label: '中文' },
-                  { id: 'en', label: 'English' },
+                  { id: 'en', label: 'EN' },
                   { id: 'mix', label: '混合' },
                 ].map((l) => (
                   <button key={l.id}
                     onClick={() => setLanguage(l.id)}
-                    className={`flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                      language === l.id
-                        ? 'bg-violet-500 text-white'
-                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                    }`}
+                    className={`px-2 py-0.5 rounded text-[11px] transition-all ${language === l.id
+                      ? 'bg-violet-500 text-white'
+                      : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                   >
                     {l.label}
                   </button>
@@ -327,21 +312,7 @@ export default function ImageLyricsPage({ onNavigate }) {
               </div>
             </div>
 
-            {/* Script preview */}
-            {script && (
-              <div className="mb-3">
-                <span className="text-[10px] text-gray-500 mb-1.5 block">灵感描述</span>
-                <textarea
-                  value={script}
-                  onChange={(e) => setScript(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 resize-none"
-                  placeholder="AI 根据图片自动生成的灵感描述..."
-                />
-              </div>
-            )}
-
-            {/* Generate button */}
+            {/* Generate button - prominent, top */}
             <button
               onClick={handleGenerate}
               disabled={!visionResult || isGenerating}
@@ -357,6 +328,75 @@ export default function ImageLyricsPage({ onNavigate }) {
               <p className="mt-2 text-[10px] text-gray-500 text-center">请先上传一张图片</p>
             )}
           </div>
+
+          {/* AI Analysis / Script (collapsible, below generate) */}
+          {visionResult && (
+            <div className="gradient-border p-4">
+              <button
+                onClick={() => setShowAnalysis(!showAnalysis)}
+                className="w-full flex items-center justify-between text-xs font-medium text-gray-300"
+              >
+                <span>🤖 AI 分析结果</span>
+                {showAnalysis ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+              {showAnalysis && (
+                <div className="mt-3 space-y-2">
+                  <div>
+                    <span className="text-[10px] text-gray-500 block mb-1">情绪</span>
+                    <div className="flex flex-wrap gap-1">
+                      {visionResult.emotions.map(e => (
+                        <span key={e} className="px-2 py-0.5 rounded bg-white/5 text-[10px] text-gray-300">{e}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-gray-500 block mb-1">色彩</span>
+                    <div className="flex flex-wrap gap-1">
+                      {visionResult.colors.map(c => (
+                        <span key={c.name} className="px-2 py-0.5 rounded text-[10px] text-white" style={{ background: c.hex }}>{c.name}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-[10px] text-gray-500 block mb-1">推荐主题</span>
+                      <div className="flex flex-wrap gap-1">
+                        {visionResult.recommendedThemes.map(th => (
+                          <button key={th} onClick={() => setTheme(th)}
+                            className={`px-1.5 py-0.5 rounded text-[10px] transition-all ${theme === th ? 'bg-emerald-500 text-white' : 'bg-white/5 text-gray-400'}`}>
+                            {th}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-500 block mb-1">推荐风格</span>
+                      <div className="flex flex-wrap gap-1">
+                        {visionResult.recommendedStyles.map(st => (
+                          <button key={st} onClick={() => setGenre(st)}
+                            className={`px-1.5 py-0.5 rounded text-[10px] transition-all ${genre === st ? 'bg-violet-500 text-white' : 'bg-white/5 text-gray-400'}`}>
+                            {st}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  {script && (
+                    <div>
+                      <span className="text-[10px] text-gray-500 block mb-1">灵感描述</span>
+                      <textarea
+                        value={script}
+                        onChange={(e) => setScript(e.target.value)}
+                        rows={2}
+                        className="w-full px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 resize-none"
+                        placeholder="AI 根据图片自动生成的灵感描述..."
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Result */}
           {result && (

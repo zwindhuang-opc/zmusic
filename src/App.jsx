@@ -219,9 +219,9 @@ function App() {
             </div>
           }>
             {currentPage === 'dashboard' && <Dashboard apiStatus={apiStatus} agentStatus={agentStatus} onNavigate={setCurrentPage} />}
-            {currentPage === 'music' && uiMode === 'easy'
+            {currentPage === 'music' && (uiMode === 'easy'
               ? <EasyMode onSwitchToExpert={toggleUiMode} />
-              : <MusicPage />}
+              : <MusicPage />)}
             {currentPage === 'lyrics' && (
               <LyricsPage key={uiMode} onNavigate={setCurrentPage} defaultMode={uiMode === 'easy' ? 'guided' : 'expert'} />
             )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Music, Play, Sparkles, Loader, Download, Wand2, Cpu, Zap, History, Copy } from 'lucide-react';
+import { Music, Play, Sparkles, Loader, Download, Wand2, Cpu, Zap, History, Copy, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
 import { useGeneration } from '../stores/generationStore.jsx';
@@ -57,6 +57,7 @@ function MusicPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [showAllStyles, setShowAllStyles] = useState(false);
   const [showAllGenres, setShowAllGenres] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const AGENT_METHODS = [
     { id: 'fsm', name: t('music.fsm_programming'), desc: t('music.state_machine') },
@@ -120,7 +121,7 @@ function MusicPage() {
   const currentMethod = AGENT_METHODS.find(m => m.id === method);
 
   return (
-    <div className="space-y-4 md:space-y-6 animate-slide-in pb-52 md:pb-8">
+    <div className="space-y-4 md:space-y-6 animate-slide-in pb-8">
       <div className="gradient-border p-4 md:p-6">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 md:gap-3">
@@ -142,40 +143,25 @@ function MusicPage() {
         </div>
       </div>
 
-      <div className="space-y-4 md:space-y-6">
-        <div className="gradient-border p-4 md:p-5">
+      <div className="gradient-border p-4 md:p-5">
           <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.music_prompt')}</label>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder={t('music.prompt_placeholder')}
-            className="w-full h-20 md:h-24 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 resize-none"
+            className="w-full h-16 md:h-20 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 resize-none"
           />
-        </div>
 
-        <div className="gradient-border p-4 md:p-5">
-          <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.music_style')}</label>
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {POPULAR_STYLES.map(s => (
-              <button
-                key={s}
-                onClick={() => setStyle(s)}
-                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${style === s
-                  ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
-                  }`}
-              >
-                {t(`styles.${s}`)}
-              </button>
-            ))}
-          </div>
-          {showAllStyles && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 max-h-48 overflow-y-auto pt-2 border-t border-white/10">
-              {Object.keys(MUSIC_STYLES).filter(s => !POPULAR_STYLES.includes(s)).map(s => (
+          <div className="mt-3">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">🎨 {t('music.music_style')}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {POPULAR_STYLES.map(s => (
                 <button
                   key={s}
                   onClick={() => setStyle(s)}
-                  className={`px-2.5 py-2 rounded-lg text-[11px] font-medium transition-all ${style === s
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${style === s
                     ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
                     : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
                     }`}
@@ -183,39 +169,37 @@ function MusicPage() {
                   {t(`styles.${s}`)}
                 </button>
               ))}
-            </div>
-          )}
-          <button
-            onClick={() => setShowAllStyles(!showAllStyles)}
-            className="mt-1 text-[10px] text-violet-400 hover:text-violet-300 transition-colors"
-          >
-            {showAllStyles ? '收起 ▲' : '展开更多 ▼'}
-          </button>
-        </div>
-
-        <div className="gradient-border p-4 md:p-5">
-          <label className="text-xs font-medium text-gray-300 mb-2 block">{t('lyrics.genre')}</label>
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {POPULAR_GENRES.map(g => (
+              {showAllStyles && Object.keys(MUSIC_STYLES).filter(s => !POPULAR_STYLES.includes(s)).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setStyle(s)}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${style === s
+                    ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
+                    }`}
+                >
+                  {t(`styles.${s}`)}
+                </button>
+              ))}
               <button
-                key={g}
-                onClick={() => setGenre(g)}
-                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${genre === g
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
-                  }`}
+                onClick={() => setShowAllStyles(!showAllStyles)}
+                className="px-2.5 py-1 rounded-full text-[11px] text-violet-400 hover:text-violet-300 hover:bg-violet-500/10 transition-colors"
               >
-                {t(`styles.${g}`) || g}
+                {showAllStyles ? '收起 ▲' : '更多 ▼'}
               </button>
-            ))}
+            </div>
           </div>
-          {showAllGenres && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 max-h-48 overflow-y-auto pt-2 border-t border-white/10">
-              {Object.keys(MUSIC_GENRES).filter(g => !POPULAR_GENRES.includes(g)).map(g => (
+
+          <div className="mt-3">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">🎭 {t('lyrics.genre')}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {POPULAR_GENRES.map(g => (
                 <button
                   key={g}
                   onClick={() => setGenre(g)}
-                  className={`px-2.5 py-2 rounded-lg text-[11px] font-medium transition-all ${genre === g
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${genre === g
                     ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
                     : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
                     }`}
@@ -223,122 +207,162 @@ function MusicPage() {
                   {t(`styles.${g}`) || g}
                 </button>
               ))}
+              {showAllGenres && Object.keys(MUSIC_GENRES).filter(g => !POPULAR_GENRES.includes(g)).map(g => (
+                <button
+                  key={g}
+                  onClick={() => setGenre(g)}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${genre === g
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
+                    }`}
+                >
+                  {t(`styles.${g}`) || g}
+                </button>
+              ))}
+              <button
+                onClick={() => setShowAllGenres(!showAllGenres)}
+                className="px-2.5 py-1 rounded-full text-[11px] text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
+              >
+                {showAllGenres ? '收起 ▲' : '更多 ▼'}
+              </button>
             </div>
-          )}
+          </div>
+
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <div>
+              <label className="text-[10px] text-gray-400 mb-1 block">{t('music.duration_s')}</label>
+              <input
+                type="number" value={duration}
+                onChange={(e) => setDuration(parseInt(e.target.value) || 60)}
+                min="10" max="300"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-violet-500/50"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-400 mb-1 block">{t('music.bpm')}</label>
+              <input
+                type="number" value={bpm}
+                onChange={(e) => setBpm(parseInt(e.target.value) || 120)}
+                min="60" max="200"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-violet-500/50"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-400 mb-1 block">{t('music.theme')}</label>
+              <select
+                value={theme} onChange={(e) => setTheme(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-violet-500/50"
+              >
+                {Object.entries(MUSIC_THEMES).map(([key, value]) => (
+                  <option key={key} value={key}>{t(value.name) || key}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <button
-            onClick={() => setShowAllGenres(!showAllGenres)}
-            className="mt-1 text-[10px] text-emerald-400 hover:text-emerald-300 transition-colors"
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="mt-4 w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-pink-500 text-white font-semibold text-sm md:text-base flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 shadow-lg shadow-purple-500/20 active:scale-[0.98] transition-transform"
           >
-            {showAllGenres ? '收起 ▲' : '展开更多 ▼'}
+            {isGenerating ? (
+              <>
+                <Loader className="w-4 h-4 animate-spin" />
+                {t('music.generating_music')}
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                {t('music.generate_music_with', { method: currentMethod?.name || '' })}
+              </>
+            )}
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-          <div className="gradient-border p-4">
-            <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.duration_s')}</label>
-            <input
-              type="number"
-              value={duration}
-              onChange={(e) => setDuration(parseInt(e.target.value) || 60)}
-              min="10"
-              max="300"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50"
-            />
-          </div>
-          <div className="gradient-border p-4">
-            <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.bpm')}</label>
-            <input
-              type="number"
-              value={bpm}
-              onChange={(e) => setBpm(parseInt(e.target.value) || 120)}
-              min="60"
-              max="200"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50"
-            />
-          </div>
-          <div className="gradient-border p-4">
-            <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.theme')}</label>
-            <select
-              value={theme}
-              onChange={(e) => setTheme(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50"
-            >
-              {Object.entries(MUSIC_THEMES).map(([key, value]) => (
-                <option key={key} value={key}>{t(value.name) || key}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <div>
+          <button
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-xs font-medium text-gray-300"
+          >
+            {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
+            {showAdvanced ? t('common.collapse') : t('music.ai_agent_method')}
+            {!showAdvanced && <ChevronDown className="w-4 h-4" />}
+          </button>
 
-        <div className="gradient-border p-4 md:p-5">
-          <label className="text-xs font-medium text-gray-300 mb-3 block">{t('music.ai_agent_method')}</label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-            {AGENT_METHODS.map(m => (
-              <button
-                key={m.id}
-                onClick={() => setMethod(m.id)}
-                className={`p-3.5 md:p-3 rounded-lg text-left transition-all ${method === m.id
-                  ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30'
-                  : 'bg-white/5 border border-white/5 hover:border-white/10'
-                  }`}
-              >
-                <div className="text-sm font-medium text-white">{m.name}</div>
-                <div className="text-[10px] md:text-xs text-gray-400 mt-0.5">{m.desc}</div>
-              </button>
-            ))}
-          </div>
-        </div>
+          {showAdvanced && (
+            <div className="gradient-border p-4 mt-3 space-y-3">
+              <div>
+                <label className="text-xs font-medium text-gray-300 mb-2 block">{t('music.ai_agent_method')}</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {AGENT_METHODS.map(m => (
+                    <button
+                      key={m.id}
+                      onClick={() => setMethod(m.id)}
+                      className={`p-2.5 rounded-lg text-left transition-all ${method === m.id
+                        ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30'
+                        : 'bg-white/5 border border-white/5 hover:border-white/10'
+                        }`}
+                    >
+                      <div className="text-xs font-medium text-white">{m.name}</div>
+                      <div className="text-[10px] text-gray-400">{m.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-        <div className="gradient-border p-4 md:p-5">
-          <label className="text-xs font-medium text-gray-300 mb-3 block">{t('layers.foundation')} ({t('music_elements.waltz')} {t('music_elements.tango')})</label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-            {MUSIC_LAYERS.map(layer => {
-              const Icon = layer.icon;
-              return (
-                <button
-                  key={layer.id}
-                  onClick={() => {
-                    if (selectedLayers.includes(layer.id)) {
-                      setSelectedLayers(selectedLayers.filter(l => l !== layer.id));
-                    } else {
-                      setSelectedLayers([...selectedLayers, layer.id]);
-                    }
-                  }}
-                  className={`p-3.5 md:p-3 rounded-lg text-center transition-all ${selectedLayers.includes(layer.id)
-                    ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30'
-                    : 'bg-white/5 border border-white/5 hover:border-white/10'
-                    }`}
-                >
-                  <Icon className="w-5 h-5 md:w-4 md:h-4 mx-auto text-violet-400 mb-1" />
-                  <div className="text-xs md:text-[10px] text-gray-300">{t(layer.name)}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+              <div>
+                <label className="text-xs font-medium text-gray-300 mb-2 block">{t('layers.foundation')}</label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {MUSIC_LAYERS.map(layer => {
+                    const Icon = layer.icon;
+                    return (
+                      <button
+                        key={layer.id}
+                        onClick={() => {
+                          if (selectedLayers.includes(layer.id)) {
+                            setSelectedLayers(selectedLayers.filter(l => l !== layer.id));
+                          } else {
+                            setSelectedLayers([...selectedLayers, layer.id]);
+                          }
+                        }}
+                        className={`p-2.5 rounded-lg text-center transition-all ${selectedLayers.includes(layer.id)
+                          ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30'
+                          : 'bg-white/5 border border-white/5 hover:border-white/10'
+                          }`}
+                      >
+                        <Icon className="w-4 h-4 mx-auto text-violet-400 mb-0.5" />
+                        <div className="text-[10px] text-gray-300">{t(layer.name)}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-        <div className="gradient-border p-4 md:p-5">
-          <label className="text-xs font-medium text-gray-300 mb-3 block">{t('layers.effects')}</label>
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-            {MUSIC_EFFECTS.map(effect => (
-              <button
-                key={effect.id}
-                onClick={() => {
-                  if (selectedEffects.includes(effect.id)) {
-                    setSelectedEffects(selectedEffects.filter(e => e !== effect.id));
-                  } else {
-                    setSelectedEffects([...selectedEffects, effect.id]);
-                  }
-                }}
-                className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${selectedEffects.includes(effect.id)
-                  ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
-                  }`}
-              >
-                {t(effect.name)}
-              </button>
-            ))}
-          </div>
+              <div>
+                <label className="text-xs font-medium text-gray-300 mb-2 block">{t('layers.effects')}</label>
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5">
+                  {MUSIC_EFFECTS.map(effect => (
+                    <button
+                      key={effect.id}
+                      onClick={() => {
+                        if (selectedEffects.includes(effect.id)) {
+                          setSelectedEffects(selectedEffects.filter(e => e !== effect.id));
+                        } else {
+                          setSelectedEffects([...selectedEffects, effect.id]);
+                        }
+                      }}
+                      className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all ${selectedEffects.includes(effect.id)
+                        ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
+                        }`}
+                    >
+                      {t(effect.name)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {error && (
@@ -406,36 +430,13 @@ function MusicPage() {
             </div>
           )}
         </div>
-      </div>
-
-      <div className="fixed bottom-[72px] md:bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0f] via-[#0f0a1a]/95 to-transparent pt-6 md:pt-12 pb-3 md:pb-3 px-4 md:px-6 z-40 safe-area-bottom md:safe-area-bottom">
-        <div className="max-w-7xl mx-auto">
-          <button
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="w-full py-3 md:py-3.5 rounded-xl bg-gradient-to-r from-violet-500 to-pink-500 text-white font-semibold text-sm md:text-base flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 shadow-lg shadow-purple-500/20 active:scale-[0.98] transition-transform"
-          >
-            {isGenerating ? (
-              <>
-                <Loader className="w-4 h-4 animate-spin" />
-                {t('music.generating_music')}
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                {t('music.generate_music_with', { method: currentMethod?.name || '' })}
-              </>
-            )}
-          </button>
-        </div>
-      </div>
 
       <HistoryPanel
         isOpen={showHistory}
         onClose={() => setShowHistory(false)}
         filterType="song"
       />
-    </div>
+    </div >
   );
 }
 

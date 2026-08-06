@@ -1,11 +1,45 @@
-ux: major redesign - dedicated image-lyrics page, progressive disclosure, simplified panel
+ux: fix content-sinking - compact generate bars at top on all pages
 
-- NEW: Dedicated ImageLyricsPage.jsx as standalone page for image-to-lyrics generation
-- NEW: Added to sidebar navigation between 歌词生成 and MV视频
-- SIMPLIFIED: Expert mode left panel reduced from 5 tabs to 2 (风格 + 主题)
-- PROGRESSIVE DISCLOSURE: Style/theme tabs show 6-8 popular pills + "探索全部" modal
-- EXPLORE MODAL: Full-screen searchable overlay with all 7/5 category cards
-- ADVANCED ACCORDION: Method, Image Upload, BGM, Advanced Parameters collapsed into one expandable section
-- WIZARD: Confirm & Generate card moved to top, always accessible
-- Mobile bottom nav auto-includes new page
-- LyricsPage reduced from 117KB to 106KB (removed inline category grids)
+ROOT CAUSE FIXED: All pages had tall vertical stacks of control cards pushing the generate button and results to the very bottom.
+
+CHANGES BY PAGE:
+
+1. MusicPage.jsx:
+   - MERGED 8 stacked cards (prompt, style, genre, duration/BPM/theme, agent, layers, effects, generate) into ONE compact generate bar
+   - Generate button moved to TOP, right after prompt + style/genre pills + duration/BPM/theme
+   - Advanced settings (agent method, layers, effects) COLLAPSED into single accordion, hidden by default
+   - Removed fixed bottom generate button
+   - Container: space-y-6 → single flat gradient-border card with inline pills
+   - Textarea: h-20 → h-16 (more compact)
+   - Style/genre: separate gradient-border cards → inline pills with "更多 ▼" links
+   - Duration/BPM/Theme: 3 separate cards → compact 3-column row without card wrappers
+
+2. LyricsPage.jsx (expert mode):
+   - Replaced 3-column grid (left panel 1/3 + right panel 2/3) with single-column layout
+   - Generate button + style/theme pills at the very TOP
+   - Results now full-width, no left panel blocking
+   - Advanced settings collapsed by default
+
+3. MVPage.jsx:
+   - Genre/style/type pills moved inline into the generate bar
+   - Duration, color, effects moved to collapsible advanced section
+   - Generate button at TOP of page
+
+4. ImageLyricsPage.jsx:
+   - Generate button moved to TOP of right panel
+   - AI analysis result moved below as collapsible section (open by default)
+   - Language picker compacted to inline pills
+   - Theme/style summary compacted to inline badges
+
+DESIGN PATTERN APPLIED:
+┌─────────────────────────────────────────┐
+│ Header Card                              │
+├─────────────────────────────────────────┤
+│ COMPACT GENERATE BAR                     │
+│ [Prompt] [Style Pills] [Genre Pills]    │
+│ [Dur|BPM|Theme] [✨ BIG GENERATE BTN]    │
+├─────────────────────────────────────────┤
+│ ▸ ⚙️ Advanced (collapsed by default)     │
+├─────────────────────────────────────────┤
+│ RESULTS AREA (full width, prominent)    │
+└─────────────────────────────────────────┘
