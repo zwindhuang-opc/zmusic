@@ -662,5 +662,21 @@
     "stable": "稳定",
     "rising": "上升",
     "falling": "下降"
+  },
+  "section_presets": {
+    "standard_song": "标准歌曲",
+    "short_bgm": "短BGM",
+    "loopable_bgm": "循环BGM",
+    "commercial_jingle": "商业广告",
+    "storytelling": "叙事结构",
+    "dance_track": "舞曲结构"
+  },
+  "ui": {
+    "explore_all_styles": "探索全部风格",
+    "explore_all_themes": "探索全部主题",
+    "beginner_hint_method": "新手推荐：选FSM编程最稳定",
+    "beginner_hint_style": "先选大类风格，再挑细分",
+    "beginner_hint_theme": "挑一个主题就够啦",
+    "tip": "提示"
   }
 }

@@ -8,11 +8,10 @@ import HistoryPanel from '../components/HistoryPanel.jsx';
 import { LYRICS_STYLES, LYRICS_THEMES } from '../config/lyricsStyles.js';
 
 const GENERATION_METHODS = [
-  { id: 'basic', label: '基础生成', description: '模板填充，快速生成', icon: '🎯' },
-  { id: 'network', label: '网络层生成', description: 'Foundation→Melody→Expression→Effects', icon: '🌐' },
-  { id: 'melo', label: 'Melo 指令', description: '生成 Melo AI 格式指令', icon: '🎵' },
-  { id: 'time', label: '时间轴生成', description: '带时间轴和动态的歌词', icon: '⏱️' },
-  { id: 'variation', label: '变奏生成', description: '风格变奏版本', icon: '🎭' },
+  { id: 'fsm', label: 'FSM 状态机', description: 'Finite State Machine · 结构严谨，情感递进', icon: '🎯' },
+  { id: 'layer', label: 'LAYER 多层', description: 'Foundation→Melody→Expression→Effects · 多层次生成', icon: '🌐' },
+  { id: 'suno', label: 'SUNO 指令', description: '类 Suno AI 指令生成 · 命令式输出', icon: '🎵' },
+  { id: 'muse', label: 'MUSE 时间轴', description: 'Timeline-based · 带时间轴和动态标记', icon: '⏱️' },
 ];
 
 /**
