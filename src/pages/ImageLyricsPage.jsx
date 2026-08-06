@@ -341,47 +341,55 @@ export default function ImageLyricsPage({ onNavigate }) {
               </button>
               {showAnalysis && (
                 <div className="mt-3 space-y-2">
-                  <div>
-                    <span className="text-[10px] text-gray-500 block mb-1">情绪</span>
-                    <div className="flex flex-wrap gap-1">
-                      {visionResult.emotions.map(e => (
-                        <span key={e} className="px-2 py-0.5 rounded bg-white/5 text-[10px] text-gray-300">{e}</span>
-                      ))}
+                  {(visionResult.visualContext?.emotions?.length > 0) && (
+                    <div>
+                      <span className="text-[10px] text-gray-500 block mb-1">情绪</span>
+                      <div className="flex flex-wrap gap-1">
+                        {(visionResult.visualContext.emotions || []).map(e => (
+                          <span key={e} className="px-2 py-0.5 rounded bg-white/5 text-[10px] text-gray-300">{e}</span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-500 block mb-1">色彩</span>
-                    <div className="flex flex-wrap gap-1">
-                      {visionResult.colors.map(c => (
-                        <span key={c.name} className="px-2 py-0.5 rounded text-[10px] text-white" style={{ background: c.hex }}>{c.name}</span>
-                      ))}
+                  )}
+                  {(visionResult.colorPalette?.length > 0) && (
+                    <div>
+                      <span className="text-[10px] text-gray-500 block mb-1">色彩</span>
+                      <div className="flex flex-wrap gap-1">
+                        {(visionResult.colorPalette || []).map(c => (
+                          <span key={c.hex} className="px-2 py-0.5 rounded text-[10px] text-white" style={{ background: c.hex }}>{Math.round((c.percentage || 0) * 100)}%</span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <span className="text-[10px] text-gray-500 block mb-1">推荐主题</span>
-                      <div className="flex flex-wrap gap-1">
-                        {visionResult.recommendedThemes.map(th => (
-                          <button key={th} onClick={() => setTheme(th)}
-                            className={`px-1.5 py-0.5 rounded text-[10px] transition-all ${theme === th ? 'bg-emerald-500 text-white' : 'bg-white/5 text-gray-400'}`}>
-                            {th}
-                          </button>
-                        ))}
+                    {(visionResult.suggestions?.alternatives?.themes?.length > 0) && (
+                      <div>
+                        <span className="text-[10px] text-gray-500 block mb-1">推荐主题</span>
+                        <div className="flex flex-wrap gap-1">
+                          {(visionResult.suggestions.alternatives.themes || []).map(th => (
+                            <button key={th} onClick={() => setTheme(th)}
+                              className={`px-1.5 py-0.5 rounded text-[10px] transition-all ${theme === th ? 'bg-emerald-500 text-white' : 'bg-white/5 text-gray-400'}`}>
+                              {th}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-gray-500 block mb-1">推荐风格</span>
-                      <div className="flex flex-wrap gap-1">
-                        {visionResult.recommendedStyles.map(st => (
-                          <button key={st} onClick={() => setGenre(st)}
-                            className={`px-1.5 py-0.5 rounded text-[10px] transition-all ${genre === st ? 'bg-violet-500 text-white' : 'bg-white/5 text-gray-400'}`}>
-                            {st}
-                          </button>
-                        ))}
+                    )}
+                    {(visionResult.suggestions?.alternatives?.styles?.length > 0) && (
+                      <div>
+                        <span className="text-[10px] text-gray-500 block mb-1">推荐风格</span>
+                        <div className="flex flex-wrap gap-1">
+                          {(visionResult.suggestions.alternatives.styles || []).map(st => (
+                            <button key={st} onClick={() => setGenre(st)}
+                              className={`px-1.5 py-0.5 rounded text-[10px] transition-all ${genre === st ? 'bg-violet-500 text-white' : 'bg-white/5 text-gray-400'}`}>
+                              {st}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
-                  {script && (
+                  {visionResult.description && (
                     <div>
                       <span className="text-[10px] text-gray-500 block mb-1">灵感描述</span>
                       <textarea
