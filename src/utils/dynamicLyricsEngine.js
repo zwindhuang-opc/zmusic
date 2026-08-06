@@ -153,6 +153,176 @@ const ENGLISH_THEME_BANKS = {
     locations: ['old mansion', 'forgotten cellar', 'rain-soaked alley', 'ancient library', 'foggy moorland', 'cursed chapel', 'forgotten crypt', 'shadowed corridor'],
     timeWords: ['decades ago', 'last century', 'in shadows', 'for years', 'in whispers', 'until now', 'once hidden', 'never spoken'],
     descriptors: ['eerie', 'ancient', 'cryptic', 'forgotten', 'shadowed', 'cursed', 'whispered', 'untold', 'dusty', 'lingering']
+  },
+  friendship: {
+    imagery: ['old whiskey', 'bonfire sparks', 'matching footsteps', 'open road', 'sunset silhouette', 'worn guitar', 'clinking glasses', 'polaroid smiles', 'starlit camp', 'shared jacket'],
+    emotions: ['loyalty', 'gratitude', 'camaraderie', 'trust', 'warmth', 'fierceness', 'understanding', 'pride', 'comfort', 'devotion'],
+    actions: ['raise glasses', 'stand together', 'walk side by side', 'listen closely', 'watch your back', 'stay up late', 'laugh till it hurts', 'carry each other', 'make a pact', 'come running'],
+    subjects: ['brother', 'sister', 'ride-or-die', 'confidant', 'teammate', 'accomplice', 'old friend', 'soul sibling', 'partner in crime', 'anchor'],
+    objects: ['pact', 'inside joke', 'shared history', 'shoulder to cry on', 'memory', 'guitar pick', 'old ticket', 'promise', 'secret handshake', 'bond'],
+    locations: ['the old bar', 'the rooftop', 'the backseat', 'the long road', 'the campfire', 'the bleachers', 'the driveway', 'the porch'],
+    timeWords: ['all these years', 'since we were kids', 'tonight', 'always', 'forever', 'through thick and thin', 'one more night', 'for old times'],
+    descriptors: ['unbreakable', 'fierce', 'warm', 'unspoken', 'steady', 'reckless', 'genuine', 'battle-tested', 'easy', 'deep']
+  },
+  success: {
+    imagery: ['golden sunrise', 'trophy glint', 'roaring crowd', 'champagne spray', 'checkered flag', 'peak summit', 'fireworks burst', 'laurel wreath', 'red carpet', 'spotlight center'],
+    emotions: ['triumph', 'pride', 'exhilaration', 'vindication', 'gratitude', 'ecstasy', 'confidence', 'satisfaction', 'elevation', 'invincibility'],
+    actions: ['clinch', 'conquer', 'break through', 'lift the trophy', 'soak it in', 'cross the line', 'raise a fist', 'take a bow', 'seize the crown', 'celebrate'],
+    subjects: ['champion', 'underdog', 'trailblazer', 'winner', 'captain', 'pioneer', 'legend in the making', 'comeback kid', 'top dog', 'icon'],
+    objects: ['trophy', 'crown', 'medal', 'spotlight', 'legacy', 'title', 'record', 'crown jewel', 'throne', 'bragging rights'],
+    locations: ['the winner circle', 'center stage', 'the podium', 'the summit', 'the finish line', 'hall of fame', 'the penthouse', 'top of the world'],
+    timeWords: ['after all these years', 'tonight we feast', 'the moment', 'at last', 'history is made', 'never in doubt', 'from this day on', 'for the record'],
+    descriptors: ['golden', 'thundering', 'unmatched', 'dazzling', 'unforgettable', 'historic', 'electric', 'soaring', 'titanic', 'vindicated']
+  },
+  life: {
+    imagery: ['winding river', 'scrapbook pages', 'open highway', 'chessboard', 'porch swing', 'half-empty glass', 'ticking clock', 'four seasons', 'train station', 'crossroads'],
+    emotions: ['wonder', 'acceptance', 'melancholy', 'gratitude', 'astonishment', 'weariness', 'joy', 'resignation', 'awe', 'fierceness'],
+    actions: ['keeps going', 'learns to let go', 'turns the page', 'starts again', 'stops to breathe', 'chooses differently', 'holds on tight', 'smiles through', 'looks back', 'steps forward'],
+    subjects: ['wanderer', 'dreamer', 'survivor', 'fool', 'sage', 'child at heart', 'late bloomer', 'old soul', 'everyman', 'storyteller'],
+    objects: ['lessons', 'scars', 'blessings', 'regrets', 'second chances', 'small victories', 'time', 'choices', 'memories', 'tomorrow'],
+    locations: ['the in-between', 'the thick of it', 'the crossroads', 'the rearview', 'the other side', 'day by day', 'the long way home', 'unknown territory'],
+    timeWords: ['one lifetime', 'the in-between years', 'right now', 'bit by bit', 'eventually', 'so far', 'never too late', 'while there is time'],
+    descriptors: ['fragile', 'stubborn', 'beautiful', 'unpredictable', 'bitter-sweet', 'messy', 'precious', 'unwritten', 'endless', 'quietly epic']
+  },
+  lunatic: {
+    imagery: ['howling wind', 'cracked mirror', 'spilled wine', 'wild hair', 'unhinged laughter', 'fork lightning', 'burning map', 'open fire', 'broken clock', 'thunderclap'],
+    emotions: ['unbound fury', 'gleeful chaos', 'daring madness', 'holy recklessness', 'intoxicated freedom', 'feral joy', 'defiant glee', 'unhinged passion', 'cackling mischief', 'untamed fire'],
+    actions: ['laughs at danger', 'kicks down doors', 'burns the rulebook', 'howls at the moon', 'dances on tables', 'spits in fate eye', 'breaks the cage', 'rides the storm', 'rips up plans', 'dares the gods'],
+    subjects: ['the madman', 'wildcard', 'jester king', 'untamed beast', 'fallen prophet', 'chaos bringer', 'heretic', 'fool saint', 'drunk poet', 'unbound soul'],
+    objects: ['cage bars', 'the rulebook', 'gilded chains', 'the script', 'pretty lies', 'the cage', 'sacred cows', 'the map', 'the lock', 'fear itself'],
+    locations: ['the burning stage', 'the open road', 'the last table', 'the rooftops', 'the eye of the storm', 'the forbidden zone', 'the whole damn world', 'outside the lines'],
+    timeWords: ['right now or never', 'every single night', 'in this madness', 'for one last ride', 'till the sun comes up', 'till the wheels fall', 'while we still breathe', 'forever unchained'],
+    descriptors: ['unhinged', 'feral', 'cackling', 'defiant', 'unbound', 'reckless', 'holy', 'terrifyingly alive', 'stark raving', 'free at last']
+  },
+  time_travel: {
+    imagery: ['flickering neon', 'old polaroids', 'crackling radio', 'familiar stranger', 'parallel streets', 'echoing future', 'dust from past', 'reversed clocks', 'memory glitch', 'quantum hum'],
+    emotions: ['déjà vu', 'haunting wonder', 'aching nostalgia', 'vertigo', 'quiet awe', 'homesickness for a place never was', 'dread curiosity', 'tender regret', 'electric hope', 'melancholy resolve'],
+    actions: ['steps through', 'rewinds', 'catches a glimpse', 'whispers to the past self', 'leaves a sign', 'recognizes a face', 'changes a small thing', 'holds the moment', 'dares to stay', 'finally comes home'],
+    subjects: ['time traveler', 'echo', 'the former self', 'ghost of future', 'parallel me', 'stowaway in time', 'familiar stranger', 'memory keeper', 'clock breaker', 'lost traveler'],
+    objects: ['the locket', 'the same song', 'old photograph', 'unread letter', 'the scar', 'matching melody', 'the ticket', 'the clue', 'the promise', 'second chance'],
+    locations: ['the same old street, different year', 'the threshold', 'the overlapping moment', 'memory lane', 'the in-between station', 'the hotel of lifetimes', 'yesterday tomorrow', 'the place it all began'],
+    timeWords: ['yesterday again', 'tomorrow past', 'this very moment, twice', 'never-forgotten then', 'just before it happened', 'someday already', 'now and then', 'out of sequence'],
+    descriptors: ['flickering', 'hollow, sweet', 'disorienting', 'tenderly impossible', 'electric with déjà vu', 'achingly familiar', 'softly catastrophic', 'luminous', 'haunting', 'home at last']
+  },
+  romantic_night: {
+    imagery: ['city lights below', 'slow jazz bar', 'candlelit table', 'shared headphones', 'misty window', 'stolen umbrella', 'late night cab', 'champagne flute', 'moonlit balcony', 'your hand in mine'],
+    emotions: ['giddy warmth', 'soft hunger', 'giddy disbelief', 'unhurried desire', 'quiet certainty', 'butterflies', 'velvet longing', 'fevered gentleness', 'homecoming', 'lazy rapture'],
+    actions: ['lingers over dinner', 'steals a glance', 'brushes your hair back', 'walks you home', 'dances in the kitchen', 'shares a secret', 'presses a kiss', 'falls asleep next to', 'says the quiet thing', 'stays till morning'],
+    subjects: ['the stranger', 'old flame', 'the one who stayed up', 'safe arms', 'the right person', 'night owl', 'whispered confidant', 'the last call', 'moon companion', 'familiar heartbeat'],
+    objects: ['a shared song', 'the last train', 'the private joke', 'stolen hours', 'the key', 'your name on my lips', 'one glass too many', 'the text unanswered, then sent', 'the scar on your wrist', 'morning light'],
+    locations: ['the 24-hour diner', 'the rooftop', 'the long drive home', 'the fire escape', 'the nearly empty bar', 'your couch', 'the quiet hallway', 'the midnight kitchen'],
+    timeWords: ['way past midnight', 'just one drink', 'a few more minutes', 'till the sun comes up', 'tonight of all nights', 'the first night', 'the last night, for now', 'right this second'],
+    descriptors: ['honeyed', 'unrushed', 'shivering sweet', 'sleepy-warm', 'unmistakable', 'too right to rush', 'floating', 'velvet-dark', 'breathless', 'forever in a night']
+  },
+  nostalgic_memory: {
+    imagery: ['scratched vinyl', 'dusty mixtape', 'faded jean jacket', 'carnival lights', 'bakery line', 'old bedroom posters', 'rain on a school window', 'first car dashboard', 'arcade tokens', 'candle on a cake'],
+    emotions: ['tender ache', 'soft gratitude', 'missing it', 'warm disbelief it was real', 'childlike wonder', 'gentle sorrow', 'cozy sweetness', 'safe in the rearview', 'grinning through the years', 'quiet longing to go back'],
+    actions: ['rereads the old letter', 'finds the sweater', 'plays the song one more time', 'drives through the old neighborhood', 'smells the perfume on a stranger', 'remembers the punchline', 'touches the scar', 'lays on the floor and closes eyes', 'laughs till it hurts', 'wishes you could tell your younger self'],
+    subjects: ['the sixteen-year-old me', 'the old house', 'the band we loved', 'the best friend I lost touch with', 'the summer', 'the first love', 'the mom who used to call', 'the dad jokes', 'the tree we climbed', 'the town that forgot us'],
+    objects: ['the yearbook', 'the ticket stubs', 'the friendship bracelet', 'the broken skateboard', 'the dress you wore once', 'the mix cd', 'the house key that no longer fits', 'a shoebox of polaroids', 'the empty jar', 'the melody'],
+    locations: ['the childhood kitchen', 'the high school hallway', 'the old bedroom', 'the diner where we always met', 'grandma porch', 'the back porch steps', 'the college dorm', 'the beach, that summer'],
+    timeWords: ['the summer of 17', 'back when we had time', 'that one night', 'the years that flew', 'before the bills and the worries', 'the first time', 'yesterday, somehow', 'a lifetime ago and yesterday at once'],
+    descriptors: ['soft as cotton', 'faded gold', 'achingly sweet', 'dusty and warm', 'sun-bleached', 'half-forgotten, half-alive', 'honey-thick', 'cozy and a little sad', 'sealed in amber', 'miraculously still there']
+  },
+  energetic_party: {
+    imagery: ['confetti cannons', 'strobe lights', 'overflowing cups', 'speakers vibrating', 'crowd surfing', 'neon signs flashing', 'disco ball rainbows', 'rooftop skyline', 'smoke machine haze', 'the drop'],
+    emotions: ['uncontainable joy', 'reckless glee', 'electric unity', 'fevered rush', 'screaming delight', 'glowing freedom', 'pounding elation', 'fearless high', 'loud love for the whole room', 'zero fucks abandon'],
+    actions: ['jumps till legs burn', 'screams the chorus', 'spins you around', 'pours another shot', 'climbs on the bar', 'locks eyes across the room', 'roars the drop', 'rips off the tie', 'keeps dancing when the lights come up', 'does it all again tomorrow'],
+    subjects: ['the life of the party', 'the stranger you instantly love', 'the dj', 'the ride-or-die crew', 'the drunk philosopher', 'the hype man', 'the dance floor queen', 'the surprise guest', 'your people', 'the whole damn city'],
+    objects: ['the final track ID', 'the VIP stamp', 'the memory you hope you remember', 'the lost phone, found again', 'the cup you never put down', 'the playlist we made', 'the confetti in our pockets', 'the story we will tell forever', 'the stain on your shirt', 'the sunrise walk home'],
+    locations: ['the packed warehouse', 'the rooftop at 3am', 'the festival front row', 'the back patio', 'the dive bar that turns into a club', 'the college dorm floor', 'the boat out on the bay', 'the after-after party'],
+    timeWords: ['till the sun comes up', 'now till never', 'one more song', 'the night we never sleep', 'right here, right now', '3am encore', 'the whole weekend', 'forever tonight'],
+    descriptors: ['thundering', 'neon-drenched', 'unstopable', 'sweaty and glowing', 'pulsing', 'explosive', 'weightless', 'deafeningly perfect', 'chaotic in the best way', 'legendary']
+  },
+  dreamy_fantasy: {
+    imagery: ['iridescent lake', 'floating islands', 'silver moon petals', 'crystal caverns', 'star whale song', 'flickering firefly storm', 'glass forest', 'pocket of twilight', 'constellation path', 'winged deer'],
+    emotions: ['breathless wonder', 'soft homesickness for somewhere never visited', 'delicate awe', 'tender curiosity', 'shivering reverence', 'sleepwalking joy', 'sacred silliness', 'gentle fear of waking', 'expansive peace', 'secret belonging'],
+    actions: ['steps through the waterfall', 'holds the star fragment', 'learns the old song', 'rides the gentle beast', 'follows the moon path', 'tastes the rainbow fruit', 'recognizes the place from dreams', 'whispers the true name', 'promises to come back', 'brings a feather home'],
+    subjects: ['the dream guide', 'old magician', 'forest child', 'star messenger', 'the unicorn', 'silent guardian', 'the reflection in the lake', 'small brave thing', 'the storyteller bird', 'the kingdom asleep'],
+    objects: ['the tiny key', 'moon water', 'the old map drawn from memory', 'the spell', 'the feather that glows', 'the name only you can say', 'the glass slipper seed', 'the echo of a song', 'seven impossible things', 'the safe return ticket'],
+    locations: ['the forest between worlds', 'the crystal library', 'the floating market', 'the mirror beach', 'the twilight meadow', 'the palace made of memory', 'the quiet valley of forever-fall', 'the nursery of stars'],
+    timeWords: ['between one breath and the next', 'the hour before waking', 'always, but only sometimes', 'on a Tuesday, if you believe', 'midnight, stretched thin', 'never the same way twice', 'for a single, perfect day', 'till the bell rings three times'],
+    descriptors: ['iridescent', 'soft as a sigh', 'impossible and kind', 'hushed and glowing', 'velvet-slow', 'sugar-spun', 'hollow and holy', 'breathtakingly gentle', 'luminous', 'realer than real']
+  },
+  modern_city: {
+    imagery: ['neon signs reflected in rain', 'overpass lights trailing cars', 'skyscraper glass', '24h convenience store hum', 'subway platform announcements', 'skyline at blue hour', 'steam from a street cart', 'fire escape silhouettes', 'taxi yellow streak', 'billboard face smiling down'],
+    emotions: ['anonymous freedom', 'quiet loneliness in the crowd', 'pulsing ambition', 'flickering tenderness between strangers', 'hurry-up anxiety', 'electrifying potential', 'worn-in independence', 'nostalgia for somewhere you haven been yet', 'calm in the eye of the rush', 'city-wide longing'],
+    actions: ['runs for the last train', 'shares an umbrella with a stranger', 'pauses to watch the skyline', 'walks home through empty streets at 2am', 'buys a coffee from the usual cart', 'recognizes the same face on the commute', 'stares at the buildings and feels small and big', 'hums along to a busker song', 'makes a plan on a napkin', 'finds the one quiet bench'],
+    subjects: ['the lonely striver', 'the street musician', 'the office drone who dreams bigger', 'the waitress with stories', 'the night shift nurse', 'the immigrant cab driver', 'the kid with a backpack and a plan', 'the couple splitting a late night sandwich', 'the city itself, breathing', 'the stranger who helped you'],
+    objects: ['the monthly pass', 'the half-read book on the train', 'business card you forgot to give', 'the takeout container', 'house keys jangling', 'the city map on the wall', 'the dream scribbled on a napkin', 'the number in your pocket', 'the resume revised 12 times', 'the last cigarette of the night'],
+    locations: ['the 6am subway', 'the rooftop you snuck up on', 'the all-night laundromat', 'the noodle shop with the line out the door', 'the bus stop in the rain', 'the bridge walkway at dusk', 'the office window 32 floors up', 'the dive bar with the same jukebox'],
+    timeWords: ['blue hour', 'last call', 'the morning commute', '3am, when the city finally exhales', 'lunch break rush', 'first snow on the fire escape', 'weekend streets still sleeping', 'that in-between time when nobody judges you'],
+    descriptors: ['glossy and gritty', 'rain-slick neon', 'tired but alive', 'endlessly unfolding', 'anonymous and intimate', 'concrete-poetic', 'pulsing under a gray sky', 'too loud, too much, perfect', 'lonely with company', 'beautiful because it does not care']
+  },
+  ancient_legend: {
+    imagery: ['weathered stone stele', 'dragon-scale clouds', 'aged bamboo scroll', 'bronze bell echo', 'incense smoke curling', 'jade pendant warm', 'distant mountain palace', 'peach orchard of immortals', 'silk tapestry frayed', 'sword in the stone'],
+    emotions: ['awe for what came before', 'yearning for the old ways', 'humble reverence', 'divine disquiet', 'loyalty beyond death', 'promise made before the gods', 'ancestral weight', 'fated destiny', 'unbroken memory', 'fearful wonder'],
+    actions: ['bows before the altar', 'unfurls the scroll', 'reads the oracle bones', 'climbs the nine thousand steps', 'receives the mandate of heaven', 'honors the ancestors', 'forges the blessed blade', 'keeps the vow through generations', 'awakens the old gods', 'speaks the true name of the mountain'],
+    subjects: ['the wandering scholar', 'the immortal sage', 'the last scion', 'the dragon child', 'the monk who will not leave', 'the general sworn to the lost throne', 'the priestess of the moon', 'the stone guardian', 'the first emperor ghost', 'the fox who waited a thousand years'],
+    objects: ['the jade seal', 'the lost chapter', 'the ancestral tablet', 'the elixir of life', 'the forbidden sutra', 'the celestial sword', 'the peach of immortality', 'the old contract with the spirit world', 'the blood-oath bronze', 'the silk map hidden for dynasties'],
+    locations: ['the thousand-step temple', 'the jade lake', 'the ancient banyan tree', 'the stone forest of tablets', 'the high mountain where the immortals dwell', 'the tomb sealed three lifetimes ago', 'the village where they still remember the song', 'the border of the living and the dead'],
+    timeWords: ['a thousand winters ago', 'since before the first emperor', 'once every hundred years', 'when the red star rises', 'by the third watch', 'for twelve generations', 'until the bell rings true once more', 'in the age of heroes'],
+    descriptors: ['weathered gold', 'incense-thick', 'trembling with lineage', 'stone-silent', 'crackling with old magic', 'imperial and forgotten', 'soft with incense', 'thunderous in the bones', 'carved in jade', 'immortal even in ruin']
+  },
+  indie_story: {
+    imagery: ['chipped coffee mug', 'sunbeam through dusty window', 'used bookstore cat', 'worn typewriter', 'bike on a cobblestone street', 'handmade zine', 'record player skipping softly', 'thrift store sweater', 'house show living room', 'mix cd in a paper sleeve'],
+    emotions: ['quiet stubborn hope', 'gentle nonconformity', 'bittersweet pride', 'cozy smallness', 'soft rebellion', 'sincere awkwardness', 'the pride of making it yourself', 'tenderness for the underdog', 'sleepy contentment', 'quiet loyalty to your weird'],
+    actions: ['brews another cup and keeps writing', 'hangs fliers at the laundromat', 'bikes across town for the show', 'binds the zine at Kinkos at 11pm', 'shares the song nobody else gets', 'learns the weird chord anyway', 'keeps the receipts for the bad art', 'buys the book from the weird local shop', 'volunteers for the fest', 'loves the thing before it is cool'],
+    subjects: ['the part-time barista, full-time poet', 'the bedroom pop kid', 'the zine editor', 'the local band that never made it but we loved them', 'the painter who gives it away', 'the grad student surviving on noodles and spite', 'the weird older kid who showed you the good books', 'the open mic regulars', 'the used bookstore owner', 'the faithful friends who show up'],
+    objects: ['the beat up notebook', 'the demo recorded on a phone', 'the free ticket because you worked the door', 'the signature on the LP', 'the apron stained with ink and espresso', 'the friend-made cassette', 'the poster nobody else took down', 'the thrift store jacket you will never throw out', 'the recipe scribbled on a napkin', 'the shelf of small, impossible victories'],
+    locations: ['the all ages venue basement', 'the 24-hour coffee shop, back corner', 'the used bookstore loft', 'the house show kitchen floor', 'the college radio station booth', 'the studio apartment with blankets for soundproofing', 'the record store listening booth', 'that one weird park bench'],
+    timeWords: ['winter break senior year', 'the long tour van drive', '3am writing session', 'the summer we tried', 'before anybody knew our name', 'right after graduation', 'one last set before we move away', 'our time, however small'],
+    descriptors: ['chipped but loved', 'coffee-stained', 'handmade and warm', 'softly unpolished', 'unmarketable and perfect', 'muffled and cozy', 'fiercely ours', 'sleepy and sincere', 'a little awkward, a lot beautiful', 'quietly legendary']
+  },
+  folk_tale: {
+    imagery: ['cottage smoke at dusk', 'fox with white-tipped tail', 'hollow willow', 'frog on a lily pad crown', 'bread crumbs on a forest path', 'well of seven buckets', 'barn owl who listens', 'bridge of three stones', 'seamstress silver thimble', 'baby wrapped in stardust'],
+    emotions: ['a shiver of old magic', 'gentle warning', 'trickster glee', 'softly earned wisdom', 'childlike trust', 'animal gratitude', 'country cleverness', 'kindness rewarded', 'mischievous mercy', 'quiet moral weight'],
+    actions: ['shares the last crust with the beggar', 'keeps the promise to the fox', 'solves the riddle the old woman asked', 'plants the bean in the cold earth', 'dares to knock three times', 'spares the small creature', 'speaks the true name of the river', 'stitches the cloak from moonlight', 'gives the gift back, twice over', 'learns the lesson, gentle and final'],
+    subjects: ['the youngest child', 'clever fox', 'the kind widow', 'the wandering tailor', 'old woodcutter', 'the seventh son', 'the frog prince who actually likes being a frog', 'the horse who talks once', 'the witch who just wanted peace', 'the small mouse who saves the day'],
+    objects: ['the iron key', 'the loaf of bread blessed by the sun', 'the red cloak dyed with berry juice', 'three wishes and one of them wasted', 'the spinning wheel', 'the song only the wind knows', 'the tiny bundle left on the doorstep', 'the mirror that tells only kind truths', 'seven league boots, resoled', 'the old lullaby'],
+    locations: ['the cottage just beyond the wood', 'the crossroads at twilight', 'the deepest part of the well', 'the thorn hedge that grew overnight', 'grandmother cottage', 'the river that asks a question', 'the barn on the solstice', 'the village where they still remember the story'],
+    timeWords: ['once upon a time', 'in a village not far from here', 'on the coldest night of winter', 'when the world was younger and kinder', 'on the third day, at dawn', 'over seven long years', 'when the moon was full, as it always is in tales', 'and every night since'],
+    descriptors: ['woodsmoke soft', 'starlit and simple', 'rustic and wise', 'gentle as moss', 'trickster-bright', 'honey-thick with magic', 'feather-light, iron-true', 'moral, never preachy', 'cozy and a little bit strange', 'happily-ever-after, with work']
+  },
+  winter_solitude: {
+    imagery: ['fresh snow at dawn', 'iced window patterns', 'single lit window', 'frozen lake creaking', 'bare tree branches', 'steam off tea', 'fireplace embers', 'scarf pulled tight', 'first footprint', 'silence after snowfall'],
+    emotions: ['crystal quiet', 'hushed introspection', 'gentle loneliness', 'breathing relief from the noise', 'cocooned introspection', 'subtle wonder', 'snow-soft melancholy', 'cozy self-reliance', 'frost-clear acceptance', 'waiting, without hurry'],
+    actions: ['walks the empty road just to hear the snow crunch', 'breaths on the cold glass and draws a heart', 'sips soup alone at the counter', 'reads the book been waiting for', 'feeds the brave little sparrow', 'tucks another blanket around', 'stares at the frost lace on the pane', 'writes letters never sent', 'shovels the path for the old lady next door', 'stays inside, no plans, no guilt'],
+    subjects: ['the quiet neighbor', 'the sparrow who stays for winter', 'the writer in the garret', 'the cat curled on the radiator', 'the snow plow driver at 4am', 'the one who stayed behind', 'the frozen lake watcher', 'the hot chocolate connoisseur', 'the memory keeper by the fire', 'your gentle self, finally still'],
+    objects: ['the too-thick sweater', 'frozen birdbath', 'the half-finished letter', 'the library book overdue', 'the woodpile stacked high', 'cocoa mug ring on the table', 'the scarf lost, then found again', 'the snow globe on the shelf', 'your own footsteps, only ones for miles', 'the promise of spring, hidden under snow'],
+    locations: ['the small apartment above the quiet street', 'grandpa old cabin', 'the frozen boardwalk', 'the silent park, 6am after the blizzard', 'the corner booth at the diner, steam rising', 'the frozen riverbank', 'the attic room with the space heater', 'your own warm bed, with nowhere to go'],
+    timeWords: ['the longest night', 'first snow, first light', 'the week between holidays', '4am, when the world is frozen and still', 'winter, finally alone on purpose', 'the days getting longer, just barely', 'one more cup before bed', 'the whole quiet season'],
+    descriptors: ['frost-clear', 'snow-muffled', 'steam-warmed', 'blank and perfect', 'cozy with a side of sad', 'crystalline and holy', 'wrapped up tight', 'white and soft', 'silent, not empty', 'breathtakingly gentle']
+  },
+  spring_awakening: {
+    imagery: ['crocus pushing through snowmelt', 'bee drunk on first blossom', 'rain on new leaves', 'sun after long gray', 'swallow returning', 'moss wet and green', 'tulip buds tight with promise', 'baby lamb wobbly first steps', 'dandelion fluff carrying wishes', 'soil dark and warm'],
+    emotions: ['tender hope unfurling', 'itch to begin again', 'giddy relief', 'soft forgiveness for winter self', 'green and patient optimism', 'first crush giddiness', 'surprise joy on a walk', 'quiet resolve to plant something', 'a yawn and a stretch', 'the world remembering how to smile'],
+    actions: ['plants the first seed', 'steps outside without the jacket', 'rolls the window down and sings loud', 'splashes in a puddle', 'feels the warm dirt between fingers', 'plants tomatoes too early, anyway', 'apologizes and means it', 'starts the journal again', 'takes the long way home to smell the blossoms', 'leaves the window open for the breeze'],
+    subjects: ['the first brave flower', 'the gardener who never gave up', 'the kid with the new bike', 'the bee, tired but ready', 'the returning birds', 'the sun, finally allowed to stay', 'the planner full of new lists', 'the exhaler of long-held grief', 'the farmer planting in faith', 'new love, still shy'],
+    objects: ['the seed packet bought in February', 'the new notebook with blank pages', 'the rain boots with the leaky sole, still loved', 'the first salad from the garden', 'the sun hat pulled from storage', 'the open window screen', 'the list of things to try', 'the bike tire finally pumped', 'buds on the old tree we thought was dead', 'the new song, hummed instead of written'],
+    locations: ['the community garden, 7am', 'the muddy trail through the park', 'the backyard, turning soil', 'the sidewalk cafe, first outdoor tables', 'the orchard beginning to bloom', 'the schoolyard, grass returning', 'the open road heading out of town', 'front porch with a cup of tea'],
+    timeWords: ['the thaw', 'first warm afternoon', 'the week the daffodils showed up', 'early march, shaky but sincere', 'when the clocks change and light stays longer', 'that first day you do not need a coat', 'planting weekend', 'the whole month of soft beginnings'],
+    descriptors: ['tender green', 'rain-washed', 'sleepy-eyed and smiling', 'softly determined', 'muddy and hopeful', 'blossom-drunk', 'sun-warmed', 'patiently unfolding', 'giddy and afraid, in a good way', 'new from the inside out']
+  },
+  autumn_melancholy: {
+    imagery: ['crimson maple drift', 'apple orchard scent', 'migrating geese', 'cider steam', 'sweater first put on', 'cornstalk shiver', 'harvest moon low', 'crunch of leaves under boots', 'pumpkin candle glow', 'shadow stretching longer'],
+    emotions: ['soft letting go', 'warm sadness of endings', 'grateful melancholy', 'the quiet pull inward', 'the sweetest sorrow', 'homesickness for a summer already gone', 'cozy loss', 'generous nostalgia', 'acceptance of the dark coming', 'slow, soft, earnest love'],
+    actions: ['rakes the yard but saves a pile for jumping', 'picks the last apple, bruised but still sweet', 'makes the soup from memory', 'rolls up the hose for the year', 'walks the dog an hour earlier, in the golden light', 'tucks the summer clothes away, gently', 'bakes the pie that does not need a reason', 'calls the person you been missing', 'writes down the summer story before it fades', 'turns the first page of a heavier book'],
+    subjects: ['the orchard keeper', 'the student walking slower on purpose', 'the empty nester', 'the old dog, graying at the muzzle', 'the returning student', 'the grandma canning jars for winter', 'the poet, leaf in hand', 'the last of the swallows, lingering', 'the friend who always brings soup', 'the part of you that knows when to rest'],
+    objects: ['the first mug of mulled cider', 'the jacket you found at the thrift store', 'the photo album from the summer trip', 'the jar of jam labeled august', 'the scarf knitted by auntie', 'the leaf pressed into the new novel', 'the pumpkin seeds roasted salty', 'the candle lit earlier each night', 'the letter sent to a friend far away', 'the harvest wreath on the door'],
+    locations: ['the apple orchard at golden hour', 'the long country road, trees on fire', 'the kitchen, windows steamed from canning', 'the campus quad, leaves crunching under backpacks', 'the lake path on a weekday', 'the porch with the rocking chairs', 'the pumpkin patch with the kids too loud and happy', 'the small town square harvest fair'],
+    timeWords: ['the harvest moon', 'the last warm saturday', 'when the school bell rings again', 'october afternoons that feel like a hug', 'the week before the clocks fall back', 'indian summer, too short', 'that evening that smelled like woodsmoke', 'the whole generous season of letting go'],
+    descriptors: ['cider-warmed', 'cinnamon-kissed', 'golden and grieving', 'softly generous', 'rich with letting go', 'cozy with a tear in the eye', 'honey-colored and patient', 'slow, sweet, and a little bit sorry', 'abundant and humble', 'perfect, because it does not last']
+  },
+  ocean_dreams: {
+    imagery: ['bioluminescent wake behind a sailboat', 'sea foam lace on the shore', 'whale song at midnight', 'seashell spirals', 'horizon where sky melts into water', 'sail catching first sunlight', 'jellyfish drifting like ghosts', 'salt in the hair and on the lips', 'abandoned lighthouse still burning', 'wave hollowed cave singing'],
+    emotions: ['vast smallness', 'salt-stung wonder', 'homesick for the deep', 'soft fear of something bigger', 'awe without agenda', 'sea-worn calm', 'subtle pull to stay forever', 'tender love for the tide', 'humbled and held', 'the horizon calling your name'],
+    actions: ['sails beyond the sight of land', 'learns the names of the tides', 'swims at midnight just to see the sparks', 'listens to the conch and remembers the first home', 'builds the castle and lets the tide take it', 'walks the shoreline picking up the sad, beautiful things', 'follows the gulls for an hour', 'lets the waves carry the grief out', 'learns to read the sky over water', 'comes back tanned, salt-crusted, kinder'],
+    subjects: ['the lighthouse keeper, lonely and serene', 'the old fisherman who talks to the sea', 'the kid discovering tide pools', 'the whales passing slowly, reverently', 'the mermaid half-believed in', 'the captain with salt in his beard', 'the beachcomber with pockets full of wonder', 'the sailor who fell in love with the ocean first', 'the biologist staying up all night for plankton', 'the driftwood sculptor'],
+    objects: ['the compass, scratched but true', 'the jar of seawater on the windowsill', 'sailcloth patched twelve times', 'the seashell necklace from a stranger', 'the tide table, dog-eared', 'the anchor rope frayed at the ends', 'the postcard sent from a distant port', 'the waterproof journal half-filled with waves', 'the first fish caught, then released', 'the recipe for grandma chowder'],
+    locations: ['the cliffside lighthouse', 'the tidal pools at low tide', 'the quiet cove only locals know', 'the deck of a small wooden boat, sunrise', 'the long pier at midnight', 'the dunes after a storm, wild and rearranged', 'the sea glass beach', 'the open ocean, no land in sight for days'],
+    timeWords: ['when the tide pulls out farthest', 'midnight swim, bioluminescent', 'the long first day at sea', 'the hour before the storm, the water waiting', 'first sighting of land, nearly cried', 'summer on the cape', 'all of it, one salty, holy lifetime', 'whenever the wind smells like the sea, forever'],
+    descriptors: ['salt-cured', 'horizon-wide', 'softly terrifying', 'endlessly forgiving', 'foam-laced and gentle', 'immense and intimate', 'deep-breath-calm', 'blue beyond blue', 'humming with old songs', 'home, even when you were not born there']
   }
 };
 
@@ -487,8 +657,16 @@ const THEME_BANKS = {
 
 const STYLE_MODIFIERS = {
   pop: {
-    vocabularyBias: ['快乐', '阳光', '青春', '心动', '旋律', '闪亮'],
-    sentencePatterns: ['{subject}{action}，{emotion}的{object}', '{imagery}里{action}，{emotion}满天'],
+    vocabularyBias: ['快乐', '阳光', '青春', '心动', '旋律', '闪亮', '节拍', '微笑', '自由', '告白'],
+    sentencePatterns: [
+      '{subject}{action}，{emotion}的{object}',
+      '{imagery}里{action}，{emotion}满天',
+      '{timeWord}的{location}，{subject}{action}',
+      '{descriptor}{imagery}，{emotion}漫延',
+      '{subject}想要{action}，带着{emotion}',
+      '{object}在{action}，{emotion}像{imagery}',
+      '{location}下{action}，{subject}的{emotion}'
+    ],
     rhymePreference: 'AABB',
     lineLength: [7, 12],
     tone: 'casual',
@@ -519,8 +697,16 @@ const STYLE_MODIFIERS = {
     sfx: ['雷声']
   },
   electronic: {
-    vocabularyBias: ['霓虹', '脉冲', '未来', '节拍', '释放', '迷幻'],
-    sentencePatterns: ['{imagery}{action}，{subject}{action}', '{emotion}的{object}，{action}到{timeWord}'],
+    vocabularyBias: ['霓虹', '脉冲', '未来', '节拍', '释放', '迷幻', '电流', '律动', '光影', '太空'],
+    sentencePatterns: [
+      '{imagery}{action}，{subject}{action}',
+      '{emotion}的{object}，{action}到{timeWord}',
+      '{location}中{subject}{action}，{emotion}流动',
+      '{descriptor}的{imagery}，{subject}不停{action}',
+      '{timeWord}的{imagery}，{action}到天亮',
+      '{object}闪动，{emotion}在{location}律动',
+      '{subject}{action}，像{descriptor}{imagery}'
+    ],
     rhymePreference: 'AABB',
     lineLength: [6, 10],
     tone: 'urban',
@@ -531,8 +717,16 @@ const STYLE_MODIFIERS = {
     sfx: ['心跳', '时钟']
   },
   hip_hop: {
-    vocabularyBias: ['街头', '真实', '态度', '麦克风', '涂鸦', '节奏'],
-    sentencePatterns: ['{subject}在{location}{action}，{emotion}是{object}', '{imagery}{action}，{subject}说真话'],
+    vocabularyBias: ['街头', '真实', '态度', '麦克风', '涂鸦', '节奏', 'Flow', '兄弟', '说唱', '硬核'],
+    sentencePatterns: [
+      '{subject}在{location}{action}，{emotion}是{object}',
+      '{imagery}{action}，{subject}说真话',
+      '{timeWord}的{location}，{subject}用{action}回答',
+      '{descriptor}{imagery}，{subject}把{emotion}写下',
+      '{location}就是{action}，{emotion}在{object}',
+      '{subject}拿着{object}，{action}着{emotion}',
+      '{emotion}的{imagery}，{action}在{timeWord}'
+    ],
     rhymePreference: 'AABB',
     lineLength: [8, 14],
     tone: 'casual',
@@ -563,8 +757,16 @@ const STYLE_MODIFIERS = {
     sfx: ['雨声']
   },
   jazz: {
-    vocabularyBias: ['萨克斯', '红酒', '慵懒', '夜色', '优雅', '摇摆'],
-    sentencePatterns: ['{location}里{subject}{action}，{emotion}悠扬', '{imagery}与{imagery}，{emotion}成诗'],
+    vocabularyBias: ['萨克斯', '红酒', '慵懒', '夜色', '优雅', '摇摆', '即兴', '蓝调', '咖啡店', '香烟'],
+    sentencePatterns: [
+      '{location}里{subject}{action}，{emotion}悠扬',
+      '{imagery}与{imagery}，{emotion}成诗',
+      '{timeWord}的{location}，{object}摇晃',
+      '{descriptor}{imagery}下，{subject}{action}',
+      '{subject}轻轻{action}，{emotion}像{object}',
+      '{location}飘着{imagery}，{action}到{timeWord}',
+      '{emotion}的{object}，{action}在{imagery}'
+    ],
     rhymePreference: 'ABCB',
     lineLength: [7, 13],
     tone: 'casual',
@@ -575,8 +777,16 @@ const STYLE_MODIFIERS = {
     sfx: []
   },
   classical: {
-    vocabularyBias: ['钢琴', '小提琴', '永恒', '宫廷', '高雅', '命运'],
-    sentencePatterns: ['{subject}{action}，{object}永恒', '{imagery}间{action}，{emotion}不朽'],
+    vocabularyBias: ['钢琴', '小提琴', '永恒', '宫廷', '高雅', '命运', '交响', '奏鸣', '月光', '史诗'],
+    sentencePatterns: [
+      '{subject}{action}，{object}永恒',
+      '{imagery}间{action}，{emotion}不朽',
+      '{timeWord}的{location}，{subject}{action}',
+      '{descriptor}{imagery}，{emotion}流淌',
+      '{subject}像{object}，{action}在{location}',
+      '{location}中{action}，{emotion}回荡',
+      '{emotion}的{imagery}，{subject}{action}'
+    ],
     rhymePreference: 'ABAB',
     lineLength: [7, 12],
     tone: 'classical',
@@ -587,8 +797,16 @@ const STYLE_MODIFIERS = {
     sfx: []
   },
   rnb: {
-    vocabularyBias: ['烛光', '红酒', '性感', '亲密', '节奏', '夜色'],
-    sentencePatterns: ['{location}里{subject}{action}，{emotion}流转', '{imagery}{action}，{subject}靠近'],
+    vocabularyBias: ['烛光', '红酒', '性感', '亲密', '节奏', '夜色', '呢喃', '耳语', '温柔', '缠绵'],
+    sentencePatterns: [
+      '{location}里{subject}{action}，{emotion}流转',
+      '{imagery}{action}，{subject}靠近',
+      '{timeWord}的{location}，{object}微微亮',
+      '{descriptor}{imagery}下，{subject}与{object}',
+      '{subject}轻轻{action}，{emotion}在耳边',
+      '{location}里{imagery}，{action}到{timeWord}',
+      '{emotion}的{object}，{action}在{imagery}'
+    ],
     rhymePreference: 'ABCB',
     lineLength: [7, 12],
     tone: 'casual',
@@ -599,8 +817,16 @@ const STYLE_MODIFIERS = {
     sfx: ['心跳']
   },
   country: {
-    vocabularyBias: ['公路', '吉他', '牛仔', '星空', '自由', '篝火'],
-    sentencePatterns: ['{location}上{subject}{action}，{emotion}自由', '{imagery}{action}，{object}简单'],
+    vocabularyBias: ['公路', '吉他', '牛仔', '星空', '自由', '篝火', '啤酒', '旅途', '小镇', '晚风'],
+    sentencePatterns: [
+      '{location}上{subject}{action}，{emotion}自由',
+      '{imagery}{action}，{object}简单',
+      '{timeWord}的{location}，{subject}走{action}',
+      '{descriptor}{imagery}下，{object}在{action}',
+      '{subject}带着{object}，{action}向{location}',
+      '{location}边{imagery}，{action}到{timeWord}',
+      '{emotion}的{imagery}，{subject}{action}'
+    ],
     rhymePreference: 'AABB',
     lineLength: [7, 12],
     tone: 'casual',
@@ -611,8 +837,16 @@ const STYLE_MODIFIERS = {
     sfx: ['风声']
   },
   heartbreaking: {
-    vocabularyBias: ['碎裂', '泪痕', '绝望', '回忆', '伤口', '心碎'],
-    sentencePatterns: ['{subject}{action}，{emotion}成河', '{imagery}里{action}，{object}破碎'],
+    vocabularyBias: ['碎裂', '泪痕', '绝望', '回忆', '伤口', '心碎', '离别', '寂寞', '烟灰', '遗憾'],
+    sentencePatterns: [
+      '{subject}{action}，{emotion}成河',
+      '{imagery}里{action}，{object}破碎',
+      '{timeWord}的{location}，{subject}独自{action}',
+      '{descriptor}{imagery}，{emotion}还在{action}',
+      '{subject}把{object}{action}，{emotion}留{location}',
+      '{location}里{imagery}，{action}在{timeWord}',
+      '{emotion}像{imagery}，{action}不回'
+    ],
     rhymePreference: 'ABAB',
     lineLength: [6, 12],
     tone: 'formal',
@@ -623,8 +857,16 @@ const STYLE_MODIFIERS = {
     sfx: ['雨声']
   },
   healing: {
-    vocabularyBias: ['阳光', '微风', '治愈', '温暖', '新生', '安宁'],
-    sentencePatterns: ['{subject}{action}，{emotion}流淌', '{imagery}里{action}，{object}愈合'],
+    vocabularyBias: ['阳光', '微风', '治愈', '温暖', '新生', '安宁', '花香', '春天', '彩虹', '拥抱'],
+    sentencePatterns: [
+      '{subject}{action}，{emotion}流淌',
+      '{imagery}里{action}，{object}愈合',
+      '{timeWord}的{location}，{subject}遇见{object}',
+      '{descriptor}{imagery}，{emotion}在{action}',
+      '{subject}把{emotion}{action}，{object}会开',
+      '{location}中{imagery}，{action}着{emotion}',
+      '{emotion}的{object}，{action}出{imagery}'
+    ],
     rhymePreference: 'AABB',
     lineLength: [7, 12],
     tone: 'ethereal',
@@ -671,8 +913,16 @@ const STYLE_MODIFIERS = {
     sfx: ['雷声', '风声']
   },
   romantic: {
-    vocabularyBias: ['玫瑰', '月光', '誓言', '浪漫', '心跳', '星光'],
-    sentencePatterns: ['{location}下{subject}{action}，{emotion}永恒', '{imagery}{action}，{object}不散'],
+    vocabularyBias: ['玫瑰', '月光', '誓言', '浪漫', '心跳', '星光', '初吻', '拥抱', '约会', '温柔'],
+    sentencePatterns: [
+      '{location}下{subject}{action}，{emotion}永恒',
+      '{imagery}{action}，{object}不散',
+      '{timeWord}的{location}，{subject}与{object}',
+      '{descriptor}{imagery}，{emotion}是{object}',
+      '{subject}把{object}{action}，{emotion}给你',
+      '{location}中{imagery}，{action}到{timeWord}',
+      '{emotion}的{imagery}，{subject}和你'
+    ],
     rhymePreference: 'AABB',
     lineLength: [7, 12],
     tone: 'formal',
@@ -683,8 +933,16 @@ const STYLE_MODIFIERS = {
     sfx: []
   },
   nostalgic: {
-    vocabularyBias: ['旧时光', '青春', '回忆', '蝉鸣', '泛黄', '那年'],
-    sentencePatterns: ['{subject}{action}，{object}不老', '{imagery}里{action}，{emotion}依旧'],
+    vocabularyBias: ['旧时光', '青春', '回忆', '蝉鸣', '泛黄', '那年', '老照片', '磁带', '小巷', '晚风'],
+    sentencePatterns: [
+      '{subject}{action}，{object}不老',
+      '{imagery}里{action}，{emotion}依旧',
+      '{timeWord}的{location}，{subject}想起{object}',
+      '{descriptor}{imagery}，{emotion}在{action}',
+      '{subject}翻着{object}，{action}到{timeWord}',
+      '{location}中{imagery}，{action}过{timeWord}',
+      '{emotion}的{imagery}，{subject}{action}'
+    ],
     rhymePreference: 'ABAB',
     lineLength: [7, 12],
     tone: 'casual',
@@ -695,8 +953,16 @@ const STYLE_MODIFIERS = {
     sfx: ['风声', '钟声']
   },
   energetic: {
-    vocabularyBias: ['火焰', '舞台', '燃烧', '热血', '呐喊', '活力'],
-    sentencePatterns: ['{subject}{action}，{emotion}沸腾', '{imagery}{action}，{object}闪耀'],
+    vocabularyBias: ['火焰', '舞台', '燃烧', '热血', '呐喊', '活力', '奔跑', '爆发', '沸腾', '勇敢'],
+    sentencePatterns: [
+      '{subject}{action}，{emotion}沸腾',
+      '{imagery}{action}，{object}闪耀',
+      '{timeWord}的{location}，{subject}{action}',
+      '{descriptor}{imagery}，{emotion}在{action}',
+      '{subject}就{action}，带着{object}',
+      '{location}里{imagery}，{action}到{timeWord}',
+      '{emotion}的{object}，{action}不停'
+    ],
     rhymePreference: 'AABB',
     lineLength: [6, 11],
     tone: 'urban',
@@ -755,8 +1021,16 @@ const STYLE_MODIFIERS = {
     sfx: []
   },
   folk: {
-    vocabularyBias: ['炊烟', '麦田', '故乡', '老槐', '乡音', '土地'],
-    sentencePatterns: ['{location}里{subject}{action}，{emotion}暖心', '{imagery}{action}，{object}是根'],
+    vocabularyBias: ['炊烟', '麦田', '故乡', '老槐', '乡音', '土地', '小溪', '青石', '童谣', '晚霞'],
+    sentencePatterns: [
+      '{location}里{subject}{action}，{emotion}暖心',
+      '{imagery}{action}，{object}是根',
+      '{timeWord}的{location}，{subject}在{action}',
+      '{descriptor}{imagery}，{emotion}飘在{location}',
+      '{subject}唱着{object}，{action}回故乡',
+      '{location}边{imagery}，{action}到{timeWord}',
+      '{emotion}的{imagery}，{subject}{action}'
+    ],
     rhymePreference: 'AABB',
     lineLength: [7, 12],
     tone: 'casual',
@@ -767,8 +1041,16 @@ const STYLE_MODIFIERS = {
     sfx: ['风声', '流水']
   },
   kpop: {
-    vocabularyBias: ['舞台', '星光', '应援', '梦想', '青春', '闪耀'],
-    sentencePatterns: ['{subject}{action}，{emotion}发光', '{imagery}{action}，{object}不散场'],
+    vocabularyBias: ['舞台', '星光', '应援', '梦想', '青春', '闪耀', '心跳', '偶像', '粉海', '灿烂'],
+    sentencePatterns: [
+      '{subject}{action}，{emotion}发光',
+      '{imagery}{action}，{object}不散场',
+      '{timeWord}的{location}，{subject}站上{object}',
+      '{descriptor}{imagery}，{emotion}在{action}',
+      '{subject}为了你{action}，带着{object}',
+      '{location}下{imagery}，{action}到{timeWord}',
+      '{emotion}的{object}，{action}在{imagery}'
+    ],
     rhymePreference: 'AABB',
     lineLength: [7, 12],
     tone: 'casual',
@@ -791,8 +1073,16 @@ const STYLE_MODIFIERS = {
     sfx: ['海浪', '风声']
   },
   ambient: {
-    vocabularyBias: ['回声', '宁静', '宇宙', '冥想', '深海', '星空'],
-    sentencePatterns: ['{subject}{action}，{emotion}无尽', '{imagery}间{action}，{object}消融'],
+    vocabularyBias: ['回声', '宁静', '宇宙', '冥想', '深海', '星空', '薄雾', '极光', '冰川', '晨曦'],
+    sentencePatterns: [
+      '{subject}{action}，{emotion}无尽',
+      '{imagery}间{action}，{object}消融',
+      '{timeWord}的{location}，{subject}与{imagery}',
+      '{descriptor}{imagery}，{emotion}在{action}',
+      '{subject}慢慢{action}，{object}如{imagery}',
+      '{location}中{action}，{emotion}沉入{timeWord}',
+      '{emotion}的{imagery}，{object}无痕'
+    ],
     rhymePreference: 'ABCB',
     lineLength: [6, 12],
     tone: 'ethereal',
@@ -803,8 +1093,16 @@ const STYLE_MODIFIERS = {
     sfx: ['风声', '流水', '海浪']
   },
   chinese_traditional: {
-    vocabularyBias: ['古筝', '琵琶', '墨笔', '茶香', '山水', '诗意'],
-    sentencePatterns: ['{subject}{action}，{object}韵味长', '{imagery}间{action}，{emotion}悠然'],
+    vocabularyBias: ['古筝', '琵琶', '墨笔', '茶香', '山水', '诗意', '烟雨', '江南', '丹青', '月色'],
+    sentencePatterns: [
+      '{subject}{action}，{object}韵味长',
+      '{imagery}间{action}，{emotion}悠然',
+      '{timeWord}的{location}，{subject}点{object}',
+      '{descriptor}{imagery}，{emotion}落{location}',
+      '{subject}抚{object}，{action}一曲{emotion}',
+      '{location}中{imagery}，{action}入{timeWord}',
+      '{emotion}如{imagery}，{action}在{object}'
+    ],
     rhymePreference: 'ABAB',
     lineLength: [7, 12],
     tone: 'classical',
@@ -827,8 +1125,16 @@ const STYLE_MODIFIERS = {
     sfx: ['风声', '钟声']
   },
   love_song: {
-    vocabularyBias: ['玫瑰', '戒指', '誓言', '深情', '永恒', '思念'],
-    sentencePatterns: ['{subject}{action}，{emotion}是歌', '{imagery}{action}，{object}不变'],
+    vocabularyBias: ['玫瑰', '戒指', '誓言', '深情', '永恒', '思念', '牵手', '拥抱', '心动', '甜蜜'],
+    sentencePatterns: [
+      '{subject}{action}，{emotion}是歌',
+      '{imagery}{action}，{object}不变',
+      '{timeWord}的{location}，{subject}把{object}{action}',
+      '{descriptor}{imagery}，{emotion}是你',
+      '{subject}爱{object}，{action}到{timeWord}',
+      '{location}里{imagery}，{action}着{emotion}',
+      '{emotion}的{object}，{action}一生'
+    ],
     rhymePreference: 'AABB',
     lineLength: [7, 12],
     tone: 'formal',
@@ -1034,6 +1340,155 @@ const MUSICAL_TERMS = {
 };
 
 /* =========================================================================
+ * 2B. ENGLISH STYLE MODIFIERS — vocabularyBias / instrumentation / effects
+ *     in natural English. Mirrors STYLE_MODIFIERS structure; used only when
+ *     language === 'en' to prevent CJK terms leaking into English output.
+ * ========================================================================= */
+const EN_STYLE_BIAS = {
+  pop: {
+    vocabularyBias: ['sunshine', 'youth', 'sparkle', 'heartbeat', 'melody', 'shimmer', 'catchy', 'radiant', 'summer', 'forever young'],
+    instrumentation: ['Piano', 'Acoustic Guitar', 'Bass', 'Drum Kit', 'Synth Pad'],
+    effects: ['Reverb', 'Delay'],
+    vocal: { gender: 'Male', emotionLevel: 'Emotion Lv.6', tone: 'Conversational', dialect: 'Standard', micTechnique: 'Close Mic', layering: 'Double-tracked' }
+  },
+  rock: {
+    vocabularyBias: ['fire', 'rebellion', 'freedom', 'shout', 'blood', 'burst', 'roar', 'scream', 'shake', 'unbroken'],
+    instrumentation: ['Electric Guitar', 'Bass Guitar', 'Drum Kit', 'Piano'],
+    effects: ['Distortion', 'Compression', 'Reverb'],
+    sfx: ['Thunder'],
+    vocal: { gender: 'Male', emotionLevel: 'Emotion Lv.8', tone: 'Gritty/Raspy', dialect: 'Standard', micTechnique: 'Close Mic', layering: 'Stacked harmonies' }
+  },
+  electronic: {
+    vocabularyBias: ['neon', 'pulse', 'future', 'beat', 'release', 'psychedelic', 'synthwave', 'drop', 'circuit', 'voltage'],
+    instrumentation: ['Synthesizer', 'Electronic Drums', 'Sampler', 'Sequencer'],
+    effects: ['Modulation', 'Delay', 'Flanger'],
+    sfx: ['Heartbeat', 'Clock tick'],
+    vocal: { gender: 'Female', emotionLevel: 'Emotion Lv.7', tone: 'Chant/Croon', dialect: 'Standard', micTechnique: 'Breathy close', layering: 'Double-tracked' }
+  },
+  hip_hop: {
+    vocabularyBias: ['streets', 'real talk', 'attitude', 'mic', 'graffiti', 'flow', 'grind', 'hustle', 'truth', 'respect'],
+    instrumentation: ['Beat Machine', 'Bass', 'Sampler', 'Synthesizer'],
+    effects: ['Compression', 'EQ'],
+    vocal: { gender: 'Male', emotionLevel: 'Emotion Lv.6', tone: 'Spoken/Monologue', dialect: 'Street slang', micTechnique: 'Close Mic', layering: 'Single track' }
+  },
+  ballad: {
+    vocabularyBias: ['yearning', 'piano', 'miss', 'moonlight', 'eternal', 'tender', 'teardrop', 'heartbeat', 'whisper', 'softly spoken'],
+    instrumentation: ['Piano', 'Cello', 'Violin', 'Acoustic Guitar'],
+    effects: ['Reverb', 'Delay', 'Chorus'],
+    sfx: ['Rainfall'],
+    vocal: { gender: 'Female', emotionLevel: 'Emotion Lv.7', tone: 'Narrative', dialect: 'Standard', micTechnique: 'Large hall', layering: 'Double-tracked' }
+  },
+  love_song: {
+    vocabularyBias: ['first kiss', 'forever', 'darling', 'arms wide open', 'wedding bells', 'roses', 'two hearts', 'soulmate', 'stay with me', 'home in your eyes'],
+    instrumentation: ['Piano', 'Strings', 'Acoustic Guitar', 'Soft Drums'],
+    effects: ['Reverb', 'Delay'],
+    vocal: { gender: 'Female', emotionLevel: 'Emotion Lv.8', tone: 'Warm/Tender', dialect: 'Standard', micTechnique: 'Close intimate', layering: 'Harmony stack' }
+  },
+  jazz: {
+    vocabularyBias: ['saxophone', 'red wine', 'lazy', 'midnight', 'elegant', 'swing', 'blue note', 'smooth', 'scat', 'cigarette smoke'],
+    instrumentation: ['Saxophone', 'Piano', 'Upright Bass', 'Drum Kit'],
+    effects: ['Reverb', 'Delay'],
+    vocal: { gender: 'Female', emotionLevel: 'Emotion Lv.5', tone: 'Murmured', dialect: 'Standard', micTechnique: 'Church hall', layering: 'Single track' }
+  },
+  classical: {
+    vocabularyBias: ['piano', 'violin', 'eternal', 'palace halls', 'noble', 'fate', 'symphony', 'crescendo', 'opus', 'oratorio'],
+    instrumentation: ['Piano', 'Violin', 'Cello', 'Flute', 'Orchestra'],
+    effects: ['Concert Hall Reverb'],
+    vocal: { gender: 'Soprano/Alto', emotionLevel: 'Emotion Lv.4', tone: 'Chant/Lied', dialect: 'Formal diction', micTechnique: 'Concert hall', layering: 'Choir' }
+  },
+  rnb: {
+    vocabularyBias: ['candlelight', 'red wine', 'sexy', 'closeness', 'groove', 'midnight', 'smooth', 'bedroom eyes', 'slow jam', 'body language'],
+    instrumentation: ['Electric Piano', 'Bass', 'Drum Machine', 'Synthesizer'],
+    effects: ['Delay', 'Reverb', 'Modulation'],
+    sfx: ['Heartbeat'],
+    vocal: { gender: 'Female', emotionLevel: 'Emotion Lv.6', tone: 'Breathy/Murmur', dialect: 'Slurred/Intimate', micTechnique: 'Very close', layering: 'Ad-libs + double' }
+  },
+  country: {
+    vocabularyBias: ['dirt road', 'guitar', 'cowboy', 'starry sky', 'freedom', 'campfire', 'hay bales', 'pickup truck', 'old dog', 'front porch'],
+    instrumentation: ['Acoustic Guitar', 'Bass', 'Drum Kit', 'Fiddle', 'Banjo'],
+    effects: ['Plate Reverb'],
+    sfx: ['Wind'],
+    vocal: { gender: 'Male', emotionLevel: 'Emotion Lv.5', tone: 'Storyteller', dialect: 'Southern twang', micTechnique: 'Distance', layering: 'Single track' }
+  },
+  heartbreaking: {
+    vocabularyBias: ['shattered', 'tear stains', 'despair', 'memory', 'open wound', 'broken heart', 'empty side of bed', 'goodbye letter', 'last call', 'I can not breathe'],
+    instrumentation: ['Piano', 'Cello', 'Violin', 'Guitar'],
+    effects: ['Reverb', 'Delay', 'Tremolo'],
+    sfx: ['Rainfall'],
+    vocal: { gender: 'Female', emotionLevel: 'Emotion Lv.8', tone: 'Fragile whisper', dialect: 'Standard', micTechnique: 'Large hall', layering: 'Single track (naked)' }
+  },
+  healing: {
+    vocabularyBias: ['sunlight', 'breeze', 'healing hands', 'warmth', 'new born', 'serenity', 'safe again', 'forgive myself', 'breathe in', 'new start'],
+    instrumentation: ['Piano', 'Acoustic Guitar', 'Violin', 'Ambient Pad'],
+    effects: ['Reverb', 'Delay', 'Modulation'],
+    sfx: ['Wind', 'Birdsong', 'Stream'],
+    vocal: { gender: 'Female', emotionLevel: 'Emotion Lv.4', tone: 'Soft lullaby', dialect: 'Standard', micTechnique: 'Church hall', layering: 'Choir pads' }
+  },
+  time_travel: {
+    vocabularyBias: ['rewind', 'memory glitch', '80s neon', 'nostalgia overdrive', 'yesterday machine', 'parallel me', 'time machine blues', 'retro future', 'cassette tape loop', 'déjà vu'],
+    instrumentation: ['Retro Synth', 'Digital Drums', 'Arpeggiator', 'Tape Echo'],
+    effects: ['Tape Delay', 'Chorus', 'Bit-crush'],
+    sfx: ['Tape Rewind', 'Vinyl Crackle'],
+    vocal: { gender: 'Female', emotionLevel: 'Emotion Lv.6', tone: 'Haunting', dialect: 'Standard', micTechnique: 'Telephone filter + close', layering: 'Double + octave' }
+  },
+  epic: {
+    vocabularyBias: ['crown', 'throne', 'battle cry', 'legends never die', 'kingdom come', 'blood and honor', 'immortal', 'marching drums', 'heroes return', 'one last stand'],
+    instrumentation: ['Full Orchestra', 'Choir', 'War Drums', 'Brass Section'],
+    effects: ['Cathedral Reverb', 'Compression'],
+    sfx: ['War Horns', 'Distant Cannon'],
+    vocal: { gender: 'Choir/Baritone', emotionLevel: 'Emotion Lv.9', tone: 'Heroic Shout', dialect: 'Formal', micTechnique: 'Hall', layering: 'Massive choir' }
+  },
+  dark: {
+    vocabularyBias: ['nocturnal', 'gothic', 'black veil', 'blood oath', 'basement ritual', 'hollow', 'possession', 'graveyard shift', 'curse', 'endarkenment'],
+    instrumentation: ['Electric Guitar', 'Sub Bass', 'Choir Pad', 'Church Organ'],
+    effects: ['Reverb (large)', 'Distortion (fuzz)', 'Tremolo'],
+    sfx: ['Church Bell', 'Wind howl'],
+    vocal: { gender: 'Baritone/Countertenor', emotionLevel: 'Emotion Lv.7', tone: 'Chilling Croon', dialect: 'Archaic diction', micTechnique: 'Large church', layering: 'Harmonized dark' }
+  },
+  romantic: {
+    vocabularyBias: ['butterflies', 'sunset glow', 'slow dance', 'stolen kiss', 'your hand in mine', 'head over heels', 'safe place', 'marry me', 'honeymoon', 'the one'],
+    instrumentation: ['Piano', 'Strings', 'Acoustic Guitar', 'Flute'],
+    effects: ['Warm Reverb', 'Delay'],
+    vocal: { gender: 'Duet (M+F)', emotionLevel: 'Emotion Lv.7', tone: 'Sweet/Intimate', dialect: 'Standard', micTechnique: 'Close duet', layering: 'Harmonies rich' }
+  },
+  nostalgic: {
+    vocabularyBias: ['mix tape', 'polaroid', '90s jeans', 'old station wagon', 'mixtape side B', 'grandma kitchen', 'the old street', 'yearbook signature', 'first crush', 'faded summer'],
+    instrumentation: ['Piano', 'Acoustic Guitar', 'Warm Strings', 'Rhodes'],
+    effects: ['Tape saturation', 'Reverb (plate)'],
+    sfx: ['Vinyl Crackle', 'Old Film Projector'],
+    vocal: { gender: 'Male/Female', emotionLevel: 'Emotion Lv.6', tone: 'Weary/Warm', dialect: 'Standard', micTechnique: 'Vintage mic', layering: 'Double + backing' }
+  },
+  energetic: {
+    vocabularyBias: ['confetti', 'roar', 'laser lights', 'pounding bass', 'hands up', 'scream it loud', 'all night long', 'pulse race', 'unstoppable', 'sparks fly'],
+    instrumentation: ['Hi-Energy Synths', 'Four-On-The-Floor Drums', 'Bass (sub)', 'Build Up Pads'],
+    effects: ['Sidechain Compression', 'Reverb (short)', 'Filter Sweeps'],
+    sfx: ['Impact', 'Risers'],
+    vocal: { gender: 'Female (power)', emotionLevel: 'Emotion Lv.9', tone: 'Shout/Chant', dialect: 'Short phrases', micTechnique: 'Loud close', layering: 'Huge call-and-response' }
+  },
+  dreamy: {
+    vocabularyBias: ['cloud surf', 'halo', 'floating', 'lucid dream', 'crystal cave', 'silver moon', 'hypnosis', 'soft machine', 'butterfly mind', 'starlight motel'],
+    instrumentation: ['Ambient Pads (wide)', 'Soft Mellotron', 'Slow Arp', 'Field Recordings'],
+    effects: ['Long Reverb', 'Reverse Delay', 'Chorus (shimmer)'],
+    sfx: ['Wind Chimes', 'Subtle Water'],
+    vocal: { gender: 'Female (breathy)', emotionLevel: 'Emotion Lv.3', tone: 'Half-asleep', dialect: 'Soft vowels', micTechnique: 'Very distant + reverb', layering: 'Ghost harmonies' }
+  },
+  kpop: {
+    vocabularyBias: ['stage lights', 'spotlight love', 'rookie debut', 'fancam', 'killing part', 'center position', 'fandom name', 'music bank trophy', 'comeback stage', 'idol heart'],
+    instrumentation: ['Synth Brass', 'Trap Beats', 'Glitch Vocal Cuts', 'Big Bass'],
+    effects: ['Brass Compression', 'Short Slap Delay', 'Bit Reduction'],
+    sfx: ['Glass Break', 'Finger Snap', 'Air Horn (short)'],
+    vocal: { gender: 'Girl/Boy Group', emotionLevel: 'Emotion Lv.8', tone: 'Bright + Rap Switch', dialect: 'K-pop Konglish', micTechnique: 'Close + crisp', layering: 'Chaotic many tracks' }
+  },
+  hiphop: {
+    vocabularyBias: ['bars', 'cypher', 'diss track', 'flow switch', 'mixtape', 'chart climb', 'crew love', 'pen game', 'versace dreams', 'grind mode'],
+    instrumentation: ['Boom-Bap Drums', 'Sub Bass', 'Vocal Sample Chop', '90s Keys'],
+    effects: ['Vocal Compression (hard)', 'Tape Saturation'],
+    sfx: ['Record Scratch', 'Coin Drop', 'Aircraft Cabin Ding'],
+    vocal: { gender: 'Rapper (M or F)', emotionLevel: 'Emotion Lv.7', tone: 'Flow Switching', dialect: 'Slang heavy', micTechnique: 'Close, dry', layering: 'Ad-libs on 2 and 4' }
+  }
+};
+
+/* =========================================================================
  * 3. SENTENCE TEMPLATES (slot syntax, NOT pre-written lyrics)
  * Slots: {imagery} {emotion} {action} {subject} {object} {location}
  *        {timeWord} {descriptor}
@@ -1041,25 +1496,25 @@ const MUSICAL_TERMS = {
 
 const TEMPLATES = {
   intro: [
-    '{location}里{descriptor}{subject}，{action}着{descriptor}{object}',
-    '{timeWord}，{imagery}与{imagery}交织，{emotion}渐生',
-    '{subject}{action}，{descriptor}如{imagery}',
-    '{imagery}{action}，{location}渐{descriptor}',
-    '{timeWord}的{location}，{subject}独自{action}',
+    '{location}里，{subject}静静{action}，{emotion}悄然漫开',
+    '{timeWord}，{imagery}轻笼{location}，{descriptor}的{emotion}渐起',
+    '{subject}倚着{imagery}，{action}着{emotion}的{timeWord}',
+    '{imagery}与{imagery}交织，{location}里{subject}独自{action}',
+    '{timeWord}初临，{descriptor}{subject}心中{action}',
     '{descriptor}的{imagery}里，{emotion}悄然{action}',
-    '{subject}在{location}{action}，{object}若隐若现',
+    '{subject}在{location}驻足，{object}若隐若现',
     '{imagery}与{imagery}，{emotion}在{location}蔓延',
-    '{timeWord}初临，{descriptor}{subject}{action}'
+    '{timeWord}初临，{descriptor}{subject}驻足凝望'
   ],
   verse: [
     '{subject}在{location}里{action}，{emotion}了{object}',
     '{timeWord}的{location}，{descriptor}{subject}独自{action}',
-    '{imagery}{action}，{emotion}的{subject}在{location}',
+    '{imagery}摇曳，{emotion}的{subject}在{location}',
     '{descriptor}的{object}，{action}着{descriptor}{imagery}',
-    '{subject}{action}，{timeWord}已{descriptor}',
-    '{location}里{imagery}{action}，{emotion}涌上{subject}',
-    '{timeWord}{subject}{action}，{object}渐行渐远',
-    '{descriptor}{imagery}下，{subject}静静{action}',
+    '{subject}{action}着{object}，{timeWord}缓缓流逝',
+    '{location}里{imagery}{action}，{emotion}涌上心头',
+    '{timeWord}里{subject}{action}，{object}渐行渐远',
+    '{descriptor}{imagery}下，{subject}静静伫立',
     '{emotion}的{object}，{action}在{location}深处',
     '{subject}{action}着{object}，{timeWord}无声流逝'
   ],
@@ -1067,7 +1522,7 @@ const TEMPLATES = {
     '{emotion}升腾，{subject}不再{action}',
     '看{imagery}{action}，{emotion}涌上心头',
     '{timeWord}逼近，{descriptor}{subject}将要{action}',
-    '{imagery}之间，{emotion}与{emotion}碰撞',
+    '{imagery}之间，{emotion}与{emotion}交织',
     '{subject}{action}，{object}开始{action}',
     '{location}的尽头，{emotion}将{subject}吞没',
     '{descriptor}的{imagery}，{action}出{emotion}'
@@ -1086,7 +1541,7 @@ const TEMPLATES = {
   ],
   bridge: [
     '若{subject}能{action}，{object}是否会{action}',
-    '{imagery}之间，{emotion}与{emotion}碰撞',
+    '{imagery}之间，{emotion}与{emotion}交织',
     '{timeWord}流转，{subject}已非{subject}',
     '{location}之外，{descriptor}{object}在{action}',
     '当{imagery}{action}，{emotion}能否{action}',
@@ -1330,6 +1785,50 @@ const SLOT_TO_CATEGORY = {
  * 6. CORE HELPERS
  * ========================================================================= */
 
+/**
+ * Filter vocabulary bank entries by language.
+ * Removes English/non-CJK words from Chinese banks and vice versa.
+ */
+function _filterBankByLanguage(bank, targetLanguage) {
+  if (!bank) return bank;
+  const isCJK = (str) => {
+    if (!str || typeof str !== 'string') return false;
+    return /[\u4e00-\u9fff]/.test(str);
+  };
+  const isEnglishOnly = (str) => {
+    if (!str || typeof str !== 'string') return true;
+    return /^[\x20-\x7E]+$/.test(str.trim()) && /[a-zA-Z]/.test(str);
+  };
+
+  const categories = ['imagery', 'emotions', 'actions', 'subjects', 'objects', 'locations', 'timeWords', 'descriptors'];
+  const filtered = {};
+
+  for (const cat of categories) {
+    if (Array.isArray(bank[cat]) && bank[cat].length > 0) {
+      const original = bank[cat];
+      if (targetLanguage === 'zh') {
+        filtered[cat] = original.filter(w => isCJK(w));
+      } else {
+        filtered[cat] = original.filter(w => !isCJK(w) && isEnglishOnly(w));
+      }
+      // If filtering removed too many, keep original (prevents empty banks)
+      if (filtered[cat].length < Math.min(2, original.length * 0.5)) {
+        filtered[cat] = original;
+      }
+    } else {
+      filtered[cat] = bank[cat] || [];
+    }
+  }
+
+  for (const key of Object.keys(bank)) {
+    if (!categories.includes(key)) {
+      filtered[key] = bank[key];
+    }
+  }
+
+  return filtered;
+}
+
 function _pickRandom(arr) {
   if (!arr || arr.length === 0) return '';
   return arr[Math.floor(Math.random() * arr.length)];
@@ -1351,8 +1850,8 @@ function _getWordForSlot(slot, banks, weights, usedWords, styleConfig) {
   if (!category) return '';
 
   if (styleConfig && styleConfig.vocabularyBias && styleConfig.vocabularyBias.length) {
-    const biasSlots = ['descriptor', 'emotion', 'object', 'subject'];
-    if (biasSlots.includes(slot) && Math.random() < 0.2) {
+    const biasSlots = ['descriptor', 'emotion', 'object', 'subject', 'imagery', 'action'];
+    if (biasSlots.includes(slot) && Math.random() < 0.35) {
       const shuffled = [...styleConfig.vocabularyBias].sort(() => Math.random() - 0.5);
       for (const biasWord of shuffled) {
         if (biasWord && !usedWords.has(biasWord)) {
@@ -1420,6 +1919,27 @@ function _fillTemplate(template, banks, weights, usedWords, styleConfig, rhymeOp
 function _enforceLineLength(line, styleConfig, language = 'zh') {
   const [min, max] = styleConfig && styleConfig.lineLength ? styleConfig.lineLength : [6, 14];
   let out = line;
+
+  // Clean up: remove cross-language contamination
+  if (language === 'zh') {
+    // Remove English words that leaked into Chinese lyrics (except known music terms)
+    out = out.replace(/[a-zA-Z]{2,}/g, (match) => {
+      const musicTerms = ['BPM', 'bpm', 'FSM', 'fsm', 'LAYER', 'layer', 'SUNO', 'suno', 'MUSE', 'muse'];
+      return musicTerms.includes(match) ? match : '';
+    });
+    // Clean up punctuation and spacing
+    out = out.replace(/，{2,}/g, '，');
+    out = out.replace(/^[，、。\s]+/, '');
+    out = out.replace(/[，、。\s]+$/, '');
+    out = out.replace(/\s+/g, '');
+  } else if (language === 'en') {
+    // Remove Chinese/CJK characters from English lyrics
+    out = out.replace(/[\u4e00-\u9fff\u3400-\u4dbf]/g, '');
+    out = out.replace(/\s{2,}/g, ' ');
+    out = out.replace(/^[\s,.;!?]+/, '');
+    out = out.replace(/[\s,.;!?]+$/, '');
+  }
+
   if (out.length > max) {
     out = out.slice(0, max);
   }
@@ -1474,8 +1994,8 @@ export function generateLine(sectionType, themeBank, styleConfig, options = {}) 
 
   let template = _pickRandom(templatePool);
 
-  // Occasionally (40%) use a style-specific sentence pattern instead for quality
-  if (styleConfig && styleConfig.sentencePatterns && styleConfig.sentencePatterns.length && Math.random() < 0.4) {
+  // Use a style-specific sentence pattern for strong genre differentiation
+  if (styleConfig && styleConfig.sentencePatterns && styleConfig.sentencePatterns.length && Math.random() < 0.68) {
     template = _pickRandom(styleConfig.sentencePatterns);
   }
 
@@ -1679,8 +2199,10 @@ function _getStyleConfig(style) {
  * @param {Array<number>} weights - parallel array of weights
  * @returns {object} a blended bank with merged categories + __sources + __weights
  */
-export function blendBanks(banks, weights) {
-  if (!banks || banks.length === 0) return THEME_BANKS.love;
+export function blendBanks(banks, weights, language = 'zh') {
+  if (!banks || banks.length === 0) {
+    return language === 'en' ? (ENGLISH_THEME_BANKS.love || THEME_BANKS.love) : THEME_BANKS.love;
+  }
   if (banks.length === 1) return banks[0];
 
   const w = weights && weights.length === banks.length ? weights : banks.map(() => 1);
@@ -1869,9 +2391,11 @@ export function createVisualBank(visualContext, script = '', language = 'zh') {
   ];
 
   // Apply semantic-based refinements for people photos
-  const subjectType = visualContext.subjectType || '';
-  const personCount = visualContext.personCount || 0;
-  const isSelfie = visualContext.isSelfie || false;
+  // Support both flat structure (subjectType at top level) and nested (inside semanticDetection)
+  const semanticInfo = visualContext.semanticDetection || visualContext.semanticInfo || {};
+  const subjectType = visualContext.subjectType || semanticInfo.subjectType || '';
+  const personCount = visualContext.personCount || semanticInfo.personCount || 0;
+  const isSelfie = visualContext.isSelfie || semanticInfo.isSelfie || false;
 
   // Strengthen people-related vocabulary based on semantic detection
   if (subjectType === 'couple') {
@@ -1883,16 +2407,38 @@ export function createVisualBank(visualContext, script = '', language = 'zh') {
       ? ['hold each other', 'lean together', 'stay close']
       : ['相拥', '依偎', '牵手同行', '共度'];
     allActions.unshift(...coupleActions);
+    const coupleSubjects = language === 'en'
+      ? ['lovers', 'the couple', 'both of us', 'sweethearts']
+      : ['恋人', '情侣', '两人', '爱人', '我们'];
+    allSubjects.unshift(...coupleSubjects);
   } else if (subjectType === 'portrait' && isSelfie) {
     const selfieImagery = language === 'en'
       ? ['selfie', 'smile to camera', 'moment captured']
       : ['自拍', '对镜微笑', '定格瞬间', '记录'];
     allImagery.unshift(...selfieImagery);
+    const selfieSubjects = language === 'en'
+      ? ['I', 'myself', 'the subject', 'the one']
+      : ['我', '自己', '身影', '这人'];
+    allSubjects.unshift(...selfieSubjects);
+  } else if (subjectType === 'portrait') {
+    const portraitSubjects = language === 'en'
+      ? ['she', 'he', 'the figure', 'the person']
+      : ['她', '他', '身影', '这人', '那人'];
+    allSubjects.unshift(...portraitSubjects);
   } else if (subjectType === 'group') {
     const groupImagery = language === 'en'
       ? ['laughter', 'cheers', 'together', 'celebration']
       : ['欢笑', '举杯', '团聚', '欢庆', '友谊'];
     allImagery.unshift(...groupImagery);
+    const groupSubjects = language === 'en'
+      ? ['we', 'they', 'the crowd', 'everyone']
+      : ['我们', '他们', '众人', '大家'];
+    allSubjects.unshift(...groupSubjects);
+  } else if (subjectType === 'scenery' || subjectType === 'landscape') {
+    const scenerySubjects = language === 'en'
+      ? ['the scene', 'nature', 'the view', 'the world']
+      : ['风景', '自然', '景色', '天地'];
+    allSubjects.unshift(...scenerySubjects);
   }
 
   // Time words: use scene-relevant time words
@@ -1900,7 +2446,7 @@ export function createVisualBank(visualContext, script = '', language = 'zh') {
   const enTimeWords = ['now', 'this moment', 'today', 'right now', 'the moment', 'presently', 'this instant', 'currently'];
   const timeWords = language === 'en' ? enTimeWords : zhTimeWords;
 
-  return {
+  const bank = {
     imagery: [...new Set(allImagery)].slice(0, 20),
     emotions: [...new Set(allEmotions)].slice(0, 15),
     actions: [...new Set(allActions)].slice(0, 12),
@@ -1909,9 +2455,11 @@ export function createVisualBank(visualContext, script = '', language = 'zh') {
     locations: [...new Set(allLocations)].slice(0, 10),
     timeWords,
     descriptors: [...new Set(allEmotions)].slice(0, 10),
-    // Pass semantic info for further lyric generation refinements
     _meta: { subjectType, personCount, isSelfie }
   };
+
+  // Apply language filtering to remove cross-language contamination
+  return _filterBankByLanguage(bank, language);
 }
 
 /* =========================================================================
@@ -2405,13 +2953,37 @@ export function generateDynamicLyrics(params) {
     language = 'zh'
   } = params || {};
 
+  // ---- Resolve method aliases (user-friendly names) ----
+  const methodAliasMap = {
+    'fsm': 'basic',       // Finite State Machine = basic structured generation
+    'layer': 'network',   // Layer-based = multi-layer network generation
+    'network_layer': 'network', // LyricsPage UI alias
+    'suno': 'melo',       // Suno-style = Melo command generation
+    'muse': 'time',       // Muse-style = timeline-based generation
+    'time_section': 'time',     // unicorn-agent alias
+    'style_variation': 'variation', // unicorn-agent alias
+    'FSM': 'basic',
+    'LAYER': 'network',
+    'NETWORK_LAYER': 'network',
+    'SUNO': 'melo',
+    'MUSE': 'time',
+    'lyrics': 'basic',
+    'bgm': 'network',
+    'basic': 'basic',
+    'network': 'network',
+    'melo': 'melo',
+    'time': 'time',
+    'variation': 'variation'
+  };
+  const effectiveMethod = methodAliasMap[method] || 'basic';
+
   // ---- Resolve theme bank (single or blended) with language support ----
   let themeBank;
   let effectiveTheme = theme;
   if (mixThemes && mixThemes.length > 0) {
     const banks = mixThemes.map((t) => getThemeBank(t, language));
     const weights = themeWeights && themeWeights.length === banks.length ? themeWeights : banks.map(() => 1);
-    themeBank = blendBanks(banks, weights);
+    themeBank = blendBanks(banks, weights, language);
     effectiveTheme = 'mix:' + mixThemes.join('+');
   } else {
     themeBank = getThemeBank(theme, language);
@@ -2419,11 +2991,18 @@ export function generateDynamicLyrics(params) {
 
   // ---- Blend visual context bank if provided ----
   if (visualContext) {
-    const visualBank = createVisualBank(visualContext);
+    const visualBank = createVisualBank(visualContext, '', language);
     if (visualBank) {
-      themeBank = blendBanks([themeBank, visualBank], [0.35, 0.65]);
+      themeBank = blendBanks([themeBank, visualBank], [0.35, 0.65], language);
       effectiveTheme = 'visual:' + (visualContext.sceneId || theme);
     }
+  }
+
+  // ---- Filter vocabulary by language to prevent contamination ----
+  if (language === 'zh' && themeBank) {
+    themeBank = _filterBankByLanguage(themeBank, 'zh');
+  } else if (language === 'en' && themeBank) {
+    themeBank = _filterBankByLanguage(themeBank, 'en');
   }
 
   // ---- Resolve style config (single or blended) ----
@@ -2464,6 +3043,34 @@ export function generateDynamicLyrics(params) {
     styleConfig = JSON.parse(JSON.stringify(_getStyleConfig(genre)));
   }
 
+  // ---- Language override for styleConfig: swap Chinese arrays for English vocab ----
+  if (language === 'en') {
+    const _pickEN = (g) => EN_STYLE_BIAS[g] || EN_STYLE_BIAS.pop;
+    let enSources;
+    if (mixStyles && mixStyles.length > 0) {
+      enSources = mixStyles.map(g => _pickEN(g));
+    } else {
+      enSources = [_pickEN(genre)];
+    }
+    const _mergeUniq = (key, limit) => {
+      const set = new Set();
+      enSources.forEach(src => {
+        if (Array.isArray(src[key])) src[key].forEach(v => set.add(v));
+      });
+      return [...set].slice(0, limit || 10);
+    };
+    if (enSources.length > 0) {
+      styleConfig.vocabularyBias = _mergeUniq('vocabularyBias', 12);
+      styleConfig.instrumentation = _mergeUniq('instrumentation', 5);
+      styleConfig.effects = _mergeUniq('effects', 4);
+      styleConfig.sfx = _mergeUniq('sfx', 3);
+      const firstVocal = enSources[0].vocal;
+      if (firstVocal && typeof firstVocal === 'object') {
+        styleConfig.vocal = { ...(styleConfig.vocal || {}), ...firstVocal };
+      }
+    }
+  }
+
   // ---- Override vocal gender from visual analysis if available ----
   if (visualContext && visualContext.vocalGender) {
     const originalVocal = styleConfig.vocal || {};
@@ -2485,8 +3092,34 @@ export function generateDynamicLyrics(params) {
     };
   }
 
-  // ---- Dispatch by method ----
-  if (method === 'network') {
+  // ---- Inject style vocabularyBias directly into themeBank for stronger differentiation ----
+  if (styleConfig && styleConfig.vocabularyBias && styleConfig.vocabularyBias.length && themeBank) {
+    const biasWords = [...styleConfig.vocabularyBias];
+    const descriptors = themeBank.descriptors ? [...themeBank.descriptors] : [];
+    const emotions = themeBank.emotions ? [...themeBank.emotions] : [];
+    const subjects = themeBank.subjects ? [...themeBank.subjects] : [];
+    const objects = themeBank.objects ? [...themeBank.objects] : [];
+    const imageries = themeBank.imageries ? [...themeBank.imageries] : [];
+    biasWords.forEach((w) => {
+      // Shallow categorization by heuristics; scatter across categories so they appear in draws
+      if (Math.random() < 0.45) descriptors.push(w);
+      if (Math.random() < 0.35) emotions.push(w);
+      if (Math.random() < 0.25) subjects.push(w);
+      if (Math.random() < 0.25) objects.push(w);
+      if (Math.random() < 0.3) imageries.push(w);
+    });
+    themeBank = {
+      ...themeBank,
+      descriptors: [...new Set(descriptors)],
+      emotions: [...new Set(emotions)],
+      subjects: [...new Set(subjects)],
+      objects: [...new Set(objects)],
+      imageries: [...new Set(imageries)]
+    };
+  }
+
+  // ---- Dispatch by resolved method ----
+  if (effectiveMethod === 'network') {
     const baseResult = _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity, language);
     const foundation = _buildFoundationLayer(bpm, theme, params);
     const melody = _buildMelodyLayer(theme, params);
@@ -2498,10 +3131,10 @@ export function generateDynamicLyrics(params) {
       fullCommand: _formatNetworkLayerOutput(baseResult, foundation, melody, expression, effects),
       generatedAt: new Date().toISOString()
     };
-    return _normalizeResult(networkResult, 'network', params);
+    return _normalizeResult(networkResult, method, params);
   }
 
-  if (method === 'melo') {
+  if (effectiveMethod === 'melo') {
     const baseResult = _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity, language);
     const meloCommand = generateMeloCommand({
       genre,
@@ -2520,10 +3153,10 @@ export function generateDynamicLyrics(params) {
       fullCommand: _formatMeloOutput(baseResult, meloCommand),
       generatedAt: new Date().toISOString()
     };
-    return _normalizeResult(meloResult, 'melo', params);
+    return _normalizeResult(meloResult, method, params);
   }
 
-  if (method === 'time') {
+  if (effectiveMethod === 'time') {
     const structure = STRUCTURES[genre] || STRUCTURES.pop;
     const sections = [];
     let currentTime = 0;
@@ -2602,10 +3235,10 @@ export function generateDynamicLyrics(params) {
         }
       }
     };
-    return _normalizeResult(timeResult, 'time', params);
+    return _normalizeResult(timeResult, method, params);
   }
 
-  if (method === 'variation') {
+  if (effectiveMethod === 'variation') {
     const variations = STYLE_VARIATIONS[genre] || STYLE_VARIATIONS.tango;
     const variationConfig = variations[variation] || variations.A;
     const baseResult = _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity, language);
@@ -2625,10 +3258,10 @@ export function generateDynamicLyrics(params) {
       fullText: _formatVariationOutput(baseResult, variationConfig),
       generatedAt: new Date().toISOString()
     };
-    return _normalizeResult(variationResult, 'variation', params);
+    return _normalizeResult(variationResult, method, params);
   }
 
-  // ---- basic (default) ----
+  // ---- basic/fsm (default) ----
   const base = _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity, language);
   if (mixThemes || mixStyles) {
     base.theme = effectiveTheme;
@@ -2782,6 +3415,7 @@ ${result.sections ? result.sections.map((s, i) => {
 
   return {
     ...result,
+    method: method || result.method,
     fullCommand,
     lyricsText,
     fullText

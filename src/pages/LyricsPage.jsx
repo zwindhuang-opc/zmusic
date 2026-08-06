@@ -67,11 +67,10 @@ function LyricsPage({ onNavigate, defaultMode }) {
   const FALLBACK_THEMES = Object.keys(LYRICS_THEMES);
 
   const METHODS = [
-    { id: 'fsm', name: t('lyrics.fsm_name'), desc: t('lyrics.fsm_desc'), icon: Cpu },
-    { id: 'network_layer', name: t('lyrics.network_name'), desc: t('lyrics.network_desc'), icon: Network },
-    { id: 'muse', name: t('lyrics.muse_name'), desc: t('lyrics.muse_desc'), icon: BookOpen },
-    { id: 'suno', name: t('lyrics.suno_name'), desc: t('lyrics.suno_desc'), icon: SettingsIcon },
-    { id: 'melo', name: t('lyrics.melo_name'), desc: t('lyrics.melo_desc'), icon: Music2 }
+    { id: 'fsm', name: t('lyrics.fsm_name'), desc: t('lyrics.fsm_desc'), icon: Cpu, emoji: '⚙️' },
+    { id: 'network_layer', name: t('lyrics.network_name'), desc: t('lyrics.network_desc'), icon: Layers, emoji: '🧱' },
+    { id: 'muse', name: t('lyrics.muse_name'), desc: t('lyrics.muse_desc'), icon: BookOpen, emoji: '✨' },
+    { id: 'suno', name: t('lyrics.suno_name'), desc: t('lyrics.suno_desc'), icon: SettingsIcon, emoji: '🎛️' }
   ];
 
   const LANGUAGES = [
@@ -829,24 +828,33 @@ function LyricsPage({ onNavigate, defaultMode }) {
               <div className="space-y-3 mt-3">
                 {/* Method */}
                 <div className="gradient-border p-4 md:p-5">
-                  <label className="text-xs font-medium text-gray-300 mb-3 block">{t('lyrics.method')}</label>
-                  <div className="space-y-2">
+                  <div className="flex items-start justify-between mb-3">
+                    <label className="text-xs font-medium text-gray-300">{t('lyrics.method')}</label>
+                    <div className="group relative">
+                      <span className="text-[10px] text-violet-400/80 border border-violet-500/30 bg-violet-500/10 rounded px-2 py-0.5 cursor-help">
+                        💡 {t('ui.tip') || '提示'}
+                      </span>
+                      <div className="absolute right-0 z-20 hidden group-hover:block w-48 mt-2 p-2 text-[11px] text-gray-300 bg-gray-900/95 border border-white/10 rounded-lg shadow-xl">
+                        {t('ui.beginner_hint_method') || '新手推荐：选FSM编程最稳定'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
                     {METHODS.map(m => {
                       const Icon = m.icon;
                       return (
                         <button
                           key={m.id}
                           onClick={() => setMethod(m.id)}
-                          className={`w-full p-3 rounded-lg text-left transition-all flex items-center gap-3 ${method === m.id
-                            ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30'
-                            : 'bg-white/5 border border-white/5 hover:border-white/10'
+                          className={`p-3 md:p-4 rounded-xl text-center transition-all flex flex-col items-center gap-1.5 ${method === m.id
+                            ? 'bg-gradient-to-br from-violet-500/30 to-pink-500/20 border-2 border-violet-500/50 scale-[1.02]'
+                            : 'bg-white/5 border-2 border-white/5 hover:border-white/20 hover:bg-white/10'
                             }`}
+                          title={m.desc}
                         >
-                          <Icon className="w-5 h-5 md:w-4 md:h-4 text-violet-400" />
-                          <div>
-                            <div className="text-sm font-medium text-white">{m.name}</div>
-                            <div className="text-[10px] md:text-xs text-gray-400">{m.desc}</div>
-                          </div>
+                          <span className="text-2xl md:text-3xl leading-none" aria-hidden="true">{m.emoji}</span>
+                          <Icon className={`w-5 h-5 md:w-6 md:h-6 ${method === m.id ? 'text-violet-300' : 'text-gray-400'}`} />
+                          <div className={`text-[11px] md:text-xs font-semibold ${method === m.id ? 'text-white' : 'text-gray-300'}`}>{m.name}</div>
                         </button>
                       );
                     })}
@@ -1262,7 +1270,7 @@ function LyricsPage({ onNavigate, defaultMode }) {
                                 : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
                                 }`}
                             >
-                              {key.replace(/_/g, ' ')}
+                              {t(`section_presets.${key}`) || key.replace(/_/g, ' ')}
                               <div className="text-[9px] opacity-70">{sections.length}段</div>
                             </button>
                           ))}
@@ -1623,114 +1631,114 @@ function LyricsPage({ onNavigate, defaultMode }) {
         </div>
       )}
 
-{/* History Panel - accessible in both modes */ }
-<HistoryPanel isOpen={showHistory} onClose={() => setShowHistory(false)} />
+      {/* History Panel - accessible in both modes */}
+      <HistoryPanel isOpen={showHistory} onClose={() => setShowHistory(false)} />
 
-{/* Style Explore Modal */ }
-{
-  showExploreStyles && (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b border-white/10">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <Palette className="w-5 h-5 text-violet-400" /> 探索全部风格
-        </h2>
-        <button onClick={() => setShowExploreStyles(false)}
-          className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all">
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-      <div className="p-4 border-b border-white/10">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-          <input type="text" value={styleSearch}
-            onChange={(e) => setStyleSearch(e.target.value)}
-            placeholder={t('lyrics.search_style')}
-            className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50" />
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {Object.entries(filteredStyleCats).map(([cat, styles]) => {
-          if (styles.length === 0) return null;
-          const meta = STYLE_CAT_META[cat] || { emoji: '🎵', gradient: 'from-gray-500/20 to-gray-500/20', border: 'border-gray-500/30' };
-          return (
-            <div key={cat} className={`rounded-xl border ${meta.border} bg-gradient-to-br ${meta.gradient} overflow-hidden backdrop-blur-sm`}>
-              <div className="px-4 py-2.5 flex items-center justify-between border-b border-white/5">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{meta.emoji}</span>
-                  <span className="text-sm font-semibold text-gray-200">{t(`lyrics.cat_${cat}`)}</span>
-                </div>
-                <span className="text-[10px] text-gray-500 bg-black/20 px-2 py-0.5 rounded-full">{styles.length}</span>
-              </div>
-              <div className="p-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
-                {styles.map(s => (
-                  <button key={s} onClick={() => { setGenre(s); setShowExploreStyles(false); }}
-                    className={`px-2 py-2 rounded-lg text-xs font-medium transition-all truncate ${genre === s
-                      ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-sm'
-                      : 'bg-black/20 text-gray-300 hover:bg-black/30 hover:text-white'}`}>
-                    {t(`lyrics_styles.${s}`) || t(`styles.${s}`) || s}
-                  </button>
-                ))}
+      {/* Style Explore Modal */}
+      {
+        showExploreStyles && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Palette className="w-5 h-5 text-violet-400" /> {t('ui.explore_all_styles') || '探索全部风格'}
+              </h2>
+              <button onClick={() => setShowExploreStyles(false)}
+                className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 border-b border-white/10">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input type="text" value={styleSearch}
+                  onChange={(e) => setStyleSearch(e.target.value)}
+                  placeholder={t('lyrics.search_style')}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50" />
               </div>
             </div>
-          );
-        })}
-      </div>
-    </div>
-  )
-}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {Object.entries(filteredStyleCats).map(([cat, styles]) => {
+                if (styles.length === 0) return null;
+                const meta = STYLE_CAT_META[cat] || { emoji: '🎵', gradient: 'from-gray-500/20 to-gray-500/20', border: 'border-gray-500/30' };
+                return (
+                  <div key={cat} className={`rounded-xl border ${meta.border} bg-gradient-to-br ${meta.gradient} overflow-hidden backdrop-blur-sm`}>
+                    <div className="px-4 py-2.5 flex items-center justify-between border-b border-white/5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{meta.emoji}</span>
+                        <span className="text-sm font-semibold text-gray-200">{t(`lyrics.cat_${cat}`)}</span>
+                      </div>
+                      <span className="text-[10px] text-gray-500 bg-black/20 px-2 py-0.5 rounded-full">{styles.length}</span>
+                    </div>
+                    <div className="p-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
+                      {styles.map(s => (
+                        <button key={s} onClick={() => { setGenre(s); setShowExploreStyles(false); }}
+                          className={`px-2 py-2 rounded-lg text-xs font-medium transition-all truncate ${genre === s
+                            ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-sm'
+                            : 'bg-black/20 text-gray-300 hover:bg-black/30 hover:text-white'}`}>
+                          {t(`lyrics_styles.${s}`) || t(`styles.${s}`) || s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )
+      }
 
-{/* Theme Explore Modal */ }
-{
-  showExploreThemes && (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b border-white/10">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-emerald-400" /> 探索全部主题
-        </h2>
-        <button onClick={() => setShowExploreThemes(false)}
-          className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all">
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-      <div className="p-4 border-b border-white/10">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-          <input type="text" value={themeSearch}
-            onChange={(e) => setThemeSearch(e.target.value)}
-            placeholder={t('lyrics.search_theme')}
-            className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50" />
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {Object.entries(filteredThemeCats).map(([cat, themeList]) => {
-          if (themeList.length === 0) return null;
-          const meta = THEME_CAT_META[cat] || { emoji: '🎵', gradient: 'from-gray-500/20 to-gray-500/20', border: 'border-gray-500/30' };
-          return (
-            <div key={cat} className={`rounded-xl border ${meta.border} bg-gradient-to-br ${meta.gradient} overflow-hidden backdrop-blur-sm`}>
-              <div className="px-4 py-2.5 flex items-center justify-between border-b border-white/5">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{meta.emoji}</span>
-                  <span className="text-sm font-semibold text-gray-200">{t(`lyrics.cat_${cat}`)}</span>
-                </div>
-                <span className="text-[10px] text-gray-500 bg-black/20 px-2 py-0.5 rounded-full">{themeList.length}</span>
-              </div>
-              <div className="p-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
-                {themeList.map(tm => (
-                  <button key={tm} onClick={() => { setTheme(tm); setShowExploreThemes(false); }}
-                    className={`px-2 py-2 rounded-lg text-xs font-medium transition-all truncate ${theme === tm
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm'
-                      : 'bg-black/20 text-gray-300 hover:bg-black/30 hover:text-white'}`}>
-                    {t(`lyrics_themes.${tm}`) || t(`themes.${tm}`) || tm}
-                  </button>
-                ))}
+      {/* Theme Explore Modal */}
+      {
+        showExploreThemes && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-emerald-400" /> {t('ui.explore_all_themes') || t('ui.explore_all_styles') || '探索全部主题'}
+              </h2>
+              <button onClick={() => setShowExploreThemes(false)}
+                className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 border-b border-white/10">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input type="text" value={themeSearch}
+                  onChange={(e) => setThemeSearch(e.target.value)}
+                  placeholder={t('lyrics.search_theme')}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50" />
               </div>
             </div>
-          );
-        })}
-      </div>
-    </div>
-  )
-}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {Object.entries(filteredThemeCats).map(([cat, themeList]) => {
+                if (themeList.length === 0) return null;
+                const meta = THEME_CAT_META[cat] || { emoji: '🎵', gradient: 'from-gray-500/20 to-gray-500/20', border: 'border-gray-500/30' };
+                return (
+                  <div key={cat} className={`rounded-xl border ${meta.border} bg-gradient-to-br ${meta.gradient} overflow-hidden backdrop-blur-sm`}>
+                    <div className="px-4 py-2.5 flex items-center justify-between border-b border-white/5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{meta.emoji}</span>
+                        <span className="text-sm font-semibold text-gray-200">{t(`lyrics.cat_${cat}`)}</span>
+                      </div>
+                      <span className="text-[10px] text-gray-500 bg-black/20 px-2 py-0.5 rounded-full">{themeList.length}</span>
+                    </div>
+                    <div className="p-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
+                      {themeList.map(tm => (
+                        <button key={tm} onClick={() => { setTheme(tm); setShowExploreThemes(false); }}
+                          className={`px-2 py-2 rounded-lg text-xs font-medium transition-all truncate ${theme === tm
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm'
+                            : 'bg-black/20 text-gray-300 hover:bg-black/30 hover:text-white'}`}>
+                          {t(`lyrics_themes.${tm}`) || t(`themes.${tm}`) || tm}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )
+      }
     </div >
   );
 }

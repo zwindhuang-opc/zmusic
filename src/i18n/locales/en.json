@@ -634,6 +634,22 @@
     "rising": "Rising",
     "falling": "Falling"
   },
+  "section_presets": {
+    "standard_song": "Standard Song",
+    "short_bgm": "Short BGM",
+    "loopable_bgm": "Loopable BGM",
+    "commercial_jingle": "Commercial Jingle",
+    "storytelling": "Storytelling",
+    "dance_track": "Dance Track"
+  },
+  "ui": {
+    "explore_all_styles": "Explore All Styles",
+    "explore_all_themes": "Explore All Themes",
+    "beginner_hint_method": "Beginner tip: FSM Programming is most reliable",
+    "beginner_hint_style": "Pick a category first, then a sub-style",
+    "beginner_hint_theme": "One theme is enough to start",
+    "tip": "Tip"
+  },
   "chat": {
     "title": "AI Assistant",
     "welcome": "Hello! I'm your AI music creation assistant. You can choose different AI models to help you create music, lyrics, and MVs.",
