@@ -215,7 +215,7 @@ const SCENE_PROFILES = [
  * ========================================================================= */
 
 /**
- * Analyze an image through 6 layers of feature extraction
+ * Analyze an image through 7 layers of feature extraction
  * @param {HTMLImageElement|HTMLCanvasElement} source - Image or canvas element
  * @returns {Promise<Object>} Comprehensive visual features
  */
@@ -241,6 +241,7 @@ export async function analyzeImageVisuals(source) {
     ...extractCompositionFeatures(pixels, w, h),
     ...extractRegionFeatures(pixels, w, h),
     ...extractTextureFeatures(pixels, w, h),
+    ...extractSemanticFeatures(pixels, w, h),
     width: w,
     height: h
   };
@@ -586,10 +587,178 @@ function extractTextureFeatures(pixels, w, h) {
 }
 
 /* =========================================================================
+ * LAYER 7: SUBJECT / SEMANTIC DETECTION — What is IN the image
+ * ========================================================================= */
+
+/**
+ * Detect semantic content: people count, subject type, scene context
+ * Uses skin-tone detection, composition analysis, and color patterns
+ * to infer WHAT the image contains, not just HOW it looks.
+ */
+function extractSemanticFeatures(pixels, w, h) {
+  // Skin tone detection (RGB-based heuristic, more inclusive for diverse skin tones)
+  let skinPixelCount = 0;
+  const gridCols = 20;
+  const gridRows = 15;
+  const cellW = Math.floor(w / gridCols);
+  const cellH = Math.floor(h / gridRows);
+  const grid = Array(gridRows).fill(0).map(() => Array(gridCols).fill(0));
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = (y * w + x) * 4;
+      const r = pixels[idx], g = pixels[idx + 1], b = pixels[idx + 2];
+      if (pixels[idx + 3] < 10) continue;
+
+      // More inclusive but accurate skin tone heuristic using YCbCr color space
+      // Standard skin detection ranges (tightened to avoid false positives)
+      const yCb = 0.299 * r + 0.587 * g + 0.114 * b;
+      const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+      const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+
+      // Tighter skin tone ranges (reduces false positives on dark backgrounds)
+      const isSkin = yCb > 60 &&                   // Not too dark (min luminance)
+        cb > 85 && cb < 120 &&         // Tighter blue-difference
+        cr > 140 && cr < 165;          // Tighter red-difference
+
+      if (isSkin) {
+        skinPixelCount++;
+        const cellY = Math.min(gridRows - 1, Math.floor(y / cellH));
+        const cellX = Math.min(gridCols - 1, Math.floor(x / cellW));
+        grid[cellY][cellX]++;
+      }
+    }
+  }
+
+  const totalPixels = w * h;
+  const skinRatio = skinPixelCount / totalPixels;
+
+  // Count distinct skin-tone clusters (higher threshold for noise filtering)
+  const visited = Array(gridRows).fill(0).map(() => Array(gridCols).fill(false));
+  const clusters = [];
+  const minClusterSize = 5; // Higher = fewer but more reliable clusters
+
+  for (let gy = 0; gy < gridRows; gy++) {
+    for (let gx = 0; gx < gridCols; gx++) {
+      if (!visited[gy][gx] && grid[gy][gx] >= minClusterSize) {
+        const cluster = _floodFillGrid(grid, visited, gx, gy);
+        if (cluster.size >= minClusterSize) {
+          clusters.push(cluster);
+        }
+      }
+    }
+  }
+
+  const personCount = clusters.length;
+
+  // Determine subject type - lower thresholds for better detection
+  let subjectType = 'unknown';
+  let subjectConfidence = 0;
+
+  if (skinRatio > 0.04 && personCount >= 1) {
+    if (personCount >= 3) {
+      subjectType = 'group';
+      subjectConfidence = Math.min(1, skinRatio * 1.5);
+    } else if (personCount === 2) {
+      subjectType = 'couple';
+      subjectConfidence = Math.min(1, skinRatio * 1.5 + 0.2);
+    } else {
+      subjectType = 'portrait';
+      subjectConfidence = Math.min(1, skinRatio * 1.2 + 0.1);
+    }
+  } else if (skinRatio > 0.02) {
+    subjectType = 'people_present';
+    subjectConfidence = skinRatio * 1.5;
+  }
+
+  // Analyze where skin is concentrated
+  let skinRegion = 'none';
+  if (clusters.length > 0) {
+    const avgY = clusters.reduce((s, c) => s + c.cy, 0) / clusters.length;
+    const avgX = clusters.reduce((s, c) => s + c.cx, 0) / clusters.length;
+    if (avgY < gridRows * 0.4) skinRegion = 'upper';
+    else if (avgY < gridRows * 0.6) skinRegion = 'center';
+    else skinRegion = 'lower';
+    if (avgX < gridCols * 0.35) skinRegion += '_left';
+    else if (avgX > gridCols * 0.65) skinRegion += '_right';
+    else skinRegion += '_center';
+  }
+
+  // Indoor vs outdoor detection
+  let indoorOutdoor = 'unknown';
+  let skinInCenter = 0;
+  if (clusters.length > 0) {
+    for (const c of clusters) {
+      if (c.cx > gridCols * 0.25 && c.cx < gridCols * 0.75 &&
+        c.cy > gridRows * 0.2 && c.cy < gridRows * 0.75) {
+        skinInCenter++;
+      }
+    }
+    if (skinInCenter === clusters.length && skinRatio > 0.03) {
+      indoorOutdoor = 'indoor';
+    }
+  }
+
+  // Selfie detection (skin concentrated in upper-center, close-up)
+  const isSelfie = subjectType === 'portrait' && skinRegion.startsWith('upper') && skinRatio > 0.08;
+
+  return {
+    skinRatio,
+    personCount,
+    subjectType,
+    subjectConfidence,
+    skinRegion,
+    indoorOutdoor,
+    isSelfie,
+    clusters: clusters.map(c => ({ cx: c.cx, cy: c.cy, size: c.size }))
+  };
+}
+
+function _floodFillGrid(grid, visited, sx, sy) {
+  const rows = grid.length;
+  const cols = grid[0].length;
+  const queue = [{ x: sx, y: sy }];
+  visited[sy][sx] = true;
+  let size = 0;
+  let sumX = 0, sumY = 0;
+
+  while (queue.length > 0) {
+    const { x, y } = queue.shift();
+    size++;
+    sumX += x;
+    sumY += y;
+
+    const neighbors = [
+      { x: x + 1, y }, { x: x - 1, y },
+      { x, y: y + 1 }, { x, y: y - 1 }
+    ];
+    for (const n of neighbors) {
+      if (n.x >= 0 && n.x < cols && n.y >= 0 && n.y < rows &&
+        !visited[n.y][n.x] && grid[n.y][n.x] > 1) {
+        visited[n.y][n.x] = true;
+        queue.push(n);
+      }
+    }
+  }
+
+  return { size, cx: sumX / size, cy: sumY / size };
+}
+
+/* =========================================================================
  * SCENE CLASSIFICATION — Map all features to scene profile
  * ========================================================================= */
 
 export function classifyScene(features) {
+  // FIRST: check semantic features (people/couple detected)
+  if (features.subjectType && features.subjectConfidence > 0.15) {
+    const semanticProfile = _classifyBySemantics(features);
+    if (semanticProfile) {
+      const result = { ...semanticProfile, profileId: semanticProfile._semanticId };
+      result.vocalSuggestion = _inferVocalFromFeatures(features);
+      return result;
+    }
+  }
+
   for (const profile of SCENE_PROFILES) {
     if (profile.match(features)) {
       const result = { ...profile.lyrics, profileId: profile.id };
@@ -600,6 +769,102 @@ export function classifyScene(features) {
 
   // Fallback: generate from individual features
   return generateFromFeatures(features);
+}
+
+/**
+ * Classify scene based on semantic subject detection
+ * This ensures that a couple photo generates love lyrics, not generic color-based ones
+ */
+function _classifyBySemantics(f) {
+  const type = f.subjectType;
+
+  if (type === 'couple') {
+    const scene = {
+      _semanticId: 'semantic_couple',
+      genre: ['love_song', 'ballad', 'romantic'],
+      themes: ['love', 'romantic_night', 'heartbreak'],
+      imagery: ['恋人', '拥抱', '笑容', '心跳', '牵手', '夕阳', '月光', '回忆', '甜蜜', '温柔'],
+      emotions: ['甜蜜', '温馨', '幸福', '眷恋', '炽热'],
+      subjects: ['恋人', '伴侣', '爱人', '另一半', '我们'],
+      actions: ['相拥', '牵手', '凝望', '低语', '依偎', '承诺', '守护'],
+      locations: ['在身边', '怀里', '目光里', '梦里', '此刻'],
+      tempos: [75, 85, 95],
+      description: '图片中检测到两个人（可能是情侣），生成爱情主题歌词',
+      confidence: f.subjectConfidence
+    };
+    if (f.skinRegion.includes('upper')) {
+      scene.imagery.push('脸颊', '双眸', '发丝', '笑容');
+      scene.actions.push('凝视', '微笑');
+    }
+    if (f.indoorOutdoor === 'indoor') {
+      scene.locations.push('灯下', '房间里', '窗边');
+      scene.imagery.push('灯光', '温暖');
+    }
+    if (f.isSelfie) {
+      scene.description += '（自拍照风格）';
+      scene.imagery.push('自拍', '屏幕', '滤镜');
+    }
+    return scene;
+  }
+
+  if (type === 'portrait') {
+    const scene = {
+      _semanticId: 'semantic_portrait',
+      genre: ['ballad', 'rnb', 'nostalgic'],
+      themes: ['memory', 'loneliness', 'life'],
+      imagery: ['身影', '剪影', '目光', '心事', '独白', '光影', '侧脸', '轮廓'],
+      emotions: ['沉思', '孤独', '渴望', '温柔', '坚定'],
+      subjects: ['自己', '身影', '旅人', '归人', '角色'],
+      actions: ['凝望', '沉思', '等待', '独行', '追寻'],
+      locations: ['在心里', '角落', '路上', '此刻'],
+      tempos: [70, 80, 90],
+      description: '图片中检测到一个人（肖像/自拍），生成个人独白主题歌词',
+      confidence: f.subjectConfidence
+    };
+    if (f.isSelfie) {
+      scene.imagery.push('自拍', '镜头前', '表情', '眼神');
+      scene.actions.push('回眸', '微笑');
+      scene.locations.push('屏幕里', '当下');
+    }
+    if (f.indoorOutdoor === 'indoor') {
+      scene.locations.push('房间', '室内', '灯下');
+    }
+    return scene;
+  }
+
+  if (type === 'group') {
+    return {
+      _semanticId: 'semantic_group',
+      genre: ['pop', 'kpop', 'friendship'],
+      themes: ['friendship', 'energetic_party', 'dreams'],
+      imagery: ['笑容', '欢呼', '人群', '拥抱', '派对', '舞台', '光芒', '庆典', '伙伴', '青春'],
+      emotions: ['兴奋', '快乐', '团结', '自由', '热情'],
+      subjects: ['伙伴', '朋友', '少年', '同伴', '追梦人'],
+      actions: ['欢呼', '拥抱', '奔跑', '跳跃', '举杯', '闪耀'],
+      locations: ['舞台', '派对', '人群中', '庆典'],
+      tempos: [110, 120, 130],
+      description: '图片中检测到多人（群体照），生成友情/活力主题歌词',
+      confidence: f.subjectConfidence
+    };
+  }
+
+  if (type === 'people_present') {
+    return {
+      _semanticId: 'semantic_people',
+      genre: ['indie', 'folk', 'ballad'],
+      themes: ['life', 'memory', 'friendship'],
+      imagery: ['身影', '故事', '时光', '片段', '回忆', '人间', '烟火', '日常'],
+      emotions: ['平静', '温馨', '释然', '感慨', '踏实'],
+      subjects: ['人', '路人', '陌生人', '自己', '身边人'],
+      actions: ['走过', '相遇', '停留', '擦肩而过', '留下'],
+      locations: ['街角', '路上', '巷口', '身边'],
+      tempos: [75, 85, 95],
+      description: '图片中检测到人物轮廓，生成生活主题歌词',
+      confidence: f.subjectConfidence
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -922,7 +1187,17 @@ export async function fullImageAnalysis(imageElement) {
       locations: sceneLyrics.locations,
       sceneId: sceneLyrics.profileId,
       vocalGender: vocalSuggestion?.gender || null,
-      vocalConfidence: vocalSuggestion?.confidence || 0
+      vocalConfidence: vocalSuggestion?.confidence || 0,
+      // Semantic subject detection results
+      subjectType: features.subjectType || 'unknown',
+      subjectConfidence: features.subjectConfidence || 0,
+      personCount: features.personCount || 0,
+      skinRegion: features.skinRegion || 'none',
+      isSelfie: features.isSelfie || false,
+      indoorOutdoor: features.indoorOutdoor || 'unknown',
+      // Semantic scene description
+      description: sceneLyrics.description,
+      confidence: sceneLyrics.confidence || 0
     },
     colorPalette: features.dominantColors.map(c => ({ hex: c.hex, percentage: c.percentage })),
     processingTime: Date.now()

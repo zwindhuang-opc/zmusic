@@ -1,4 +1,4 @@
-﻿/**
+/**
  * EasyMode.jsx - Elderly-friendly 3-step wizard
  * 
  * Designed for non-technical users and elderly users.
@@ -149,11 +149,28 @@ export default function EasyMode({ onSwitchToExpert }) {
           : 90;
         params.script = styleInfo?.promptTemplate || '';
       } else if (selectedType === 'image' && uploadedImage) {
-        const analysis = await fullImageAnalysis(uploadedImage);
-        params.genre = analysis?.recommendedStyles?.[0] || 'pop';
-        params.theme = analysis?.themes?.[0] || 'nature';
-        params.bpm = 90;
+        // Create an Image element from the base64 data URL for proper analysis
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = () => reject(new Error('图片加载失败'));
+          img.src = uploadedImage;
+        });
+        const analysis = await fullImageAnalysis(img);
+        params.genre = analysis?.scene?.genre?.[0] || analysis?.recommendedStyles?.[0] || 'pop';
+        params.theme = analysis?.scene?.themes?.[0] || analysis?.themes?.[0] || 'nature';
+        params.bpm = analysis?.scene?.tempos?.[1] || 90;
         params.visualContext = analysis;
+        // Also pass the visual context's scene data for better lyrics generation
+        if (analysis?.visualContext) {
+          params.visualContext.imagery = analysis.visualContext.imagery || analysis.scene?.imagery || [];
+          params.visualContext.emotions = analysis.visualContext.emotions || analysis.scene?.emotions || [];
+          params.visualContext.subjects = analysis.visualContext.subjects || analysis.scene?.subjects || [];
+          params.visualContext.actions = analysis.visualContext.actions || analysis.scene?.actions || [];
+          params.visualContext.locations = analysis.visualContext.locations || analysis.scene?.locations || [];
+          params.visualContext.sceneId = analysis.scene?.profileId || '';
+        }
       } else {
         showToast('请先选择一种类型和心情', 'error');
         setIsGenerating(false);

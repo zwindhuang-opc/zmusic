@@ -1,4 +1,4 @@
-import { generateDynamicLyrics, getThemeBank, blendBanks, getDynamicThemes, getDynamicStyles } from './dynamicLyricsEngine.js';
+import { generateDynamicLyrics, getThemeBank, blendBanks, getDynamicThemes, getDynamicStyles, LANGUAGE_OPTIONS } from './dynamicLyricsEngine.js';
 
 /* =========================================================================
  * STRUCTURAL CONFIGS (not lyrics)
@@ -643,7 +643,8 @@ function generateBasic(genre, theme, params) {
     genre,
     theme,
     method: 'basic',
-    complexity: params?.complexity || 5
+    complexity: params?.complexity || 5,
+    language: params?.language || 'zh'
   });
 }
 
@@ -656,6 +657,10 @@ export function getGenres() {
   return Object.keys(STRUCTURES);
 }
 
-export function getThemes() {
-  return getDynamicThemes();
+export function getThemes(language = 'zh') {
+  return getDynamicThemes(language);
+}
+
+export function getLanguageOptions() {
+  return LANGUAGE_OPTIONS;
 }

@@ -29,6 +29,133 @@ import {
  * Each bank holds individual words / short phrases (NOT complete lines).
  * ========================================================================= */
 
+/* =========================================================================
+ * 1B. ENGLISH THEME VOCABULARY BANKS
+ * ========================================================================= */
+
+const ENGLISH_THEME_BANKS = {
+  love: {
+    imagery: ['moonlight', 'stars', 'roses', 'whispers', 'embrace', 'sparkle', 'shadows', 'midnight', 'heartbeat', 'kisses'],
+    emotions: ['passion', 'longing', 'devotion', 'tenderness', 'infatuation', 'adoration', 'yearning', 'romance', 'affection', 'desire'],
+    actions: ['holding', 'waiting', 'gazing', 'whispering', 'promising', 'chasing', 'touching', 'loving', 'dreaming', 'cherishing'],
+    subjects: ['lover', 'heart', 'soulmate', 'stranger', 'confidant', 'angel', 'dream', 'forever', 'inspiration', 'destiny'],
+    objects: ['romance', 'promise', 'future', 'memory', 'eternity', 'connection', 'chemistry', 'journey', 'story', 'moment'],
+    locations: ['under the moon', 'in the rain', 'by the window', 'across the sea', 'in the dark', 'at the crossroads', 'in silence', 'in dreams'],
+    timeWords: ['tonight', 'forever', 'always', 'moment', 'instant', 'someday', 'neverending', 'timeless'],
+    descriptors: ['beautiful', 'tender', 'passionate', 'gentle', 'pure', 'bittersweet', 'magical', 'electric', 'unforgettable', 'stolen']
+  },
+  loneliness: {
+    imagery: ['cold streetlight', 'empty rooms', 'fading echoes', 'silent hours', 'broken mirrors', 'distant voices', 'gray shadows', 'unmade bed', 'smoke trails', 'vanishing smiles'],
+    emotions: ['isolation', 'despair', 'melancholy', 'emptiness', 'yearning', 'abandonment', 'silence', 'forsaken', 'grief', 'void'],
+    actions: ['walking alone', 'staring blankly', 'breathing shallow', 'waiting endlessly', 'crumbling inward', 'fading out', 'shutting down', 'existing barely', 'dragging on', 'disappearing'],
+    subjects: ['ghost', 'stranger', 'shadow', 'echo', 'memory', 'phantom', 'wanderer', 'hermit', 'drifter', 'void'],
+    objects: ['silence', 'distance', 'time', 'walls', 'barriers', 'absence', 'nothingness', 'cold', 'echoes', 'dreams'],
+    locations: ['empty corridors', 'midnight streets', 'crowded rooms', 'isolated rooms', 'rain-swept sidewalks', 'cold rooftops', 'wind-swept plains', 'invisible spaces'],
+    timeWords: ['3am', 'never', 'alone', 'always', 'forever', 'still', 'yet', 'once', 'late', 'early'],
+    descriptors: ['frozen', 'numb', 'ghost-like', 'invisible', 'silent', 'shattered', 'hollow', 'fading', 'scattered', 'barren']
+  },
+  sadness: {
+    imagery: ['falling tears', 'wilted flowers', 'grey skies', 'broken heart', 'fading memories', 'unraveling threads', 'shattered glass', 'crumbling walls', 'dissolving promises', 'piercing silence'],
+    emotions: ['heartache', 'sorrow', 'anguish', 'grief', 'desolation', 'bitterness', 'hopelessness', 'agony', 'wounded', 'tormented'],
+    actions: ['sobbing', 'breaking', 'crumbling', 'wishing', 'remembering', 'haunting', 'bleeding', 'sinking', 'losing', 'collapsing'],
+    subjects: ['lost one', 'broken soul', 'wanderer', 'memory', 'ghost of us', 'scar', 'wound', 'echo', 'afterimage', 'shadow'],
+    objects: ['tears', 'goodbyes', 'regrets', 'what-ifs', 'faded letters', 'empty spaces', 'unspoken words', 'wreckage', 'ruins', 'ashes'],
+    locations: ['rain-soaked windows', 'empty rooms', 'broken bridges', 'foggy cemeteries', 'shattered homes', 'quiet corners', 'wilted gardens', 'shattered mirrors'],
+    timeWords: ['yesterday', 'too late', 'now', 'always', 'never', 'still', 'too soon', 'a lifetime', 'days ago', 'the moment'],
+    descriptors: ['shattered', 'aching', 'broken', 'torn', 'fractured', 'bleeding', 'dissolving', 'crumbling', 'unraveling', 'fading']
+  },
+  dreams: {
+    imagery: ['shooting stars', 'distant shores', 'open skies', 'butterfly wings', 'horizon lines', 'dawning light', 'phoenix rising', 'crown of stars', 'unbroken horizon', 'infinite sky'],
+    emotions: ['aspiration', 'ambition', 'hopefulness', 'courage', 'determination', 'passion', 'inspiration', 'longing', 'wonder', 'thrill'],
+    actions: ['climbing', 'flying', 'reaching', 'breaking through', 'leaping', 'ascending', 'discovering', 'creating', 'pushing forward', 'transforming'],
+    subjects: ['dreamer', 'pioneer', 'warrior', 'explorer', 'architect', 'pioneer', 'beacon', 'trailblazer', 'phoenix', 'champion'],
+    objects: ['dreams', 'destiny', 'future', 'legend', 'breakthrough', 'freedom', 'frontier', 'milestone', 'triumph', 'legacy'],
+    locations: ['in the clouds', 'beyond the horizon', 'on the mountain peak', 'at the crossroads', 'through the stars', 'in the dawn', 'on the frontier', 'beyond the map'],
+    timeWords: ['tomorrow', 'someday', 'soon', 'one day', 'future', 'always', 'finally', 'eventually', 'now', 'in a moment'],
+    descriptors: ['limitless', 'boundless', 'brilliant', 'bold', 'fearless', 'radiant', 'unstoppable', 'thrilling', 'victorious', 'transcendent']
+  },
+  memory: {
+    imagery: ['faded photographs', 'yellowed letters', 'old melodies', 'time-worn smiles', 'dusty albums', 'echoes of laughter', 'silhouettes', 'hand-written notes', 'turning pages', 'growing shadows'],
+    emotions: ['nostalgia', 'yearning', 'bittersweetness', 'sentimentality', 'remorse', 'gratitude', 'loss', 'warmth', 'longing', 'reverie'],
+    actions: ['remembers', 'longs for', 'recalls', 'revisits', 'holds dear', 'traces', 'lingers on', 'presses', 'embraces', 'saves'],
+    subjects: ['childhood', 'old friend', 'younger self', 'lost summer', 'former self', 'ghost of childhood', 'the person I was', 'who I used to be', 'memory', 'moment'],
+    objects: ['photographs', 'letters', 'playlists', 'diaries', 'mixtapes', 'souvenirs', 'trinkets', 'letters never sent', 'promises broken', 'promises kept'],
+    locations: ['old neighborhood', 'grandmother house', 'summer lakehouse', 'childhood bedroom', 'schoolyard', 'staircase', 'quiet library', 'rainy window seat'],
+    timeWords: ['years ago', 'back when', 'once upon', 'the summer of', 'when we were', 'not so long ago', 'before everything changed', 'in another life', 'once', 'then'],
+    descriptors: ['faded', 'distant', 'warm', 'hazy', 'precious', 'bittersweet', 'dear', 'etched', 'sealed', 'lingering']
+  },
+  nature: {
+    imagery: ['ancient oaks', 'flowing rivers', 'azure skies', 'mountain peaks', 'forest canopy', 'morning dew', 'summer breeze', 'wildflower meadows', 'distant thunder', 'twilight meadow'],
+    emotions: ['tranquility', 'wonder', 'reverence', 'freedom', 'peace', 'oneness', 'solitude', 'awe', 'serenity', 'connection'],
+    actions: ['wandering', 'breathing', 'listening', 'observing', 'embracing', 'drifting', 'bathing', 'soaking', 'communing', 'dissolving'],
+    subjects: ['mountain', 'ocean', 'river', 'pine', 'eagle', 'butterfly', 'cloud', 'deer', 'wind', 'earth'],
+    objects: ['wilderness', 'horizon', 'elements', 'whispers', 'rhythms', 'cycles', 'silence', 'murmurs', 'patterns', 'wonders'],
+    locations: ['deep forest', 'high meadow', 'rocky shore', 'starlit clearing', 'open field', 'crystal stream', 'wind-swept ridge', 'morning mist'],
+    timeWords: ['dawn', 'dusk', 'midnight', 'golden hour', 'season', 'cycle', 'turning', 'always', 'forever', 'now'],
+    descriptors: ['primal', 'ancient', 'vast', 'untamed', 'pure', 'silent', 'majestic', 'raw', 'organic', 'eternal']
+  },
+  hope: {
+    imagery: ['first light', 'rainbow after rain', 'seedling breaking through', 'open door', 'outstretched hand', 'dove in flight', 'candle in darkness', 'green sprout', 'breaking dawn', 'promise of spring'],
+    emotions: ['optimism', 'faith', 'encouragement', 'anticipation', 'resolve', 'lightness', 'uplift', 'joy', 'courage', 'expectation'],
+    actions: ['rises', 'shines', 'warms', 'illuminates', 'lifts', 'renews', 'kindles', 'restores', 'awakens', 'transforms'],
+    subjects: ['sunrise', 'candle', 'seedling', 'path', 'bridge', 'hand', 'voice', 'heart', 'promise', 'beacon'],
+    objects: ['tomorrow', 'possibility', 'rebirth', 'second chance', 'light', 'direction', 'purpose', 'meaning', 'breakthrough', 'new beginning'],
+    locations: ['at the threshold', 'through the doorway', 'on the horizon', 'in the clearing', 'through the storm', 'at the crossroads', 'near the river', 'in the garden'],
+    timeWords: ['tomorrow', 'soon', 'just around the corner', 'not yet', 'soon enough', 'at last', 'finally', 'eventually', 'today', 'now'],
+    descriptors: ['glowing', 'warm', 'promising', 'fragile', 'steadfast', 'bright', 'flickering', 'burgeoning', 'nascent', 'resilient']
+  },
+  heartbreak: {
+    imagery: ['shattered mirror', 'rain on a window', 'empty side of the bed', 'fading voicemail', 'burnt letters', 'fading polaroids', 'smoke without fire', 'unanswered calls', 'echo in empty halls', 'ghost of your laugh'],
+    emotions: ['betrayal', 'abandonment', 'disillusionment', 'resignation', 'devastation', 'coldness', 'bitterness', 'disbelief', 'rage', 'numbness'],
+    actions: ['collapses', 'disintegrates', 'buries', 'conceals', 'erases', 'cuts off', 'drifts apart', 'shatters', 'dissolves', 'vanishes'],
+    subjects: ['ghost', 'stranger', 'echo', 'afterimage', 'memory', 'what\u2019s left', 'remnant', 'fragment', 'disappearance', 'absence'],
+    objects: ['promises', 'vows', 'shared homes', 'future plans', 'once-upon-a-times', 'everything', 'nothing', 'memories', 'dreams', 'life as I knew it'],
+    locations: ['our apartment', 'this city', 'empty bed', 'rain-soaked streets', 'where we used to go', 'anywhere but here', 'inside these walls', 'nowhere'],
+    timeWords: ['yesterday', 'before', 'when', 'once', 'never', 'too late', 'now', 'still', 'always', 'not anymore'],
+    descriptors: ['broken', 'cold', 'sharp', 'heavy', 'silent', 'frozen', 'torn', 'scattered', 'hollow', 'unraveling']
+  },
+  healing: {
+    imagery: ['sunlight through leaves', 'gentle rain', 'warm tea', 'soft blanket', 'first bloom after winter', 'kinder hands', 'soothing light', 'breath of fresh air', 'warm bath', 'quiet garden'],
+    emotions: ['comfort', 'relief', 'gentleness', 'warmth', 'restoration', 'compassion', 'kindness', 'softening', 'reconciliation', 'grace'],
+    actions: ['mends', 'soothes', 'calms', 'restores', 'gently holds', 'breathes through', 'lets go of', 'invites in', 'warms up', 'blooms'],
+    subjects: ['healer', 'comforter', 'light', 'touch', 'voice', 'presence', 'kindness', 'warmth', 'care', 'tenderness'],
+    objects: ['wounds', 'scars', 'fears', 'hurts', 'griefs', 'anger', 'shame', 'regrets', 'broken pieces', 'heart'],
+    locations: ['in gentle hands', 'through slow breaths', 'in quiet moments', 'through shared silences', 'in the space between', 'with someone who understands', 'in nature', 'in your own arms'],
+    timeWords: ['slowly', 'over time', 'with patience', 'gently', 'kindly', 'in time', 'eventually', 'bit by bit', 'gradually', 'daily'],
+    descriptors: ['gentle', 'warm', 'soft', 'nurturing', 'patient', 'tender', 'quiet', 'steady', 'compassionate', 'kind']
+  },
+  summer_vibes: {
+    imagery: ['sun-kissed beaches', 'ice cream dripping', 'crackling bonfires', 'road trip maps', 'salt-struck hair', 'sandy footprints', 'neon boardwalks', 'starlit pool', 'grass-stained knees', 'cherry cola'],
+    emotions: ['freedom', 'adventure', 'joy', 'recklessness', 'lightness', 'thrill', 'escape', 'discovery', 'laughter', 'wonder'],
+    actions: ['runs', 'dances', 'splashes', 'roams', 'cruises', 'explores', 'discovers', 'adventures', 'celebrates', 'indulges'],
+    subjects: ['wave', 'sunlight', 'firefly', 'kind stranger', 'new friend', 'adventure', 'discovery', 'summer fling', 'coastline', 'neon sign'],
+    objects: ['memories', 'stories', 'souvenirs', 'playlists', 'photographs', 'promises made on beaches', 'sand in pockets', 'sunburn', 'driving license', 'courage'],
+    locations: ['the open road', 'late-night diner', 'county fair', 'beach bonfire', 'neon arcade', 'rooftop pool', 'state park', 'drive-in theater'],
+    timeWords: ['all summer', 'every night', 'for a moment', 'before summer ends', 'just this once', 'forever young', 'for the summer', 'while we can'],
+    descriptors: ['sleepless', 'electric', 'sun-drenched', 'reckless', 'joyful', 'effervescent', 'glowing', 'untamed', 'nostalgic', 'saccharine']
+  },
+  epic_journey: {
+    imagery: ['storm-swept peaks', 'ancient compasses', 'tattered maps', 'burning torches', 'marching armies', 'shattered shields', 'tower of bone', 'flag in the wind', 'blood and glory', 'iron and fire'],
+    emotions: ['courage', 'determination', 'honor', 'grandeur', 'defiance', 'brotherhood', 'sacrifice', 'conquest', 'legend', 'fate'],
+    actions: ['march', 'conquer', 'defend', 'ascend', 'storm', 'rise', 'fall', 'rage', 'stand', 'survive'],
+    subjects: ['hero', 'warrior', 'king', 'comrade', 'conqueror', 'legend', 'outsider', 'commander', 'soldier', 'survivor'],
+    objects: ['glory', 'throne', 'kingdom', 'fame', 'curse', 'destiny', 'legacy', 'crown', 'sword', 'honor'],
+    locations: ['the battlefield', 'ancient fortress', 'endless frontier', 'dragon\u2019s lair', 'throne room', 'distant kingdom', 'the frozen north', 'the burning city'],
+    timeWords: ['forever', 'eternity', 'until the end', 'in history', 'once and for all', 'until kingdom come', 'through the ages', 'for glory'],
+    descriptors: ['grand', 'epic', 'mighty', 'terrible', 'noble', 'sorrowful', 'majestic', 'violent', 'legendary', 'immortal']
+  },
+  dark_mystery: {
+    imagery: ['foggy graveyards', 'ancient keys', 'tattered spellbooks', 'flickering candles', 'shadowed corridors', 'whispering forests', 'forgotten names', 'cursed heirlooms', 'dusty libraries', 'ancient runes'],
+    emotions: ['curiosity', 'unease', 'intrigue', 'dread', 'fascination', 'claustrophobia', 'mystification', 'discovery', 'nervous energy', 'obsession'],
+    actions: ['uncovers', 'descends', 'whispers', 'deciphers', 'summons', 'seeks', 'solves', 'traces', 'confronts', 'unveils'],
+    subjects: ['ghost', 'detective', 'shadow', 'witness', 'curator', 'scholar', 'wandering soul', 'archivist', 'medium', 'stranger'],
+    objects: ['secrets', 'curses', 'prophecies', 'letters', 'clues', 'artifacts', 'photographs', 'documents', 'keys', 'journals'],
+    locations: ['old mansion', 'forgotten cellar', 'rain-soaked alley', 'ancient library', 'foggy moorland', 'cursed chapel', 'forgotten crypt', 'shadowed corridor'],
+    timeWords: ['decades ago', 'last century', 'in shadows', 'for years', 'in whispers', 'until now', 'once hidden', 'never spoken'],
+    descriptors: ['eerie', 'ancient', 'cryptic', 'forgotten', 'shadowed', 'cursed', 'whispered', 'untold', 'dusty', 'lingering']
+  }
+};
+
 const THEME_BANKS = {
   love: {
     imagery: ['月光', '繁星', '红烛', '玫瑰', '春风', '细雨', '晚霞', '银河', '蝶翼', '清辉'],
@@ -979,6 +1106,98 @@ const TEMPLATES = {
 };
 
 /* =========================================================================
+ * 3B. ENGLISH SENTENCE TEMPLATES
+ * ========================================================================= */
+
+const ENGLISH_TEMPLATES = {
+  intro: [
+    'In {location}, {descriptor} {subject} {action} {descriptor} {object}',
+    '{timeWord}, {imagery} and {imagery} intertwine, {emotion} stirs',
+    '{subject} {action}, {descriptor} as {imagery}',
+    '{imagery} {action}, {location} grows {descriptor}',
+    'In the {timeWord} {location}, {subject} {action} alone',
+    'In the {descriptor} {imagery}, {emotion} quietly {action}',
+    '{subject} {action} in {location}, {object} appears and fades',
+    '{imagery} with {imagery}, {emotion} spreads through {location}',
+    '{timeWord} arrives, {descriptor} {subject} {action}'
+  ],
+  verse: [
+    '{subject} {action} in {location}, {emotion} {object}',
+    'In the {timeWord} {location}, {descriptor} {subject} {action} alone',
+    '{imagery} {action}, the {emotion} {subject} in {location}',
+    'In the {descriptor} {object}, {action} {descriptor} {imagery}',
+    '{subject} {action}, {timeWord} is {descriptor}',
+    'In {location} {imagery} {action}, {emotion} rises in {subject}',
+    '{timeWord} {subject} {action}, {object} fades away',
+    'Under {descriptor} {imagery}, {subject} quietly {action}',
+    'The {emotion} {object}, {action} deep in {location}',
+    '{subject} {action} {object}, {timeWord} slips away'
+  ],
+  pre_chorus: [
+    '{emotion} rises, {subject} no longer {action}',
+    'Watch {imagery} {action}, {emotion} fills the heart',
+    '{timeWord} approaches, {descriptor} {subject} about to {action}',
+    'Between {imagery}, {emotion} and {emotion} collide',
+    '{subject} {action}, {object} begins to {action}',
+    'At the edge of {location}, {emotion} devours {subject}',
+    '{descriptor} {imagery}, {action}s {emotion}'
+  ],
+  chorus: [
+    '{subject}, {action} this {descriptor} {object}',
+    'Let {imagery} {action}, {emotion} never {action}',
+    'The {emotion} {subject}, {action} until {timeWord}',
+    '{subject} {action} in {location}, {object} burns',
+    '{timeWord}, {subject} {action} for {object}',
+    'Under {descriptor} {imagery}, {subject} {action} freely',
+    '{emotion} like {imagery}, {action}s {descriptor} {object}',
+    'Even if {imagery} {action}, {subject} will {action}',
+    '{subject} {action}, {emotion} etched into {object}',
+    'Let {descriptor} {object}, {action} until {timeWord}'
+  ],
+  bridge: [
+    'If {subject} could {action}, would {object} {action}',
+    'Between {imagery}, {emotion} and {emotion} collide',
+    '{timeWord} shifts, {subject} is no longer {subject}',
+    'Beyond {location}, {descriptor} {object} is {action}',
+    'When {imagery} {action}, can {emotion} {action}',
+    '{subject} {action}, {object} will {action} eventually',
+    'In the {descriptor} {imagery}, {emotion} and {emotion} merge'
+  ],
+  outro: [
+    '{imagery} fades, {subject} returns to {location}',
+    'End of {timeWord}, {emotion} becomes {imagery}',
+    '{subject} {action}, {object} drifts away',
+    '{location} falls silent, {descriptor} {subject} rests',
+    '{imagery} recedes, {emotion} finds peace',
+    '{timeWord} falls, {object} becomes {imagery}',
+    '{descriptor} {imagery}, {subject} quietly {action}',
+    'At the end of {location}, {emotion} always {action}'
+  ]
+};
+
+/* =========================================================================
+ * 3C. ENGLISH RHYME ENGINE (simplified - uses end-rhyme families)
+ * ========================================================================= */
+
+const ENGLISH_RHYME_FAMILIES = {
+  love: ['love', 'above', 'heart', 'start', 'apart', 'heart', 'start', 'apart'],
+  'ight': ['light', 'night', 'sight', 'flight', 'bright', 'delight', 'tight', 'fight'],
+  'ain': ['rain', 'pain', 'gain', 'chain', 'remain', 'explain', 'plain', 'stain'],
+  'old': ['cold', 'bold', 'gold', 'hold', 'told', 'fold', 'mold', 'sold'],
+  'ing': ['sing', 'wing', 'king', 'ring', 'bring', 'wing', 'thing', 'bring'],
+  'ore': ['more', 'door', 'floor', 'forever', 'adore', 'explore', 'score', 'core'],
+  'ame': ['flame', 'name', 'claim', 'frame', 'dream', 'scheme', 'stream', 'beam'],
+  'ay': ['day', 'way', 'stay', 'say', 'play', 'delay', 'away', 'gray'],
+  'ash': ['crash', 'flash', 'pass', 'ash', 'last', 'past', 'glass', 'class'],
+  'ove': ['love', 'above', 'stove', 'globe', 'robe', 'probe', 'smoke', 'hope'],
+  'ear': ['near', 'clear', 'fear', 'shear', 'dear', 'peer', 'rear', 'tear'],
+  'ake': ['break', 'make', 'shake', 'wake', 'take', 'mistake', 'ache', 'awake'],
+  'ool': ['cool', 'fool', 'rule', 'pool', 'school', 'jew', 'tool', 'mule'],
+  'one': ['bone', 'zone', 'tone', 'alone', 'stone', 'grown', 'known', 'thrown'],
+  'et': ['heart', 'start', 'part', 'dark', 'mark', 'spark', 'lark', 'cark']
+};
+
+/* =========================================================================
  * 4. CHINESE RHYME ENGINE
  * ========================================================================= */
 
@@ -1026,11 +1245,50 @@ function _resolveRhymeKey(targetEnding) {
  * @param {object} themeBank - a theme vocabulary bank
  * @returns {string|null} a matching word, or null if none found
  */
-export function findRhymeWord(targetEnding, usedWords, themeBank) {
+export function findRhymeWord(targetEnding, usedWords, themeBank, language = 'zh') {
+  const usedSet = usedWords instanceof Set ? usedWords : new Set(usedWords || []);
+
+  // English rhyme: match by word suffix patterns
+  if (language === 'en') {
+    const targetLower = (targetEnding || '').toLowerCase().trim();
+    const candidates = [];
+    const categories = ['imagery', 'emotions', 'actions', 'subjects', 'objects', 'locations', 'timeWords', 'descriptors'];
+
+    categories.forEach((cat) => {
+      const list = themeBank[cat];
+      if (!Array.isArray(list)) return;
+      list.forEach((word) => {
+        if (!word || typeof word !== 'string') return;
+        const wordLower = word.toLowerCase();
+        if (!usedSet.has(word)) {
+          // Try to find a word that ends similarly (last 2-3 chars match)
+          if (targetLower.length >= 2 && wordLower.length >= 2) {
+            const endLen = Math.min(targetLower.length, 3);
+            const suffix = targetLower.slice(-endLen);
+            if (wordLower.endsWith(suffix)) {
+              candidates.push(word);
+            }
+          }
+        }
+      });
+    });
+
+    if (candidates.length === 0) {
+      // Fallback: return any unused word
+      for (const cat of categories) {
+        const list = themeBank[cat];
+        if (!Array.isArray(list)) continue;
+        const available = list.filter(w => w && !usedSet.has(w));
+        if (available.length > 0) return available[Math.floor(Math.random() * available.length)];
+      }
+      return null;
+    }
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
+  // Chinese rhyme (default)
   const rhymeKey = _resolveRhymeKey(targetEnding);
   if (!rhymeKey || !themeBank) return null;
-
-  const usedSet = usedWords instanceof Set ? usedWords : new Set(usedWords || []);
   const rhymeChars = RHYME_GROUPS[rhymeKey];
 
   // Collect candidate words from every category whose last character rhymes
@@ -1119,7 +1377,7 @@ function _getWordForSlot(slot, banks, weights, usedWords, styleConfig) {
   return _pickRandom(list);
 }
 
-function _fillTemplate(template, banks, weights, usedWords, styleConfig, rhymeOptions) {
+function _fillTemplate(template, banks, weights, usedWords, styleConfig, rhymeOptions, language = 'zh') {
   // Replace each {slot} token with a generated word.
   let result = template;
   const slotRegex = /\{(\w+)\}/g;
@@ -1139,7 +1397,7 @@ function _fillTemplate(template, banks, weights, usedWords, styleConfig, rhymeOp
     // If this is the last slot in the template and rhyme is requested,
     // try to find a rhyming word from the bank for this slot category.
     if (rhymeOptions && rhymeOptions.targetEnding && isLast) {
-      const rhymeWord = findRhymeWord(rhymeOptions.targetEnding, usedWords, banks[0]);
+      const rhymeWord = findRhymeWord(rhymeOptions.targetEnding, usedWords, banks[0], language);
       if (rhymeWord) {
         usedWords.add(rhymeWord);
         result = result.replace(token, rhymeWord);
@@ -1159,18 +1417,24 @@ function _fillTemplate(template, banks, weights, usedWords, styleConfig, rhymeOp
  * or padding with a continuation particle. We avoid breaking meaning: trimming
  * only removes trailing punctuation/particles.
  */
-function _enforceLineLength(line, styleConfig) {
+function _enforceLineLength(line, styleConfig, language = 'zh') {
   const [min, max] = styleConfig && styleConfig.lineLength ? styleConfig.lineLength : [6, 14];
   let out = line;
   if (out.length > max) {
     out = out.slice(0, max);
   }
   if (out.length < min) {
-    const fillers = [
+    const zhFillers = [
       '……', '，无止境', '，不停歇', '，在心中', '，永不散',
       '，到永远', '，在梦里', '，绕心间', '，难入眠', '，意未断',
       '，人未还', '，泪未干', '，情未了', '，缘未尽', '，夜未央'
     ];
+    const enFillers = [
+      '...', ' forever', ' in the night', ' never ends', ' in my heart',
+      ' always', ' in dreams', ' without you', ' till the end', ' endlessly',
+      ' through the years', ' in the silence', ' like a ghost', ' fading away', ' just begun'
+    ];
+    const fillers = language === 'en' ? enFillers : zhFillers;
     out += _pickRandom(fillers);
     out = out.slice(0, max);
   }
@@ -1195,20 +1459,69 @@ export function generateLine(sectionType, themeBank, styleConfig, options = {}) 
   const weights = options.weights || banks.map(() => 1);
   const usedWords = options.usedWords instanceof Set ? options.usedWords : new Set(options.usedWords || []);
   const rhyme = options.rhyme || null;
+  const language = options.language || 'zh';
 
-  // Decide template pool: prefer style sentencePatterns as extra variety
-  const pool = TEMPLATES[sectionType] || TEMPLATES.verse;
-  let template = _pickRandom(pool);
+  // Decide template pool: use language-specific templates
+  let templatePool = getLanguageTemplates(language, sectionType);
 
-  // Occasionally (30%) use a style-specific sentence pattern instead
-  if (styleConfig && styleConfig.sentencePatterns && styleConfig.sentencePatterns.length && Math.random() < 0.3) {
+  // For 'mix' mode, decide per-line language
+  if (language === 'mix') {
+    const useEnglish = Math.random() < 0.5;
+    templatePool = useEnglish
+      ? (ENGLISH_TEMPLATES[sectionType] || ENGLISH_TEMPLATES.verse)
+      : (TEMPLATES[sectionType] || TEMPLATES.verse);
+  }
+
+  let template = _pickRandom(templatePool);
+
+  // Occasionally (40%) use a style-specific sentence pattern instead for quality
+  if (styleConfig && styleConfig.sentencePatterns && styleConfig.sentencePatterns.length && Math.random() < 0.4) {
     template = _pickRandom(styleConfig.sentencePatterns);
   }
 
-  let line = _fillTemplate(template, banks, weights, usedWords, styleConfig, rhyme ? { targetEnding: rhyme } : null);
-  line = _enforceLineLength(line, styleConfig);
+  // Enhanced line generation with better blending
+  let line = _fillTemplate(template, banks, weights, usedWords, styleConfig, rhyme ? { targetEnding: rhyme } : null, language);
+  line = _enforceLineLength(line, styleConfig, language);
+
+  // Apply poetic features if available
+  if (styleConfig && styleConfig.poeticFeatures && styleConfig.poeticFeatures.length > 0 && Math.random() < 0.3) {
+    const feature = _pickRandom(styleConfig.poeticFeatures);
+    if (language === 'en') {
+      line = _enhanceLineEnglish(line, feature);
+    } else {
+      line = _enhanceLineChinese(line, feature);
+    }
+  }
 
   return line;
+}
+
+/**
+ * Enhance English line with poetic features
+ */
+function _enhanceLineEnglish(line, feature) {
+  const enhancements = [
+    `${line} — ${feature}`,
+    `In the ${feature}, ${line}`,
+    `${line}, where ${feature} meets the soul`,
+    `${line} — a ${feature} moment`,
+    `Through the lens of ${feature}, ${line}`
+  ];
+  return _pickRandom(enhancements);
+}
+
+/**
+ * Enhance Chinese line with poetic features
+ */
+function _enhanceLineChinese(line, feature) {
+  const enhancements = [
+    `${line}，${feature}`,
+    `${feature}之中，${line}`,
+    `${line}，${feature}如影随形`,
+    `${line} — ${feature}之境`,
+    `${feature}映照下，${line}`
+  ];
+  return _pickRandom(enhancements);
 }
 
 /* =========================================================================
@@ -1236,7 +1549,7 @@ const _RHYME_SCHEME_PATTERNS = {
  * @param {string} rhymeScheme - AABB|ABAB|ABCB
  * @returns {Array<string>} generated lines
  */
-export function generateSection(sectionType, themeBank, styleConfig, lineCountOrComplexity = 3, rhymeScheme = 'ABAB', usedWords = null) {
+export function generateSection(sectionType, themeBank, styleConfig, lineCountOrComplexity = 3, rhymeScheme = 'ABAB', usedWords = null, language = 'zh') {
   const banks = Array.isArray(themeBank) ? themeBank : [themeBank];
   const weights = banks.map(() => 1);
   const globalUsed = usedWords instanceof Set ? usedWords : new Set();
@@ -1257,7 +1570,7 @@ export function generateSection(sectionType, themeBank, styleConfig, lineCountOr
     }
 
     const line = generateLine(sectionType, themeBank, styleConfig, {
-      banks, weights, usedWords: globalUsed, rhyme: rhymeTarget
+      banks, weights, usedWords: globalUsed, rhyme: rhymeTarget, language
     });
 
     if (!rhymeAnchors[letter] && line.length > 0) {
@@ -1327,8 +1640,29 @@ export function generateTimeMarkers(structure, duration = 270) {
 /**
  * Get a theme vocabulary bank by key. Falls back to 'love' if not found.
  */
-export function getThemeBank(theme) {
+export function getThemeBank(theme, language = 'zh') {
+  if (language === 'en') {
+    return ENGLISH_THEME_BANKS[theme] || ENGLISH_THEME_BANKS.love;
+  }
   return THEME_BANKS[theme] || THEME_BANKS.love;
+}
+
+/**
+ * Get language-specific templates for lyric generation.
+ * @param {string} language - 'zh' | 'en' | 'mix'
+ * @param {string} sectionType - intro|verse|pre_chorus|chorus|bridge|outro
+ * @returns {Array<string>} array of template strings
+ */
+export function getLanguageTemplates(language, sectionType) {
+  if (language === 'en') {
+    return ENGLISH_TEMPLATES[sectionType] || ENGLISH_TEMPLATES.verse;
+  }
+  if (language === 'mix') {
+    const zhPool = TEMPLATES[sectionType] || TEMPLATES.verse;
+    const enPool = ENGLISH_TEMPLATES[sectionType] || ENGLISH_TEMPLATES.verse;
+    return Math.random() < 0.5 ? zhPool : enPool;
+  }
+  return TEMPLATES[sectionType] || TEMPLATES.verse;
 }
 
 function _getStyleConfig(style) {
@@ -1389,20 +1723,194 @@ export function blendBanks(banks, weights) {
  * @param {Object} visualContext - from visionAnalyzer.fullImageAnalysis()
  * @returns {Object} theme bank compatible with blendBanks()
  */
-export function createVisualBank(visualContext) {
+/**
+ * Keyword mapping for sceneId → specific imagery/words.
+ * Gives photo-specific vocabulary instead of generic terms.
+ */
+const SCENE_KEYWORD_MAP = {
+  couple: {
+    zh: { imagery: ['相拥', '对视', '牵手', '依偎', '心跳', '默契', '永恒', '承诺', '温柔', '靠近'], subjects: ['恋人', '伴侣', '爱人', '另一半', '挚爱'], emotions: ['甜蜜', '幸福', '温暖', '心动', '满足'], locations: ['约会', '公园', '街角', '咖啡馆', '月光下'], actions: ['牵手', '拥抱', '相视而笑', '并肩', '依靠'] },
+    en: { imagery: ['embrace', 'gaze', 'hand in hand', 'leaning', 'heartbeat', 'promise', 'forever', 'tenderness', 'closeness', 'intimacy'], subjects: ['lover', 'partner', 'beloved', 'soulmate', 'significant other'], emotions: ['sweet', 'joyful', 'warm', 'tender', 'content'], locations: ['cafe', 'park', 'street corner', 'moonlight', 'date night'], actions: ['hold hands', 'embrace', 'smile at each other', 'walk together', 'lean on'] }
+  },
+  portrait: {
+    zh: { imagery: ['凝视', '眼神', '轮廓', '表情', '故事', '秘密', '心事', '情绪', '沉默', '思索'], subjects: ['主角', '自我', '画像', '肖像', '人物'], emotions: ['深沉', '内敛', '复杂', '神秘', '故事感'], locations: ['镜前', '画框', '画廊', '角落', '灯下'], actions: ['凝视', '凝望', '沉思', '低语', '诉说'] },
+    en: { imagery: ['gaze', 'eyes', 'silhouette', 'expression', 'story', 'secret', 'thought', 'emotion', 'silence', 'reflection'], subjects: ['portrait', 'self', 'figure', 'character', 'face'], emotions: ['deep', 'introverted', 'complex', 'mysterious', 'story-driven'], locations: ['mirror', 'frame', 'gallery', 'corner', 'lamp'], actions: ['gaze', 'stare', 'ponder', 'whisper', 'tell'] }
+  },
+  people: {
+    zh: { imagery: ['身影', '烟火', '日常', '人间', '片段', '故事', '街景', '路人', '擦肩而过', '生活'], subjects: ['人', '路人', '陌生人', '身边人', '自己'], emotions: ['平静', '温馨', '感慨', '释然', '踏实'], locations: ['街角', '巷口', '路上', '身边', '日常'], actions: ['走过', '相遇', '停留', '擦肩', '留下'] },
+    en: { imagery: ['figure', 'life', 'daily', 'world', 'moment', 'story', 'street scene', 'passerby', 'passing through', 'life'], subjects: ['person', 'stranger', 'passerby', 'someone nearby', 'self'], emotions: ['peaceful', 'warm', 'reflective', 'content', 'grounded'], locations: ['street corner', 'alley', 'road', 'nearby', 'daily life'], actions: ['walk by', 'meet', 'pause', 'pass through', 'remain'] }
+  },
+  selfie: {
+    zh: { imagery: ['自拍', '镜头', '笑容', '表情', '眼神', '当下', '滤镜', '屏幕', '瞬间', '真实'], subjects: ['自己', '镜头前', '此刻', '表情', '真实'], emotions: ['自信', '愉悦', '随性', '俏皮', '真实'], locations: ['镜头前', '屏幕里', '当下', '此刻', '面前'], actions: ['回眸', '微笑', '眨眼', '摆姿势', '定格'] },
+    en: { imagery: ['selfie', 'camera', 'smile', 'expression', 'eyes', 'moment', 'filter', 'screen', 'instant', 'authentic'], subjects: ['self', 'in front of camera', 'moment', 'expression', 'authentic self'], emotions: ['confident', 'joyful', 'casual', 'playful', 'genuine'], locations: ['in front of camera', 'on screen', 'this moment', 'now', 'before me'], actions: ['look back', 'smile', 'blink', 'pose', 'freeze frame'] }
+  },
+  landscape: {
+    zh: { imagery: ['远方', '天际', '山峦', '湖海', '星空', '云海', '日落', '朝阳', '辽阔', '苍茫'], subjects: ['自然', '大地', '天空', '远山', '大海'], emotions: ['辽阔', '壮阔', '壮丽', '敬畏', '自由'], locations: ['山顶', '海边', '草原', '沙漠', '湖畔'], actions: ['眺望', '漫步', '穿行', '追逐', '感受'] },
+    en: { imagery: ['horizon', 'mountains', 'ocean', 'stars', 'clouds', 'sunset', 'sunrise', 'vastness', 'landscape', 'vista'], subjects: ['nature', 'earth', 'sky', 'mountain', 'ocean'], emotions: ['vast', 'grand', 'awe-inspiring', 'free', 'wonder'], locations: ['mountaintop', 'seaside', 'meadow', 'desert', 'lakeside'], actions: ['gaze at', 'wander', 'trek', 'chase', 'feel'] }
+  },
+  urban: {
+    zh: { imagery: ['霓虹', '高楼', '地铁', '街道', '车流', '灯火', '玻璃', '钢铁', '人群', '夜色'], subjects: ['都市', '城市', '异乡人', '路人', '陌生人'], emotions: ['疏离', '孤独', '热闹', '迷茫', '奔忙'], locations: ['写字楼', '公寓', '十字路口', '地铁', '天桥'], actions: ['穿行', '奔波', '等待', '邂逅', '擦肩而过'] },
+    en: { imagery: ['neon', 'skyscraper', 'subway', 'street', 'traffic', 'lights', 'glass', 'steel', 'crowd', 'night'], subjects: ['city', 'urbanite', 'stranger', 'passerby', 'dreamer'], emotions: ['detached', 'lonely', 'bustling', 'lost', 'rushed'], locations: ['office tower', 'apartment', 'intersection', 'subway', 'overpass'], actions: ['navigate', 'rush', 'wait', 'encounter', 'pass by'] }
+  },
+  nature: {
+    zh: { imagery: ['花', '草', '树', '叶', '水', '风', '阳光', '鸟鸣', '溪流', '绿意'], subjects: ['自然', '生命', '春天', '林间', '原野'], emotions: ['宁静', '生机', '治愈', '清新', '自由'], locations: ['森林', '花园', '溪流', '草原', '小径'], actions: ['生长', '摇曳', '流淌', '绽放', '呼吸'] },
+    en: { imagery: ['flower', 'grass', 'tree', 'leaf', 'water', 'wind', 'sunlight', 'birdsong', 'stream', 'green'], subjects: ['nature', 'life', 'spring', 'forest', 'meadow'], emotions: ['peaceful', 'alive', 'healing', 'fresh', 'free'], locations: ['forest', 'garden', 'stream', 'meadow', 'path'], actions: ['grow', 'sway', 'flow', 'bloom', 'breathe'] }
+  },
+  night: {
+    zh: { imagery: ['星光', '月光', '夜雨', '灯火', '影子', '迷雾', '寂静', '深夜', '窗棂', '孤灯'], subjects: ['夜', '星', '月', '梦', '思念'], emotions: ['寂静', '深邃', '孤独', '思念', '梦幻'], locations: ['窗台', '街角', '小巷', '屋顶', '窗前'], actions: ['守望', '低语', '漂浮', '追寻', '凝视'] },
+    en: { imagery: ['starlight', 'moonlight', 'rain', 'lantern', 'shadow', 'mist', 'silence', 'late night', 'window', 'lamp'], subjects: ['night', 'star', 'moon', 'dream', 'longing'], emotions: ['silent', 'deep', 'lonely', 'dreamy', 'nostalgic'], locations: ['windowsill', 'street corner', 'alley', 'rooftop', 'bedside'], actions: ['watch over', 'whisper', 'drift', 'search', 'gaze'] }
+  },
+  group: {
+    zh: { imagery: ['欢笑', '拥抱', '合影', '眼神交流', '默契', '氛围', '互动', '共鸣', '欢聚', '热闹'], subjects: ['朋友', '伙伴', '群体', '团队', '集体'], emotions: ['快乐', '友情', '融洽', '活力', '归属感'], locations: ['聚会', '派对', '广场', '教室', '社团'], actions: ['欢笑', '互动', '举杯', '庆祝', '分享'] },
+    en: { imagery: ['laughter', 'embrace', 'group photo', 'eye contact', 'chemistry', 'vibe', 'interaction', 'resonance', 'gathering', 'celebration'], subjects: ['friend', 'companion', 'group', 'team', 'community'], emotions: ['joyful', 'friendly', 'harmonious', 'energetic', 'belonging'], locations: ['party', 'gathering', 'plaza', 'classroom', 'club'], actions: ['laugh', 'interact', 'toast', 'celebrate', 'share'] }
+  },
+  childhood: {
+    zh: { imagery: ['童年', '旧时光', '玩具', '操场', '秋千', '阳光', '纯真', '无忧', '回忆', '时光机'], subjects: ['孩子', '小伙伴', '童年玩伴', '自己', '小伙伴'], emotions: ['怀念', '纯真', '快乐', '好奇', '温暖'], locations: ['操场', '家', '学校', '公园', '街角'], actions: ['奔跑', '嬉戏', '追逐', '欢笑', '做梦'] },
+    en: { imagery: ['childhood', 'old days', 'toy', 'playground', 'swing', 'sunlight', 'innocence', 'carefree', 'memory', 'time machine'], subjects: ['child', 'playmate', 'young self', 'friend', 'companion'], emotions: ['nostalgic', 'innocent', 'joyful', 'curious', 'warm'], locations: ['playground', 'home', 'school', 'park', 'corner'], actions: ['run', 'play', 'chase', 'laugh', 'dream'] }
+  }
+};
+
+/**
+ * Parse a description script and extract meaningful keywords.
+ * Works for both Chinese and English text.
+ */
+function _extractKeywordsFromScript(script, language = 'zh') {
+  if (!script || script.trim().length === 0) return { nouns: [], adjectives: [], verbs: [] };
+
+  const text = script.trim();
+  const nouns = [];
+  const adjectives = [];
+  const verbs = [];
+
+  // Remove the prefix if present
+  const cleanText = text.replace(/^\[图片灵感\]\s*/, '').replace(/^图片.*?[，,]/, '');
+
+  if (language === 'en') {
+    // Simple English keyword extraction: capitalize significant words
+    const words = cleanText.toLowerCase().split(/[，,。.!?；;：:、\s]+/).filter(w => w.length > 3);
+    const stopWords = ['the', 'and', 'with', 'from', 'that', 'this', 'were', 'been', 'have', 'has', 'had', '画面', '图片', 'photo', 'image', 'picture', '生成', 'generated', '灵感', 'inspiration'];
+    for (const w of words) {
+      if (!stopWords.includes(w)) {
+        nouns.push(w);
+      }
+    }
+    // Extract adjectives (words ending in -ful, -ous, -ive, etc.)
+    for (const w of words) {
+      if (/(ful|ous|ive|al|less|able|ible)$/.test(w) && !stopWords.includes(w)) {
+        adjectives.push(w);
+      }
+    }
+  } else {
+    // Chinese keyword extraction: extract key phrases and specific nouns
+    // Remove common structural words
+    const stopWords = ['图片', '主色', '建议', '风格', '主题', '描述', '生成', '灵感', '画面', 'photo', 'image', 'picture'];
+    const segments = cleanText.split(/[，,。.!?；;：:、\s]+/);
+    for (const seg of segments) {
+      if (seg.length >= 2 && !stopWords.some(sw => seg.includes(sw))) {
+        nouns.push(seg);
+      }
+    }
+    // Also extract color names and descriptive phrases
+    const colorMatch = cleanText.match(/[#＃][0-9A-Fa-f]{6}/g);
+    if (colorMatch) {
+      adjectives.push(...colorMatch.map(c => 'color:' + c));
+    }
+  }
+
+  return { nouns: [...new Set(nouns)].slice(0, 12), adjectives: [...new Set(adjectives)].slice(0, 8), verbs };
+}
+
+/**
+ * Enhanced visual bank creation.
+ * Parses the AI description for keywords, applies scene-specific vocabulary,
+ * and supports both Chinese and English languages.
+ */
+export function createVisualBank(visualContext, script = '', language = 'zh') {
   if (!visualContext) return null;
 
-  const { imagery = [], emotions = [], subjects = [], actions = [], locations = [] } = visualContext;
+  const { imagery = [], emotions = [], subjects = [], actions = [], locations = [], sceneId = '' } = visualContext;
+
+  const prefix = language === 'en' ? 'en' : 'zh';
+
+  // Start with scene-specific vocabulary if sceneId matches
+  let sceneVocab = null;
+  for (const [key, val] of Object.entries(SCENE_KEYWORD_MAP)) {
+    if (sceneId && sceneId.includes(key)) {
+      sceneVocab = val[prefix];
+      break;
+    }
+  }
+
+  // Extract keywords from the description script
+  const extractedKeywords = _extractKeywordsFromScript(script, language);
+
+  // Build the bank with scene-specific + extracted + generic visual context
+  const allImagery = [
+    ...(sceneVocab?.imagery || []),
+    ...(extractedKeywords.nouns || []),
+    ...imagery.map(w => String(w)),
+  ];
+  const allEmotions = [
+    ...(sceneVocab?.emotions || []),
+    ...(extractedKeywords.adjectives || []),
+    ...emotions.map(w => String(w)),
+  ];
+  const allSubjects = [
+    ...(sceneVocab?.subjects || []),
+    ...subjects.map(w => String(w)),
+  ];
+  const allActions = [
+    ...(sceneVocab?.actions || []),
+    ...actions.map(w => String(w)),
+  ];
+  const allLocations = [
+    ...(sceneVocab?.locations || []),
+    ...locations.map(w => String(w)),
+  ];
+
+  // Apply semantic-based refinements for people photos
+  const subjectType = visualContext.subjectType || '';
+  const personCount = visualContext.personCount || 0;
+  const isSelfie = visualContext.isSelfie || false;
+
+  // Strengthen people-related vocabulary based on semantic detection
+  if (subjectType === 'couple') {
+    const coupleImagery = language === 'en'
+      ? ['embrace', 'closeness', 'togetherness', 'tender moment']
+      : ['拥抱', '依偎', '温存', '甜蜜', '心照不宣'];
+    allImagery.unshift(...coupleImagery);
+    const coupleActions = language === 'en'
+      ? ['hold each other', 'lean together', 'stay close']
+      : ['相拥', '依偎', '牵手同行', '共度'];
+    allActions.unshift(...coupleActions);
+  } else if (subjectType === 'portrait' && isSelfie) {
+    const selfieImagery = language === 'en'
+      ? ['selfie', 'smile to camera', 'moment captured']
+      : ['自拍', '对镜微笑', '定格瞬间', '记录'];
+    allImagery.unshift(...selfieImagery);
+  } else if (subjectType === 'group') {
+    const groupImagery = language === 'en'
+      ? ['laughter', 'cheers', 'together', 'celebration']
+      : ['欢笑', '举杯', '团聚', '欢庆', '友谊'];
+    allImagery.unshift(...groupImagery);
+  }
+
+  // Time words: use scene-relevant time words
+  const zhTimeWords = ['此刻', '眼前', '当下', '瞬间', '今朝', '今日', '此刻', '今朝', '瞬间', '当下'];
+  const enTimeWords = ['now', 'this moment', 'today', 'right now', 'the moment', 'presently', 'this instant', 'currently'];
+  const timeWords = language === 'en' ? enTimeWords : zhTimeWords;
 
   return {
-    imagery: [...new Set(imagery)].slice(0, 15),
-    emotions: [...new Set(emotions)].slice(0, 10),
-    actions: [...new Set(actions)].slice(0, 10),
-    subjects: [...new Set(subjects)].slice(0, 10),
-    objects: [...new Set(imagery)].slice(5, 15),
-    locations: [...new Set(locations)].slice(0, 8),
-    timeWords: ['此刻', '眼前', '当下', '瞬间', '此刻', '今朝', '今日', '当下'],
-    descriptors: [...new Set(emotions)].slice(0, 8)
+    imagery: [...new Set(allImagery)].slice(0, 20),
+    emotions: [...new Set(allEmotions)].slice(0, 15),
+    actions: [...new Set(allActions)].slice(0, 12),
+    subjects: [...new Set(allSubjects)].slice(0, 12),
+    objects: [...new Set([...(sceneVocab?.imagery || []), ...imagery.map(w => String(w))])].slice(5, 20),
+    locations: [...new Set(allLocations)].slice(0, 10),
+    timeWords,
+    descriptors: [...new Set(allEmotions)].slice(0, 10),
+    // Pass semantic info for further lyric generation refinements
+    _meta: { subjectType, personCount, isSelfie }
   };
 }
 
@@ -1781,7 +2289,7 @@ function _buildInstrumentTimeline(sections) {
  * 14. BASIC DYNAMIC GENERATION (procedural core)
  * ========================================================================= */
 
-function _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity) {
+function _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity, language = 'zh') {
   const structure = STRUCTURES[genre] || STRUCTURES.pop;
   const baseRhyme = styleConfig.rhymePreference || 'ABAB';
   const globalUsedWords = new Set();
@@ -1816,7 +2324,7 @@ function _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity)
   const sections = structure.map((sectionType, idx) => {
     const normalized = _normalizeSectionType(sectionType);
     const cfg = _resolveSectionConfig(sectionType, idx);
-    const sectionResult = generateSection(normalized, themeBank, styleConfig, cfg.lines, cfg.rhyme, globalUsedWords);
+    const sectionResult = generateSection(normalized, themeBank, styleConfig, cfg.lines, cfg.rhyme, globalUsedWords, language);
     const lines = sectionResult.lines || sectionResult;
     return {
       type: sectionType,
@@ -1893,19 +2401,20 @@ export function generateDynamicLyrics(params) {
     themeWeights = null,
     styleWeights = null,
     visualContext = null,
-    vocalGender = null
+    vocalGender = null,
+    language = 'zh'
   } = params || {};
 
-  // ---- Resolve theme bank (single or blended) ----
+  // ---- Resolve theme bank (single or blended) with language support ----
   let themeBank;
   let effectiveTheme = theme;
   if (mixThemes && mixThemes.length > 0) {
-    const banks = mixThemes.map((t) => getThemeBank(t));
+    const banks = mixThemes.map((t) => getThemeBank(t, language));
     const weights = themeWeights && themeWeights.length === banks.length ? themeWeights : banks.map(() => 1);
     themeBank = blendBanks(banks, weights);
     effectiveTheme = 'mix:' + mixThemes.join('+');
   } else {
-    themeBank = getThemeBank(theme);
+    themeBank = getThemeBank(theme, language);
   }
 
   // ---- Blend visual context bank if provided ----
@@ -1978,7 +2487,7 @@ export function generateDynamicLyrics(params) {
 
   // ---- Dispatch by method ----
   if (method === 'network') {
-    const baseResult = _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity);
+    const baseResult = _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity, language);
     const foundation = _buildFoundationLayer(bpm, theme, params);
     const melody = _buildMelodyLayer(theme, params);
     const expression = _buildExpressionLayer(theme, params);
@@ -1993,7 +2502,7 @@ export function generateDynamicLyrics(params) {
   }
 
   if (method === 'melo') {
-    const baseResult = _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity);
+    const baseResult = _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity, language);
     const meloCommand = generateMeloCommand({
       genre,
       theme,
@@ -2038,7 +2547,7 @@ export function generateDynamicLyrics(params) {
       };
       const timeSectionDefault = sectionCfg[normalizedType] || { rhyme: styleConfig.rhymePreference || 'ABAB', lines: 3 };
 
-      const sectionResult = generateSection(normalizedType, themeBank, styleConfig, timeSectionDefault.lines, timeSectionDefault.rhyme, globalUsedWords);
+      const sectionResult = generateSection(normalizedType, themeBank, styleConfig, timeSectionDefault.lines, timeSectionDefault.rhyme, globalUsedWords, language);
       const lines = sectionResult.lines || sectionResult;
 
       const dynamic = _getDynamicForSection(sectionType, index, structure.length);
@@ -2099,7 +2608,7 @@ export function generateDynamicLyrics(params) {
   if (method === 'variation') {
     const variations = STYLE_VARIATIONS[genre] || STYLE_VARIATIONS.tango;
     const variationConfig = variations[variation] || variations.A;
-    const baseResult = _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity);
+    const baseResult = _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity, language);
     const variationResult = {
       ...baseResult,
       variation: {
@@ -2120,7 +2629,7 @@ export function generateDynamicLyrics(params) {
   }
 
   // ---- basic (default) ----
-  const base = _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity);
+  const base = _generateDynamicBasic(genre, theme, themeBank, styleConfig, complexity, language);
   if (mixThemes || mixStyles) {
     base.theme = effectiveTheme;
     base.genre = effectiveGenre;
@@ -2283,7 +2792,13 @@ ${result.sections ? result.sections.map((s, i) => {
  * 16. ACCESSORS
  * ========================================================================= */
 
-export function getDynamicThemes() {
+export function getDynamicThemes(language = 'zh') {
+  if (language === 'en') {
+    return Object.keys(ENGLISH_THEME_BANKS);
+  }
+  if (language === 'mix') {
+    return [...new Set([...Object.keys(THEME_BANKS), ...Object.keys(ENGLISH_THEME_BANKS)])];
+  }
   return Object.keys(THEME_BANKS);
 }
 
@@ -2294,6 +2809,12 @@ export function getDynamicStyles() {
 export function getDynamicGenres() {
   return Object.keys(STRUCTURES);
 }
+
+export const LANGUAGE_OPTIONS = [
+  { value: 'zh', label: '中文', description: '全中文歌词' },
+  { value: 'en', label: 'English', description: '全英文歌词' },
+  { value: 'mix', label: '中英混合', description: '中英交替歌词' }
+];
 
 export function getMusicalNotations() {
   return {

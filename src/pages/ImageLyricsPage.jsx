@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
-import { Image as ImageIcon, Upload, Sparkles, Loader, X, Check, Wand2, History, Copy, Mic, ChevronDown, ChevronUp } from 'lucide-react';
+import { Image as ImageIcon, Upload, Sparkles, Loader, X, Check, Wand2, History, Copy, Mic, ChevronDown, ChevronUp, Settings2, Gauge, Clock, Command, Layers } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
 import { fullImageAnalysis } from '../utils/visionAnalyzer.js';
-import { generateLyrics } from '../utils/lyricsEngine.js';
+import { generateLyrics, getLanguageOptions, getThemes, getGenres } from '../utils/lyricsEngine.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 import { LYRICS_STYLES, LYRICS_THEMES } from '../config/lyricsStyles.js';
+
+const GENERATION_METHODS = [
+  { id: 'basic', label: '基础生成', description: '模板填充，快速生成', icon: '🎯' },
+  { id: 'network', label: '网络层生成', description: 'Foundation→Melody→Expression→Effects', icon: '🌐' },
+  { id: 'melo', label: 'Melo 指令', description: '生成 Melo AI 格式指令', icon: '🎵' },
+  { id: 'time', label: '时间轴生成', description: '带时间轴和动态的歌词', icon: '⏱️' },
+  { id: 'variation', label: '变奏生成', description: '风格变奏版本', icon: '🎭' },
+];
 
 /**
  * Dedicated page: Image → Lyrics
@@ -26,13 +34,22 @@ export default function ImageLyricsPage({ onNavigate }) {
   const [genre, setGenre] = useState('pop');
   const [theme, setTheme] = useState('love');
   const [language, setLanguage] = useState('zh');
+  const [method, setMethod] = useState('basic');
+  const [complexity, setComplexity] = useState(5);
+  const [bpm, setBpm] = useState(120);
+  const [duration, setDuration] = useState(270);
+  const [variation, setVariation] = useState('A');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [script, setScript] = useState('');
   const [showAnalysis, setShowAnalysis] = useState(true);
+  const [showCommand, setShowCommand] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
 
+  const languageOptions = getLanguageOptions();
+  const availableThemes = getThemes(language);
   const FALLBACK_GENRES = Object.keys(LYRICS_STYLES);
   const FALLBACK_THEMES = Object.keys(LYRICS_THEMES);
 
@@ -107,17 +124,17 @@ export default function ImageLyricsPage({ onNavigate }) {
     try {
       const params = {
         genre, theme, language,
-        method: 'basic',
-        bpm: 120, duration: 180,
+        method,
+        bpm, duration, complexity, variation,
         script,
         visualContext: visionResult.visualContext,
       };
       const lyricsResult = generateLyrics(params);
-      const data = { success: true, data: { taskId: `img-${Date.now()}`, method: 'basic', result: lyricsResult } };
+      const data = { success: true, data: { taskId: `img-${Date.now()}`, method, result: lyricsResult } };
       if (data.success) {
         setResult(data.data);
         addToHistory({
-          type: 'lyrics', method: 'basic', theme, style: genre,
+          type: 'lyrics', method, theme, style: genre,
           language, result: data.data,
           visualContext: visionResult.visualContext?.sceneId || 'image',
         });
@@ -295,22 +312,106 @@ export default function ImageLyricsPage({ onNavigate }) {
               <span className="px-2 py-1 rounded bg-violet-500/10 text-violet-300 text-[11px]">{t(`lyrics_themes.${theme}`) || theme}</span>
               <span className="px-2 py-1 rounded bg-pink-500/10 text-pink-300 text-[11px]">{t(`lyrics_styles.${genre}`) || genre}</span>
               <div className="flex gap-1">
-                {[
-                  { id: 'zh', label: '中文' },
-                  { id: 'en', label: 'EN' },
-                  { id: 'mix', label: '混合' },
-                ].map((l) => (
-                  <button key={l.id}
-                    onClick={() => setLanguage(l.id)}
-                    className={`px-2 py-0.5 rounded text-[11px] transition-all ${language === l.id
+                {languageOptions.map((l) => (
+                  <button key={l.value}
+                    onClick={() => setLanguage(l.value)}
+                    className={`px-2 py-0.5 rounded text-[11px] transition-all ${language === l.value
                       ? 'bg-violet-500 text-white'
                       : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                    title={l.description}
                   >
                     {l.label}
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Method selection */}
+            <div className="mb-3">
+              <span className="text-[10px] text-gray-500 block mb-1.5 flex items-center gap-1">
+                <Layers className="w-3 h-3" /> 生成方法
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {GENERATION_METHODS.map((m) => (
+                  <button key={m.id}
+                    onClick={() => setMethod(m.id)}
+                    className={`px-2 py-1 rounded text-[10px] font-medium transition-all ${method === m.id
+                      ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
+                      : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+                      }`}
+                    title={m.description}
+                  >
+                    {m.icon} {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Advanced toggle */}
+            <button
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="w-full flex items-center justify-between text-[11px] text-gray-400 hover:text-white transition-colors mb-2"
+            >
+              <span className="flex items-center gap-1"><Settings2 className="w-3 h-3" /> 高级参数</span>
+              {showAdvanced ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+
+            {showAdvanced && (
+              <div className="space-y-3 mb-3 p-2.5 bg-white/5 rounded-lg">
+                {/* Complexity */}
+                <div>
+                  <label className="text-[10px] text-gray-500 flex items-center justify-between">
+                    <span className="flex items-center gap-1"><Gauge className="w-3 h-3" /> 复杂度</span>
+                    <span className="text-violet-400">{complexity}/10</span>
+                  </label>
+                  <input type="range" min="1" max="10" value={complexity}
+                    onChange={(e) => setComplexity(Number(e.target.value))}
+                    className="w-full h-1 mt-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-violet-500"
+                  />
+                </div>
+
+                {/* BPM */}
+                <div>
+                  <label className="text-[10px] text-gray-500 flex items-center justify-between">
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 速度 (BPM)</span>
+                    <span className="text-violet-400">{bpm}</span>
+                  </label>
+                  <input type="range" min="60" max="200" value={bpm}
+                    onChange={(e) => setBpm(Number(e.target.value))}
+                    className="w-full h-1 mt-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-violet-500"
+                  />
+                </div>
+
+                {/* Duration */}
+                <div>
+                  <label className="text-[10px] text-gray-500 flex items-center justify-between">
+                    <span>时长 (秒)</span>
+                    <span className="text-violet-400">{duration}s</span>
+                  </label>
+                  <input type="range" min="60" max="600" step="30" value={duration}
+                    onChange={(e) => setDuration(Number(e.target.value))}
+                    className="w-full h-1 mt-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-violet-500"
+                  />
+                </div>
+
+                {/* Variation (only for variation method) */}
+                {method === 'variation' && (
+                  <div>
+                    <label className="text-[10px] text-gray-500 block mb-1">变奏版本</label>
+                    <div className="flex gap-1">
+                      {['A', 'B', 'C'].map(v => (
+                        <button key={v}
+                          onClick={() => setVariation(v)}
+                          className={`px-3 py-1 rounded text-xs transition-all ${variation === v ? 'bg-violet-500 text-white' : 'bg-white/5 text-gray-400'}`}
+                        >
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Generate button - prominent, top */}
             <button
@@ -413,20 +514,56 @@ export default function ImageLyricsPage({ onNavigate }) {
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                   <Check className="w-4 h-4 text-green-400" /> 生成完成
                 </h3>
-                <button
-                  onClick={() => {
-                    const text = result.result?.fullText || '';
-                    copyToClipboard(text);
-                  }}
-                  className="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[10px] text-gray-300 transition-all flex items-center gap-1"
-                >
-                  <Copy className="w-3 h-3" /> 复制
-                </button>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setShowCommand(!showCommand)}
+                    className={`px-2 py-1 rounded-lg text-[10px] transition-all flex items-center gap-1 ${showCommand ? 'bg-violet-500/20 text-violet-300' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}
+                  >
+                    <Command className="w-3 h-3" /> {showCommand ? '隐藏命令' : '查看命令'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const text = result.result?.fullText || '';
+                      copyToClipboard(text);
+                    }}
+                    className="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[10px] text-gray-300 transition-all flex items-center gap-1"
+                  >
+                    <Copy className="w-3 h-3" /> 复制
+                  </button>
+                </div>
               </div>
+
+              {/* Command display */}
+              {showCommand && result.result?.fullCommand && (
+                <div className="mb-3 p-3 bg-black/40 rounded-lg border border-white/10 max-h-48 overflow-y-auto">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] text-violet-400 font-mono">FULL COMMAND</span>
+                    <button
+                      onClick={() => copyToClipboard(result.result.fullCommand)}
+                      className="text-[10px] text-gray-400 hover:text-white"
+                    >
+                      复制命令
+                    </button>
+                  </div>
+                  <pre className="text-[10px] text-gray-300 font-mono whitespace-pre-wrap leading-relaxed">
+                    {result.result.fullCommand}
+                  </pre>
+                </div>
+              )}
+
+              {/* Lyrics display */}
               <div className="max-h-64 overflow-y-auto space-y-1.5">
                 {result.result?.lyricsText?.split('\n').map((line, i) => (
-                  <p key={i} className="text-sm text-gray-300 leading-relaxed">{line}</p>
+                  <p key={i} className={`text-sm leading-relaxed ${line.trim().startsWith('[') && line.trim().endsWith(']') ? 'text-violet-400 font-semibold' : 'text-gray-300'}`}>{line}</p>
                 ))}
+              </div>
+
+              {/* Method indicator */}
+              <div className="mt-3 flex items-center gap-2 text-[10px] text-gray-500">
+                <span className="px-1.5 py-0.5 rounded bg-white/5">方法: {result.method}</span>
+                <span className="px-1.5 py-0.5 rounded bg-white/5">语言: {language}</span>
+                <span className="px-1.5 py-0.5 rounded bg-white/5">主题: {theme}</span>
+                <span className="px-1.5 py-0.5 rounded bg-white/5">风格: {genre}</span>
               </div>
             </div>
           )}

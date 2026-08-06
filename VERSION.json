@@ -1,12 +1,13 @@
 {
-  "version": "5.8.0",
+  "version": "5.8.1",
   "major": 5,
   "minor": 8,
-  "patch": 0,
-  "releaseDate": "2026-08-05",
-  "buildNumber": 26,
+  "patch": 1,
+  "releaseDate": "2026-08-06",
+  "buildNumber": 27,
   "status": "production-ready",
   "changes": [
+    "v5.8.1 - Fixed irrelevant lyrics from photo upload: (1) EasyMode now creates Image element from base64 data URL before analysis, (2) Added semantic subject detection layer - detects people, couples, groups via YCbCr skin tone analysis, (3) Semantic scene classification takes priority over color-based classification, (4) Visual context now includes subject type, person count, selfie detection, (5) createVisualBank boosts vocabulary with couple/portrait/group-specific imagery and actions (build #27)",
     "v5.8.0 - Lyrics style selector UX redesign: 7 balanced category cards with unique emojis + gradients (流行主类/摇滚另类/电子氛围/情感类/古典传统/节奏律动/叙事特殊), each card shows 3-8 styles directly without collapse; added jpop (日流) + blues/cinematic/cantopop/indierock/lofi styles; moved image upload tab to first position with discoverable entry in style tab; MV page fallback to local generateMV() when API fails; web+mobile version sync (build #26)",
     "v5.7.0 - Added Easy Mode (简洁模式) - 3-step wizard for elderly and non-technical users, UI mode toggle in sidebar and settings, persistent mode preference, accessibility-friendly design with large fonts and touch targets, elderly-friendly UX requirements documented (build #25)",
     "v5.6.0 - Added social media BGM generator, prompt engineering assistant, visual style recommendations from image analysis, Xiaohongshu reference integration with platform-specific templates (小红书/抖音/Bilibili), structured prompt template generation with section presets, instrument selection UI, and comprehensive i18n updates (build #24)",
@@ -55,8 +56,6 @@
     "v5.4.1 - Enhanced lyrics engine with professional sheet music elements",
     "Added TIME_SIGNATURES with 7 time signatures (4/4, 3/4, 2/4, 6/8, 3/8, 9/8, 5/4)",
     "Added TEMPO_MARKINGS with 10 tempo levels (Largo to Prestissimo)",
-    "Added ARTICULATION_MARKS with 7 articulation types (Legato, Staccato, Tenuto, etc.)",
-    "Added EXPRESSION_MARKS with 8 expression marks (Crescendo, Rubato, Fermata, etc.)",
-    "Added KEY_SIGNATURES with 10 key signatures (C, G, D, A, E, F, B♭, E♭, A♭, D♭)"
+    "Added ARTICULATION_MARKS with 7 articulation types (Legato, Staccato, Tenuto, etc.)"
   ]
 }
