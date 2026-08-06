@@ -1,12 +1,13 @@
 {
-  "version": "5.8.1",
+  "version": "5.9.0",
   "major": 5,
-  "minor": 8,
-  "patch": 1,
+  "minor": 9,
+  "patch": 0,
   "releaseDate": "2026-08-06",
-  "buildNumber": 27,
+  "buildNumber": 28,
   "status": "production-ready",
   "changes": [
+    "v5.9.0 - Comprehensive vision analyzer overhaul with zunicorn agent loop engineering: (1) Added 16 new scene profiles covering food, pets, architecture, flowers, sunrise, beach, mountains, autumn, winter, travel, festive, abstract, cafe, starry night, rainy, vehicle, minimalist, vintage; (2) Implemented zunicorn agent self-validation loop (analyze-generate-validate-refine) that detects quality issues like theme conflicts and bright-image-lonely-theme mismatches then auto-refines; (3) Added structured metadata output: labels, tags, wordings, and detailed songStyle (BPM, key signature, time signature, energy, valence, acousticness); (4) Increased skin-detection grid resolution from 20x15 to 30x22 for better face separation in couple photos; (5) Relaxed skin tone thresholds for diverse skin tones; (6) Removed heartbreak/loneliness defaults from couple and portrait classifications; (7) Added safety guard in classifyScene to skip dark/lonely profiles when people are detected; (8) Added self-validation test suite (13 test cases covering people, landscape, weather, food, and regression scenarios) (build #28)",
     "v5.8.1 - Fixed irrelevant lyrics from photo upload: (1) EasyMode now creates Image element from base64 data URL before analysis, (2) Added semantic subject detection layer - detects people, couples, groups via YCbCr skin tone analysis, (3) Semantic scene classification takes priority over color-based classification, (4) Visual context now includes subject type, person count, selfie detection, (5) createVisualBank boosts vocabulary with couple/portrait/group-specific imagery and actions (build #27)",
     "v5.8.0 - Lyrics style selector UX redesign: 7 balanced category cards with unique emojis + gradients (流行主类/摇滚另类/电子氛围/情感类/古典传统/节奏律动/叙事特殊), each card shows 3-8 styles directly without collapse; added jpop (日流) + blues/cinematic/cantopop/indierock/lofi styles; moved image upload tab to first position with discoverable entry in style tab; MV page fallback to local generateMV() when API fails; web+mobile version sync (build #26)",
     "v5.7.0 - Added Easy Mode (简洁模式) - 3-step wizard for elderly and non-technical users, UI mode toggle in sidebar and settings, persistent mode preference, accessibility-friendly design with large fonts and touch targets, elderly-friendly UX requirements documented (build #25)",

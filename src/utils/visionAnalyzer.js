@@ -208,6 +208,336 @@ const SCENE_PROFILES = [
       description: '暴风雨般的紧张场景，内心挣扎与外部风暴的对抗'
     }
   },
+
+  /* =========================================================================
+   * EXPANDED SCENE PROFILES — comprehensive coverage for all image types
+   * Each profile targets a specific subject category with professional
+   * lyrics commands, labels, tags, wordings, and song style.
+   * ========================================================================= */
+
+  // Food & drink photography — warm, appetizing, lifestyle
+  {
+    id: 'food_warm_glow',
+    match: (f) => f.warmRatio > 0.35 && f.brightness > 0.45 && f.saturation > 0.35 &&
+      f.skinRatio < 0.03 && f.horizonLine === false && f.textureType !== 'complex',
+    lyrics: {
+      genre: ['jazz', 'rnb', 'pop', 'bossa_nova'],
+      themes: ['life', 'memory', 'happiness'],
+      imagery: ['烛光', '香气', '杯盏', '热汤', '甜点', '咖啡', '微醺', '烟火气', '暖光', '瓷盘'],
+      emotions: ['温暖', '满足', '惬意', '幸福', '回味'],
+      subjects: ['晚餐', '时光', '味道', '记忆', '此刻'],
+      actions: ['品味', '细嚼', '举杯', '分享', '回味'],
+      locations: ['餐桌上', '厨房里', '咖啡馆', '小酒馆', '炉火旁'],
+      tempos: [75, 85, 95],
+      description: '温暖的美食场景，烟火气里的生活味道'
+    }
+  },
+
+  // Pet & animal photography — soft, warm, companionship
+  {
+    id: 'pet_companion',
+    match: (f) => f.warmRatio > 0.25 && f.brightness > 0.4 && f.saturation < 0.6 &&
+      f.skinRatio < 0.05 && f.textureType === 'detailed',
+    lyrics: {
+      genre: ['folk', 'pop', 'indie'],
+      themes: ['friendship', 'life', 'healing'],
+      imagery: ['绒毛', '眼神', '尾巴', '爪印', '陪伴', '窝边', '毛发', '呼噜', '依偎', '玩耍'],
+      emotions: ['温柔', '治愈', '快乐', '依恋', '安心'],
+      subjects: ['伙伴', '小生命', '毛孩子', '陪伴者', '家人'],
+      actions: ['陪伴', '玩耍', '依偎', '追逐', '守候'],
+      locations: ['膝上', '窝边', '阳光里', '院子里', '身边'],
+      tempos: [80, 90, 100],
+      description: '宠物陪伴的温暖场景，毛茸茸的治愈时光'
+    }
+  },
+
+  // Architecture & buildings — geometric, structured, grand
+  {
+    id: 'architecture_grand',
+    match: (f) => f.contrast > 0.4 && f.edgeDensity > 0.25 && f.saturation < 0.5 &&
+      f.verticalRatio > 0.45 && f.skinRatio < 0.03,
+    lyrics: {
+      genre: ['classical', 'electronic', 'ambient', 'cinematic'],
+      themes: ['memory', 'time', 'introspection'],
+      imagery: ['穹顶', '石柱', '飞檐', '拱门', '塔尖', '阶梯', '回廊', '窗棂', '光影', '痕迹'],
+      emotions: ['敬畏', '庄严', '沧桑', '沉思', '肃穆'],
+      subjects: ['建筑', '时光', '石壁', '古迹', '殿堂'],
+      actions: ['仰望', '触摸', '穿越', '凝望', '铭记'],
+      locations: ['殿堂里', '回廊间', '阶梯上', '穹顶下', '古迹前'],
+      tempos: [65, 75, 85],
+      description: '建筑与古迹的庄严场景，石壁间流淌的时光'
+    }
+  },
+
+  // Flowers & botanical — fresh, colorful, delicate
+  {
+    id: 'flowers_bloom',
+    match: (f) => f.colorfulness > 0.5 && f.saturation > 0.5 && f.brightness > 0.45 &&
+      f.warmRatio > 0.25 && f.blueRatio < 0.25 && f.skinRatio < 0.03 && !f.horizonLine,
+    lyrics: {
+      genre: ['folk', 'pop', 'chinese_traditional', 'classical'],
+      themes: ['nature', 'spring_awakening', 'love'],
+      imagery: ['花瓣', '花蕊', '盛开', '露珠', '蜂蝶', '枝头', '色彩', '芬芳', '绽放', '花海'],
+      emotions: ['清新', '欣喜', '心动', '柔美', '盎然'],
+      subjects: ['花朵', '春天', '生命', '色彩', '此刻'],
+      actions: ['绽放', '摇曳', '吐蕊', '盛开', '散发'],
+      locations: ['花丛中', '枝头上', '庭院里', '花海间', '春日里'],
+      tempos: [80, 90, 100],
+      description: '花朵盛开的绚烂场景，色彩与芬芳的绽放'
+    }
+  },
+
+  // Sunrise & dawn — hopeful, warm, new beginnings
+  {
+    id: 'sunrise_hope',
+    match: (f) => f.warmRatio > 0.3 && f.brightness > 0.5 && f.horizonLine &&
+      f.saturation > 0.3 && f.skinRatio < 0.03,
+    lyrics: {
+      genre: ['pop', 'folk', 'classical', 'ambient'],
+      themes: ['hope', 'dreams', 'spring_awakening'],
+      imagery: ['朝阳', '霞光', '破晓', '晨曦', '天际', '金光', '云彩', '希望', '新生', '光芒'],
+      emotions: ['希望', '振奋', '温暖', '期待', '崭新'],
+      subjects: ['晨光', '新的一天', '希望', '黎明', '朝阳'],
+      actions: ['升起', '照亮', '苏醒', '启程', '迎接'],
+      locations: ['天际线', '山巅', '海边', '窗前', '地平线'],
+      tempos: [85, 95, 105],
+      description: '日出破晓的希望场景，朝阳照亮新的一天'
+    }
+  },
+
+  // Beach & ocean — vast, blue, free
+  {
+    id: 'beach_ocean',
+    match: (f) => f.blueRatio > 0.25 && f.brightness > 0.5 && f.horizonLine &&
+      f.saturation < 0.6 && f.warmRatio < 0.35 && f.skinRatio < 0.05,
+    lyrics: {
+      genre: ['pop', 'folk', 'reggae', 'ambient'],
+      themes: ['freedom', 'dreams', 'nature'],
+      imagery: ['海浪', '沙滩', '海风', '贝壳', '浪花', '海平线', '阳光', '脚印', '潮汐', '远方'],
+      emotions: ['自由', '辽阔', '放松', '畅快', '向往'],
+      subjects: ['大海', '海浪', '远方', '自由', '潮汐'],
+      actions: ['漫步', '聆听', '眺望', '追逐', '呼吸'],
+      locations: ['沙滩上', '海边', '浪花间', '海风里', '海岸线'],
+      tempos: [85, 95, 110],
+      description: '海滩与海洋的辽阔场景，浪花与自由的心跳'
+    }
+  },
+
+  // Mountain & forest wilderness — vast, green, majestic
+  {
+    id: 'mountain_wilderness',
+    match: (f) => f.greenRatio > 0.2 && f.brightness > 0.4 && f.horizonLine &&
+      f.skinRatio < 0.03 && f.saturation < 0.6,
+    lyrics: {
+      genre: ['folk', 'chinese_traditional', 'ambient', 'classical'],
+      themes: ['nature', 'freedom', 'introspection'],
+      imagery: ['山峦', '云海', '松林', '山径', '巅峰', '苍翠', '雾气', '溪流', '岩石', '远方'],
+      emotions: ['敬畏', '辽阔', '宁静', '坚定', '自由'],
+      subjects: ['群山', '森林', '远方', '旅人', '天地'],
+      actions: ['攀登', '眺望', '穿行', '呼吸', '聆听'],
+      locations: ['山巅', '林间', '云海间', '山径上', '溪畔'],
+      tempos: [70, 80, 90],
+      description: '山野森林的壮阔场景，云海松林间的自由'
+    }
+  },
+
+  // Autumn & nostalgic — warm, golden, melancholic beauty
+  {
+    id: 'autumn_nostalgia',
+    match: (f) => f.warmRatio > 0.3 && f.saturation > 0.35 && f.saturation < 0.6 &&
+      f.brightness > 0.4 && f.brightness < 0.6 && f.skinRatio < 0.03,
+    lyrics: {
+      genre: ['folk', 'ballad', 'indie', 'jazz'],
+      themes: ['memory', 'nostalgic_memory', 'life'],
+      imagery: ['落叶', '金黄', '秋叶', '斜阳', '枯枝', '秋千', '旧街', '回忆', '暮色', '飘零'],
+      emotions: ['怀旧', '温柔', '惆怅', '感慨', '温暖'],
+      subjects: ['秋天', '旧时光', '回忆', '落叶', '往昔'],
+      actions: ['拾起', '回忆', '漫步', '驻足', '怀念'],
+      locations: ['落叶间', '旧街上', '秋千旁', '暮色里', '斜阳下'],
+      tempos: [70, 80, 90],
+      description: '秋日怀旧的金黄场景，落叶与斜阳里的温柔'
+    }
+  },
+
+  // Winter & snow — cold, pure, serene
+  {
+    id: 'winter_serene',
+    match: (f) => f.brightness > 0.6 && f.saturation < 0.3 && f.coolRatio > 0.2 &&
+      f.warmRatio < 0.25 && f.skinRatio < 0.03,
+    lyrics: {
+      genre: ['ambient', 'classical', 'folk', 'ballad'],
+      themes: ['introspection', 'memory', 'dreams'],
+      imagery: ['雪花', '白雪', '寒风', '冰晶', '银白', '窗花', '寂静', '呵气', '炉火', '脚印'],
+      emotions: ['宁静', '纯净', '沉思', '温暖', '安详'],
+      subjects: ['冬天', '雪', '寂静', '回忆', '炉火'],
+      actions: ['飘落', '覆盖', '凝望', '呵暖', '守候'],
+      locations: ['雪地里', '窗前', '炉火旁', '银白间', '寂静中'],
+      tempos: [60, 70, 80],
+      description: '冬日雪景的纯净场景，银白世界里的宁静'
+    }
+  },
+
+  // Travel & journey — scenic, varied, adventurous
+  {
+    id: 'travel_journey',
+    match: (f) => f.colorfulness > 0.4 && f.brightness > 0.45 && f.horizonLine &&
+      f.saturation > 0.35 && f.skinRatio < 0.05,
+    lyrics: {
+      genre: ['pop', 'folk', 'indie', 'country'],
+      themes: ['dreams', 'freedom', 'life'],
+      imagery: ['远方', '路途', '风景', '行囊', '车窗', '异乡', '地图', '足迹', '天际', '未知'],
+      emotions: ['向往', '自由', '期待', '兴奋', '感慨'],
+      subjects: ['旅人', '远方', '路', '风景', '梦想'],
+      actions: ['启程', '穿越', '探索', '邂逅', '前行'],
+      locations: ['路上', '异乡', '车窗外', '远方', '天际'],
+      tempos: [90, 100, 115],
+      description: '旅行途中的风景场景，远方与未知里的向往'
+    }
+  },
+
+  // Festive & celebration — colorful, bright, joyful
+  {
+    id: 'festive_celebration',
+    match: (f) => f.colorfulness > 0.5 && f.saturation > 0.55 && f.brightness > 0.55 &&
+      f.skinRatio < 0.05,
+    lyrics: {
+      genre: ['pop', 'kpop', 'dance', 'energetic'],
+      themes: ['happiness', 'friendship', 'dreams'],
+      imagery: ['彩灯', '烟花', '彩带', '欢笑', '气球', '礼物', '蛋糕', '烛光', '欢庆', '霓虹'],
+      emotions: ['喜悦', '兴奋', '幸福', '热闹', '感动'],
+      subjects: ['庆典', '欢笑', '此刻', '伙伴', '祝福'],
+      actions: ['欢呼', '举杯', '拥抱', '庆祝', '许愿'],
+      locations: ['派对上', '人群中', '灯光下', '庆典里', '欢聚间'],
+      tempos: [115, 125, 135],
+      description: '欢庆派对的绚烂场景，彩灯烟花里的喜悦'
+    }
+  },
+
+  // Abstract & art — textured, colorful, imaginative
+  {
+    id: 'abstract_art',
+    match: (f) => f.colorfulness > 0.55 && f.edgeDensity > 0.3 && f.saturation > 0.5 &&
+      f.skinRatio < 0.02 && f.horizonLine === false,
+    lyrics: {
+      genre: ['electronic', 'ambient', 'classical', 'dreamy'],
+      themes: ['dreams', 'introspection', 'dark_mystery'],
+      imagery: ['色彩', '线条', '形状', '光影', '纹理', '抽象', '流动', '交织', '幻象', '梦境'],
+      emotions: ['想象', '迷幻', '深邃', '震撼', '超脱'],
+      subjects: ['色彩', '梦境', '想象', '抽象', '意象'],
+      actions: ['流动', '交织', '变幻', '浮现', '消散'],
+      locations: ['画布上', '色彩间', '梦境里', '想象中', '抽象里'],
+      tempos: [80, 95, 110],
+      description: '抽象艺术的色彩场景，线条与光影的想象'
+    }
+  },
+
+  // Cafe & cozy indoor — warm, soft, intimate
+  {
+    id: 'cafe_cozy',
+    match: (f) => f.warmRatio > 0.3 && f.brightness > 0.4 && f.brightness < 0.6 &&
+      f.saturation < 0.5 && f.contrast < 0.5 && f.skinRatio < 0.05,
+    lyrics: {
+      genre: ['jazz', 'folk', 'indie', 'lofi'],
+      themes: ['life', 'memory', 'introspection'],
+      imagery: ['咖啡', '书页', '窗边', '暖灯', '蒸汽', '杯沿', '旋律', '午后', '慵懒', '时光'],
+      emotions: ['惬意', '慵懒', '温暖', '平静', '怀旧'],
+      subjects: ['午后', '时光', '咖啡', '自己', '此刻'],
+      actions: ['品味', '翻阅', '凝望', '沉思', '停留'],
+      locations: ['咖啡馆', '窗边', '书页间', '暖灯下', '角落里'],
+      tempos: [70, 80, 90],
+      description: '咖啡馆的慵懒午后，书页与咖啡香里的时光'
+    }
+  },
+
+  // Night sky & stars — dark, blue, dreamy
+  {
+    id: 'night_starry',
+    match: (f) => f.darkRatio > 0.4 && f.blueRatio > 0.2 && f.brightness < 0.4 &&
+      f.skinRatio < 0.03 && f.saturation < 0.5,
+    lyrics: {
+      genre: ['ambient', 'dreamy', 'electronic', 'classical'],
+      themes: ['dreams', 'introspection', 'memory'],
+      imagery: ['星空', '银河', '流星', '夜幕', '繁星', '月色', '夜风', '寂静', '远方', '光点'],
+      emotions: ['梦幻', '深邃', '宁静', '向往', '渺小'],
+      subjects: ['星空', '夜', '梦境', '远方', '银河'],
+      actions: ['闪烁', '凝望', '许愿', '漂浮', '追寻'],
+      locations: ['星空下', '夜幕里', '银河边', '夜风中', '寂静里'],
+      tempos: [65, 75, 85],
+      description: '星空夜晚的梦幻场景，银河与流星下的向往'
+    }
+  },
+
+  // Rainy & moody — cool, soft, reflective
+  {
+    id: 'rainy_reflective',
+    match: (f) => f.coolRatio > 0.3 && f.brightness < 0.5 && f.saturation < 0.5 &&
+      f.contrast < 0.5 && f.skinRatio < 0.03,
+    lyrics: {
+      genre: ['ballad', 'indie', 'rnb', 'jazz'],
+      themes: ['memory', 'introspection', 'nostalgic_memory'],
+      imagery: ['雨丝', '水滴', '窗玻璃', '伞下', ' puddle', '涟漪', '雾气', '倒影', '湿街', '冷光'],
+      emotions: ['沉思', '惆怅', '怀念', '平静', '忧郁'],
+      subjects: ['雨', '回忆', '窗外', '思绪', '倒影'],
+      actions: ['滴落', '流淌', '凝望', '回忆', '漫步'],
+      locations: ['雨中', '窗前', '伞下', '湿街上', '倒影里'],
+      tempos: [65, 75, 85],
+      description: '雨天的沉思场景，雨丝与窗玻璃上的回忆'
+    }
+  },
+
+  // Vehicle & motion — dynamic, energetic
+  {
+    id: 'vehicle_motion',
+    match: (f) => f.contrast > 0.4 && f.edgeDensity > 0.3 && f.saturation > 0.3 &&
+      f.skinRatio < 0.03 && f.textureType !== 'smooth',
+    lyrics: {
+      genre: ['electronic', 'rock', 'pop', 'synthwave'],
+      themes: ['dreams', 'freedom', 'life'],
+      imagery: ['引擎', '公路', '速度', '风', '灯光', '远方', '驰骋', '里程', '地平线', '霓虹'],
+      emotions: ['自由', '激动', '向往', '坚定', '冲劲'],
+      subjects: ['旅途', '远方', '速度', '自由', '前路'],
+      actions: ['驰骋', '穿越', '加速', '追逐', '前行'],
+      locations: ['公路上', '风里', '霓虹间', '地平线', '远方'],
+      tempos: [110, 120, 130],
+      description: '驰骋公路的动感场景，引擎与风里的自由'
+    }
+  },
+
+  // Minimalist & clean — bright, low saturation, simple
+  {
+    id: 'minimalist_clean',
+    match: (f) => f.brightness > 0.6 && f.saturation < 0.3 && f.colorfulness < 0.35 &&
+      f.edgeDensity < 0.2 && f.skinRatio < 0.03,
+    lyrics: {
+      genre: ['ambient', 'classical', 'indie', 'folk'],
+      themes: ['introspection', 'life', 'healing'],
+      imagery: ['留白', '光线', '空', '静', '纯粹', '简单', '呼吸', '此刻', '纯净', '空间'],
+      emotions: ['平静', '纯净', '释然', '宁静', '清醒'],
+      subjects: ['此刻', '留白', '简单', '纯净', '自己'],
+      actions: ['呼吸', '凝望', '感受', '停留', '释然'],
+      locations: ['空白里', '光线中', '此刻', '简单间', '纯净里'],
+      tempos: [60, 70, 80],
+      description: '极简纯净的场景，留白与光线里的平静'
+    }
+  },
+
+  // Vintage & retro — warm, faded, nostalgic
+  {
+    id: 'vintage_retro',
+    match: (f) => f.warmRatio > 0.25 && f.saturation < 0.45 && f.brightness > 0.35 &&
+      f.brightness < 0.6 && f.colorfulness < 0.5 && f.skinRatio < 0.05,
+    lyrics: {
+      genre: ['folk', 'jazz', 'rnb', 'ballad'],
+      themes: ['memory', 'nostalgic_memory', 'life'],
+      imagery: ['泛黄', '旧照', '胶片', '复古', '褪色', '老街', '留声机', '怀表', '信笺', '旧时光'],
+      emotions: ['怀旧', '温柔', '惆怅', '感慨', '温暖'],
+      subjects: ['旧时光', '回忆', '胶片', '往昔', '故事'],
+      actions: ['翻阅', '回忆', '凝望', '怀念', '珍藏'],
+      locations: ['旧照里', '老街上', '回忆中', '泛黄间', '旧时光'],
+      tempos: [70, 80, 90],
+      description: '复古怀旧的泛黄场景，胶片与旧时光里的温柔'
+    }
+  },
 ];
 
 /* =========================================================================
@@ -596,12 +926,13 @@ function extractTextureFeatures(pixels, w, h) {
  * to infer WHAT the image contains, not just HOW it looks.
  */
 function extractSemanticFeatures(pixels, w, h) {
-  // Skin tone detection (RGB-based heuristic, more inclusive for diverse skin tones)
+  // Skin tone detection with higher grid resolution for better face separation
+  // Grid resolution increased from 20x15 to 30x22 to distinguish close faces
   let skinPixelCount = 0;
-  const gridCols = 20;
-  const gridRows = 15;
-  const cellW = Math.floor(w / gridCols);
-  const cellH = Math.floor(h / gridRows);
+  const gridCols = 30;
+  const gridRows = 22;
+  const cellW = Math.max(1, Math.floor(w / gridCols));
+  const cellH = Math.max(1, Math.floor(h / gridRows));
   const grid = Array(gridRows).fill(0).map(() => Array(gridCols).fill(0));
 
   for (let y = 0; y < h; y++) {
@@ -610,16 +941,16 @@ function extractSemanticFeatures(pixels, w, h) {
       const r = pixels[idx], g = pixels[idx + 1], b = pixels[idx + 2];
       if (pixels[idx + 3] < 10) continue;
 
-      // More inclusive but accurate skin tone heuristic using YCbCr color space
-      // Standard skin detection ranges (tightened to avoid false positives)
+      // Inclusive skin tone heuristic using YCbCr color space
+      // Ranges optimized for diverse skin tones while rejecting backgrounds
       const yCb = 0.299 * r + 0.587 * g + 0.114 * b;
       const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
       const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
 
-      // Tighter skin tone ranges (reduces false positives on dark backgrounds)
-      const isSkin = yCb > 60 &&                   // Not too dark (min luminance)
-        cb > 85 && cb < 120 &&         // Tighter blue-difference
-        cr > 140 && cr < 165;          // Tighter red-difference
+      // Inclusive skin tone ranges: allow brighter/darker skin and reduce false negatives
+      const isSkin = yCb > 45 &&                   // Min luminance (more inclusive)
+        cb > 77 && cb < 128 &&         // Blue-difference (widened)
+        cr > 133 && cr < 175;          // Red-difference (widened)
 
       if (isSkin) {
         skinPixelCount++;
@@ -633,17 +964,20 @@ function extractSemanticFeatures(pixels, w, h) {
   const totalPixels = w * h;
   const skinRatio = skinPixelCount / totalPixels;
 
-  // Count distinct skin-tone clusters (higher threshold for noise filtering)
+  // Count distinct skin-tone clusters
+  // Lower threshold for new higher-resolution grid to detect smaller faces
   const visited = Array(gridRows).fill(0).map(() => Array(gridCols).fill(false));
   const clusters = [];
-  const minClusterSize = 5; // Higher = fewer but more reliable clusters
+  const minClusterSize = 3; // Lower for higher-res grid (was 5 for 20x15)
 
   for (let gy = 0; gy < gridRows; gy++) {
     for (let gx = 0; gx < gridCols; gx++) {
       if (!visited[gy][gx] && grid[gy][gx] >= minClusterSize) {
         const cluster = _floodFillGrid(grid, visited, gx, gy);
         if (cluster.size >= minClusterSize) {
-          clusters.push(cluster);
+          // Try to split large wide clusters into multiple people (e.g., couple selfies)
+          const splitClusters = _trySplitCluster(cluster, grid, gridCols, gridRows);
+          clusters.push(...splitClusters);
         }
       }
     }
@@ -702,6 +1036,24 @@ function extractSemanticFeatures(pixels, w, h) {
   // Selfie detection (skin concentrated in upper-center, close-up)
   const isSelfie = subjectType === 'portrait' && skinRegion.startsWith('upper') && skinRatio > 0.08;
 
+  // Second-pass: if we detected 1 person but skin coverage is high,
+  // the cluster-splitting may have missed a second person (e.g., very close
+  // faces in a couple selfie). Use additional heuristics.
+  // Heuristic: wide cluster + high skinRatio + upper-region = likely a couple
+  let potentialCouple = false;
+  if (personCount === 1 && clusters.length === 1) {
+    const cluster = clusters[0];
+    // Compute cluster width relative to grid
+    const clusterWidth = _computeClusterWidth(cluster, grid, gridCols, gridRows);
+    // More sensitive thresholds with new higher-res grid (30x22 vs old 20x15)
+    if (skinRatio > 0.08 && clusterWidth > gridCols * 0.30 && skinRegion.startsWith('upper')) {
+      potentialCouple = true;
+      // Promote subjectType to 'couple'
+      subjectType = 'couple';
+      subjectConfidence = Math.max(subjectConfidence, 0.5);
+    }
+  }
+
   return {
     skinRatio,
     personCount,
@@ -710,6 +1062,7 @@ function extractSemanticFeatures(pixels, w, h) {
     skinRegion,
     indoorOutdoor,
     isSelfie,
+    potentialCouple,
     clusters: clusters.map(c => ({ cx: c.cx, cy: c.cy, size: c.size }))
   };
 }
@@ -744,6 +1097,168 @@ function _floodFillGrid(grid, visited, sx, sy) {
   return { size, cx: sumX / size, cy: sumY / size };
 }
 
+/**
+ * Try to split a large cluster into two (or more) people when the cluster
+ * spans a significant horizontal or vertical range. This handles couple
+ * selfies where two faces are close together and merge into one flood-fill
+ * cluster on the coarse 20x15 grid.
+ *
+ * Strategy: find the densest column/row (projection), split at the gap
+ * between two density peaks, flood-fill each sub-region.
+ */
+function _trySplitCluster(cluster, grid, cols, rows) {
+  // Only split clusters that are large enough to contain multiple faces
+  // Higher threshold for higher-res grid (30x22 vs old 20x15)
+  if (cluster.size < 12) return [cluster];
+
+  // Re-collect cluster cells by BFS from centroid
+  const cells = _collectClusterCells(grid, cluster, cols, rows);
+  if (cells.length < 12) return [cluster];
+
+  // Project skin density onto X axis (columns)
+  const colDensity = new Array(cols).fill(0);
+  for (const { x, y } of cells) {
+    colDensity[x] += grid[y][x];
+  }
+
+  // Find left and right bounds of the cluster
+  let minX = cols, maxX = 0;
+  for (const { x } of cells) {
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+  }
+  const width = maxX - minX + 1;
+
+  // If cluster spans >40% of grid width, it likely contains 2+ faces
+  if (width < Math.floor(cols * 0.40)) return [cluster];
+
+  // Find the two density peaks
+  const peaks = _findTwoPeaks(colDensity, minX, maxX);
+  if (!peaks) return [cluster];
+
+  // Split at the valley between peaks
+  const splitX = Math.floor((peaks[0] + peaks[1]) / 2);
+
+  // Assign cells to left or right sub-cluster
+  const leftCells = [];
+  const rightCells = [];
+  for (const cell of cells) {
+    if (cell.x <= splitX) leftCells.push(cell);
+    else rightCells.push(cell);
+  }
+
+  // Both sub-clusters must have meaningful size (at least 5 cells each)
+  if (leftCells.length < 5 || rightCells.length < 5) return [cluster];
+
+  // Compute centroids and sizes
+  const makeCluster = (subCells) => {
+    let sx = 0, sy = 0;
+    for (const c of subCells) { sx += c.x; sy += c.y; }
+    const size = subCells.length;
+    return { size, cx: sx / size, cy: sy / size };
+  };
+
+  return [makeCluster(leftCells), makeCluster(rightCells)];
+}
+
+/** Collect all cells belonging to a cluster by BFS from its centroid */
+function _collectClusterCells(grid, cluster, cols, rows) {
+  const { cx, cy } = cluster;
+  // Start from the cell nearest to centroid
+  const startX = Math.max(0, Math.min(cols - 1, Math.round(cx)));
+  const startY = Math.max(0, Math.min(rows - 1, Math.round(cy)));
+
+  // BFS: follow all connected skin cells from the start point
+  const visited2 = Array(rows).fill(0).map(() => Array(cols).fill(false));
+  const queue = [{ x: startX, y: startY }];
+  const cells = [];
+
+  if (grid[startY]?.[startX] < 1) {
+    // Centroid cell may be empty; search neighbors for a skin cell
+    for (let r = 0; r < 3; r++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          const nx = startX + dx, ny = startY + dy;
+          if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[ny][nx] >= 1) {
+            queue[0] = { x: nx, y: ny };
+            visited2[ny][nx] = true;
+            break;
+          }
+        }
+        if (visited2[queue[0].y][queue[0].x]) break;
+      }
+    }
+  }
+
+  if (!visited2[queue[0].y]?.[queue[0].x]) visited2[queue[0].y][queue[0].x] = true;
+
+  while (queue.length > 0) {
+    const { x, y } = queue.shift();
+    if (grid[y][x] >= 1) cells.push({ x, y });
+    const neighbors = [
+      { x: x + 1, y }, { x: x - 1, y },
+      { x, y: y + 1 }, { x, y: y - 1 }
+    ];
+    for (const n of neighbors) {
+      if (n.x >= 0 && n.x < cols && n.y >= 0 && n.y < rows &&
+        !visited2[n.y][n.x] && grid[n.y][n.x] >= 1) {
+        visited2[n.y][n.x] = true;
+        queue.push(n);
+      }
+    }
+  }
+  return cells;
+}
+
+/** Find two density peaks in a 1D array within [minX, maxX] */
+function _findTwoPeaks(density, minX, maxX) {
+  // Apply 3-point weighted smoothing (1-2-1 kernel) for cleaner peak detection
+  const smoothed = density.map((v, i) => {
+    const left = i > 0 ? density[i - 1] : v;
+    const right = i < density.length - 1 ? density[i + 1] : v;
+    return (left + 2 * v + right) / 4;
+  });
+
+  const halfWidth = Math.floor((maxX - minX + 1) / 2);
+  const midX = Math.floor((minX + maxX) / 2);
+
+  // Find the peak in the left half
+  let leftPeak = minX;
+  let leftMax = 0;
+  for (let i = minX; i <= midX; i++) {
+    if (smoothed[i] > leftMax) { leftMax = smoothed[i]; leftPeak = i; }
+  }
+
+  // Find the peak in the right half
+  let rightPeak = midX;
+  let rightMax = 0;
+  for (let i = midX; i <= maxX; i++) {
+    if (smoothed[i] > rightMax) { rightMax = smoothed[i]; rightPeak = i; }
+  }
+
+  // Peaks must be sufficiently separated (at least 3 grid cells apart)
+  if (Math.abs(rightPeak - leftPeak) < 3) return null;
+
+  // Both peaks must be meaningful relative to average density
+  // Use 55% threshold for better sensitivity on higher-res grid
+  const avgDensity = smoothed.reduce((a, b) => a + b, 0) / (maxX - minX + 1);
+  if (leftMax < avgDensity * 0.55 || rightMax < avgDensity * 0.55) return null;
+
+  return [leftPeak, rightPeak];
+}
+
+/** Compute the bounding width of a cluster in grid columns */
+function _computeClusterWidth(cluster, grid, cols, rows) {
+  const cells = _collectClusterCells(grid, cluster, cols, rows);
+  if (cells.length < 2) return 0;
+  let minX = cols, maxX = 0;
+  for (const c of cells) {
+    if (c.x < minX) minX = c.x;
+    if (c.x > maxX) maxX = c.x;
+  }
+  return maxX - minX + 1;
+}
+
 /* =========================================================================
  * SCENE CLASSIFICATION — Map all features to scene profile
  * ========================================================================= */
@@ -759,7 +1274,17 @@ export function classifyScene(features) {
     }
   }
 
+  // SECOND: match against scene profiles
+  // If there's weak semantic evidence of people (low confidence or unknown type),
+  // skip dark/lonely profiles to avoid incorrectly classifying people as lonely
+  const hasPeopleEvidence = (features.skinRatio || 0) > 0.02;
+
   for (const profile of SCENE_PROFILES) {
+    // Skip dark/lonely profiles when there's evidence of people in the image
+    const darkProfileIds = ['urban_loneliness', 'storm_tension', 'dreamy_night', 'passionate_love'];
+    if (hasPeopleEvidence && darkProfileIds.includes(profile.id)) {
+      continue;
+    }
     if (profile.match(features)) {
       const result = { ...profile.lyrics, profileId: profile.id };
       result.vocalSuggestion = _inferVocalFromFeatures(features);
@@ -779,17 +1304,26 @@ function _classifyBySemantics(f) {
   const type = f.subjectType;
 
   if (type === 'couple') {
+    const hasWarmBrightColors = f.warmRatio > 0.3 && f.brightness > 0.4;
     const scene = {
       _semanticId: 'semantic_couple',
-      genre: ['love_song', 'ballad', 'romantic'],
-      themes: ['love', 'romantic_night', 'heartbreak'],
+      genre: hasWarmBrightColors
+        ? ['pop', 'love_song', 'kpop', 'ballad']
+        : ['love_song', 'ballad', 'romantic'],
+      themes: hasWarmBrightColors
+        ? ['love', 'happiness', 'memories']
+        : ['love', 'romantic_night', 'memories'],
       imagery: ['恋人', '拥抱', '笑容', '心跳', '牵手', '夕阳', '月光', '回忆', '甜蜜', '温柔'],
-      emotions: ['甜蜜', '温馨', '幸福', '眷恋', '炽热'],
+      emotions: hasWarmBrightColors
+        ? ['甜蜜', '幸福', '温馨', '快乐', '炽热']
+        : ['甜蜜', '温馨', '眷恋', '炽热', '渴望'],
       subjects: ['恋人', '伴侣', '爱人', '另一半', '我们'],
       actions: ['相拥', '牵手', '凝望', '低语', '依偎', '承诺', '守护'],
       locations: ['在身边', '怀里', '目光里', '梦里', '此刻'],
-      tempos: [75, 85, 95],
-      description: '图片中检测到两个人（可能是情侣），生成爱情主题歌词',
+      tempos: hasWarmBrightColors ? [95, 105, 115] : [75, 85, 95],
+      description: hasWarmBrightColors
+        ? '图片中检测到两个人（情侣/合照），色彩温暖明亮，生成甜蜜爱情主题歌词'
+        : '图片中检测到两个人（可能是情侣），生成爱情主题歌词',
       confidence: f.subjectConfidence
     };
     if (f.skinRegion.includes('upper')) {
@@ -808,20 +1342,48 @@ function _classifyBySemantics(f) {
   }
 
   if (type === 'portrait') {
+    // For high skin-ratio portraits (selfies / close-ups), use color analysis
+    // to determine the right mood instead of defaulting to loneliness
+    const hasWarmBrightColors = f.warmRatio > 0.35 && f.brightness > 0.45;
+    const hasCoolDarkColors = f.coolRatio > 0.35 && f.brightness < 0.4;
+    const highSkinRatio = f.skinRatio > 0.1; // lots of face showing
+    // Use f.isSelfie (computed in extractSemanticFeatures) instead of local var
+    const selfieDetected = f.isSelfie === true;
+
+    let themes;
+    if (selfieDetected && highSkinRatio && hasWarmBrightColors) {
+      // Smiling selfie with warm colors → happy, love, nostalgia
+      themes = ['happiness', 'love', 'life'];
+    } else if (hasWarmBrightColors) {
+      themes = ['love', 'memories', 'nostalgic'];
+    } else if (hasCoolDarkColors) {
+      // Cool/dark portrait: use introspection/memory instead of defaulting to sadness
+      themes = ['introspection', 'memory', 'life'];
+    } else if (highSkinRatio && f.skinRegion && f.skinRegion.startsWith('upper')) {
+      // Close-up portrait: emotion detected by color
+      themes = hasWarmBrightColors ? ['love', 'memories', 'life'] : ['memory', 'introspection', 'life'];
+    } else {
+      themes = ['memory', 'introspection', 'life'];
+    }
+
     const scene = {
       _semanticId: 'semantic_portrait',
-      genre: ['ballad', 'rnb', 'nostalgic'],
-      themes: ['memory', 'loneliness', 'life'],
+      genre: hasWarmBrightColors ? ['pop', 'ballad', 'kpop'] : ['ballad', 'rnb', 'nostalgic'],
+      themes,
       imagery: ['身影', '剪影', '目光', '心事', '独白', '光影', '侧脸', '轮廓'],
-      emotions: ['沉思', '孤独', '渴望', '温柔', '坚定'],
+      emotions: hasWarmBrightColors
+        ? ['温暖', '幸福', '眷恋', '希望', '温柔']
+        : hasCoolDarkColors
+          ? ['沉思', '渴望', '坚定', '温柔', '内敛']
+          : ['沉思', '渴望', '温柔', '坚定'],
       subjects: ['自己', '身影', '旅人', '归人', '角色'],
-      actions: ['凝望', '沉思', '等待', '独行', '追寻'],
+      actions: ['凝望', '沉思', '等待', '追寻'],
       locations: ['在心里', '角落', '路上', '此刻'],
       tempos: [70, 80, 90],
-      description: '图片中检测到一个人（肖像/自拍），生成个人独白主题歌词',
+      description: '图片中检测到一个人（肖像/自拍），根据色彩和光线推断情绪主题',
       confidence: f.subjectConfidence
     };
-    if (f.isSelfie) {
+    if (selfieDetected) {
       scene.imagery.push('自拍', '镜头前', '表情', '眼神');
       scene.actions.push('回眸', '微笑');
       scene.locations.push('屏幕里', '当下');
@@ -864,6 +1426,23 @@ function _classifyBySemantics(f) {
     };
   }
 
+  // 'unknown' type but with detectable skin → treat as person for safety
+  if (type === 'unknown' && f.skinRatio > 0.03) {
+    return {
+      _semanticId: 'semantic_unknown_people',
+      genre: ['indie', 'folk', 'ballad'],
+      themes: ['life', 'memory', 'dreams'],
+      imagery: ['身影', '故事', '时光', '片段', '回忆'],
+      emotions: ['平静', '感慨', '温柔'],
+      subjects: ['身影', '路人', '身边人'],
+      actions: ['走过', '相遇', '停留'],
+      locations: ['街角', '路上', '此刻'],
+      tempos: [75, 85, 95],
+      description: '图片中检测到人物特征，生成生活主题歌词',
+      confidence: f.skinRatio * 0.5
+    };
+  }
+
   return null;
 }
 
@@ -902,7 +1481,8 @@ function generateFromFeatures(f) {
     lyrics.themes.push('love', 'nostalgic_memory', 'romantic_night');
   }
   if (f.coolRatio > 0.3 && f.darkRatio > 0.3) {
-    lyrics.themes.push('loneliness', 'dreams', 'dark_mystery');
+    // Cool/dark but neutral themes - avoid loneliness by default
+    lyrics.themes.push('introspection', 'dreams', 'memory');
   }
   if (f.greenRatio > 0.2) {
     lyrics.themes.push('nature', 'healing', 'spring_awakening');
@@ -1136,16 +1716,471 @@ function findClosestSemantic(hex) {
  * ========================================================================= */
 
 /**
+ * ZUNICORN AGENT LOOP — Self-validation and refinement
+ * ============================================
+ * Implements the agent loop engineering pattern:
+ *   ANALYZE → GENERATE → VALIDATE → REFINE (loop until quality threshold met)
+ *
+ * This function validates the generated scene against the extracted features
+ * and refines it to ensure professional, image-relevant output.
+ *
+ * @param {Object} scene - The initially classified scene
+ * @param {Object} features - The raw visual features
+ * @param {number} [maxIterations=2] - Max refinement iterations
+ * @returns {Object} Refined scene with quality metadata
+ */
+function _agentLoopValidate(scene, features, maxIterations = 2) {
+  let current = { ...scene };
+  let iteration = 0;
+  const validationLog = [];
+
+  while (iteration < maxIterations) {
+    const issues = _detectSceneIssues(current, features);
+    validationLog.push({
+      iteration,
+      issuesFound: issues.length,
+      issues: issues.map(i => i.type)
+    });
+
+    if (issues.length === 0) break;
+
+    current = _refineScene(current, features, issues);
+    iteration++;
+  }
+
+  // Compute final quality score
+  const quality = _computeSceneQuality(current, features);
+
+  return {
+    ...current,
+    _agentLoop: {
+      iterations: iteration,
+      validationLog,
+      qualityScore: quality.score,
+      qualityGrade: quality.grade,
+      confidence: quality.confidence
+    }
+  };
+}
+
+/**
+ * Detect quality issues in a generated scene
+ */
+function _detectSceneIssues(scene, features) {
+  const issues = [];
+
+  // Issue 1: Empty or sparse vocabulary
+  if (!scene.imagery || scene.imagery.length < 3) {
+    issues.push({ type: 'sparse_imagery', severity: 'high' });
+  }
+  if (!scene.emotions || scene.emotions.length < 2) {
+    issues.push({ type: 'sparse_emotions', severity: 'medium' });
+  }
+  if (!scene.subjects || scene.subjects.length < 2) {
+    issues.push({ type: 'sparse_subjects', severity: 'medium' });
+  }
+
+  // Issue 2: Conflicting themes (e.g., happiness + heartbreak together)
+  const negativeThemes = ['heartbreak', 'melancholy', 'loneliness', 'sadness', 'dark_mystery'];
+  const positiveThemes = ['love', 'happiness', 'hope', 'friendship', 'dreams'];
+  const themes = scene.themes || [];
+  const hasNeg = themes.some(t => negativeThemes.includes(t));
+  const hasPos = themes.some(t => positiveThemes.includes(t));
+  if (hasNeg && hasPos && !features.subjectType) {
+    // Only flag conflict if not a people photo (people photos can have complex emotions)
+    issues.push({ type: 'theme_conflict', severity: 'high' });
+  }
+
+  // Issue 3: Theme-image mismatch — a love theme should have warm imagery
+  if (themes.includes('love') && features.warmRatio < 0.15 && !features.subjectType) {
+    issues.push({ type: 'love_theme_without_warmth', severity: 'medium' });
+  }
+
+  // Issue 4: Lonely themes on bright, warm images (the original bug)
+  const isBrightWarm = features.brightness > 0.5 && features.warmRatio > 0.3;
+  const hasLonelyTheme = themes.some(t =>
+    ['loneliness', 'melancholy', 'heartbreak', 'sadness'].includes(t));
+  if (isBrightWarm && hasLonelyTheme && !features.subjectType) {
+    issues.push({ type: 'bright_image_lonely_theme', severity: 'critical' });
+  }
+
+  // Issue 5: No tempo defined
+  if (!scene.tempos || scene.tempos.length === 0) {
+    issues.push({ type: 'missing_tempo', severity: 'low' });
+  }
+
+  return issues;
+}
+
+/**
+ * Refine a scene to fix detected issues
+ */
+function _refineScene(scene, features, issues) {
+  const refined = {
+    ...scene,
+    imagery: [...(scene.imagery || [])],
+    emotions: [...(scene.emotions || [])],
+    subjects: [...(scene.subjects || [])],
+    actions: [...(scene.actions || [])],
+    locations: [...(scene.locations || [])],
+    themes: [...(scene.themes || [])],
+    genre: [...(scene.genre || [])],
+    tempos: [...(scene.tempos || [])]
+  };
+
+  for (const issue of issues) {
+    switch (issue.type) {
+      case 'sparse_imagery':
+        refined.imagery.push(..._deriveImageryFromFeatures(features));
+        break;
+      case 'sparse_emotions':
+        refined.emotions.push(..._deriveEmotionsFromFeatures(features));
+        break;
+      case 'sparse_subjects':
+        refined.subjects.push('此刻', '画面', '故事', '光影');
+        break;
+      case 'theme_conflict':
+        // Keep positive themes, drop negative ones for non-people images
+        refined.themes = refined.themes.filter(t =>
+          !['heartbreak', 'melancholy', 'loneliness', 'sadness'].includes(t));
+        if (refined.themes.length === 0) refined.themes.push('life', 'memory', 'dreams');
+        break;
+      case 'love_theme_without_warmth':
+        // Demote love theme if image isn't warm
+        refined.themes = refined.themes.filter(t => t !== 'love');
+        refined.themes.push('memory', 'introspection');
+        break;
+      case 'bright_image_lonely_theme':
+        // Critical fix: replace lonely themes with bright/warm themes
+        refined.themes = refined.themes.filter(t =>
+          !['loneliness', 'melancholy', 'heartbreak', 'sadness'].includes(t));
+        refined.themes.push('hope', 'happiness', 'life');
+        refined.emotions = refined.emotions.filter(e =>
+          !['孤独', '忧伤', '悲伤', '心碎', '寂寥'].includes(e));
+        refined.emotions.push('温暖', '希望', '幸福');
+        break;
+      case 'missing_tempo':
+        refined.tempos = [80, 90, 100];
+        break;
+    }
+  }
+
+  // Deduplicate
+  refined.imagery = [...new Set(refined.imagery)];
+  refined.emotions = [...new Set(refined.emotions)];
+  refined.subjects = [...new Set(refined.subjects)];
+  refined.themes = [...new Set(refined.themes)];
+
+  return refined;
+}
+
+/** Derive imagery words from color/lighting features */
+function _deriveImageryFromFeatures(f) {
+  const out = [];
+  if (f.warmRatio > 0.3) out.push('暖光', '余晖', '温暖');
+  if (f.coolRatio > 0.3) out.push('冷光', '清辉', '幽蓝');
+  if (f.greenRatio > 0.2) out.push('绿意', '生机', '草木');
+  if (f.blueRatio > 0.2) out.push('蓝调', '辽阔', '远方');
+  if (f.brightness > 0.6) out.push('明亮', '光芒', '清透');
+  if (f.darkRatio > 0.4) out.push('暗影', '深邃', '幽暗');
+  if (f.horizonLine) out.push('地平线', '远方', '天际');
+  return out.slice(0, 6);
+}
+
+/** Derive emotions from color/lighting features */
+function _deriveEmotionsFromFeatures(f) {
+  const out = [];
+  if (f.warmRatio > 0.3 && f.brightness > 0.4) out.push('温暖', '幸福', '希望');
+  else if (f.coolRatio > 0.3 && f.brightness < 0.4) out.push('沉思', '宁静', '深邃');
+  else out.push('平静', '温柔', '感慨');
+  return out;
+}
+
+/** Compute a quality score and grade for a scene */
+function _computeSceneQuality(scene, features) {
+  let score = 0;
+  const checks = [];
+
+  // Vocabulary richness (0-30 points)
+  const imgScore = Math.min(10, (scene.imagery?.length || 0));
+  const emoScore = Math.min(8, (scene.emotions?.length || 0));
+  const subScore = Math.min(6, (scene.subjects?.length || 0));
+  const actScore = Math.min(6, (scene.actions?.length || 0));
+  score += imgScore + emoScore + subScore + actScore;
+  checks.push({ name: 'vocabulary_richness', score: imgScore + emoScore + subScore + actScore, max: 30 });
+
+  // Theme-image consistency (0-30 points)
+  const themes = scene.themes || [];
+  let consistencyScore = 30;
+  const isBrightWarm = features.brightness > 0.5 && features.warmRatio > 0.3;
+  if (isBrightWarm && themes.some(t => ['loneliness', 'melancholy', 'heartbreak'].includes(t))) {
+    consistencyScore -= 30; // Major inconsistency
+  }
+  if (features.warmRatio < 0.15 && themes.includes('love') && !features.subjectType) {
+    consistencyScore -= 15;
+  }
+  score += Math.max(0, consistencyScore);
+  checks.push({ name: 'theme_consistency', score: Math.max(0, consistencyScore), max: 30 });
+
+  // Feature coverage (0-25 points)
+  let coverage = 0;
+  if (scene.genre?.length >= 2) coverage += 8;
+  if (scene.tempos?.length >= 3) coverage += 7;
+  if (scene.locations?.length >= 3) coverage += 5;
+  if (scene.description?.length > 10) coverage += 5;
+  score += coverage;
+  checks.push({ name: 'feature_coverage', score: coverage, max: 25 });
+
+  // Semantic detection bonus (0-15 points)
+  let semanticBonus = 0;
+  if (features.subjectType && features.subjectType !== 'unknown') semanticBonus += 10;
+  if (features.subjectConfidence > 0.3) semanticBonus += 5;
+  score += semanticBonus;
+  checks.push({ name: 'semantic_detection', score: semanticBonus, max: 15 });
+
+  const normalizedScore = Math.min(100, score);
+  const grade = normalizedScore >= 85 ? 'A' :
+    normalizedScore >= 70 ? 'B' :
+      normalizedScore >= 55 ? 'C' : 'D';
+  const confidence = Math.round(normalizedScore / 100 * 100) / 100;
+
+  return { score: normalizedScore, grade, confidence, checks };
+}
+
+/**
+ * Generate structured metadata: labels, tags, wordings, songStyle
+ * This produces the professional output the user requested.
+ */
+function _generateStructuredMetadata(scene, features, vocalSuggestion) {
+  const themes = scene.themes || [];
+  const emotions = scene.emotions || [];
+  const genre = scene.genre || [];
+  const imagery = scene.imagery || [];
+  const sceneId = scene.profileId || scene._semanticId || 'generic';
+
+  // LABELS — short descriptive category labels
+  const labels = _buildLabels(scene, features);
+
+  // TAGS — searchable keyword tags (Chinese + English)
+  const tags = _buildTags(scene, features);
+
+  // WORDINGS — suggested phrases / prompt wordings for the lyrics engine
+  const wordings = _buildWordings(scene, features);
+
+  // SONG STYLE — detailed song style breakdown
+  const songStyle = _buildSongStyle(scene, features, vocalSuggestion);
+
+  return { labels, tags, wordings, songStyle };
+}
+
+/** Build descriptive labels for the scene */
+function _buildLabels(scene, features) {
+  const labels = [];
+  const subjectType = features.subjectType || 'unknown';
+
+  // Subject-based labels
+  const subjectLabels = {
+    couple: ['情侣照', '双人合照', 'Couple Photo'],
+    portrait: ['人像照', '肖像', 'Portrait'],
+    group: ['合影', '群体照', 'Group Photo'],
+    people_present: ['人物照', 'People']
+  };
+  if (subjectLabels[subjectType]) {
+    labels.push(...subjectLabels[subjectType]);
+  }
+
+  // Color-based labels
+  if (features.warmRatio > 0.3 && features.brightness > 0.45) {
+    labels.push('暖色调', 'Warm Tone');
+  } else if (features.coolRatio > 0.3 && features.brightness < 0.45) {
+    labels.push('冷色调', 'Cool Tone');
+  }
+  if (features.saturation > 0.55) labels.push('高饱和', 'Vibrant');
+  else if (features.saturation < 0.3) labels.push('低饱和', 'Muted');
+
+  // Lighting labels
+  if (features.lightingType === 'high_key') labels.push('高调光线', 'High-Key');
+  else if (features.lightingType === 'low_key') labels.push('低调光线', 'Low-Key');
+  else if (features.lightingType === 'soft_light') labels.push('柔光', 'Soft Light');
+
+  // Scene labels from profileId
+  const sceneLabels = {
+    food_warm_glow: ['美食', 'Food'],
+    pet_companion: ['宠物', 'Pet'],
+    architecture_grand: ['建筑', 'Architecture'],
+    flowers_bloom: ['花卉', 'Flowers'],
+    sunrise_hope: ['日出', 'Sunrise'],
+    beach_ocean: ['海滩', 'Beach'],
+    mountain_wilderness: ['山野', 'Wilderness'],
+    autumn_nostalgia: ['秋日', 'Autumn'],
+    winter_serene: ['冬雪', 'Winter'],
+    travel_journey: ['旅行', 'Travel'],
+    festive_celebration: ['庆典', 'Festive'],
+    abstract_art: ['抽象艺术', 'Abstract'],
+    cafe_cozy: ['咖啡馆', 'Cafe'],
+    night_starry: ['星空', 'Starry Night'],
+    rainy_reflective: ['雨天', 'Rainy'],
+    vehicle_motion: ['旅途', 'Road Trip'],
+    minimalist_clean: ['极简', 'Minimalist'],
+    vintage_retro: ['复古', 'Vintage'],
+    sunset_farewell: ['夕阳', 'Sunset'],
+    nature_healing: ['自然', 'Nature'],
+    dreamy_night: ['夜色', 'Night'],
+    quiet_morning: ['清晨', 'Morning']
+  };
+  const sId = scene.profileId || scene._semanticId;
+  if (sceneLabels[sId]) labels.push(...sceneLabels[sId]);
+
+  return [...new Set(labels)].slice(0, 12);
+}
+
+/** Build searchable tags */
+function _buildTags(scene, features) {
+  const tags = new Set();
+
+  // From themes
+  for (const t of scene.themes || []) tags.add(t);
+
+  // From genre
+  for (const g of scene.genre || []) tags.add(g);
+
+  // From emotions (primary)
+  if (scene.emotions?.length > 0) tags.add(scene.emotions[0]);
+
+  // From scene id
+  const sId = scene.profileId || scene._semanticId;
+  if (sId) tags.add(sId);
+
+  // Feature-based tags
+  if (features.brightness > 0.6) tags.add('bright');
+  if (features.darkRatio > 0.4) tags.add('dark');
+  if (features.warmRatio > 0.3) tags.add('warm');
+  if (features.coolRatio > 0.3) tags.add('cool');
+  if (features.horizonLine) tags.add('horizon');
+  if (features.skinRatio > 0.05) tags.add('people');
+
+  return [...tags].slice(0, 20);
+}
+
+/** Build suggested wordings / prompt phrases */
+function _buildWordings(scene, features) {
+  const wordings = [];
+  const themes = scene.themes || [];
+  const genre = scene.genre || [];
+  const emotions = scene.emotions || [];
+
+  // Build a natural-language description wording
+  const themeStr = themes.slice(0, 2).join('、');
+  const genreStr = genre.slice(0, 2).join('/');
+  const emotionStr = emotions.slice(0, 2).join('、');
+  wordings.push(`主题：${themeStr} | 风格：${genreStr} | 情绪：${emotionStr}`);
+
+  // Build an English wording
+  const themeEn = themes.slice(0, 2).join(', ');
+  const genreEn = genre.slice(0, 2).join('/');
+  wordings.push(`Theme: ${themeEn} | Genre: ${genreEn}`);
+
+  // Build a command-style wording for the lyrics engine
+  const bpm = scene.tempos?.[1] || 90;
+  wordings.push(`[BPM:${bpm}] [风格:${genreStr}] [主题:${themeStr}]`);
+
+  // Build an imagery-based wording
+  const imageryStr = (scene.imagery || []).slice(0, 5).join('、');
+  wordings.push(`意象：${imageryStr}`);
+
+  return wordings;
+}
+
+/** Build detailed song style breakdown */
+function _buildSongStyle(scene, features, vocalSuggestion) {
+  const tempos = scene.tempos || [80, 90, 100];
+  const genre = scene.genre || ['pop'];
+
+  return {
+    primaryGenre: genre[0],
+    alternativeGenres: genre.slice(1, 4),
+    bpm: tempos[1] || 90,
+    bpmRange: { min: tempos[0] || 70, max: tempos[2] || 110 },
+    // Infer key from color temperature
+    keySignature: _inferKeyFromFeatures(features),
+    // Infer time signature from texture/energy
+    timeSignature: _inferTimeSignature(features, tempos[1] || 90),
+    // Vocal recommendation
+    vocal: vocalSuggestion || { gender: '女声', confidence: 0.3 },
+    // Energy level (0-1)
+    energy: _computeEnergyLevel(features, tempos[1] || 90),
+    // Mood valence (-1 sad to +1 happy)
+    valence: _computeValence(features, scene),
+    // Acousticness vs electronic (0-1)
+    acousticness: _inferAcousticness(genre[0], features)
+  };
+}
+
+function _inferKeyFromFeatures(f) {
+  // Warm/bright → major keys; cool/dark → minor keys
+  if (f.warmRatio > 0.3 && f.brightness > 0.5) return 'C Major';
+  if (f.warmRatio > 0.3) return 'G Major';
+  if (f.coolRatio > 0.3 && f.brightness < 0.4) return 'A Minor';
+  if (f.coolRatio > 0.3) return 'D Minor';
+  if (f.greenRatio > 0.2) return 'G Major';
+  return 'C Major';
+}
+
+function _inferTimeSignature(f, bpm) {
+  if (bpm > 120) return '4/4';
+  if (bpm < 70) return '3/4';
+  if (f.textureType === 'complex') return '6/8';
+  return '4/4';
+}
+
+function _computeEnergyLevel(f, bpm) {
+  const brightnessEnergy = f.brightness * 0.3;
+  const saturationEnergy = (f.saturation || 0) * 0.2;
+  const tempoEnergy = Math.min(1, bpm / 140) * 0.3;
+  const warmEnergy = (f.warmRatio || 0) * 0.2;
+  return Math.min(1, brightnessEnergy + saturationEnergy + tempoEnergy + warmEnergy);
+}
+
+function _computeValence(f, scene) {
+  // -1 = sad, +1 = happy
+  let valence = 0;
+  if (f.warmRatio > 0.3 && f.brightness > 0.5) valence += 0.4;
+  if (f.coolRatio > 0.3 && f.brightness < 0.4) valence -= 0.4;
+  if (f.darkRatio > 0.4) valence -= 0.2;
+  if (f.saturation > 0.5) valence += 0.2;
+  const positiveThemes = ['love', 'happiness', 'hope', 'friendship', 'dreams'];
+  const negativeThemes = ['heartbreak', 'melancholy', 'loneliness', 'sadness'];
+  const themes = scene.themes || [];
+  if (themes.some(t => positiveThemes.includes(t))) valence += 0.3;
+  if (themes.some(t => negativeThemes.includes(t))) valence -= 0.3;
+  return Math.max(-1, Math.min(1, valence));
+}
+
+function _inferAcousticness(primaryGenre, f) {
+  const acousticGenres = ['folk', 'classical', 'chinese_traditional', 'ballad', 'country'];
+  const electronicGenres = ['electronic', 'synthwave', 'dreamy', 'ambient'];
+  if (acousticGenres.includes(primaryGenre)) return 0.8;
+  if (electronicGenres.includes(primaryGenre)) return 0.2;
+  return 0.5;
+}
+
+/**
  * Complete image-to-lyrics analysis
  * @param {HTMLImageElement} imageElement - The uploaded image element
  * @returns {Promise<Object>} Complete analysis with scene classification
  */
 export async function fullImageAnalysis(imageElement) {
   const features = await analyzeImageVisuals(imageElement);
-  const sceneLyrics = classifyScene(features);
+  const initialScene = classifyScene(features);
+
+  // Apply the ZUNICORN AGENT LOOP: validate and refine the scene
+  const sceneLyrics = _agentLoopValidate(initialScene, features);
 
   // Apply vocalSuggestion from scene if available (e.g. from generateFromFeatures fallback)
   const vocalSuggestion = sceneLyrics.vocalSuggestion || _inferVocalFromFeatures(features);
+
+  // Generate structured metadata: labels, tags, wordings, songStyle
+  const metadata = _generateStructuredMetadata(sceneLyrics, features, vocalSuggestion);
 
   return {
     success: true,
@@ -1165,6 +2200,13 @@ export async function fullImageAnalysis(imageElement) {
     description: sceneLyrics.description,
     // Vocal recommendation based on visual analysis
     vocalRecommendation: vocalSuggestion,
+    // STRUCTURED METADATA — labels, tags, wordings, songStyle
+    labels: metadata.labels,
+    tags: metadata.tags,
+    wordings: metadata.wordings,
+    songStyle: metadata.songStyle,
+    // Agent loop quality report
+    qualityReport: sceneLyrics._agentLoop,
     suggestions: {
       genre: sceneLyrics.genre[0],
       theme: sceneLyrics.themes[0],
@@ -1185,7 +2227,7 @@ export async function fullImageAnalysis(imageElement) {
       subjects: sceneLyrics.subjects,
       actions: sceneLyrics.actions,
       locations: sceneLyrics.locations,
-      sceneId: sceneLyrics.profileId,
+      sceneId: sceneLyrics.profileId || sceneLyrics._semanticId,
       vocalGender: vocalSuggestion?.gender || null,
       vocalConfidence: vocalSuggestion?.confidence || 0,
       // Semantic subject detection results
@@ -1197,7 +2239,11 @@ export async function fullImageAnalysis(imageElement) {
       indoorOutdoor: features.indoorOutdoor || 'unknown',
       // Semantic scene description
       description: sceneLyrics.description,
-      confidence: sceneLyrics.confidence || 0
+      confidence: sceneLyrics.confidence || sceneLyrics._agentLoop?.confidence || 0,
+      // Pass through structured metadata for the lyrics engine
+      labels: metadata.labels,
+      tags: metadata.tags,
+      songStyle: metadata.songStyle
     },
     colorPalette: features.dominantColors.map(c => ({ hex: c.hex, percentage: c.percentage })),
     processingTime: Date.now()
