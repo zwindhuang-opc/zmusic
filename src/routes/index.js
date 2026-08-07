@@ -12,6 +12,7 @@ import historyController from '../controllers/history.controller.js';
 import sunoController from '../controllers/suno.controller.js';
 import freemusicController from '../controllers/freemusic.controller.js';
 import visionController from '../controllers/vision.controller.js';
+import museController from '../controllers/muse.controller.js';
 import Logger from '../utils/logger.js';
 
 const logger = new Logger('Routes');
@@ -170,6 +171,56 @@ export async function handleRoute(req, res, url, method, body) {
 
     if (subPath === 'status' && method === 'GET') {
       return freemusicController.status(req, res);
+    }
+  }
+
+  // Muse (muse.top) endpoints - real song generation with vocals
+  const museMatch = path.match(/^\/api\/muse\/(.+)$/);
+  if (museMatch) {
+    const subPath = museMatch[1];
+
+    if (subPath === 'status' && method === 'GET') {
+      return museController.status(req, res);
+    }
+
+    if (subPath === 'user' && method === 'GET') {
+      return museController.getUser(req, res);
+    }
+
+    if (subPath === 'styles' && method === 'GET') {
+      return museController.getStyles(req, res);
+    }
+
+    if (subPath === 'fast-config' && method === 'GET') {
+      return museController.getFastConfig(req, res);
+    }
+
+    if (subPath === 'master-config' && method === 'GET') {
+      return museController.getMasterConfig(req, res);
+    }
+
+    if (subPath === 'templates' && method === 'GET') {
+      return museController.getTemplates(req, res);
+    }
+
+    if (subPath === 'explore' && method === 'GET') {
+      // Express 5 makes req.query a read-only getter, so pass the URLSearchParams
+      // via a plain object on a custom property.
+      const params = {};
+      url.searchParams.forEach((v, k) => { params[k] = v; });
+      req.museQuery = params;
+      return museController.getExplore(req, res);
+    }
+
+    if (subPath === 'generate' && method === 'POST') {
+      req.body = body;
+      return museController.generate(req, res);
+    }
+
+    const taskMatch = subPath.match(/^task\/(.+)$/);
+    if (taskMatch && method === 'GET') {
+      req.params = { id: taskMatch[1] };
+      return museController.queryTask(req, res);
     }
   }
 

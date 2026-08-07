@@ -1,206 +1,227 @@
 /**
- * MuseService - Muse AI Music Generation Service
- * 
- * This service handles communication with Muse AI for descriptive command-based music generation.
- * Muse AI uses natural language commands (human-like-music-speech-commands) to generate music,
- * providing a more intuitive and flexible approach compared to structured parameters.
- * 
+ * MuseService - Frontend client for muse.top AI song generation.
+ *
+ * All requests go through our OWN backend proxy at /api/muse/* for two reasons:
+ *   1. CORS — muse.top (project-api.atmob.com) does NOT send CORS headers, so
+ *      browser fetch() is blocked. The backend proxy (Node, no CORS limit)
+ *      forwards each request.
+ *   2. Secret keep — the user JWT (MUSE_API_KEY) stays server-side. The
+ *      browser only ever sees VITE_MUSE_API_KEY (a flag used to detect
+ *      "is Muse configured"), never the actual token.
+ *
+ * API contract (handled by muse.controller.js on the backend):
+ *   GET  /api/muse/status          — config check (token present? expired?)
+ *   GET  /api/muse/user            — user profile + credit balance
+ *   GET  /api/muse/styles          — full style catalog (grouped by genre)
+ *   GET  /api/muse/fast-config     — Quick Mode config (costCredit, songModel)
+ *   GET  /api/muse/master-config   — Master Mode config (vocals, languages)
+ *   GET  /api/muse/templates       — song structure templates
+ *   GET  /api/muse/explore         — public works gallery (real songs!)
+ *   POST /api/muse/generate        — start generation (Quick or Master mode)
+ *   GET  /api/muse/task/:id        — poll a generation task's status
+ *
  * @module services/muse.service
- * @version 1.0.0
+ * @version 2.0.0
  * @author ZMusic Team
  */
 
-import { config } from '../config/index.js';
 import Logger from '../utils/logger.js';
 
-/**
- * Logger instance for this service
- * @type {Logger}
- */
 const logger = new Logger('MuseService');
 
+/** Base path of our backend proxy. Vite dev server proxies /api to port 5501. */
+const API_BASE = '/api/muse';
+
 /**
- * MuseService class - Handles Muse AI music generation
- * 
- * @class MuseService
- * @description Provides methods to generate music using Muse AI's natural language command system
+ * Check if Muse is configured on the backend.
+ * Reads the VITE_MUSE_API_KEY flag (presence only — the real token is server-side).
+ * @returns {boolean}
  */
-export class MuseService {
-  /**
-   * Creates an instance of MuseService
-   * 
-   * @constructor
-   * @description Initializes the service with API key and base URL from configuration
-   */
-  constructor() {
-    /**
-     * API key for authentication
-     * @type {string}
-     * @private
-     */
-    this.apiKey = config.museApiKey;
-    
-    /**
-     * Base URL for API endpoints
-     * @type {string}
-     * @private
-     */
-    this.baseUrl = config.museBaseUrl;
-    
-    logger.info('MuseService initialized successfully');
-  }
-
-  /**
-   * Check if the service is properly configured
-   * 
-   * @method isConfigured
-   * @description Validates that API key is present
-   * @returns {boolean} True if API key is configured, false otherwise
-   * 
-   * @example
-   * if (museService.isConfigured()) {
-   *   // Proceed with Muse AI generation
-   * } else {
-   *   // Show configuration error
-   * }
-   */
-  isConfigured() {
-    return Boolean(this.apiKey && this.apiKey.length > 0);
-  }
-
-  /**
-   * Generate a Muse AI descriptive command (human-like-music-speech-commands)
-   * 
-   * @method generateMuseCommand
-   * @description Creates a natural language command string for Muse AI based on parameters
-   * @param {Object} params - Command parameters
-   * @param {string} [params.genre='流行'] - Music genre (e.g., '流行', '摇滚', '电子')
-   * @param {string} [params.style='现代'] - Arrangement style (e.g., '现代', '古典', '实验')
-   * @param {number} [params.bpm=122] - Beats per minute
-   * @param {string} [params.theme='爱情'] - Song theme (e.g., '爱情', '梦想', '自然')
-   * @param {string} [params.mood='温暖'] - Emotional mood (e.g., '温暖', '激昂', '忧郁')
-   * @param {string} [params.elements='热带打击乐'] - Musical elements/instruments
-   * @param {string} [params.subStyle='浩室'] - Sub-style within genre
-   * @param {string} [params.subject='我'] - Song subject (who)
-   * @param {string} [params.object='你'] - Song object (to whom)
-   * @param {string} [params.verse='verse_1'] - Verse identifier
-   * @param {number} [params.duration=60] - Target duration in seconds
-   * @returns {string} Natural language command string for Muse AI
-   * 
-   * @example
-   * const command = museService.generateMuseCommand({
-   *   genre: '流行',
-   *   bpm: 128,
-   *   theme: '梦想',
-   *   mood: '激昂',
-   *   duration: 180
-   * });
-   * // Returns: "创作一首流行风格的歌曲, BPM 128, 主题为梦想..."
-   */
-  generateMuseCommand(params) {
-    const {
-      genre = '流行',
-      style = '现代',
-      bpm = 122,
-      theme = '爱情',
-      mood = '温暖',
-      elements = '热带打击乐',
-      subStyle = '浩室',
-      subject = '我',
-      object = '你',
-      verse = 'verse_1',
-      duration = 60
-    } = params;
-
-    return `创作一首${genre}风格的歌曲, BPM ${bpm}, 主题为${theme}, 情绪为${mood}, 包含${elements}, 子风格为${subStyle}, ${verse}段, 持续${duration}秒, 讲述${subject}对${object}的${theme}故事, 融合${style}编曲手法, 营造${mood}氛围。`;
-  }
-
-  /**
-   * Generate music using Muse AI
-   * 
-   * @method generateMusic
-   * @async
-   * @description Submits a music generation request to Muse AI using natural language command
-   * @param {string} museCommand - Natural language command generated by generateMuseCommand
-   * @param {Object} [options={}] - Generation options
-   * @param {number} [options.duration=60] - Target duration in seconds
-   * @param {string} [options.style='auto'] - Style preference ('auto' for automatic)
-   * @param {string} [options.quality='high'] - Output quality ('low', 'medium', 'high')
-   * @returns {Promise<Object>} Generation result with taskId and status
-   * @throws {Error} If API key is not configured or API request fails
-   * 
-   * @example
-   * const command = museService.generateMuseCommand({ theme: '梦想' });
-   * const result = await museService.generateMusic(command, { duration: 180 });
-   * console.log('Task ID:', result.taskId);
-   */
-  async generateMusic(museCommand, options = {}) {
-    if (!this.isConfigured()) {
-      throw new Error('Muse AI API key not configured. Set MUSE_AI_API_KEY in .env file.');
-    }
-
-    logger.info(`Generating Muse music with command: ${museCommand.substring(0, 80)}...`);
-
-    try {
-      const response = await fetch(`${this.baseUrl}/generate`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          command: museCommand,
-          duration: options.duration || 60,
-          style: options.style || 'auto',
-          quality: options.quality || 'high'
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        logger.error(`API Error: ${response.status} - ${errorText}`);
-        throw new Error(`Muse API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      logger.info('Muse music generation initiated');
-
-      return {
-        success: true,
-        taskId: data.id || data.task_id || `muse_${Date.now()}`,
-        status: 'generating',
-        command: museCommand,
-        audioUrl: data.audio_url || null
-      };
-    } catch (error) {
-      logger.error(`Generation failed: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Get the current status of the Muse service
-   * 
-   * @method getStatus
-   * @description Returns configuration status and base URL
-   * @returns {Object} Status object with configured flag and baseUrl
-   * 
-   * @example
-   * const status = museService.getStatus();
-   * console.log('Configured:', status.configured);
-   * console.log('Base URL:', status.baseUrl);
-   */
-  getStatus() {
-    return {
-      configured: this.isConfigured(),
-      baseUrl: this.baseUrl
-    };
-  }
+export function isConfigured() {
+  const flag = import.meta.env?.VITE_MUSE_API_KEY || '';
+  // The flag is set to a non-empty value when the backend has a real JWT.
+  // It's never used as a real token from the browser.
+  return Boolean(flag) && flag.length > 20 && !flag.includes('your-muse');
 }
 
 /**
- * Default export - Singleton instance of MuseService
- * @type {MuseService}
+ * Thin fetch wrapper that throws on non-OK responses with the server's error message.
+ * @param {string} path - Path under /api/muse (e.g. "user", "generate")
+ * @param {object} [opts] - fetch options
+ * @returns {Promise<object>} Parsed JSON response
  */
-export default new MuseService();
+async function museFetch(path, opts = {}) {
+  const url = `${API_BASE}/${path}`;
+  logger.info(`Muse → ${opts.method || 'GET'} ${url}`);
+  const response = await fetch(url, {
+    method: opts.method || 'GET',
+    headers: opts.body ? { 'Content-Type': 'application/json' } : undefined,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
 
+  let data;
+  try { data = await response.json(); } catch { data = { raw: await response.text() }; }
+
+  if (!response.ok || data?.success === false) {
+    const msg = data?.error || `Muse API error: ${response.status}`;
+    logger.error(`Muse ← ${response.status} ${msg}`);
+    throw new Error(msg);
+  }
+  logger.info(`Muse ← ${response.status} OK`);
+  return data;
+}
+
+/**
+ * Get backend Muse configuration status (token present? expired? days left?).
+ * @returns {Promise<object>} { configured, tokenExpiresAt, tokenDaysLeft, uid, ... }
+ */
+export async function getStatus() {
+  return museFetch('status');
+}
+
+/**
+ * Get the logged-in user's profile + credit balance.
+ * @returns {Promise<object>} { ssid, memberInfo: { credit, isMember, ... }, ... }
+ */
+export async function getUser() {
+  const r = await museFetch('user');
+  return r.data;
+}
+
+/**
+ * Get the full style catalog (grouped by genre/流派).
+ * @returns {Promise<Array>} Array of { name, styles: [{ style, audioUrl }] }
+ */
+export async function getStyles() {
+  const r = await museFetch('styles');
+  return r.data?.list || [];
+}
+
+/**
+ * Get Quick Mode configuration (costCredit, songModel, description limits).
+ * @returns {Promise<object>} { costCredit, songModel, descriptionMin, descriptionMax, ... }
+ */
+export async function getFastConfig() {
+  const r = await museFetch('fast-config');
+  return r.data;
+}
+
+/**
+ * Get Master Mode configuration (vocals, languages, audioWeight range).
+ * @returns {Promise<object>} { vocals, languages, audioWeight, ... }
+ */
+export async function getMasterConfig() {
+  const r = await museFetch('master-config');
+  return r.data;
+}
+
+/**
+ * Get song structure templates (原曲优化, 流行RAP, etc.).
+ * @returns {Promise<Array>} Array of { id, title, imageUrl }
+ */
+export async function getTemplates() {
+  const r = await museFetch('templates');
+  return r.data?.list || [];
+}
+
+/**
+ * Get the public works gallery (real songs with audio URLs - free to play!).
+ * @param {number} [page=1]
+ * @param {number} [pageSize=10]
+ * @returns {Promise<{count:number, list:Array}>}
+ */
+export async function getExplore(page = 1, pageSize = 10) {
+  const r = await museFetch(`explore?page=${page}&page_size=${pageSize}`);
+  return r.data || { count: 0, list: [] };
+}
+
+/**
+ * Generate a song using muse.top AI.
+ *
+ * Quick Mode  (mode="quick"):  muse.top's DeepSeek thinks lyrics from a prompt,
+ *                              then generates a full song with vocals. Costs 14 credits.
+ * Master Mode (mode="master"): User provides lyrics; muse.top generates the song
+ *                              with the specified style, vocal, language.
+ *
+ * @param {object} params
+ * @param {'quick'|'master'} [params.mode='quick'] - Generation mode
+ * @param {string} [params.prompt] - Inspiration (Quick Mode, 5-200 chars)
+ * @param {string} [params.lyrics] - Full lyrics (Master Mode)
+ * @param {string} [params.style] - Style/genre name (e.g. "流行音乐", "古风")
+ * @param {string} [params.title] - Song title
+ * @param {string} [params.vocal] - Vocal type: ""=random, "m"=male, "f"=female
+ * @param {number} [params.languageId] - Language ID (1001=中文, 1003=粤语, 1004=英语, ...)
+ * @param {number} [params.audioWeight] - Reference weight 0.15-0.85
+ * @param {boolean} [params.instrumental=false] - Instrumental only (no vocals)
+ * @param {number} [params.structureId] - Structure template ID
+ * @param {string} [params.songModel='general'] - Song model (from fast-config)
+ * @returns {Promise<object>} Generation result with taskId
+ */
+export async function generateSong(params) {
+  const r = await museFetch('generate', {
+    method: 'POST',
+    body: params,
+  });
+  return r.data;
+}
+
+/**
+ * Poll a generation task's status.
+ * @param {string} taskId - Task ID returned by generateSong()
+ * @returns {Promise<object>} { status, audioUrl, imageUrl, title, ... }
+ *
+ * Status values (from muse.top):
+ *   - "pending" / "processing" — still generating
+ *   - "success" / "completed"  — done, audioUrl available
+ *   - "failed"                 — generation failed
+ */
+export async function queryTask(taskId) {
+  const r = await museFetch(`task/${encodeURIComponent(taskId)}`);
+  return r.data;
+}
+
+/**
+ * Poll a task until it completes (or fails / times out).
+ * Convenience wrapper around queryTask() for the frontend.
+ *
+ * @param {string} taskId
+ * @param {object} [opts]
+ * @param {number} [opts.intervalMs=5000] - Poll interval
+ * @param {number} [opts.timeoutMs=300000] - Max wait (5 min default)
+ * @param {(status:object)=>void} [opts.onPoll] - Progress callback
+ * @returns {Promise<object>} Final task data with audioUrl
+ */
+export async function pollUntilDone(taskId, opts = {}) {
+  const interval = opts.intervalMs || 5000;
+  const timeout = opts.timeoutMs || 300000;
+  const start = Date.now();
+
+  while (Date.now() - start < timeout) {
+    const task = await queryTask(taskId);
+    if (opts.onPoll) opts.onPoll(task);
+
+    const status = String(task?.status || task?.state || '').toLowerCase();
+    if (status.includes('success') || status.includes('complete') || task?.audioUrl) {
+      return task;
+    }
+    if (status.includes('fail') || status.includes('error')) {
+      throw new Error(`Generation failed: ${task?.msg || task?.failReason || status}`);
+    }
+    await new Promise(r => setTimeout(r, interval));
+  }
+  throw new Error(`Generation timed out after ${timeout / 1000}s`);
+}
+
+export default {
+  isConfigured,
+  getStatus,
+  getUser,
+  getStyles,
+  getFastConfig,
+  getMasterConfig,
+  getTemplates,
+  getExplore,
+  generateSong,
+  queryTask,
+  pollUntilDone,
+};

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Music, Sparkles, Loader, History, Play, Pause, SkipBack, SkipForward, Zap, Wand2, Download, Cloud, Brain, Lightbulb, Music2, Disc3, Gift, Mic } from 'lucide-react';
+import { Music, Sparkles, Loader, History, Play, Pause, SkipBack, SkipForward, Zap, Wand2, Download, Cloud, Brain, Lightbulb, Music2, Disc3, Gift, Mic, Headphones } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
 import HistoryPanel from '../components/HistoryPanel.jsx';
@@ -8,6 +8,37 @@ import { composeMusic } from '../utils/musicComposer.js';
 import { playComposition, pausePlayback, resumePlayback, stopAll, getPlaybackTime, exportToWav } from '../utils/audioEngine.js';
 import SunoService from '../services/suno.service.js';
 import FreeMusicService from '../services/freemusic.service.js';
+import MuseService from '../services/muse.service.js';
+
+/**
+ * Map our internal MUSIC_STYLES keys → muse.top Chinese style names.
+ * muse.top's style catalog (from /project/song/v30/song/style) uses Chinese
+ * genre names. For Master Mode we pass these as the `style` field. Keys
+ * without a muse equivalent fall back to "" (muse picks a default style).
+ * @type {Record<string, string>}
+ */
+const MUSE_STYLE_MAP = {
+  pop: '流行音乐',
+  rock: '摇滚',
+  electronic: '电子乐',
+  hip_hop: '说唱',
+  jazz: '爵士',
+  rnb: 'R&B',
+  folk: '民谣',
+  ancient: '古风',
+  ancient_modern: '古风',
+  chinese_classical: '古风',
+  chinese_traditional: '古风',
+  gothic_rock: '摇滚',
+  love_song: '流行音乐',
+  ballad: '流行音乐',
+  romantic: '流行音乐',
+  dance_party: '电子乐',
+  energetic: '电子乐',
+  kpop: '流行音乐',
+  jpop: '流行音乐',
+  reggae: '流行音乐',
+};
 
 const INSPIRATION_CHIPS = [
   '追逐梦想，永不放弃',
@@ -24,6 +55,7 @@ const ENGINES = [
   { id: 'free', label: 'Free', icon: Gift, desc: '100% FREE: Edge TTS vocals + MusicGen', color: 'from-emerald-500 to-teal-500', free: true },
   { id: 'auto', label: 'Auto', icon: Sparkles, desc: 'AI picks best engine', color: 'from-violet-500 to-pink-500', free: false },
   { id: 'suno', label: 'Suno.cn', icon: Cloud, desc: 'Real songs + vocals (needs credits)', color: 'from-sky-500 to-violet-500', free: false },
+  { id: 'muse', label: 'Muse', icon: Headphones, desc: 'muse.top AI: real songs + vocals (14 credits)', color: 'from-fuchsia-500 to-purple-500', free: false },
   { id: 'tonejs', label: 'Tone.js', icon: Zap, desc: 'Instant procedural preview', color: 'from-amber-500 to-rose-500', free: true },
 ];
 
@@ -157,6 +189,13 @@ function MusicPage() {
   const [sunoTitle, setSunoTitle] = useState('');
   const [sunoStatus, setSunoStatus] = useState('');
 
+  // Muse (muse.top) generation state — mirrors suno state but for the Muse engine.
+  // museAudioUrl holds the final CDN mp3 once polling completes.
+  const [museTaskId, setMuseTaskId] = useState(null);
+  const [museAudioUrl, setMuseAudioUrl] = useState(null);
+  const [museTitle, setMuseTitle] = useState('');
+  const [museStatus, setMuseStatus] = useState('');
+
   const [thinkingSteps, setThinkingSteps] = useState([]);
   const [showThinking, setShowThinking] = useState(false);
   const [activeThinkingStep, setActiveThinkingStep] = useState(-1);
@@ -207,7 +246,7 @@ function MusicPage() {
   }, [prompt, style, theme, bpm, duration, startThinking]);
 
   useEffect(() => {
-    const audioUrl = sunoAudioUrl || freeAudioUrl;
+    const audioUrl = sunoAudioUrl || museAudioUrl || freeAudioUrl;
     if (isPlaying && !audioUrl) {
       progressTimerRef.current = setInterval(() => {
         setPlayTime(getPlaybackTime());
@@ -220,7 +259,7 @@ function MusicPage() {
       clearInterval(progressTimerRef.current);
     }
     return () => clearInterval(progressTimerRef.current);
-  }, [isPlaying, sunoAudioUrl, freeAudioUrl]);
+  }, [isPlaying, sunoAudioUrl, museAudioUrl, freeAudioUrl]);
 
   const handleGenerate = async () => {
     if (!prompt.trim() && !lyrics.trim()) {
@@ -234,6 +273,9 @@ function MusicPage() {
     setSunoAudioUrl(null);
     setFreeAudioUrl(null);
     setSunoTaskId(null);
+    setMuseAudioUrl(null);
+    setMuseTaskId(null);
+    setMuseStatus('');
     setGenProgress(0.05);
     setGenStage('preparing');
     stopAll();
@@ -400,6 +442,135 @@ function MusicPage() {
             addToHistory({ type: 'song', method: 'tonejs_procedural', theme, style, genre: style, bpm, duration: comp.duration, provider: 'tonejs', prompt, result: { composition: comp } });
           }
         }
+      } else if (engine === 'muse' && MuseService.isConfigured()) {
+        // === MUSE ENGINE: muse.top AI — real songs with vocals (14 credits) ===
+        // Quick Mode: DeepSeek thinks lyrics from the prompt, then generates a full song.
+        // Master Mode: user provides lyrics; muse generates with the chosen style/vocal.
+        // Both modes return a taskId that we poll via the backend proxy until done.
+        setGenStage('preview');
+        setGenProgress(0.1);
+        // Instant Tone.js preview while muse.top generates (so the user hears something).
+        const comp = composeMusic({ prompt, style, theme, duration, bpm });
+        setComposition(comp);
+        playComposition(comp, () => { }, () => { }).catch(() => { });
+        setIsPlaying(true);
+        setGenProgress(0.25);
+
+        setGenStage('suno_generating');
+        setMuseStatus(t('music.muse_submitting'));
+
+        // Build the muse.top request. Map our internal style key to a muse style name.
+        const museStyle = MUSE_STYLE_MAP[style] || '';
+        const museParams = mode === 'master'
+          ? {
+            mode: 'master',
+            lyrics: lyrics || prompt,
+            style: museStyle,
+            title: prompt.slice(0, 20) || 'Untitled',
+            vocal: '',            // "" = random voice
+            instrumental: instrumental ? 1 : 0,
+            languageId: 1001,     // 1001 = 中文 (Mandarin)
+          }
+          : {
+            mode: 'quick',
+            prompt: prompt || lyrics,  // DeepSeek thinks lyrics from this inspiration
+            songModel: 'general',
+            instrumental: instrumental ? 1 : 0,
+            ...(museStyle ? { style: museStyle } : {}),
+          };
+
+        const museGenStep = {
+          icon: Headphones,
+          title: mode === 'master' ? 'Generating with Muse AI (Master Mode)' : 'Generating with Muse AI (Quick Mode)',
+          detail: mode === 'master'
+            ? `Style: ${museStyle || 'auto'} · lyrics provided · muse.top generates full song`
+            : `DeepSeek thinks lyrics from prompt · muse.top generates full song · 14 credits`,
+          status: 'active'
+        };
+        setThinkingSteps(prev => [...prev, museGenStep]);
+        setActiveThinkingStep(thinkingSteps.length);
+
+        try {
+          const genResult = await MuseService.generateSong(museParams);
+          const taskId = genResult?.taskId || genResult?.workId;
+          if (!taskId) {
+            throw new Error('Muse did not return a taskId');
+          }
+          setMuseTaskId(taskId);
+          setGenProgress(0.45);
+          setMuseStatus(t('music.muse_processing'));
+
+          // Poll the backend proxy until the song is ready (or fails / times out).
+          // muse.top generation typically takes 1-3 minutes.
+          const finalTask = await MuseService.pollUntilDone(taskId, {
+            intervalMs: 6000,
+            timeoutMs: 300000,   // 5 min max
+            onPoll: (task) => {
+              setMuseStatus(`${t('music.muse_processing')}... ${String(task?.status || task?.state || '').slice(0, 24)}`);
+            },
+          });
+
+          const audioUrl = finalTask?.audioUrl || finalTask?.data?.audioUrl;
+          if (!audioUrl) {
+            throw new Error(finalTask?.msg || finalTask?.failReason || 'Muse generation produced no audio');
+          }
+
+          setMuseAudioUrl(audioUrl);
+          setMuseTitle(finalTask?.title || prompt.slice(0, 20) || 'Muse Song');
+          setGenStage('complete');
+          setGenProgress(1);
+          setMuseStatus('');
+
+          setThinkingSteps(prev => prev.map((s, i) =>
+            i === thinkingSteps.length
+              ? { ...s, detail: `✨ Muse song ready! Title: ${finalTask?.title || 'Untitled'}`, status: 'done' }
+              : s
+          ));
+
+          // Stop Tone.js preview, switch to the real muse.top CDN audio.
+          stopAll();
+          setIsPlaying(false);
+          const audio = new Audio(audioUrl);
+          audio.crossOrigin = 'anonymous';
+          audioElementRef.current = audio;
+
+          addToHistory({
+            type: 'song',
+            method: 'muse_ai',
+            theme, style, genre: style, bpm,
+            duration: finalTask?.duration || duration,
+            provider: 'muse',
+            prompt,
+            lyrics: lyrics.slice(0, 200),
+            title: finalTask?.title || prompt.slice(0, 30),
+            audioUrl,
+            result: { composition: comp, museTaskId: taskId, museMode: mode },
+          });
+
+          // Auto-play the generated song.
+          setTimeout(() => {
+            if (audioElementRef.current) {
+              audioElementRef.current.play().catch(() => { });
+              setIsPlaying(true);
+            }
+          }, 300);
+        } catch (museErr) {
+          console.error('Muse engine error:', museErr);
+          setMuseStatus(`${t('music.muse_failed')}: ${museErr.message}`);
+          // Keep Tone.js preview as a fallback so the user still hears something.
+          setGenStage('complete');
+          setGenProgress(1);
+          setThinkingSteps(prev => prev.map((s, i) =>
+            i === thinkingSteps.length
+              ? { ...s, detail: `⚠️ ${museErr.message}. Using Tone.js preview.`, status: 'done' }
+              : s
+          ));
+          addToHistory({
+            type: 'song', method: 'tonejs_procedural', theme, style, genre: style, bpm,
+            duration: comp.duration, provider: 'tonejs', prompt,
+            result: { composition: comp, museError: museErr.message }
+          });
+        }
       } else {
         // === TONE.JS ONLY ===
         setGenStage('preview');
@@ -420,7 +591,7 @@ function MusicPage() {
   };
 
   const handlePlay = async () => {
-    if ((sunoAudioUrl || freeAudioUrl) && audioElementRef.current) {
+    if ((sunoAudioUrl || museAudioUrl || freeAudioUrl) && audioElementRef.current) {
       audioElementRef.current.play();
       setIsPlaying(true);
     } else if (composition) {
@@ -436,7 +607,7 @@ function MusicPage() {
   };
 
   const handlePause = () => {
-    if ((sunoAudioUrl || freeAudioUrl) && audioElementRef.current) {
+    if ((sunoAudioUrl || museAudioUrl || freeAudioUrl) && audioElementRef.current) {
       audioElementRef.current.pause();
     } else {
       pausePlayback();
@@ -467,7 +638,7 @@ function MusicPage() {
   };
 
   const handleDownload = async () => {
-    const audioUrl = sunoAudioUrl || freeAudioUrl;
+    const audioUrl = sunoAudioUrl || museAudioUrl || freeAudioUrl;
     if (audioUrl) {
       try {
         const response = await fetch(audioUrl);
@@ -475,7 +646,7 @@ function MusicPage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${sunoTitle || 'zmusic_free_track'}_${Date.now()}.mp3`;
+        a.download = `${sunoTitle || museTitle || 'zmusic_track'}_${Date.now()}.mp3`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -502,7 +673,7 @@ function MusicPage() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const audioUrl = sunoAudioUrl || freeAudioUrl;
+  const audioUrl = sunoAudioUrl || museAudioUrl || freeAudioUrl;
   const totalDuration = audioUrl
     ? (audioElementRef.current?.duration || composition?.duration || 60)
     : (composition?.duration || 60);
@@ -513,8 +684,12 @@ function MusicPage() {
     setPrompt(INSPIRATION_CHIPS[idx]);
   };
 
-  const displayTitle = sunoAudioUrl ? sunoTitle : (freeAudioUrl ? (prompt.slice(0, 25) || 'Free Song') : (composition?.title || t('music.now_playing')));
+  const displayTitle = sunoAudioUrl ? sunoTitle
+    : (museAudioUrl ? museTitle
+      : (freeAudioUrl ? (prompt.slice(0, 25) || 'Free Song')
+        : (composition?.title || t('music.now_playing'))));
   const sunoAvailable = SunoService.isConfigured();
+  const museAvailable = MuseService.isConfigured();
 
   return (
     <div className="space-y-4 md:space-y-6 animate-slide-in pb-32">
@@ -530,8 +705,9 @@ function MusicPage() {
               <p className="text-[10px] text-gray-400">
                 {engine === 'free' ? '🆓 100% FREE: Edge TTS + MusicGen' :
                   engine === 'suno' ? 'Powered by Suno.cn AI (needs credits)' :
-                    engine === 'tonejs' ? 'Powered by Tone.js (free)' :
-                      sunoAvailable ? 'Powered by Suno.cn + Tone.js' : 'Powered by Tone.js'}
+                    engine === 'muse' ? 'Powered by muse.top AI (needs credits)' :
+                      engine === 'tonejs' ? 'Powered by Tone.js (free)' :
+                        sunoAvailable ? 'Powered by Suno.cn + Tone.js' : 'Powered by Tone.js'}
               </p>
             </div>
           </div>
@@ -557,7 +733,7 @@ function MusicPage() {
         <div className="flex items-center justify-center gap-1.5 flex-wrap">
           {ENGINES.map(e => {
             const isActive = engine === e.id;
-            const isDisabled = (e.id === 'suno' && !sunoAvailable);
+            const isDisabled = (e.id === 'suno' && !sunoAvailable) || (e.id === 'muse' && !museAvailable);
             return (
               <button
                 key={e.id}
@@ -595,16 +771,21 @@ function MusicPage() {
           </button>
         </div>
 
-        {/* Lyrics Input (for Free engine vocals) */}
-        {engine === 'free' && (
+        {/* Lyrics Input (for Free engine vocals OR Muse Master Mode) */}
+        {(engine === 'free' || (engine === 'muse' && mode === 'master')) && (
           <div className="relative">
             <label className="text-[10px] font-medium text-gray-400 mb-1 flex items-center gap-1">
-              <Mic className="w-3 h-3" /> Lyrics (for vocals - 100% free via Edge TTS)
+              <Mic className="w-3 h-3" />
+              {engine === 'muse'
+                ? t('music.muse_lyrics_label')
+                : 'Lyrics (for vocals - 100% free via Edge TTS)'}
             </label>
             <textarea
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
-              placeholder="Enter lyrics here... e.g. 夏日阳光照耀，海浪轻轻拍岸，我们一起奔跑在沙滩上"
+              placeholder={engine === 'muse'
+                ? t('music.muse_lyrics_placeholder')
+                : 'Enter lyrics here... e.g. 夏日阳光照耀，海浪轻轻拍岸，我们一起奔跑在沙滩上'}
               className="w-full h-16 md:h-20 bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 resize-none"
             />
           </div>
@@ -778,7 +959,7 @@ function MusicPage() {
               </div>
             </div>
 
-            {engine === 'suno' || engine === 'auto' || engine === 'free' ? (
+            {engine === 'suno' || engine === 'auto' || engine === 'free' || engine === 'muse' ? (
               <>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -823,7 +1004,7 @@ function MusicPage() {
         {/* Generate Button */}
         <button
           onClick={handleGenerate}
-          disabled={isGenerating || !prompt.trim()}
+          disabled={isGenerating || (!prompt.trim() && !(engine === 'muse' && mode === 'master' && lyrics.trim()))}
           className="w-full py-3.5 rounded-xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 text-white font-semibold text-sm md:text-base flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 shadow-lg shadow-purple-500/30 active:scale-[0.98] transition-transform"
         >
           {isGenerating ? (
@@ -831,7 +1012,7 @@ function MusicPage() {
               <Loader className="w-4 h-4 animate-spin" />
               {genStage === 'preparing' ? t('music.preparing') :
                 genStage === 'preview' ? t('music.creating_preview') :
-                  genStage === 'suno_generating' ? sunoStatus || t('music.suno_processing') :
+                  genStage === 'suno_generating' ? (engine === 'muse' ? (museStatus || t('music.muse_processing')) : (sunoStatus || t('music.suno_processing'))) :
                     t('music.processing')}
             </>
           ) : (
@@ -854,9 +1035,10 @@ function MusicPage() {
         <p className="text-[10px] text-gray-500 text-center">
           {engine === 'free' ? '🆓 100% FREE: Edge TTS vocals + MusicGen music — No paid APIs!' :
             engine === 'suno' ? 'Real song with vocals via Suno.cn (needs credits)' :
-              engine === 'tonejs' ? 'Instant procedural music via Tone.js (free)' :
-                sunoAvailable ? 'Hybrid: Tone.js preview → Suno.cn real song' :
-                  'Procedural music generation'}
+              engine === 'muse' ? 'Real song with vocals via muse.top AI (14 credits)' :
+                engine === 'tonejs' ? 'Instant procedural music via Tone.js (free)' :
+                  sunoAvailable ? 'Hybrid: Tone.js preview → Suno.cn real song' :
+                    'Procedural music generation'}
         </p>
       </div>
 
@@ -889,6 +1071,7 @@ function MusicPage() {
               const itemStyle = item.style || item.genre || '';
               const itemDuration = item.duration ? `${item.duration}s` : '';
               const isSuno = item.method === 'suno_cn';
+              const isMuse = item.method === 'muse_ai';
               return (
                 <div
                   key={item.id || idx}
@@ -898,6 +1081,9 @@ function MusicPage() {
                     <Music className="w-8 h-8 text-violet-400" />
                     {isSuno && (
                       <span className="absolute top-1 right-1 px-1 py-0.5 rounded bg-violet-500/80 text-[8px] text-white font-bold">SUNO</span>
+                    )}
+                    {isMuse && (
+                      <span className="absolute top-1 right-1 px-1 py-0.5 rounded bg-fuchsia-500/80 text-[8px] text-white font-bold">MUSE</span>
                     )}
                   </div>
                   <div className="text-xs font-semibold text-white truncate">{itemTitle}</div>
@@ -912,7 +1098,7 @@ function MusicPage() {
       )}
 
       {/* Bottom Player Bar */}
-      {(composition || isPlaying || sunoAudioUrl || freeAudioUrl) && (
+      {(composition || isPlaying || sunoAudioUrl || museAudioUrl || freeAudioUrl) && (
         <div className="fixed bottom-0 left-0 right-0 z-50">
           <div className="max-w-lg mx-auto px-4 pb-3">
             <div className="gradient-border bg-gray-900/80 backdrop-blur-md p-3">
