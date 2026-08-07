@@ -361,13 +361,13 @@ function MVPage() {
 
   const getStageLabel = () => {
     switch (genStage) {
-      case 'credits': return 'Checking Muse credits...';
-      case 'generating': return 'Generating real song with AI...';
-      case 'composing': return 'Composing preview music...';
-      case 'timeline': return 'Building MV timeline...';
-      case 'audio': return 'Rendering audio...';
-      case 'video': return 'Recording MV video...';
-      case 'complete': return 'Complete!';
+      case 'credits': return t('mv.credits_stage');
+      case 'generating': return t('mv.generating_stage');
+      case 'composing': return t('mv.composing_stage');
+      case 'timeline': return t('mv.timeline_stage');
+      case 'audio': return t('mv.audio_stage');
+      case 'video': return t('mv.record_stage');
+      case 'complete': return t('mv.complete_stage');
       default: return '';
     }
   };
@@ -386,7 +386,7 @@ function MVPage() {
             </div>
             <div>
               <h1 className="text-lg md:text-xl font-bold text-white">{t('mv.mv_video_generator')}</h1>
-              <p className="text-[10px] md:text-xs text-gray-400">Generate real music videos with actual songs + animated visuals</p>
+              <p className="text-[10px] md:text-xs text-gray-400">{t('mv.description')}</p>
             </div>
           </div>
           <button
@@ -394,7 +394,7 @@ function MVPage() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-xs md:text-sm text-gray-300"
           >
             <History className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            {t('lyrics.history')}
+            {t('mv.history')}
           </button>
         </div>
       </div>
@@ -406,6 +406,7 @@ function MVPage() {
           museAvailable={museAvailable}
           sunoAvailable={sunoAvailable}
           onEngineChange={setEngine}
+          t={t}
         />
 
         <MVControls

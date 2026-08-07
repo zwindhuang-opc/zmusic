@@ -16,28 +16,52 @@ function interpolate(str, vars) {
 }
 
 /**
+ * Resolve a dot-notation key against a translations object tree.
+ * Returns the leaf value (string), or undefined if any segment is missing.
+ */
+function resolveKey(root, parts) {
+  let node = root;
+  for (const p of parts) {
+    if (node === null || node === undefined) return undefined;
+    node = node[p];
+  }
+  return node;
+}
+
+/**
+ * Produce a human-readable fallback label for a missing translation key.
+ * The last segment of the dot-notation key is turned into Title Case
+ * (underscores → spaces) so the UI stays usable instead of showing raw keys.
+ */
+function humanizeFallback(key) {
+  if (!key) return '';
+  const last = key.includes('.') ? key.slice(key.lastIndexOf('.') + 1) : key;
+  return last
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
  * Core translation function.
- * Always returns the translated value if found, or the raw key string if not.
- * Check with `t(key) !== key` to know if a translation was found.
+ * Resolution order:
+ *   1. translations[targetLang] → value
+ *   2. translations.zh (fallback) → value
+ *   3. humanized last-segment label (never returns raw dot/underscore keys)
+ * Check with `t(key) !== key` → it is always true now; use ts() for null-on-miss instead.
  */
 export function t(key, vars, lang) {
+  if (!key) return '';
   const targetLang = lang || currentLang;
   const parts = key.split('.');
-  let value = translations[targetLang] || translations.zh;
-  for (const part of parts) {
-    value = value?.[part];
+  const value = resolveKey(translations[targetLang] || translations.zh, parts);
+  if (value !== undefined && value !== null) {
+    return interpolate(value, vars);
   }
-  if (value === undefined || value === null) {
-    let fallbackValue = translations.zh;
-    for (const part of parts) {
-      fallbackValue = fallbackValue?.[part];
-    }
-    if (fallbackValue === undefined || fallbackValue === null) {
-      return key;
-    }
+  const fallbackValue = resolveKey(translations.zh, parts);
+  if (fallbackValue !== undefined && fallbackValue !== null) {
     return interpolate(fallbackValue, vars);
   }
-  return interpolate(value, vars);
+  return humanizeFallback(key);
 }
 
 /**

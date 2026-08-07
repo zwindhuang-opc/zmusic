@@ -23,13 +23,13 @@ function MVControls({
 
   const getStageLabel = () => {
     switch (genStage) {
-      case 'credits': return 'Checking Muse credits...';
-      case 'generating': return 'Generating real song with AI...';
-      case 'composing': return 'Composing preview music...';
-      case 'timeline': return 'Building MV timeline...';
-      case 'audio': return 'Rendering audio...';
-      case 'video': return 'Recording MV video...';
-      case 'complete': return 'Complete!';
+      case 'credits': return t('mv.credits_stage');
+      case 'generating': return t('mv.generating_stage');
+      case 'composing': return t('mv.composing_stage');
+      case 'timeline': return t('mv.timeline_stage');
+      case 'audio': return t('mv.audio_stage');
+      case 'video': return t('mv.record_stage');
+      case 'complete': return t('mv.complete_stage');
       default: return '';
     }
   };
@@ -39,14 +39,14 @@ function MVControls({
       {engine !== 'procedural' && (
         <div>
           <label className="text-xs font-medium text-gray-300 mb-2 block">
-            Song Lyrics / Prompt {engine === 'muse' && '(optional — Muse AI can generate lyrics from prompt)'}
+            {t('mv.song_lyrics_prompt')} {engine === 'muse' && t('mv.prompt_muse_optional')}
           </label>
           <textarea
             value={lyricsInput}
             onChange={(e) => onLyricsChange(e.target.value)}
             placeholder={engine === 'muse'
-              ? 'Leave blank to auto-generate lyrics from style, or write your own full lyrics...'
-              : 'Enter lyrics or describe the song you want...'}
+              ? t('mv.leave_blank_or_write')
+              : t('mv.prompt_enter_lyrics_or_describe')}
             rows={3}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 resize-none"
           />
@@ -102,7 +102,7 @@ function MVControls({
         ) : (
           <>
             <Sparkles className="w-4 h-4" />
-            Generate MV Video {engine !== 'procedural' ? '(Real Song + Video)' : '(Preview)'}
+            {engine !== 'procedural' ? t('mv.generate_button_real') : t('mv.generate_button_preview')}
           </>
         )}
       </button>

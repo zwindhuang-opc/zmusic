@@ -141,18 +141,20 @@ function App() {
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-400 flex items-center gap-1.5">
               {uiMode === 'easy' ? <Sparkles className="w-3 h-3 text-violet-400" /> : <Wand2 className="w-3 h-3 text-pink-400" />}
-              {uiMode === 'easy' ? '向导模式' : '专家模式'}
+              {uiMode === 'easy' ? t('header.easy_mode') : t('header.expert_mode')}
             </span>
             <button
               onClick={toggleUiMode}
-              title={uiMode === 'easy' ? '切换到专家模式' : '切换到向导模式'}
+              title={uiMode === 'easy' ? t('header.switch_to_expert') : t('header.switch_to_easy')}
               className={`w-10 h-5 rounded-full p-0.5 transition-all ${uiMode === 'easy' ? 'bg-gradient-to-r from-violet-500 to-pink-500' : 'bg-white/10'}`}
             >
               <div className={`w-4 h-4 rounded-full bg-white transition-transform ${uiMode === 'easy' ? 'translate-x-5' : 'translate-x-0'}`} />
             </button>
           </div>
           <p className="text-[10px] text-gray-600 leading-tight">
-            {uiMode === 'easy' ? '向导模式：三步生成，零门槛' : '专家模式：完整控件，精细调控'}
+            {uiMode === 'easy'
+              ? `${t('header.easy_mode')}：${t('header.easy_mode_desc')}`
+              : `${t('header.expert_mode')}：${t('header.expert_mode_desc')}`}
           </p>
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-400">{t('header.api')}</span>
