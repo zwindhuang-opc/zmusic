@@ -2149,6 +2149,13 @@ async function _callPythonVisionServer(imageElement) {
   if (typeof window === 'undefined' || typeof fetch !== 'function') throw new Error('no browser fetch');
   if (!imageElement || !imageElement.complete || !imageElement.naturalWidth) throw new Error('image not ready');
 
+  // Fast-path: skip entirely on static hosting (GitHub Pages, Netlify, Vercel, Cloudflare Pages)
+  // where no Node/Python backend exists.  Detect by hostname + file:// protocol.
+  const host = window.location.hostname || '';
+  const staticHostPatterns = [/github\.io$/, /netlify\.app$/, /netlify\.dev$/, /vercel\.app$/, /vercel\.dev$/, /pages\.dev$/, /file$/];
+  const isStaticHost = staticHostPatterns.some(p => p.test(host));
+  if (isStaticHost) throw new Error('static-host-no-backend');
+
   // Encode to JPEG at 85% — a good balance of size and detail.
   const canvas = document.createElement('canvas');
   const maxDim = 1280;
@@ -2162,19 +2169,19 @@ async function _callPythonVisionServer(imageElement) {
     canvas.toBlob(b => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/jpeg', 0.85);
   });
 
-  // Try same-origin first, then common dev-server proxy paths.  Short
-  // timeouts so we don't block the UX for 30s on a dead server.
+  // Try same-origin first, then common dev-server proxy paths.
+  // Use short timeouts (3s first attempt, 8s for others) — never block UX.
   const candidates = [
-    '/api/vision/analyze',
-    `http://${window.location.hostname}:5501/api/vision/analyze`,
-    'http://localhost:5501/api/vision/analyze',
+    { url: '/api/vision/analyze', timeout: 3000 },
+    { url: `http://${window.location.hostname}:5501/api/vision/analyze`, timeout: 8000 },
+    { url: 'http://localhost:5501/api/vision/analyze', timeout: 5000 },
   ];
 
   let lastErr = null;
-  for (const url of candidates) {
+  for (const { url, timeout } of candidates) {
     try {
       const ctrl = new AbortController();
-      const tm = setTimeout(() => ctrl.abort(), 25000);
+      const tm = setTimeout(() => ctrl.abort(), timeout);
       const res = await fetch(url, {
         method: 'POST',
         body: blob,

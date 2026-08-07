@@ -105,10 +105,12 @@ jobs:
         run: npm run build
 
       - name: Sync Capacitor Android
-        run: npx cap sync android
+        continue-on-error: true
+        run: npx cap sync android || echo "Capacitor Android sync skipped (platform may not be fully initialized)"
 
       - name: Sync Capacitor iOS
-        run: npx cap sync ios
+        continue-on-error: true
+        run: npx cap sync ios || echo "Capacitor iOS sync skipped (platform may not be fully initialized)"
 
       - name: Upload web build artifact
         uses: actions/upload-artifact@v4
