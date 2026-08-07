@@ -9,6 +9,7 @@ import { playComposition, pausePlayback, resumePlayback, stopAll, getPlaybackTim
 import SunoService from '../services/suno.service.js';
 import FreeMusicService from '../services/freemusic.service.js';
 import MuseService from '../services/muse.service.js';
+import { generateCoverArt } from '../utils/coverArtGenerator.js';
 
 /**
  * Map our internal MUSIC_STYLES keys → muse.top Chinese style names.
@@ -195,6 +196,12 @@ function MusicPage() {
   const [museAudioUrl, setMuseAudioUrl] = useState(null);
   const [museTitle, setMuseTitle] = useState('');
   const [museStatus, setMuseStatus] = useState('');
+  const [museCredits, setMuseCredits] = useState(null);
+
+  const [coverArtUrl, setCoverArtUrl] = useState(null);
+  const [coverArtUrlSuno, setCoverArtUrlSuno] = useState(null);
+  const [coverArtUrlMuse, setCoverArtUrlMuse] = useState(null);
+  const [historyCovers, setHistoryCovers] = useState({});
 
   const [thinkingSteps, setThinkingSteps] = useState([]);
   const [showThinking, setShowThinking] = useState(false);
@@ -260,6 +267,62 @@ function MusicPage() {
     }
     return () => clearInterval(progressTimerRef.current);
   }, [isPlaying, sunoAudioUrl, museAudioUrl, freeAudioUrl]);
+
+  useEffect(() => {
+    if (engine === 'muse' && MuseService.isConfigured()) {
+      let cancelled = false;
+      MuseService.getUser()
+        .then((user) => {
+          if (!cancelled) {
+            const credit = user?.memberInfo?.credit ?? user?.credit ?? 0;
+            setMuseCredits(credit);
+          }
+        })
+        .catch(() => { if (!cancelled) setMuseCredits(0); });
+      return () => { cancelled = true; };
+    } else if (engine !== 'muse') {
+      setMuseCredits(null);
+    }
+  }, [engine]);
+
+  useEffect(() => {
+    if (composition?.title || prompt) {
+      const url = generateCoverArt({
+        title: composition?.title || prompt || 'ZMusic',
+        genre: style || 'pop',
+        style: style,
+      });
+      setCoverArtUrl(url);
+    }
+  }, [composition?.title, prompt, style]);
+
+  useEffect(() => {
+    if (sunoTitle) {
+      const url = generateCoverArt({ title: sunoTitle, genre: style || 'pop' });
+      setCoverArtUrlSuno(url);
+    }
+  }, [sunoTitle]);
+
+  useEffect(() => {
+    if (museTitle) {
+      const url = generateCoverArt({ title: museTitle, genre: style || 'pop' });
+      setCoverArtUrlMuse(url);
+    }
+  }, [museTitle]);
+
+  useEffect(() => {
+    const newCovers = {};
+    displayedWorks.forEach((item, idx) => {
+      if (!item.coverArtUrl && !historyCovers[idx]) {
+        const title = item.title || item.result?.composition?.title || item.prompt?.slice(0, 30) || 'Untitled';
+        const genre = item.style || item.genre || 'pop';
+        newCovers[idx] = generateCoverArt({ title, genre });
+      }
+    });
+    if (Object.keys(newCovers).length > 0) {
+      setHistoryCovers(prev => ({ ...prev, ...newCovers }));
+    }
+  }, [displayedWorks]);
 
   const handleGenerate = async () => {
     if (!prompt.trim() && !lyrics.trim()) {
@@ -447,6 +510,22 @@ function MusicPage() {
         // Quick Mode: DeepSeek thinks lyrics from the prompt, then generates a full song.
         // Master Mode: user provides lyrics; muse generates with the chosen style/vocal.
         // Both modes return a taskId that we poll via the backend proxy until done.
+
+        // Credit guard: check if user has enough credits (14 per song)
+        let currentCredits = museCredits;
+        if (currentCredits === null) {
+          try {
+            const user = await MuseService.getUser();
+            currentCredits = user?.memberInfo?.credit ?? user?.credit ?? 0;
+            setMuseCredits(currentCredits);
+          } catch {
+            currentCredits = 0;
+          }
+        }
+        if (currentCredits < 14) {
+          throw new Error(`Muse credits insufficient: ${currentCredits} credits available, 14 required per song. Please purchase more credits or use a different engine.`);
+        }
+
         setGenStage('preview');
         setGenProgress(0.1);
         // Instant Tone.js preview while muse.top generates (so the user hears something).
@@ -623,10 +702,10 @@ function MusicPage() {
   };
 
   const handleSkipBack = () => {
-    stopAll();
     if (audioElementRef.current) {
-      audioElementRef.current.pause();
       audioElementRef.current.currentTime = 0;
+    } else {
+      stopAll();
     }
     setIsPlaying(false);
     setPlayTime(0);
@@ -691,6 +770,54 @@ function MusicPage() {
   const sunoAvailable = SunoService.isConfigured();
   const museAvailable = MuseService.isConfigured();
 
+  const isDraggingRef = useRef(false);
+
+  const performSeek = (timeSec) => {
+    if (audioElementRef.current && (sunoAudioUrl || museAudioUrl || freeAudioUrl)) {
+      audioElementRef.current.currentTime = Math.max(0, Math.min(timeSec, audioElementRef.current.duration || timeSec));
+    }
+    setPlayTime(Math.max(0, Math.min(timeSec, totalDuration)));
+  };
+
+  const handleSeekStart = (e) => {
+    e.stopPropagation();
+    const bar = e.currentTarget;
+    const rect = bar.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const seekTime = percent * totalDuration;
+    performSeek(seekTime);
+    isDraggingRef.current = true;
+
+    const handleMove = (ev) => {
+      if (!isDraggingRef.current) return;
+      const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      const pct = Math.max(0, Math.min(1, (cx - rect.left) / rect.width));
+      performSeek(pct * totalDuration);
+    };
+    const handleUp = () => {
+      isDraggingRef.current = false;
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+      document.removeEventListener('touchmove', handleMove);
+      document.removeEventListener('touchend', handleUp);
+    };
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+    document.addEventListener('touchmove', handleMove);
+    document.addEventListener('touchend', handleUp);
+  };
+
+  const handleSkipForward = () => {
+    if (audioElementRef.current) {
+      const newTime = Math.min(audioElementRef.current.duration || totalDuration, audioElementRef.current.currentTime + 5);
+      audioElementRef.current.currentTime = newTime;
+      setPlayTime(newTime);
+    } else {
+      setPlayTime(prev => Math.min(totalDuration, prev + 5));
+    }
+  };
+
   return (
     <div className="space-y-4 md:space-y-6 animate-slide-in pb-32">
       {/* Header */}
@@ -733,13 +860,19 @@ function MusicPage() {
         <div className="flex items-center justify-center gap-1.5 flex-wrap">
           {ENGINES.map(e => {
             const isActive = engine === e.id;
-            const isDisabled = (e.id === 'suno' && !sunoAvailable) || (e.id === 'muse' && !museAvailable);
+            const museInsufficient = e.id === 'muse' && museCredits !== null && museCredits < 14;
+            const isDisabled = (e.id === 'suno' && !sunoAvailable) || (e.id === 'muse' && (!museAvailable || museInsufficient));
+            const museCreditLabel = e.id === 'muse' && museCredits !== null ? ` (${museCredits}cr)` : '';
             return (
               <button
                 key={e.id}
                 onClick={() => !isDisabled && setEngine(e.id)}
                 disabled={isDisabled}
-                title={isDisabled ? `${e.label} not available` : e.desc}
+                title={isDisabled
+                  ? museInsufficient
+                    ? `Muse credits insufficient (${museCredits} available, 14 required)`
+                    : `${e.label} not available`
+                  : e.desc}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] md:text-[11px] font-medium transition-all ${isActive
                   ? `bg-gradient-to-r ${e.color} text-white shadow-md`
                   : isDisabled
@@ -748,7 +881,7 @@ function MusicPage() {
                   }`}
               >
                 <e.icon className="w-3 h-3" />
-                {e.label}
+                {e.label}{museCreditLabel}
                 {e.free && <span className="text-[8px] opacity-80">FREE</span>}
               </button>
             );
@@ -1004,7 +1137,10 @@ function MusicPage() {
         {/* Generate Button */}
         <button
           onClick={handleGenerate}
-          disabled={isGenerating || (!prompt.trim() && !(engine === 'muse' && mode === 'master' && lyrics.trim()))}
+          disabled={isGenerating ||
+            (!prompt.trim() && !(engine === 'muse' && mode === 'master' && lyrics.trim())) ||
+            (engine === 'muse' && museCredits !== null && museCredits < 14)
+          }
           className="w-full py-3.5 rounded-xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 text-white font-semibold text-sm md:text-base flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 shadow-lg shadow-purple-500/30 active:scale-[0.98] transition-transform"
         >
           {isGenerating ? (
@@ -1042,123 +1178,150 @@ function MusicPage() {
         </p>
       </div>
 
-      {error && (
-        <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300">
-          {error}
-        </div>
-      )}
+      {
+        error && (
+          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300">
+            {error}
+          </div>
+        )
+      }
 
       {/* Works Gallery */}
-      {musicHistory.length > 0 && (
-        <div className="gradient-border p-4 md:p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              📜 {t('music.works_gallery')}
-            </h3>
-            {musicHistory.length > 2 && (
-              <button
-                onClick={() => setShowWorksGallery(!showWorksGallery)}
-                className="text-[10px] text-violet-400 hover:text-violet-300 transition-colors"
-              >
-                {showWorksGallery ? (t('common.collapse') || '收起 ▲') : `+${musicHistory.length - 2} ${(t('common.more') || '更多 ▼')}`}
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {displayedWorks.map((item, idx) => {
-              const itemTitle = item.title || item.result?.composition?.title || item.prompt?.slice(0, 30) || 'Untitled';
-              const itemStyle = item.style || item.genre || '';
-              const itemDuration = item.duration ? `${item.duration}s` : '';
-              const isSuno = item.method === 'suno_cn';
-              const isMuse = item.method === 'muse_ai';
-              return (
-                <div
-                  key={item.id || idx}
-                  className="p-3 rounded-xl bg-gradient-to-br from-violet-500/20 to-pink-500/20 border border-violet-500/30 cursor-pointer hover:border-violet-400/50 transition-colors"
+      {
+        musicHistory.length > 0 && (
+          <div className="gradient-border p-4 md:p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                📜 {t('music.works_gallery')}
+              </h3>
+              {musicHistory.length > 2 && (
+                <button
+                  onClick={() => setShowWorksGallery(!showWorksGallery)}
+                  className="text-[10px] text-violet-400 hover:text-violet-300 transition-colors"
                 >
-                  <div className="w-full aspect-square rounded-lg bg-gradient-to-br from-violet-600/30 to-pink-600/30 mb-2 flex items-center justify-center relative">
-                    <Music className="w-8 h-8 text-violet-400" />
-                    {isSuno && (
-                      <span className="absolute top-1 right-1 px-1 py-0.5 rounded bg-violet-500/80 text-[8px] text-white font-bold">SUNO</span>
-                    )}
-                    {isMuse && (
-                      <span className="absolute top-1 right-1 px-1 py-0.5 rounded bg-fuchsia-500/80 text-[8px] text-white font-bold">MUSE</span>
-                    )}
+                  {showWorksGallery ? (t('common.collapse') || '收起 ▲') : `+${musicHistory.length - 2} ${(t('common.more') || '更多 ▼')}`}
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {displayedWorks.map((item, idx) => {
+                const itemTitle = item.title || item.result?.composition?.title || item.prompt?.slice(0, 30) || 'Untitled';
+                const itemStyle = item.style || item.genre || '';
+                const itemDuration = item.duration ? `${item.duration}s` : '';
+                const isSuno = item.method === 'suno_cn';
+                const isMuse = item.method === 'muse_ai';
+                return (
+                  <div
+                    key={item.id || idx}
+                    className="p-3 rounded-xl bg-gradient-to-br from-violet-500/20 to-pink-500/20 border border-violet-500/30 cursor-pointer hover:border-violet-400/50 transition-colors"
+                  >
+                    <div className="w-full aspect-square rounded-lg bg-gradient-to-br from-violet-600/30 to-pink-600/30 mb-2 flex items-center justify-center relative overflow-hidden">
+                      <img
+                        src={item.coverArtUrl || historyCovers[idx] || ''}
+                        alt={itemTitle}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <Music className="w-8 h-8 text-violet-400 opacity-50" />
+                      </div>
+                      {isSuno && (
+                        <span className="absolute top-1 right-1 px-1 py-0.5 rounded bg-violet-500/80 text-[8px] text-white font-bold">SUNO</span>
+                      )}
+                      {isMuse && (
+                        <span className="absolute top-1 right-1 px-1 py-0.5 rounded bg-fuchsia-500/80 text-[8px] text-white font-bold">MUSE</span>
+                      )}
+                    </div>
+                    <div className="text-xs font-semibold text-white truncate">{itemTitle}</div>
+                    <div className="text-[10px] text-gray-400 truncate">
+                      {itemStyle && getStyleLabel(itemStyle)} {itemDuration}
+                    </div>
                   </div>
-                  <div className="text-xs font-semibold text-white truncate">{itemTitle}</div>
-                  <div className="text-[10px] text-gray-400 truncate">
-                    {itemStyle && getStyleLabel(itemStyle)} {itemDuration}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Bottom Player Bar */}
-      {(composition || isPlaying || sunoAudioUrl || museAudioUrl || freeAudioUrl) && (
-        <div className="fixed bottom-0 left-0 right-0 z-50">
-          <div className="max-w-lg mx-auto px-4 pb-3">
-            <div className="gradient-border bg-gray-900/80 backdrop-blur-md p-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center flex-shrink-0">
-                  <Music className="w-4 h-4 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-white truncate">{displayTitle}</div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-gray-400 font-mono">{formatTime(playTime)}</span>
-                    <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-violet-500 to-pink-500"
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-gray-400 font-mono">{formatTime(totalDuration)}</span>
+      {
+        (composition || isPlaying || sunoAudioUrl || museAudioUrl || freeAudioUrl) && (
+          <div className="fixed bottom-0 left-0 right-0 z-50">
+            <div className="max-w-lg mx-auto px-4 pb-3">
+              <div className="gradient-border bg-gray-900/80 backdrop-blur-md p-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 ring-1 ring-white/20">
+                    <img
+                      src={coverArtUrlMuse || coverArtUrlSuno || coverArtUrl || ''}
+                      alt={displayTitle}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
                   </div>
-                </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <button
-                    onClick={handleSkipBack}
-                    className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-300 transition-colors"
-                  >
-                    <SkipBack className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={togglePlay}
-                    className="w-10 h-10 rounded-full bg-gradient-to-r from-violet-500 to-pink-500 hover:opacity-90 flex items-center justify-center text-white shadow-lg shadow-purple-500/30 active:scale-95 transition-all"
-                  >
-                    {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-                  </button>
-                  <button
-                    onClick={handleStop}
-                    className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-300 transition-colors"
-                  >
-                    <SkipForward className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={handleDownload}
-                    disabled={isExporting}
-                    title={t('music.download')}
-                    className="w-7 h-7 rounded-lg bg-white/5 hover:bg-violet-500/20 flex items-center justify-center text-gray-300 hover:text-violet-300 transition-colors disabled:opacity-50"
-                  >
-                    {isExporting ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-semibold text-white truncate">{displayTitle}</div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-gray-400 font-mono">{formatTime(playTime)}</span>
+                      <div
+                        className="flex-1 h-4 flex items-center cursor-pointer group relative"
+                        onMouseDown={(e) => handleSeekStart(e)}
+                        onTouchStart={(e) => handleSeekStart(e)}
+                      >
+                        <div className="relative w-full h-1 bg-white/10 rounded-full overflow-hidden group-hover:h-1.5 transition-all">
+                          <div
+                            className="h-full bg-gradient-to-r from-violet-500 to-pink-500 relative"
+                            style={{ width: `${progressPercent}%` }}
+                          >
+                            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow" />
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-gray-400 font-mono">{formatTime(totalDuration)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button
+                      onClick={handleSkipBack}
+                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-300 transition-colors"
+                    >
+                      <SkipBack className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={togglePlay}
+                      className="w-10 h-10 rounded-full bg-gradient-to-r from-violet-500 to-pink-500 hover:opacity-90 flex items-center justify-center text-white shadow-lg shadow-purple-500/30 active:scale-95 transition-all"
+                    >
+                      {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                    </button>
+                    <button
+                      onClick={handleSkipForward}
+                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-300 transition-colors"
+                    >
+                      <SkipForward className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={handleDownload}
+                      disabled={isExporting}
+                      title={t('music.download')}
+                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-violet-500/20 flex items-center justify-center text-gray-300 hover:text-violet-300 transition-colors disabled:opacity-50"
+                    >
+                      {isExporting ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       <HistoryPanel
         isOpen={showHistory}
         onClose={() => setShowHistory(false)}
         filterType="song"
       />
-    </div>
+    </div >
   );
 }
 

@@ -6,8 +6,8 @@
  *      browser fetch() is blocked. The backend proxy (Node, no CORS limit)
  *      forwards each request.
  *   2. Secret keep — the user JWT (MUSE_API_KEY) stays server-side. The
- *      browser only ever sees VITE_MUSE_API_KEY (a flag used to detect
- *      "is Muse configured"), never the actual token.
+ *      browser only ever sees VITE_MUSE_ENABLED (a boolean flag), never
+ *      the actual token.
  *
  * API contract (handled by muse.controller.js on the backend):
  *   GET  /api/muse/status          — config check (token present? expired?)
@@ -34,14 +34,11 @@ const API_BASE = '/api/muse';
 
 /**
  * Check if Muse is configured on the backend.
- * Reads the VITE_MUSE_API_KEY flag (presence only — the real token is server-side).
+ * Uses VITE_MUSE_ENABLED boolean flag — the real JWT stays server-side only.
  * @returns {boolean}
  */
 export function isConfigured() {
-  const flag = import.meta.env?.VITE_MUSE_API_KEY || '';
-  // The flag is set to a non-empty value when the backend has a real JWT.
-  // It's never used as a real token from the browser.
-  return Boolean(flag) && flag.length > 20 && !flag.includes('your-muse');
+  return import.meta.env?.VITE_MUSE_ENABLED === 'true';
 }
 
 /**

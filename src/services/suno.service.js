@@ -1,11 +1,12 @@
 /**
  * SunoService - Real Suno.cn API Integration
- * 
- * Routes API calls through the backend server to avoid CORS issues.
- * The backend server (port 5501) has the SUNO_CN_API_KEY and forwards requests.
- * 
+ *
+ * Routes API calls through the backend server (port 5501) to avoid CORS issues.
+ * The backend holds the SUNO_CN_API_KEY and forwards requests to the Suno.cn API.
+ * The frontend only sees the VITE_SUNO_ENABLED boolean flag — never the API key.
+ *
  * API Documentation: https://mcp.suno.cn
- * 
+ *
  * @module services/suno.service
  * @version 2.0.0
  */
@@ -13,15 +14,20 @@
 const API_BASE = '/api/suno';
 
 /**
- * Check if Suno is available (configured on the backend)
+ * Check if Suno is available (configured on the backend).
+ * Uses VITE_SUNO_ENABLED boolean flag — the real API key stays server-side only.
+ * @returns {boolean}
  */
 export function isConfigured() {
-  const key = import.meta.env?.VITE_SUNO_CN_API_KEY || '';
-  return key.startsWith('sk-') && key.length > 20;
+  return import.meta.env?.VITE_SUNO_ENABLED === 'true';
 }
 
 /**
- * Get user account information
+ * Get the authenticated Suno user's account information, including
+ * credit balance, subscription status, and user ID.
+ *
+ * @returns {Promise<Object>} User info object with credits, membership, etc.
+ * @throws {Error} If the backend request fails (e.g., 401 Unauthorized)
  */
 export async function getUserInfo() {
   return fetch(`${API_BASE}/user`).then(r => {
@@ -55,9 +61,12 @@ export async function generateMusic(prompt, style = '', duration = 60, customMod
 }
 
 /**
- * Query task status
- * @param {string} serialNo - Task serial number
- * @param {boolean} [wait=false] - Wait for completion (adds wait=45)
+ * Query the status of a previously submitted generation task.
+ *
+ * @param {string} serialNo - The unique task serial number returned by generateMusic()
+ * @param {boolean} [wait=false] - If true, waits up to 45 seconds for completion
+ * @returns {Promise<Object>} Task status with results (audio URLs, metadata, etc.)
+ * @throws {Error} If the task is not found or the request fails
  */
 export async function queryTaskStatus(serialNo, wait = false) {
   const waitParam = wait ? '?wait=45' : '';
@@ -72,7 +81,12 @@ export async function queryTaskStatus(serialNo, wait = false) {
 }
 
 /**
- * Generate lyrics via Suno AI
+ * Generate song lyrics via Suno AI based on an inspiration prompt and optional style.
+ *
+ * @param {string} inspiration - Creative prompt or theme description for the lyrics
+ * @param {string} [style=''] - Optional style tags to guide lyrics generation
+ * @returns {Promise<Object>} Generated lyrics with metadata
+ * @throws {Error} If the lyrics generation request fails
  */
 export async function generateLyrics(inspiration, style = '') {
   const response = await fetch(`${API_BASE}/gen-lyrics`, {
@@ -90,7 +104,12 @@ export async function generateLyrics(inspiration, style = '') {
 }
 
 /**
- * Get music list
+ * Fetch the paginated list of previously generated music tracks.
+ *
+ * @param {number} [page=1] - Page number (1-based)
+ * @param {number} [pageSize=10] - Number of items per page
+ * @returns {Promise<Object>} Paginated music list with track metadata and audio URLs
+ * @throws {Error} If the list request fails
  */
 export async function getMusicList(page = 1, pageSize = 10) {
   const response = await fetch(`${API_BASE}/music?page=${page}&page_size=${pageSize}`);
