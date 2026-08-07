@@ -9,6 +9,8 @@ import lyricsController from '../controllers/lyrics.controller.js';
 import mvController from '../controllers/mv.controller.js';
 import agentController from '../controllers/agent.controller.js';
 import historyController from '../controllers/history.controller.js';
+import sunoController from '../controllers/suno.controller.js';
+import freemusicController from '../controllers/freemusic.controller.js';
 import visionController from '../controllers/vision.controller.js';
 import Logger from '../utils/logger.js';
 
@@ -118,6 +120,57 @@ export async function handleRoute(req, res, url, method, body) {
   if (path === '/api/history/clear' && method === 'POST') {
     req.body = body;
     return historyController.clear(req, res);
+  }
+
+  // Suno proxy endpoints (must be before 404)
+  const sunoMatch = path.match(/^\/api\/suno\/(.+)$/);
+  if (sunoMatch) {
+    const subPath = sunoMatch[1];
+
+    if (subPath === 'user' && method === 'GET') {
+      return sunoController.getUser(req, res);
+    }
+
+    if (subPath === 'generate' && method === 'POST') {
+      req.body = body;
+      return sunoController.generate(req, res);
+    }
+
+    const taskMatch = subPath.match(/^task\/(.+)$/);
+    if (taskMatch && method === 'GET') {
+      req.params = { serialNo: taskMatch[1] };
+      req.query = url.searchParams;
+      return sunoController.queryTask(req, res);
+    }
+
+    if (subPath === 'gen-lyrics' && method === 'POST') {
+      req.body = body;
+      return sunoController.generateLyrics(req, res);
+    }
+
+    if (subPath === 'music' && method === 'GET') {
+      req.query = url.searchParams;
+      return sunoController.getMusicList(req, res);
+    }
+  }
+
+  // Free music endpoints (100% free, no paid APIs)
+  const freemusicMatch = path.match(/^\/api\/freemusic\/(.+)$/);
+  if (freemusicMatch) {
+    const subPath = freemusicMatch[1];
+
+    if (subPath === 'generate' && method === 'POST') {
+      req.body = body;
+      return freemusicController.generate(req, res);
+    }
+
+    if (subPath === 'voices' && method === 'GET') {
+      return freemusicController.listVoices(req, res);
+    }
+
+    if (subPath === 'status' && method === 'GET') {
+      return freemusicController.status(req, res);
+    }
   }
 
   // 404

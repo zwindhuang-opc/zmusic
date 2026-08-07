@@ -1,12 +1,12 @@
 {
   "name": "zmusic",
-  "version": "5.10.0",
+  "version": "6.0.0",
   "description": "ZMusic - Real AI Music Generation Platform with MVC Architecture",
   "main": "electron/main.js",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run bundle:api && vite build",
+    "build": "npm run i18n:validate && npm run bundle:api && vite build",
     "bundle:api": "node -e \"require('fs').copyFileSync('VERSION.json', 'netlify/functions/api/VERSION.json')\" && npx esbuild netlify/functions/api/_server_entry.cjs --bundle --platform=node --format=cjs --outfile=netlify/functions/api/_server_bundle.cjs --external:express --external:cors --log-level=warning",
     "preview": "vite preview",
     "server": "node src/server.js",
@@ -34,7 +34,11 @@
     "screenshot": "node scripts/take-screenshots.mjs",
     "screenshot:version": "node scripts/take-screenshots.mjs --version",
     "deploy:netlify": "npm run build && npx netlify-cli deploy --prod",
-    "deploy:netlify:preview": "npm run build && npx netlify-cli deploy"
+    "deploy:netlify:preview": "npm run build && npx netlify-cli deploy",
+    "i18n:seed": "node scripts/i18n-db.mjs seed",
+    "i18n:sync": "node scripts/i18n-db.mjs sync",
+    "i18n:validate": "node scripts/i18n-db.mjs validate",
+    "i18n:stats": "node scripts/i18n-db.mjs stats"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.1",
@@ -55,19 +59,23 @@
     "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "soundfont-player": "^0.12.0",
     "tone": "^15.1.22"
   },
   "devDependencies": {
+    "@prisma/client": "^7.9.1",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
+    "better-sqlite3": "^13.0.3",
     "concurrently": "^8.2.2",
     "cross-env": "^10.1.0",
     "electron": "^43.1.0",
     "electron-builder": "^26.15.3",
     "gh-pages": "^6.3.0",
     "postcss": "^8.4.32",
+    "prisma": "^7.9.1",
     "puppeteer": "^25.3.0",
     "tailwindcss": "^3.3.6",
     "vercel": "^56.4.1",

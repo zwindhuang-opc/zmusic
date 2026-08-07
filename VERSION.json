@@ -1,12 +1,13 @@
 {
-  "version": "5.10.0",
-  "major": 5,
-  "minor": 10,
+  "version": "6.0.0",
+  "major": 6,
+  "minor": 0,
   "patch": 0,
   "releaseDate": "2026-08-07",
-  "buildNumber": 29,
+  "buildNumber": 30,
   "status": "production-ready",
   "changes": [
+    "v6.0.0 - V6.0.0 MAJOR: 100% FREE music generation engine - (1) Added FreeMusicController with Edge TTS (free vocals, no API key) reused from zinteligencevideoagent project; (2) Added HuggingFace MusicGen + Bark (Suno open-source) integration for free instrumental/singing; (3) Created backend proxy for Suno.cn API to fix CORS; (4) Added Muse-style AI Thinking Panel showing 5-step composition plan before generation; (5) Multi-engine selector: Free/Auto/Suno.cn/Tone.js; (6) Added lyrics input field + 6 free voice presets (zh/en); (7) ffmpeg-static for audio mixing; (8) edge_tts_helper.py to avoid Windows CLI encoding issues; (9) Comprehensive logging in generation pipeline (build #30)",
     "v5.10.0 - Cross-language vision engine + translation fix + GitHub Pages auto-deploy: (1) Fixed critical translation bug where all non-Chinese users saw raw English keys (removed lang==='zh' early-return in tr() function); (2) Fixed LyricsPage.jsx fallback pattern where t() returning raw key short-circuited || chain (added _safeT/trStyle/trTheme helpers); (3) Added Python YOLOv8n ONNX object detection backend (80 COCO classes via cv2.dnn) running in centralizedhub/vision-venv-314; (4) Server-client fusion: frontend POSTs /api/vision/analyze, backend spawns Python worker, results injected into classifyScene scene priorities; (5) 7 categories of YOLO-derived semantic injection (pet, food, sports, travel, office, home, wildlife) with Chinese imagery/themes/emotions; (6) Comprehensive i18n audit: added 50+ missing style/theme keys to zh.json and en.json (tango, bossa_nova, pet_love, culinary, hustle, road_trip, wild_nature, etc.); (7) GitHub Actions workflow for auto-deploy to GitHub Pages on push; (8) Updated .gitignore to exclude ONNX models, Python venvs, pycache; (9) Web/mobile version sync: Capacitor webDir=dist matches Vite build output (build #29)",
     "v5.9.0 - Comprehensive vision analyzer overhaul with zunicorn agent loop engineering: (1) Added 16 new scene profiles covering food, pets, architecture, flowers, sunrise, beach, mountains, autumn, winter, travel, festive, abstract, cafe, starry night, rainy, vehicle, minimalist, vintage; (2) Implemented zunicorn agent self-validation loop (analyze-generate-validate-refine) that detects quality issues like theme conflicts and bright-image-lonely-theme mismatches then auto-refines; (3) Added structured metadata output: labels, tags, wordings, and detailed songStyle (BPM, key signature, time signature, energy, valence, acousticness); (4) Increased skin-detection grid resolution from 20x15 to 30x22 for better face separation in couple photos; (5) Relaxed skin tone thresholds for diverse skin tones; (6) Removed heartbreak/loneliness defaults from couple and portrait classifications; (7) Added safety guard in classifyScene to skip dark/lonely profiles when people are detected; (8) Added self-validation test suite (13 test cases covering people, landscape, weather, food, and regression scenarios) (build #28)",
     "v5.8.1 - Fixed irrelevant lyrics from photo upload: (1) EasyMode now creates Image element from base64 data URL before analysis, (2) Added semantic subject detection layer - detects people, couples, groups via YCbCr skin tone analysis, (3) Semantic scene classification takes priority over color-based classification, (4) Visual context now includes subject type, person count, selfie detection, (5) createVisualBank boosts vocabulary with couple/portrait/group-specific imagery and actions (build #27)",
@@ -55,9 +56,6 @@
     "Fixed hardcoded instruments: 22 styles x 7 sections palette (was always Piano+Strings)",
     "Redesigned LyricsPage GUI: collapsible Commands and Lyrics sections with individual copy buttons",
     "Added copy-commands-only and copy-lyrics-only functionality",
-    "v5.4.1 - Enhanced lyrics engine with professional sheet music elements",
-    "Added TIME_SIGNATURES with 7 time signatures (4/4, 3/4, 2/4, 6/8, 3/8, 9/8, 5/4)",
-    "Added TEMPO_MARKINGS with 10 tempo levels (Largo to Prestissimo)",
-    "Added ARTICULATION_MARKS with 7 articulation types (Legato, Staccato, Tenuto, etc.)"
+    "v5.4.1 - Enhanced lyrics engine with professional sheet music elements"
   ]
 }

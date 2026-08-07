@@ -94,3 +94,9 @@ centralizedhub/installations/
 
 # Data / vision test artifacts
 *.json.tmp
+
+# i18n database (generated from scripts, source of truth is the DB)
+prisma/i18n.db
+prisma/i18n.db-journal
+prisma/i18n.db-wal
+prisma/i18n.db-shm
