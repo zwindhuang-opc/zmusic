@@ -1,12 +1,13 @@
 {
-  "version": "5.9.0",
+  "version": "5.10.0",
   "major": 5,
-  "minor": 9,
+  "minor": 10,
   "patch": 0,
-  "releaseDate": "2026-08-06",
-  "buildNumber": 28,
+  "releaseDate": "2026-08-07",
+  "buildNumber": 29,
   "status": "production-ready",
   "changes": [
+    "v5.10.0 - Cross-language vision engine + translation fix + GitHub Pages auto-deploy: (1) Fixed critical translation bug where all non-Chinese users saw raw English keys (removed lang==='zh' early-return in tr() function); (2) Fixed LyricsPage.jsx fallback pattern where t() returning raw key short-circuited || chain (added _safeT/trStyle/trTheme helpers); (3) Added Python YOLOv8n ONNX object detection backend (80 COCO classes via cv2.dnn) running in centralizedhub/vision-venv-314; (4) Server-client fusion: frontend POSTs /api/vision/analyze, backend spawns Python worker, results injected into classifyScene scene priorities; (5) 7 categories of YOLO-derived semantic injection (pet, food, sports, travel, office, home, wildlife) with Chinese imagery/themes/emotions; (6) Comprehensive i18n audit: added 50+ missing style/theme keys to zh.json and en.json (tango, bossa_nova, pet_love, culinary, hustle, road_trip, wild_nature, etc.); (7) GitHub Actions workflow for auto-deploy to GitHub Pages on push; (8) Updated .gitignore to exclude ONNX models, Python venvs, pycache; (9) Web/mobile version sync: Capacitor webDir=dist matches Vite build output (build #29)",
     "v5.9.0 - Comprehensive vision analyzer overhaul with zunicorn agent loop engineering: (1) Added 16 new scene profiles covering food, pets, architecture, flowers, sunrise, beach, mountains, autumn, winter, travel, festive, abstract, cafe, starry night, rainy, vehicle, minimalist, vintage; (2) Implemented zunicorn agent self-validation loop (analyze-generate-validate-refine) that detects quality issues like theme conflicts and bright-image-lonely-theme mismatches then auto-refines; (3) Added structured metadata output: labels, tags, wordings, and detailed songStyle (BPM, key signature, time signature, energy, valence, acousticness); (4) Increased skin-detection grid resolution from 20x15 to 30x22 for better face separation in couple photos; (5) Relaxed skin tone thresholds for diverse skin tones; (6) Removed heartbreak/loneliness defaults from couple and portrait classifications; (7) Added safety guard in classifyScene to skip dark/lonely profiles when people are detected; (8) Added self-validation test suite (13 test cases covering people, landscape, weather, food, and regression scenarios) (build #28)",
     "v5.8.1 - Fixed irrelevant lyrics from photo upload: (1) EasyMode now creates Image element from base64 data URL before analysis, (2) Added semantic subject detection layer - detects people, couples, groups via YCbCr skin tone analysis, (3) Semantic scene classification takes priority over color-based classification, (4) Visual context now includes subject type, person count, selfie detection, (5) createVisualBank boosts vocabulary with couple/portrait/group-specific imagery and actions (build #27)",
     "v5.8.0 - Lyrics style selector UX redesign: 7 balanced category cards with unique emojis + gradients (流行主类/摇滚另类/电子氛围/情感类/古典传统/节奏律动/叙事特殊), each card shows 3-8 styles directly without collapse; added jpop (日流) + blues/cinematic/cantopop/indierock/lofi styles; moved image upload tab to first position with discoverable entry in style tab; MV page fallback to local generateMV() when API fails; web+mobile version sync (build #26)",

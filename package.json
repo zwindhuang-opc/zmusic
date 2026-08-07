@@ -1,6 +1,6 @@
 {
   "name": "zmusic",
-  "version": "5.8.1",
+  "version": "5.10.0",
   "description": "ZMusic - Real AI Music Generation Platform with MVC Architecture",
   "main": "electron/main.js",
   "type": "module",
@@ -47,6 +47,7 @@
     "@capacitor/keyboard": "^6.0.4",
     "@capacitor/splash-screen": "^6.0.4",
     "@capacitor/status-bar": "^6.0.3",
+    "@vladmandic/face-api": "^1.7.15",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

@@ -60,7 +60,16 @@ const THEME_CATEGORIES = {
 };
 
 function LyricsPage({ onNavigate, defaultMode }) {
-  const { t } = useTranslation();
+  const { t, ts, tr: tr_ } = useTranslation();
+
+  const trStyle = (s) => {
+    if (!s) return s;
+    return ts(`lyrics_styles.${s}`) || ts(`styles.${s}`) || ts(`styles_extra.${s}`) || s;
+  };
+  const trTheme = (s) => {
+    if (!s) return s;
+    return ts(`lyrics_themes.${s}`) || ts(`themes.${s}`) || ts(`themes_extra.${s}`) || s;
+  };
   const { addToHistory, copyToClipboard, setPendingLyrics } = useGeneration();
 
   const FALLBACK_GENRES = Object.keys(LYRICS_STYLES);
@@ -324,7 +333,7 @@ function LyricsPage({ onNavigate, defaultMode }) {
     const result = {};
     Object.entries(STYLE_CATEGORIES).forEach(([cat, styles]) => {
       const filtered = styles.filter(s => {
-        const name = t(`lyrics_styles.${s}`) || t(`styles.${s}`) || s;
+        const name = trStyle(s);
         return name.toLowerCase().includes(search) || s.toLowerCase().includes(search);
       });
       if (filtered.length > 0) result[cat] = filtered;
@@ -339,7 +348,7 @@ function LyricsPage({ onNavigate, defaultMode }) {
     const result = {};
     Object.entries(THEME_CATEGORIES).forEach(([cat, themes]) => {
       const filtered = themes.filter(tm => {
-        const name = t(`lyrics_themes.${tm}`) || t(`themes.${tm}`) || tm;
+        const name = trTheme(tm);
         return name.toLowerCase().includes(search) || tm.toLowerCase().includes(search);
       });
       if (filtered.length > 0) result[cat] = filtered;
@@ -737,10 +746,10 @@ function LyricsPage({ onNavigate, defaultMode }) {
             {/* Selected pills + method */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-1 rounded-full bg-gradient-to-r from-violet-500/30 to-pink-500/30 border border-violet-500/30 text-xs text-white font-medium">
-                🎨 {t(`lyrics_styles.${genre}`) || t(`styles.${genre}`) || genre}
+                🎨 {trStyle(genre)}
               </span>
               <span className="px-2.5 py-1 rounded-full bg-gradient-to-r from-emerald-500/30 to-teal-500/30 border border-emerald-500/30 text-xs text-white font-medium">
-                ✨ {t(`lyrics_themes.${theme}`) || t(`themes.${theme}`) || theme}
+                ✨ {trTheme(theme)}
               </span>
               <span className="px-2 py-1 rounded-md bg-white/5 text-xs text-gray-400">
                 {METHODS.find(m => m.id === method)?.name || method}
@@ -1034,7 +1043,7 @@ function LyricsPage({ onNavigate, defaultMode }) {
                               <div className="flex flex-wrap gap-1.5">
                                 {visionResult.styles.map((s, i) => (
                                   <span key={i} className="px-2.5 py-1 rounded-md bg-violet-500/10 text-violet-300 text-[11px] border border-violet-500/20">
-                                    {t(`lyrics_styles.${s}`) || t(`styles.${s}`) || s}
+                                    {trStyle(s)}
                                   </span>
                                 ))}
                               </div>
@@ -1047,7 +1056,7 @@ function LyricsPage({ onNavigate, defaultMode }) {
                               <div className="flex flex-wrap gap-1.5">
                                 {visionResult.themes.map((th, i) => (
                                   <span key={i} className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-300 text-[11px] border border-emerald-500/20">
-                                    {t(`lyrics_themes.${th}`) || t(`themes.${th}`) || th}
+                                    {trTheme(th)}
                                   </span>
                                 ))}
                               </div>
@@ -1067,7 +1076,7 @@ function LyricsPage({ onNavigate, defaultMode }) {
                                     onClick={() => setGenre(s)}
                                     className="px-2 py-1 rounded-md bg-pink-500/10 text-pink-300 text-[11px] border border-pink-500/20 hover:bg-pink-500/20 transition-all"
                                   >
-                                    {t(`lyrics_styles.${s}`) || t(`styles.${s}`) || s}
+                                    {trStyle(s)}
                                   </button>
                                 ))}
                               </div>
@@ -1219,7 +1228,7 @@ function LyricsPage({ onNavigate, defaultMode }) {
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-sm font-medium text-white">
-                            {t(`lyrics_styles.${style.key}`) || t(`styles.${style.key}`) || style.description}
+                            {trStyle(style.key) || style.description}
                           </span>
                           {genre === style.key && <Check className="w-4 h-4 text-violet-400" />}
                         </div>
@@ -1345,7 +1354,7 @@ function LyricsPage({ onNavigate, defaultMode }) {
                             : 'bg-pink-500/10 text-pink-300 border border-pink-500/20 hover:bg-pink-500/20'
                             }`}
                         >
-                          {t(`lyrics_styles.${s}`) || t(`styles.${s}`) || s}
+                          {trStyle(s)}
                         </button>
                       ))}
                     </div>
@@ -1435,8 +1444,8 @@ function LyricsPage({ onNavigate, defaultMode }) {
               </h3>
               {/* Selection summary */}
               <div className="flex items-center gap-2 text-[10px] text-gray-500">
-                <span className="px-2 py-1 rounded bg-violet-500/10 text-violet-300">{t(`lyrics_styles.${genre}`) || t(`styles.${genre}`) || genre}</span>
-                <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-300">{t(`lyrics_themes.${theme}`) || t(`themes.${theme}`) || theme}</span>
+                <span className="px-2 py-1 rounded bg-violet-500/10 text-violet-300">{trStyle(genre)}</span>
+                <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-300">{trTheme(theme)}</span>
               </div>
             </div>
 
@@ -1475,13 +1484,13 @@ function LyricsPage({ onNavigate, defaultMode }) {
                   <div className="p-3 rounded-lg bg-pink-500/5 border border-pink-500/20">
                     <div className="text-[10px] text-pink-300 uppercase tracking-wider mb-1">{t('lyrics.genre')}</div>
                     <div className="text-sm text-white font-medium">
-                      {t(`lyrics_styles.${result.result?.style || result.result?.genre}`) || t(`styles.${result.result?.style || result.result?.genre}`) || result.result?.style || result.result?.genre || genre}
+                      {trStyle(result.result?.style || result.result?.genre) || result.result?.style || result.result?.genre || genre}
                     </div>
                   </div>
                   <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
                     <div className="text-[10px] text-blue-300 uppercase tracking-wider mb-1">{t('lyrics.theme')}</div>
                     <div className="text-sm text-white font-medium">
-                      {t(`lyrics_themes.${result.result?.theme}`) || t(`themes.${result.result?.theme}`) || result.result?.theme || theme}
+                      {trTheme(result.result?.theme) || result.result?.theme || theme}
                     </div>
                   </div>
                   <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
@@ -1675,7 +1684,7 @@ function LyricsPage({ onNavigate, defaultMode }) {
                           className={`px-2 py-2 rounded-lg text-xs font-medium transition-all truncate ${genre === s
                             ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-sm'
                             : 'bg-black/20 text-gray-300 hover:bg-black/30 hover:text-white'}`}>
-                          {t(`lyrics_styles.${s}`) || t(`styles.${s}`) || s}
+                          {trStyle(s)}
                         </button>
                       ))}
                     </div>
@@ -1728,7 +1737,7 @@ function LyricsPage({ onNavigate, defaultMode }) {
                           className={`px-2 py-2 rounded-lg text-xs font-medium transition-all truncate ${theme === tm
                             ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm'
                             : 'bg-black/20 text-gray-300 hover:bg-black/30 hover:text-white'}`}>
-                          {t(`lyrics_themes.${tm}`) || t(`themes.${tm}`) || tm}
+                          {trTheme(tm)}
                         </button>
                       ))}
                     </div>

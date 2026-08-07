@@ -20,7 +20,7 @@ const GENERATION_METHODS = [
  * Clean, single-purpose UI — no tabs, no clutter.
  */
 export default function ImageLyricsPage({ onNavigate }) {
-  const { t } = useTranslation();
+  const { t, ts, tr: tr_, i18n } = useTranslation();
   const { addToHistory, copyToClipboard } = useGeneration();
 
   const [imageFile, setImageFile] = useState(null);
@@ -51,6 +51,15 @@ export default function ImageLyricsPage({ onNavigate }) {
   const availableThemes = getThemes(language);
   const FALLBACK_GENRES = Object.keys(LYRICS_STYLES);
   const FALLBACK_THEMES = Object.keys(LYRICS_THEMES);
+
+  // Centralized translation — delegates to the global tr() from i18n/index.js.
+  // This ensures ONE place to maintain the category chain.
+  const tr = React.useCallback((raw, preferredCategories = []) => {
+    return tr_(raw, preferredCategories);
+  }, [tr_]);
+
+  const trStyle = (s) => tr(s, ['lyrics_styles', 'styles', 'styles_extra']);
+  const trTheme = (s) => tr(s, ['lyrics_themes', 'themes', 'themes_extra']);
 
   const SUGGESTED_STYLES = visionResult?.styles?.slice(0, 6) || [
     { id: 'pop', label: '流行' },
@@ -239,17 +248,19 @@ export default function ImageLyricsPage({ onNavigate }) {
               <div className="flex flex-wrap gap-1.5">
                 {visionResult.scene?.category && (
                   <span className="px-2 py-1 rounded-full bg-violet-500/20 text-violet-300 text-[10px] border border-violet-500/30">
-                    🎬 {visionResult.scene.category}
+                    🎬 {tr(visionResult.scene.id || visionResult.scene.category, ['vision_scenes'])}
                   </span>
                 )}
                 {visionResult.moods?.slice(0, 4).map((m, i) => (
                   <span key={i} className="px-2 py-1 rounded-full bg-pink-500/20 text-pink-300 text-[10px] border border-pink-500/30">
-                    {m}
+                    {tr(m, ['emotions'])}
                   </span>
                 ))}
                 {visionResult.colorTone && (
                   <span className="px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 text-[10px] border border-amber-500/30">
-                    🎨 {visionResult.colorTone === 'dark' ? '暗色调' : visionResult.colorTone === 'bright' ? '亮色调' : visionResult.colorTone}
+                    🎨 {visionResult.colorTone === 'dark' ? tr('暗色调', ['emotions']) || 'Dark'
+                      : visionResult.colorTone === 'bright' ? tr('亮色调', ['emotions']) || 'Bright'
+                        : tr(visionResult.colorTone, ['emotions'])}
                   </span>
                 )}
               </div>
@@ -273,7 +284,9 @@ export default function ImageLyricsPage({ onNavigate }) {
                         : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
                         }`}
                     >
-                      {typeof s === 'string' ? (t(`lyrics_styles.${s}`) || t(`styles.${s}`) || s) : s.label}
+                      {typeof s === 'string'
+                        ? trStyle(s)
+                        : (trStyle(s.label) === s.label ? s.label : trStyle(s.label))}
                     </button>
                   ))}
                 </div>
@@ -291,7 +304,7 @@ export default function ImageLyricsPage({ onNavigate }) {
                         : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
                         }`}
                     >
-                      {t(`lyrics_themes.${tm}`) || t(`themes.${tm}`) || tm}
+                      {trTheme(tm)}
                     </button>
                   ))}
                 </div>
@@ -308,8 +321,8 @@ export default function ImageLyricsPage({ onNavigate }) {
 
             {/* Selected summary + language inline */}
             <div className="flex items-center gap-2 mb-3 flex-wrap">
-              <span className="px-2 py-1 rounded bg-violet-500/10 text-violet-300 text-[11px]">{t(`lyrics_themes.${theme}`) || theme}</span>
-              <span className="px-2 py-1 rounded bg-pink-500/10 text-pink-300 text-[11px]">{t(`lyrics_styles.${genre}`) || genre}</span>
+              <span className="px-2 py-1 rounded bg-violet-500/10 text-violet-300 text-[11px]">{trTheme(theme)}</span>
+              <span className="px-2 py-1 rounded bg-pink-500/10 text-pink-300 text-[11px]">{trStyle(genre)}</span>
               <div className="flex gap-1">
                 {languageOptions.map((l) => (
                   <button key={l.value}
@@ -469,7 +482,7 @@ export default function ImageLyricsPage({ onNavigate }) {
                           {(visionResult.suggestions.alternatives.themes || []).map(th => (
                             <button key={th} onClick={() => setTheme(th)}
                               className={`px-1.5 py-0.5 rounded text-[10px] transition-all ${theme === th ? 'bg-emerald-500 text-white' : 'bg-white/5 text-gray-400'}`}>
-                              {th}
+                              {trTheme(th)}
                             </button>
                           ))}
                         </div>
@@ -482,7 +495,7 @@ export default function ImageLyricsPage({ onNavigate }) {
                           {(visionResult.suggestions.alternatives.styles || []).map(st => (
                             <button key={st} onClick={() => setGenre(st)}
                               className={`px-1.5 py-0.5 rounded text-[10px] transition-all ${genre === st ? 'bg-violet-500 text-white' : 'bg-white/5 text-gray-400'}`}>
-                              {st}
+                              {trStyle(st)}
                             </button>
                           ))}
                         </div>

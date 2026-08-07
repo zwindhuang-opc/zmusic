@@ -1,10 +1,10 @@
-﻿import React from 'react';
+import React from 'react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
 import { History, Copy, Music, Trash2, X, ChevronRight, Sparkles, Zap, Piano, ExternalLink } from 'lucide-react';
 
 function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
-  const { t } = useTranslation();
+  const { t, ts } = useTranslation();
   const { history, selectedId, setSelectedId, removeFromHistory, clearHistory, copyToClipboard, showToast, getHistoryByType } = useGeneration();
 
   const displayHistory = filterType ? getHistoryByType(filterType) : history;
@@ -66,11 +66,11 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
   };
 
   const getStyleName = (style) => {
-    return t(`styles.${style}`) || style;
+    return ts(`lyrics_styles.${style}`) || ts(`styles.${style}`) || ts(`styles_extra.${style}`) || style;
   };
 
   const getThemeName = (theme) => {
-    return t(`themes.${theme}`) || theme;
+    return ts(`lyrics_themes.${theme}`) || ts(`themes.${theme}`) || ts(`themes_extra.${theme}`) || theme;
   };
 
   const formatDate = (isoString) => {

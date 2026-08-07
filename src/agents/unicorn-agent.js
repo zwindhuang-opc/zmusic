@@ -3502,6 +3502,691 @@ export class UnicornAgent {
 
     return arc;
   }
+
+  /* ========================================================================
+   * ZUNICORN AGENT — IMAGE-TO-LYRICS DEEP INTEGRATION & SELF-ENHANCEMENT LOOP
+   * Part of ZUNICORN AGENT loop engineering:
+   *   ANALYZE → ENRICH(×pools) → GENERATE V1 → VALIDATE(15+ checks) →
+   *   → REFINE → GENERATE V2 → VALIDATE → GENERATE V3 → QUALITY RANK → OUTPUT
+   * ======================================================================== */
+
+  /**
+   * Enrich fullImageAnalysis output with POETIC_WORDS + STYLE_THEME_IMAGERY
+   * Cross-references zunicorn word pools with vision scene analysis.
+   */
+  enrichAnalysisWithUnicornPools(analysis) {
+    const genreStyles = analysis.styles || analysis.scene?.genre || ['pop'];
+    const themes = analysis.themes || analysis.scene?.themes || ['life'];
+    const primaryGenre = this._normalizeGenreKey(genreStyles[0] || 'pop');
+    const primaryTheme = this._normalizeThemeKey(themes[0] || 'life');
+
+    // 1. Pull STYLE_THEME_IMAGERY phrases for (genre × theme)
+    const styleThemePhrases = [];
+    if (STYLE_THEME_IMAGERY[primaryGenre] && STYLE_THEME_IMAGERY[primaryGenre][primaryTheme]) {
+      styleThemePhrases.push(...STYLE_THEME_IMAGERY[primaryGenre][primaryTheme]);
+    }
+    // Also try secondary theme combinations
+    for (const t of themes.slice(0, 3)) {
+      const tn = this._normalizeThemeKey(t);
+      if (STYLE_THEME_IMAGERY[primaryGenre]?.[tn] && tn !== primaryTheme) {
+        styleThemePhrases.push(...STYLE_THEME_IMAGERY[primaryGenre][tn].slice(0, 4));
+      }
+    }
+
+    // 2. Pull POETIC_WORDS category matches
+    const poeticWords = [];
+    const categoryByTheme = {
+      love: 'love', romance: 'love', heartbreak: 'sadness', loneliness: 'loneliness',
+      sadness: 'sadness', melancholy: 'sadness', dreams: 'dreams', hope: 'hope',
+      success: 'success', freedom: 'hope', life: 'life', memory: 'memory',
+      friendship: 'friendship', friendship_love: 'friendship', time: 'time',
+      nature: 'nature', healing: 'nature', travel: 'nature', freedom_road: 'dreams',
+    };
+    for (const theme of themes) {
+      const cat = categoryByTheme[this._normalizeThemeKey(theme)] || 'emotion';
+      if (POETIC_WORDS[cat]) poeticWords.push(...POETIC_WORDS[cat].slice(0, 8));
+    }
+    // Add genre-specific poetic words (rock, jazz, electronic, chinese_classical, etc.)
+    for (const g of genreStyles) {
+      const gn = this._normalizeGenreKey(g);
+      if (POETIC_WORDS[gn]) poeticWords.push(...POETIC_WORDS[gn].slice(0, 6));
+    }
+
+    // 3. Merge into scene (existing + new, de-duplicated)
+    const mergedImagery = [...new Set([
+      ...(analysis.scene?.imagery || []),
+      ...styleThemePhrases.slice(0, 8),
+      ...poeticWords.filter(w => w.length <= 4),
+    ])].slice(0, 24);
+
+    const mergedEmotions = [...new Set([
+      ...(analysis.scene?.emotions || []),
+      ...(POETIC_WORDS.emotion?.filter(e =>
+        (primaryTheme === 'love' && ['温柔', '眷恋', '思念', '甜蜜', '心动'].includes(e)) ||
+        (primaryTheme === 'heartbreak' && ['心碎', '泪痕', '苦涩', '惆怅'].includes(e)) ||
+        (primaryTheme === 'dreams' && ['渴望', '悸动', '狂喜'].includes(e)) ||
+        (primaryTheme === 'loneliness' && ['寂寥', '孤独', '惆怅', '茫然'].includes(e))
+      ) || []),
+    ])].slice(0, 10);
+
+    const mergedSubjects = [...new Set([
+      ...(analysis.scene?.subjects || []),
+      ...(POETIC_WORDS.abstract?.slice(0, 3) || []),
+      ...(POETIC_WORDS.memory?.slice(0, 2) || []),
+    ])].slice(0, 8);
+
+    // 4. Build imageryPool that's directly consumable by _generateDynamicLyrics
+    const imageryPool = {
+      genre: primaryGenre,
+      theme: primaryTheme,
+      styleThemePhrases,
+      poeticWords: [...new Set(poeticWords)].slice(0, 30),
+      labels: analysis.labels || [],
+      tags: analysis.tags || [],
+      wordings: analysis.wordings || [],
+      songStyle: analysis.songStyle || {},
+      professionalCommands: analysis.professionalCommands || null,
+      // Visual context for lyrics engine
+      visualContext: analysis.visualContext || null,
+      // Quality report from analyzer
+      qualityReport: analysis.qualityReport || null,
+    };
+
+    // 5. Build final enriched analysis
+    const enriched = {
+      ...analysis,
+      unicornEnriched: true,
+      scene: {
+        ...(analysis.scene || {}),
+        imagery: mergedImagery,
+        emotions: mergedEmotions,
+        subjects: mergedSubjects,
+      },
+      imageryPool,
+      suggestions: {
+        ...(analysis.suggestions || {}),
+        genreKey: primaryGenre,
+        themeKey: primaryTheme,
+      },
+      zunicorn: {
+        crossReferenceLog: {
+          styleThemeHits: styleThemePhrases.length,
+          poeticWordsHits: poeticWords.length,
+          mergedImageryCount: mergedImagery.length,
+          mergedEmotionsCount: mergedEmotions.length,
+        },
+        primaryGenre,
+        primaryTheme,
+      }
+    };
+
+    return enriched;
+  }
+
+  /** Normalize analysis genre → STYLE_THEME_IMAGERY key */
+  _normalizeGenreKey(g) {
+    const genreAliases = {
+      pop: 'pop', ballad: 'pop', kpop: 'pop', love_song: 'pop',
+      rock: 'rock', gothic_rock: 'rock',
+      electronic: 'electronic', ambient: 'electronic', synthwave: 'electronic', dreamy: 'electronic', dream_pop: 'electronic',
+      jazz: 'jazz', lofi: 'jazz',
+      classical: 'classical', chinese_traditional: 'chinese_classical',
+      rnb: 'rnb', r_b: 'rnb', soul: 'rnb',
+      rap: 'rap', hiphop: 'rap', hip_hop: 'rap',
+      country: 'country', folk: 'country',
+      anime: 'anime', animation: 'anime', game: 'anime',
+      tango: 'tango', bossa_nova: 'tango',
+      indie: 'pop',
+    };
+    return genreAliases[g] || 'pop';
+  }
+
+  /** Normalize analysis theme → STYLE_THEME_IMAGERY key */
+  _normalizeThemeKey(t) {
+    const themeAliases = {
+      love: 'love', romance: 'love', romantic: 'love',
+      loneliness: 'loneliness', alone: 'loneliness', solitary: 'loneliness',
+      sadness: 'heartbreak', melancholy: 'heartbreak', heartbreak: 'heartbreak', sorrow: 'heartbreak',
+      dreams: 'dreams', dream: 'dreams', future: 'dreams',
+      success: 'dreams', victory: 'dreams', freedom: 'rebellion',
+      rebellion: 'rebellion', rebel: 'rebellion', youth: 'rebellion',
+      friendship: 'friendship', friends: 'friendship', companionship: 'friendship',
+      hope: 'hope', healing: 'hope', light: 'hope',
+      life: 'love', memory: 'heartbreak', nostalgia: 'heartbreak',
+      happiness: 'love', joy: 'love', warm: 'love',
+      nature: 'love',
+      time_travel: 'dreams',
+    };
+    return themeAliases[t] || 'love';
+  }
+
+  /* ========================================================================
+   * SELF-ENHANCEMENT PIPELINE (3 passes + 15 lyrics quality checks)
+   * ======================================================================== */
+
+  /**
+   * Complete image-to-lyrics pipeline with zunicorn self-enhancement loop.
+   * Pass 1: Enrich pools → generate V1 lyrics
+   * VALIDATE: 15+ quality checks
+   * Pass 2: Inject failed checks as hints → regenerate V2
+   * VALIDATE
+   * Pass 3: Targeted fix for remaining failed checks
+   * QUALITY RANK: SABCD grade + best version selection
+   */
+  async imageToLyricsPipeline(fullImageAnalysis, options = {}) {
+    const maxPasses = options.maxPasses || 3;
+    const language = options.language || 'zh';
+
+    // Step 1: Enrich with zunicorn word pools
+    const enriched = this.enrichAnalysisWithUnicornPools(fullImageAnalysis);
+    const { primaryGenre, primaryTheme } = enriched.zunicorn;
+    const bpm = enriched.suggestions?.bpm || enriched.scene?.tempos?.[1] || 90;
+
+    const versions = [];
+    let currentContext = enriched.imageryPool;
+    let lastLyrics = null;
+
+    for (let pass = 1; pass <= maxPasses; pass++) {
+      // --- GENERATE lyrics with current (enriched) imageryPool ---
+      const fsmTemplate = this._buildFSMForImageLyrics(enriched, pass, language);
+
+      // For pass 2/3: inject "fix hints" into imageryPool poeticWords
+      if (pass >= 2 && lastLyrics) {
+        const failCodes = lastLyrics._quality?.failCodes || [];
+        const fixHints = this._buildFixHints(failCodes, enriched);
+        currentContext = {
+          ...enriched.imageryPool,
+          poeticWords: [...new Set([...fixHints, ...enriched.imageryPool.poeticWords])].slice(0, 40),
+          _passHints: { pass, fixCodes: failCodes },
+        };
+      }
+
+      const result = this._imageGenerateLyricsInternal(primaryTheme, primaryGenre, fsmTemplate, language, currentContext);
+      const quality = this._validateLyricsQuality(result, enriched, pass);
+      lastLyrics = { ...result, _quality: quality };
+      versions.push(lastLyrics);
+
+      // --- Stop if no major issues ---
+      const hasBlocking = quality.failCodes.some(c => QUALITY_SEVERITY[c] === 'high' || QUALITY_SEVERITY[c] === 'critical');
+      if (!hasBlocking && quality.score >= 75) {
+        break;
+      }
+    }
+
+    // Pick best version by score
+    const scored = versions.map(v => ({ version: v, score: v._quality.score }));
+    scored.sort((a, b) => b.score - a.score);
+    const best = scored[0].version;
+
+    return {
+      success: true,
+      pipeline: {
+        totalPasses: versions.length,
+        maxPasses,
+        enrichment: enriched.zunicorn,
+        allVersions: versions.map((v, i) => ({
+          pass: i + 1,
+          score: v._quality.score,
+          grade: v._quality.grade,
+          failCodes: v._quality.failCodes,
+        })),
+      },
+      bestVersion: {
+        pass: scored[0].passIndex || versions.indexOf(best) + 1,
+        score: best._quality.score,
+        grade: best._quality.grade,
+        quality: best._quality,
+        lyrics: best.lyrics,
+        fsmStates: best.fsmStates,
+        sections: best.sections,
+        fullText: best.fullText,
+      },
+      allLyricsVersions: versions.map((v, i) => ({
+        pass: i + 1,
+        lyrics: v.lyrics,
+        fullText: v.fullText,
+        quality: v._quality,
+      })),
+      enrichedAnalysis: enriched,
+      recommendedCommand: enriched.professionalCommands?.masterFullCommand,
+      commandFormats: {
+        recommended: enriched.professionalCommands?.recommended,
+        formats: Object.keys(enriched.professionalCommands || {}).filter(k => k !== 'recommended' && k !== 'forLyricsEngine' && k !== 'masterFullCommand'),
+      },
+    };
+  }
+
+  /** Build FSM states for image-to-lyrics based on enriched analysis */
+  _buildFSMForImageLyrics(enriched, pass, language) {
+    const emoProg = enriched.visualContext?.emotionProgression || ['平静', '铺垫', '高潮', '转合', '收束'];
+    const bpm = enriched.scene?.tempos?.[1] || 90;
+    return [
+      { state: 'INTRO',        name: '前奏',   bpm, emotion: emoProg[0], duration: '18~28s', density: '稀疏' },
+      { state: 'VERSE1',       name: '主歌一', bpm, emotion: emoProg[1], duration: '32~42s', density: '低' },
+      { state: 'PRE_CHORUS',   name: '预副歌', bpm, emotion: `${emoProg[1]}→${emoProg[2]}`, duration: '16~22s', density: '中' },
+      { state: 'CHORUS',       name: '副歌',   bpm, emotion: emoProg[2], duration: '30~40s', density: '高' },
+      { state: 'VERSE2',       name: '主歌二', bpm, emotion: emoProg[3] || emoProg[1], duration: '28~38s', density: '中低' },
+      { state: 'BRIDGE',       name: '桥段',   bpm, emotion: `${emoProg[2]}→${emoProg[4] || emoProg[2]}`, duration: '18~26s', density: '低→极高' },
+      { state: 'FINAL_CHORUS', name: '终章',   bpm, emotion: emoProg[4] || emoProg[2], duration: '22~32s', density: '高→渐弱' },
+    ];
+  }
+
+  /** Internal lyrics generator using enriched imageryPool (bypasses default concept picker) */
+  _imageGenerateLyricsInternal(theme, style, states, language, imageryPool) {
+    const normalizedStyle = this._normalizeGenreKey(style);
+    const themeZh = this._translateTheme(theme, language);
+
+    // Pre-pick concept so imageryPool is respected
+    const concepts = CONCEPT_POOLS[normalizedStyle] || CONCEPT_POOLS.pop || [];
+    const concept = concepts[Math.floor(Math.random() * concepts.length)] || null;
+
+    const sectionOrder = ['INTRO', 'VERSE1', 'PRE_CHORUS', 'CHORUS', 'VERSE2', 'BRIDGE', 'FINAL_CHORUS', 'OUTRO'];
+    const lyrics = {};
+    const sections = [];
+    let chorusCache = null;
+    let time = 0;
+
+    for (let i = 0; i < states.length; i++) {
+      const s = states[i].state;
+      const lower = s.toLowerCase();
+      const duration = 25 + Math.floor(Math.random() * 15);
+
+      let lines = [];
+      if (language === 'en') {
+        lines = this._generateEnglishVerse(lower.includes('intro') || lower.includes('outro') ? 2 : 4, theme, normalizedStyle);
+      } else {
+        if (lower.includes('intro')) {
+          lines = this._generateRandomVerse(2, themeZh, normalizedStyle, 'intro', concept, imageryPool);
+        } else if (lower.includes('pre_chorus') || lower.includes('prechorus')) {
+          lines = this._generateRandomVerse(2, themeZh, normalizedStyle, 'pre_chorus', concept, imageryPool);
+        } else if (lower.includes('verse2')) {
+          lines = this._generateRandomVerse(4, themeZh, normalizedStyle, 'verse2', concept, imageryPool);
+        } else if (lower.includes('verse')) {
+          lines = this._generateRandomVerse(4, themeZh, normalizedStyle, 'verse1', concept, imageryPool);
+        } else if (lower.includes('chorus')) {
+          if (!chorusCache) {
+            chorusCache = this._generateRandomVerse(4, themeZh, normalizedStyle, 'chorus', concept, imageryPool);
+          }
+          if (lower.includes('final') || lower.includes('2')) {
+            lines = [...chorusCache];
+            if (lower.includes('final')) lines.push('', `（副歌·升华 · ${states[i].emotion}）`);
+          } else {
+            lines = [...chorusCache];
+          }
+        } else if (lower.includes('bridge')) {
+          lines = this._generateRandomVerse(4, themeZh, normalizedStyle, 'bridge', concept, imageryPool);
+        } else if (lower.includes('outro') || lower.includes('finale') || lower.includes('final_chorus')) {
+          lines = this._generateRandomVerse(2, themeZh, normalizedStyle, 'outro', concept, imageryPool);
+        } else {
+          lines = this._generateRandomVerse(4, themeZh, normalizedStyle, 'verse1', concept, imageryPool);
+        }
+      }
+
+      lyrics[s] = lines;
+      sections.push({
+        state: s,
+        name: states[i].name,
+        emotion: states[i].emotion,
+        start: time,
+        duration,
+        lines,
+      });
+      time += duration;
+    }
+
+    if (!lyrics['OUTRO']) {
+      lyrics['OUTRO'] = language === 'en'
+        ? this._generateEnglishVerse(2, theme, normalizedStyle)
+        : this._generateRandomVerse(2, themeZh, normalizedStyle, 'outro', concept, imageryPool);
+      sections.push({
+        state: 'OUTRO', name: '尾声', emotion: '收束', start: time, duration: 20, lines: lyrics['OUTRO'],
+      });
+    }
+
+    const fullText = sections.map(s => {
+      const dur = `${Math.floor(s.start / 60)}:${(s.start % 60).toString().padStart(2, '0')}~${Math.floor((s.start + s.duration) / 60)}:${((s.start + s.duration) % 60).toString().padStart(2, '0')}`;
+      return `【${s.name}·${s.state}】[${dur}] [情绪：${s.emotion}]\n${s.lines.filter(Boolean).join('\n')}`;
+    }).join('\n\n');
+
+    return { lyrics, sections, fullText, fsmStates: states, theme, style: normalizedStyle, language };
+  }
+
+  /* ========================================================================
+   * LYRICS QUALITY VALIDATOR — 15+ checks with severity + fail codes
+   * ======================================================================== */
+
+  _validateLyricsQuality(lyricsResult, enriched, pass) {
+    const issues = [];
+    const { lyrics, sections } = lyricsResult;
+    const imagery = enriched.scene?.imagery || [];
+    const subjects = enriched.scene?.subjects || [];
+    const actions = enriched.scene?.actions || [];
+    const locations = enriched.scene?.locations || [];
+    const themes = enriched.themes || [];
+    const emotionProg = enriched.visualContext?.emotionProgression || [];
+
+    const allLyricText = sections.map(s => s.lines.join(' ')).join(' ');
+    const allLines = sections.flatMap(s => s.lines).filter(l => typeof l === 'string' && l.trim().length > 0);
+
+    // --- Text / structural checks ---
+    // Q1 minimum line count
+    if (allLines.length < 16) issues.push({ code: 'Q1_line_count_low', severity: 'medium' });
+    // Q2 section completeness
+    const requiredSections = ['INTRO', 'VERSE1', 'CHORUS', 'BRIDGE', 'OUTRO'];
+    const missingSect = requiredSections.filter(k => !lyrics[k] || lyrics[k].length === 0);
+    if (missingSect.length > 0) issues.push({ code: 'Q2_section_incomplete', severity: 'high', detail: missingSect });
+    // Q3 chorus uniqueness & repetition
+    const chorusLines = (lyrics['CHORUS'] || []).join(' ');
+    if (chorusLines && chorusLines.length < 8) issues.push({ code: 'Q3_chorus_too_short', severity: 'high' });
+    // Q4 bridge contrast vs verse
+    const v1Un = new Set((lyrics['VERSE1'] || []).join('')).size;
+    const brUn = new Set((lyrics['BRIDGE'] || []).join('')).size;
+    if (brUn > 0 && v1Un > 0 && Math.abs(brUn - v1Un) < Math.max(3, v1Un * 0.10)) {
+      issues.push({ code: 'Q4_bridge_no_contrast', severity: 'low' });
+    }
+
+    // --- Imagery / semantic quad coverage checks ---
+    // Q5 imagery coverage (% of image imagery words appearing in lyrics)
+    const imageryHits = imagery.filter(w => allLyricText.includes(w));
+    const imageryCov = imagery.length ? imageryHits.length / imagery.length : 0;
+    if (imageryCov < 0.30) issues.push({ code: 'Q5_imagery_coverage_low', severity: 'high', detail: `${Math.round(imageryCov * 100)}% < 30%` });
+    // Q6 subject reference
+    const subjectHits = subjects.filter(s => s.length >= 2 && allLyricText.includes(s));
+    if (subjects.length >= 2 && subjectHits.length < 1) issues.push({ code: 'Q6_no_subject_reference', severity: 'high' });
+    // Q7 action reference
+    const actionHits = actions.filter(a => a.length >= 2 && allLyricText.includes(a));
+    if (actions.length >= 2 && actionHits.length < 1) issues.push({ code: 'Q7_no_action_reference', severity: 'medium' });
+    // Q8 location reference
+    const locationHits = locations.filter(l => l.length >= 2 && allLyricText.includes(l));
+    if (locations.length >= 2 && locationHits.length < 1) issues.push({ code: 'Q8_no_location_reference', severity: 'medium' });
+    // Q9 STYLE_THEME_IMAGERY phrase hit check (if any pulled)
+    const stPhrases = enriched.imageryPool?.styleThemePhrases || [];
+    if (stPhrases.length > 0) {
+      const stHits = stPhrases.filter(p => allLyricText.includes(p.slice(0, 4))); // match partial (first 2 chars CN, 4 for safety)
+      if (stHits.length < 1) issues.push({ code: 'Q9_no_styletheme_phrase', severity: 'low' });
+    }
+
+    // --- Emotional / theme coherence ---
+    // Q10 chorus emotional peak (chorus should have ≥1 primary emotion word)
+    const emotions = enriched.scene?.emotions || [];
+    const chorusEmoHits = emotions.filter(e => chorusLines.includes(e));
+    if (chorusLines && chorusEmoHits.length < 1) issues.push({ code: 'Q10_chorus_emotion_missing', severity: 'medium' });
+    // Q11 theme keyword in chorus
+    const themeKeywords = themes.filter(t => typeof t === 'string' && t.length > 0);
+    const themeInChorus = themeKeywords.some(kw => {
+      // translate to CN if EN
+      const cn = this._translateTheme(kw, 'zh');
+      return chorusLines.includes(cn) || chorusLines.includes(kw);
+    });
+    if (!themeInChorus) issues.push({ code: 'Q11_chorus_no_theme', severity: 'medium' });
+    // Q12 line diversity (no single line repeated 3+ times across sections)
+    const lineCounts = {};
+    for (const l of allLines) {
+      const trimmed = l.trim();
+      if (trimmed.length > 1) {
+        lineCounts[trimmed] = (lineCounts[trimmed] || 0) + 1;
+      }
+    }
+    const repeatLines = Object.entries(lineCounts).filter(([_, n]) => n >= 3);
+    if (repeatLines.length > 0) issues.push({ code: 'Q12_excessive_line_repeat', severity: 'low' });
+    // Q13 intro-outro imagery bookend
+    const introText = (lyrics['INTRO'] || []).join(' ');
+    const outroText = (lyrics['OUTRO'] || []).join(' ');
+    if (imageryHits.length > 0) {
+      const coreImg = imageryHits[0];
+      if (!introText.includes(coreImg) || !outroText.includes(coreImg)) {
+        issues.push({ code: 'Q13_no_intro_outro_bookend', severity: 'low' });
+      }
+    }
+    // Q14 verse→chorus distinct vocabulary
+    const v1Words = new Set((lyrics['VERSE1'] || []).join(''));
+    const chorusWords = new Set(chorusLines.split(''));
+    const shared = [...v1Words].filter(w => chorusWords.has(w)).length;
+    const unionSize = new Set([...v1Words, ...chorusWords]).size || 1;
+    const distinctRatio = 1 - (shared / unionSize);
+    if (distinctRatio < 0.35) issues.push({ code: 'Q14_verse_chorus_not_distinct', severity: 'low' });
+    // Q15 total line length consistency (no crazy outliers)
+    const lineLengths = allLines.map(l => l.length);
+    const avgLen = lineLengths.reduce((a, b) => a + b, 0) / (lineLengths.length || 1);
+    const outliers = lineLengths.filter(l => l > avgLen * 2.5 || l < avgLen * 0.3).length;
+    if (outliers / (lineLengths.length || 1) > 0.25) {
+      issues.push({ code: 'Q15_line_length_outlier', severity: 'low' });
+    }
+    // Q16 duplicate lines within same section
+    for (const s of Object.keys(lyrics)) {
+      const arr = lyrics[s].filter(l => typeof l === 'string' && l.trim().length > 2);
+      const uniq = [...new Set(arr)];
+      if (arr.length - uniq.length >= 2) {
+        issues.push({ code: 'Q16_duplicate_within_section', severity: 'low' });
+        break;
+      }
+    }
+
+    // --- Score & grade ---
+    const base = 100;
+    const penalties = { critical: 25, high: 12, medium: 6, low: 2 };
+    const penalty = issues.reduce((acc, i) => acc + (penalties[QUALITY_SEVERITY[i.code] || i.severity === 'critical' ? 25
+      : i.severity === 'high' ? 12 : i.severity === 'medium' ? 6 : 2]), 0);
+    const score = Math.max(0, Math.min(100, base - penalty));
+    const grade = score >= 88 ? 'S' : score >= 75 ? 'A' : score >= 60 ? 'B' : score >= 45 ? 'C' : 'D';
+
+    return {
+      score,
+      grade,
+      pass,
+      issues,
+      failCodes: issues.map(i => i.code),
+      checks: {
+        imageryCoveragePct: Math.round(imageryCov * 100),
+        imageryHits,
+        subjectHits,
+        actionHits,
+        locationHits,
+        lineCount: allLines.length,
+      }
+    };
+  }
+
+  /** Build "fix hints" — push corrective imagery/emotion words for regeneration */
+  _buildFixHints(failCodes, enriched) {
+    const hints = [];
+    const imagery = enriched.scene?.imagery || [];
+    const subjects = enriched.scene?.subjects || [];
+    const actions = enriched.scene?.actions || [];
+    const locations = enriched.scene?.locations || [];
+    const emotions = enriched.scene?.emotions || [];
+
+    for (const code of failCodes) {
+      switch (code) {
+        case 'Q5_imagery_coverage_low':
+          hints.push(...imagery.slice(0, 10));
+          break;
+        case 'Q6_no_subject_reference':
+          hints.push(...subjects.slice(0, 4));
+          break;
+        case 'Q7_no_action_reference':
+          hints.push(...actions.slice(0, 4));
+          break;
+        case 'Q8_no_location_reference':
+          hints.push(...locations.slice(0, 4));
+          break;
+        case 'Q10_chorus_emotion_missing':
+          hints.push(...emotions.slice(0, 4));
+          break;
+        case 'Q13_no_intro_outro_bookend':
+          hints.push(...imagery.slice(0, 3), ...emotions.slice(0, 2));
+          break;
+        default:
+          hints.push(...imagery.slice(0, 3), ...subjects.slice(0, 2), ...emotions.slice(0, 2));
+      }
+    }
+    return [...new Set(hints)].filter(h => h && h.length >= 2);
+  }
+
+  /* ========================================================================
+   * ZUNICORN AI CHAT LOOP — natural language refinement
+   * User types feedback like "make it more nostalgic", "rewrite chorus"
+   * Agent parses intent, applies action, regenerates, responds.
+   * ======================================================================== */
+
+  chatAgentLoop(userMessage, context = {}) {
+    const history = context.history || [];
+    const previousResult = context.lastResult || null;
+
+    // Parse user intent
+    const intent = this._parseUserChatIntent(userMessage);
+
+    // Apply action based on intent
+    const actionResult = this._applyChatAction(intent, previousResult, userMessage);
+
+    // Build natural language response
+    const response = this._buildChatResponse(intent, actionResult, userMessage);
+
+    history.push({ role: 'user', content: userMessage });
+    history.push({ role: 'zunicorn', content: response.natural, intent: intent.name, action: actionResult });
+
+    return {
+      response,
+      history,
+      intent,
+      updatedResult: actionResult.result,
+    };
+  }
+
+  _parseUserChatIntent(text) {
+    const t = text.toLowerCase();
+    const rules = [
+      { name: 'rewrite_chorus', match: /副歌|chorus|重写.*副歌|改.*副歌/, param: { section: 'CHORUS' } },
+      { name: 'rewrite_verse', match: /主歌|verse|重写.*主歌|改.*主歌/, param: { section: 'VERSE' } },
+      { name: 'change_style', match: /换风格|换.*风格|改成.*风格|风格.*改成/, style: 'style_change' },
+      { name: 'more_nostalgic', match: /怀旧|回忆|思念|忆|过去|时光|流年/, param: { addThemes: ['memory', 'nostalgia'] } },
+      { name: 'more_energetic', match: / energetic|活力|热血|有激情|有劲|燃/, param: { energy: '+high' } },
+      { name: 'more_healing', match: /治愈|healing|温柔|静心|安静|柔/, param: { emotion: 'healing' } },
+      { name: 'more_romantic', match: /浪漫|romantic|更甜|甜蜜|告白|爱情/, param: { addThemes: ['love'] } },
+      { name: 'add_imagery', match: /加.*意象|添加.*意象|更多意象|意象.*多/, param: { imageryBoost: 1.5 } },
+      { name: 'faster_tempo', match: /快一点|快些|加快|加速|bpm.*高|节拍.*快/, param: { bpmDelta: '+15' } },
+      { name: 'slower_tempo', match: /慢一点|慢些|减慢|降速|bpm.*低|节拍.*慢/, param: { bpmDelta: '-10' } },
+      { name: 'simpler_language', match: /简单|直白|口语|不要太文|易懂|通俗/, param: { languageLevel: 'simple' } },
+      { name: 'more_poetic', match: /诗意|更诗|古风|诗词|文雅|修辞/, param: { languageLevel: 'poetic' } },
+      { name: 'chinese_traditional_style', match: /国风|古风|古典|古乐/, param: { forceStyle: 'chinese_classical' } },
+      { name: 'rock_style', match: /摇滚|rock/, param: { forceStyle: 'rock' } },
+      { name: 'electronic_style', match: /电音|电子|electronic|edm/, param: { forceStyle: 'electronic' } },
+      { name: 'jazz_style', match: /爵士|jazz/, param: { forceStyle: 'jazz' } },
+    ];
+
+    for (const r of rules) {
+      if (r.match.test(t)) {
+        return { name: r.name, param: { ...(r.param || {}), ...(r.style ? { style: r.style } : {}) } };
+      }
+    }
+
+    // Extract mention of styles (if user said "change to X")
+    const styleKeywords = ['rock', 'pop', 'jazz', 'rnb', 'electronic', 'tango', 'anime', 'country', 'chinese_classical', 'kpop'];
+    for (const sk of styleKeywords) {
+      if (t.includes(sk) || t.includes(sk.replace('_', ''))) {
+        return { name: 'change_style', param: { forceStyle: sk } };
+      }
+    }
+
+    return { name: 'refine_generic', param: { userText: text } };
+  }
+
+  _applyChatAction(intent, previousResult, userMessage) {
+    if (!previousResult || !previousResult.enrichedAnalysis) {
+      return {
+        status: 'analysis_required',
+        message: '需要先上传图片并完成分析，再基于结果讨论优化方向。',
+      };
+    }
+
+    const enriched = previousResult.enrichedAnalysis;
+    const p = intent.param || {};
+    let regenOptions = {};
+    let notes = [];
+
+    if (p.forceStyle) {
+      enriched.suggestions = { ...enriched.suggestions, genre: p.forceStyle };
+      enriched.zunicorn.primaryGenre = this._normalizeGenreKey(p.forceStyle);
+      regenOptions.overrideGenre = p.forceStyle;
+      notes.push(`风格切换为 ${p.forceStyle}`);
+    }
+    if (p.bpmDelta) {
+      const delta = parseInt(p.bpmDelta, 10);
+      const oldBpm = enriched.suggestions?.bpm || 90;
+      enriched.suggestions = { ...enriched.suggestions, bpm: oldBpm + delta };
+      enriched.scene.tempos = [oldBpm + delta - 15, oldBpm + delta, oldBpm + delta + 15];
+      notes.push(`BPM 调整为 ${oldBpm + delta} (${delta > 0 ? '+' : ''}${delta})`);
+    }
+    if (p.addThemes) {
+      enriched.themes = [...new Set([...p.addThemes, ...(enriched.themes || [])])];
+      notes.push(`添加主题：${p.addThemes.join('、')}`);
+    }
+    if (p.section) {
+      regenOptions.sections = [p.section];
+      notes.push(`重写段落：${p.section}`);
+    }
+
+    // Re-enrich + re-run short pipeline (2 passes) with new params
+    const reEnriched = this.enrichAnalysisWithUnicornPools(enriched);
+    if (p.forceStyle) reEnriched.zunicorn.primaryGenre = this._normalizeGenreKey(p.forceStyle);
+
+    const newGenre = reEnriched.zunicorn.primaryGenre;
+    const newTheme = reEnriched.zunicorn.primaryTheme;
+    const fsm = this._buildFSMForImageLyrics(reEnriched, 1, reEnriched.scene?.vocalRecommendation?.language || 'zh');
+    const newLyrics = this._imageGenerateLyricsInternal(newTheme, newGenre, fsm, 'zh', reEnriched.imageryPool);
+    const q = this._validateLyricsQuality(newLyrics, reEnriched, 1);
+
+    notes.push(`本次质量评分：${q.score}/100（${q.grade}）`);
+    if (q.failCodes.length) notes.push(`待改进项：${q.failCodes.join('、')}`);
+
+    return {
+      status: 'regenerated',
+      notes,
+      result: {
+        ...previousResult,
+        bestVersion: {
+          ...previousResult.bestVersion,
+          lyrics: newLyrics.lyrics,
+          sections: newLyrics.sections,
+          fullText: newLyrics.fullText,
+          quality: q,
+          score: q.score,
+          grade: q.grade,
+        },
+        enrichedAnalysis: reEnriched,
+      }
+    };
+  }
+
+  _buildChatResponse(intent, actionResult, userMessage) {
+    let natural = '';
+    if (actionResult.status === 'analysis_required') {
+      natural = `收到你的反馈「${userMessage}」，但目前还没有图片分析结果。请先上传一张图片，我会在分析后生成专业的歌词及四种格式（SUNO / MUSE / FSM / LAYER）的专业创作指令，然后再按你的方向优化。 ✨`;
+    } else {
+      const n = actionResult.notes || [];
+      natural = `已按你的意图「${intent.name}」执行调整 ✨\n\n📝 本次动作：\n${n.map(x => '  • ' + x).join('\n')}\n\n🎵 优化后的歌词与专业创作指令已准备就绪，你可以继续让我：\n  • 再调整风格 / 速度 / 情绪\n  • 单独重写某段（副歌/桥段/主歌…）\n  • 切换 FSM/LAYER/SUNO/MUSE 不同指令格式查看`;
+    }
+    return { natural, intent: intent.name };
+  }
 }
+
+const QUALITY_SEVERITY = {
+  Q1_line_count_low: 'medium',
+  Q2_section_incomplete: 'high',
+  Q3_chorus_too_short: 'high',
+  Q4_bridge_no_contrast: 'low',
+  Q5_imagery_coverage_low: 'high',
+  Q6_no_subject_reference: 'high',
+  Q7_no_action_reference: 'medium',
+  Q8_no_location_reference: 'medium',
+  Q9_no_styletheme_phrase: 'low',
+  Q10_chorus_emotion_missing: 'medium',
+  Q11_chorus_no_theme: 'medium',
+  Q12_excessive_line_repeat: 'low',
+  Q13_no_intro_outro_bookend: 'low',
+  Q14_verse_chorus_not_distinct: 'low',
+  Q15_line_length_outlier: 'low',
+  Q16_duplicate_within_section: 'low',
+};
 
 export default UnicornAgent;

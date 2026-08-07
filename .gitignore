@@ -79,3 +79,18 @@ netlify/functions/api/VERSION.json
 # GitHub auth temp files
 .gh_auth_output.txt
 .gh_refresh.txt
+
+# Python vision model (auto-downloaded, ~12MB) — DO NOT commit
+services/vision/models/*.onnx
+services/vision/models/*.dl
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Centralizedhub venvs (external dependency, not part of this repo)
+centralizedhub/installations/
+
+# Data / vision test artifacts
+*.json.tmp

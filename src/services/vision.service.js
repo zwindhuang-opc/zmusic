@@ -20,8 +20,60 @@
 
 import config from '../config/index.js';
 import Logger from '../utils/logger.js';
+import { spawn } from 'child_process';
+import { writeFile, unlink } from 'fs/promises';
+import { existsSync } from 'fs';
+import { tmpdir } from 'os';
+import { join, resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 const logger = new Logger('VisionService');
+
+// Use centralizedhub's Python 3.14 vision runtime (satisfies "use centralizedhub
+// and zunicorn-agent as base project" rule).  If missing we fall back silently.
+const PYTHON_EXE = resolve(
+  'e:\\AI_Projects\\centralizedhub\\installations\\vision-venv-314\\Scripts\\python.exe'
+);
+
+// Compute __dirname robustly for both ESM (node src/server.js) and CJS bundles
+// (netlify/functions/api/_server_bundle.cjs — where import.meta is empty).
+const _urlPath = (typeof import.meta !== 'undefined' && import.meta && import.meta.url)
+  ? fileURLToPath(import.meta.url)
+  : (typeof __filename !== 'undefined' ? __filename : process.argv[1]);
+const _serviceDir = (typeof __dirname !== 'undefined' && __dirname)
+  ? __dirname
+  : dirname(_urlPath);
+
+// Worker path fallbacks: 3 locations to survive any bundling layout.
+const _candidates = [
+  resolve(_serviceDir, '..', '..', 'services', 'vision', 'vision_worker.py'),          // ESM dev: src/services/vision.service.js → repo root
+  resolve(process.cwd(), 'services', 'vision', 'vision_worker.py'),                    // Simple: cwd=repo root (npm run server)
+  resolve(_serviceDir, '..', '..', '..', 'services', 'vision', 'vision_worker.py'),    // CJS bundle: netlify/functions/api/_server_bundle.cjs → repo root
+];
+const WORKER_PATH = _candidates.find(p => existsSync(p)) || _candidates[0];
+
+// Scene-hint ID → {themes, styles, mood} — used to boost heuristic suggestions
+// when the Python YOLO object detector returns a strong match.
+const HINT_STYLE_MAP = {
+  pet_friendship: { themes: ['pet_love', 'friendship', 'healing'], styles: ['acoustic', 'indie_folk', 'ballad'], mood: 'peaceful' },
+  wild_nature_adventure: { themes: ['adventure', 'nature', 'freedom'], styles: ['folk_rock', 'epic', 'world_music'], mood: 'energetic' },
+  culinary_memory: { themes: ['culinary', 'memories', 'home'], styles: ['bossa_nova', 'acoustic', 'city_pop'], mood: 'warm' },
+  festive_celebration: { themes: ['celebration', 'happiness', 'friendship'], styles: ['pop', 'dance', 'kpop'], mood: 'joyful' },
+  seaside_vacation: { themes: ['summer', 'ocean', 'vacation', 'freedom'], styles: ['reggae', 'tropical_pop', 'city_pop'], mood: 'energetic' },
+  sports_action: { themes: ['sports', 'ambition', 'triumph'], styles: ['rock', 'electronic', 'hiphop'], mood: 'energetic' },
+  cozy_home_indoor: { themes: ['home', 'cozy', 'nostalgia'], styles: ['acoustic', 'ballad', 'lo_fi'], mood: 'peaceful' },
+  cozy_reading: { themes: ['study', 'memories', 'dreams'], styles: ['lo_fi', 'classical', 'ambient'], mood: 'peaceful' },
+  workspace_office: { themes: ['ambition', 'hustle', 'urban_life'], styles: ['city_pop', 'electronic', 'lo_fi'], mood: 'focused' },
+  travel_adventure: { themes: ['travel', 'dreams', 'freedom'], styles: ['indie_pop', 'folk', 'city_pop'], mood: 'energetic' },
+  road_trip: { themes: ['road_trip', 'freedom', 'adventure'], styles: ['rock', 'country', 'indie'], mood: 'energetic' },
+  journey_commute: { themes: ['commute', 'thinking', 'nostalgia'], styles: ['city_pop', 'lo_fi', 'ambient'], mood: 'peaceful' },
+  city_street: { themes: ['urban', 'rebellion', 'independence'], styles: ['hiphop', 'synthwave', 'rock'], mood: 'energetic' },
+  picnic_outdoor: { themes: ['picnic', 'friendship', 'spring'], styles: ['acoustic', 'indie', 'bossa_nova'], mood: 'peaceful' },
+  romantic_dinner: { themes: ['love', 'romance', 'first_date'], styles: ['jazz', 'ballad', 'bossa_nova'], mood: 'romantic' },
+  couple_couch_movie_night: { themes: ['love', 'cozy', 'dreams'], styles: ['rnb', 'ballad', 'lo_fi'], mood: 'romantic' },
+  family_gathering: { themes: ['family', 'home', 'memories'], styles: ['ballad', 'acoustic', 'soft_pop'], mood: 'warm' },
+  nature_healing: { themes: ['nature', 'healing', 'peace'], styles: ['ambient', 'new_age', 'folk'], mood: 'peaceful' },
+};
 
 const COLOR_MOOD_MAP = [
   { name: 'warm', hues: [0, 30, 45], mood: 'romantic', themes: ['love', 'passion', 'nostalgia'], styles: ['ballad', 'rnb', 'pop'] },
@@ -78,21 +130,133 @@ export class VisionService {
 
   async analyzeImage(buffer, mimeType = 'image/jpeg') {
     const startTime = Date.now();
-    let result = null;
-    let method = 'heuristic';
 
+    // -----------------------------------------------------------------------
+    // PRIMARY: Python + YOLOv8n ONNX object detection + scene hints.
+    // Server-side analysis gives MUCH richer semantics (80 COCO classes: dog,
+    // cake, surfboard, laptop, car, airplane…) than browser color heuristics.
+    // If it fails, we fall through transparently to the heuristic below
+    // (no break, no regression).
+    // -----------------------------------------------------------------------
+    let pythonResult = null;
     try {
-      result = await this._analyzeWithHeuristic(buffer, mimeType);
-      method = 'heuristic';
+      pythonResult = await this._analyzeWithPythonWorker(buffer, mimeType);
     } catch (err) {
-      logger.warn(`Heuristic analysis failed: ${err.message}`);
-      result = this._getFallbackSuggestion();
-      method = 'fallback';
+      logger.warn(`Python vision worker unavailable (${err.message}); using heuristic fallback.`);
+      pythonResult = null;
     }
 
-    result.analysisTime = Date.now() - startTime;
-    result.method = method;
-    return result;
+    // -----------------------------------------------------------------------
+    // SECONDARY: the original pixel-hue heuristic (always runs so we have a
+    // consistent color palette / description).
+    // -----------------------------------------------------------------------
+    let heuristic = null;
+    let method = 'heuristic';
+    try {
+      heuristic = await this._analyzeWithHeuristic(buffer, mimeType);
+      method = pythonResult ? 'python_yolo_plus_heuristic' : 'heuristic';
+    } catch (err) {
+      logger.warn(`Heuristic analysis failed: ${err.message}`);
+      heuristic = this._getFallbackSuggestion();
+      method = pythonResult ? 'python_yolo_only' : 'fallback';
+    }
+
+    // -----------------------------------------------------------------------
+    // MERGE: If Python returned a strong scene hint, bias themes / styles /
+    //        mood toward the HINT_STYLE_MAP but keep the color palette +
+    //        description from heuristic.
+    // -----------------------------------------------------------------------
+    if (pythonResult && heuristic) {
+      const hints = (pythonResult.sceneHints || []).filter(h => h.score >= 0.6);
+      if (hints.length > 0) {
+        const topHint = hints[0];
+        const mapped = HINT_STYLE_MAP[topHint.id];
+        if (mapped) {
+          const mergedThemes = [...new Set([...mapped.themes, ...heuristic.themes])].slice(0, 5);
+          const mergedStyles = [...new Set([...mapped.styles, ...heuristic.styles])].slice(0, 5);
+          heuristic.themes = mergedThemes;
+          heuristic.styles = mergedStyles;
+          if (mapped.mood) heuristic.mood = mapped.mood;
+          heuristic.suggestions = {
+            ...(heuristic.suggestions || {}),
+            genre: mapped.styles[0],
+            theme: mapped.themes[0],
+            mood: mapped.mood || heuristic.mood,
+            alternatives: { themes: mergedThemes, styles: mergedStyles },
+          };
+        }
+        // Prepend the detected object list (COCO labels + counts) to the
+        // description so users can see *what* the neural net actually found.
+        const counts = pythonResult.counts || {};
+        const countEntries = Object.entries(counts);
+        const objectList = countEntries.length
+          ? countEntries.map(([k, v]) => v > 1 ? `${k}×${v}` : k).join('、')
+          : '';
+        const hintList = hints.slice(0, 3).map(h => `${h.id}(${Math.round(h.score * 100)}%)`).join('、');
+        const addendum = `[YOLO物体识别：${objectList || '(未识别到80类内物体)'} | 场景提示：${hintList || '无'}]`;
+        heuristic.description = addendum + ' ' + (heuristic.description || '');
+      }
+      // Attach raw Python result for downstream consumers (visionAnalyzer.js,
+      // ImageLyricsPage UI tags, etc.)
+      heuristic.pythonVision = pythonResult;
+    }
+
+    heuristic.analysisTime = Date.now() - startTime;
+    heuristic.method = method;
+    return heuristic;
+  }
+
+  /**
+   * Spawn the centralizedhub Python 3.14 vision worker to run YOLOv8n ONNX.
+   *
+   * Uses a temp file to avoid base64 / stdin encoding issues.  Exceptions are
+   * treated as "worker unavailable" so the caller can fall back gracefully to
+   * JS-only heuristics (useful for devs without the venv installed).
+   */
+  async _analyzeWithPythonWorker(buffer, mimeType) {
+    // Quick accessibility check before we bother writing a temp file:
+    const fs = await import('fs');
+    if (!fs.existsSync(PYTHON_EXE) || !fs.existsSync(WORKER_PATH)) {
+      throw new Error(`missing exe or worker (exe=${fs.existsSync(PYTHON_EXE)}, worker=${fs.existsSync(WORKER_PATH)})`);
+    }
+
+    // Write buffer to a temporary image file with correct extension so the
+    // PIL decoder picks the right codec.
+    const ext = (mimeType || 'jpeg').split('/').pop().replace('jpg', 'jpeg').replace('jpeg', 'jpg');
+    const safeExt = ['png', 'jpg', 'webp', 'gif'].includes(ext) ? ext : 'jpg';
+    const tmp = join(tmpdir(), `zmusic_vision_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${safeExt}`);
+    await writeFile(tmp, buffer);
+    try {
+      return await new Promise((resolve, reject) => {
+        const child = spawn(PYTHON_EXE, [WORKER_PATH, tmp], {
+          windowsHide: true,
+          stdio: ['ignore', 'pipe', 'pipe'],
+          env: process.env,
+          timeout: 120_000, // generous: first run downloads the 6MB ONNX model
+        });
+        let stdout = '';
+        let stderr = '';
+        child.stdout.on('data', d => (stdout += d.toString('utf8')));
+        child.stderr.on('data', d => (stderr += d.toString('utf8')));
+        child.on('error', e => reject(new Error(`spawn failed: ${e.message}`)));
+        child.on('close', code => {
+          if (code !== 0) {
+            reject(new Error(`worker exit ${code}: ${(stderr || stdout).slice(0, 500)}`));
+            return;
+          }
+          try {
+            const parsed = JSON.parse(stdout.trim());
+            if (parsed.error) reject(new Error(`worker error: ${parsed.error}`));
+            else resolve(parsed);
+          } catch (e) {
+            reject(new Error(`bad JSON from worker: ${stdout.slice(0, 200)}`));
+          }
+        });
+      });
+    } finally {
+      // Best-effort cleanup; ignore failure.
+      unlink(tmp).catch(() => { });
+    }
   }
 
   async _analyzeWithHeuristic(buffer, mimeType) {
@@ -182,7 +346,7 @@ export class VisionService {
       success: true,
       dominantColor: {
         rgb: `rgb(${avgR}, ${avgG}, ${avgB})`,
-        hex: `#${avgR.toString(16).padStart(2,'0')}${avgG.toString(16).padStart(2,'0')}${avgB.toString(16).padStart(2,'0')}`,
+        hex: `#${avgR.toString(16).padStart(2, '0')}${avgG.toString(16).padStart(2, '0')}${avgB.toString(16).padStart(2, '0')}`,
         hsl: `hsl(${Math.round(avgH)}, ${Math.round(avgS)}%, ${Math.round(avgL)}%)`,
         hue: dominantHue,
         category: topMatch.name,
@@ -279,7 +443,7 @@ export class VisionService {
       .slice(0, count)
       .map(b => ({
         rgb: `rgb(${Math.round(b.r / b.count)}, ${Math.round(b.g / b.count)}, ${Math.round(b.b / b.count)})`,
-        hex: `#${Math.round(b.r/b.count).toString(16).padStart(2,'0')}${Math.round(b.g/b.count).toString(16).padStart(2,'0')}${Math.round(b.b/b.count).toString(16).padStart(2,'0')}`,
+        hex: `#${Math.round(b.r / b.count).toString(16).padStart(2, '0')}${Math.round(b.g / b.count).toString(16).padStart(2, '0')}${Math.round(b.b / b.count).toString(16).padStart(2, '0')}`,
       }));
   }
 

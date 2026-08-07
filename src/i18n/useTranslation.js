@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { t, changeLanguage, getCurrentLanguage } from './index.js';
+import { t, ts, tr, changeLanguage, getCurrentLanguage } from './index.js';
 
 export function useTranslation() {
     const [lang, setLang] = useState(getCurrentLanguage());
@@ -14,6 +14,8 @@ export function useTranslation() {
 
     return {
         t: (key, vars) => t(key, vars, lang),
+        ts: (key, vars) => ts(key, vars, lang),
+        tr: (raw, preferredCategories) => tr(raw, preferredCategories, lang),
         i18n: { language: lang, changeLanguage }
     };
 }

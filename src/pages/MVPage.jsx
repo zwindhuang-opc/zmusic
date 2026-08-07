@@ -7,7 +7,7 @@ import { generateMV } from '../utils/mvEngine.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 
 function MVPage() {
-  const { t } = useTranslation();
+  const { t, ts } = useTranslation();
   const { addToHistory, copyToClipboard, pendingLyrics } = useGeneration();
 
   const FALLBACK_GENRES = ['pop', 'rock', 'electronic', 'hip_hop', 'ballad', 'chinese_traditional', 'jazz', 'classical', 'rnb', 'country', 'love_song', 'chinese_classical', 'concert', 'modern', 'cinematic', 'retro', 'anime', 'gothic_rock'];
@@ -146,7 +146,7 @@ function MVPage() {
                   : 'bg-white/5 text-gray-400 hover:bg-white/10'
                   }`}
               >
-                {t(`styles.${g}`) || g}
+                {ts(`lyrics_styles.${g}`) || ts(`styles.${g}`) || ts(`styles_extra.${g}`) || g}
               </button>
             ))}
           </div>
