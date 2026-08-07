@@ -107,7 +107,22 @@
     "generating_music": "Generating Music...",
     "bpm": "BPM",
     "please_enter_prompt": "Please enter a music description",
-    "generation_failed": "Generation failed"
+    "generation_failed": "Generation failed",
+    "generate_real_audio": "Generate Real Audio",
+    "api_settings": "API Settings",
+    "composing_score": "Composing musical score...",
+    "rendering_audio": "Rendering audio...",
+    "processing": "Processing...",
+    "cloud_available": "AI cloud rendering available",
+    "procedural_preview": "Instant procedural preview",
+    "hybrid_description": "Full AI generation: 30-60s · MusicGen renders real audio",
+    "procedural_description": "Instant preview: Tone.js procedural synthesis (no AI GPU needed)",
+    "procedural_tag": "Procedural",
+    "ai_generated_tag": "AI-Generated",
+    "hf_token_label": "HuggingFace AI Token",
+    "llm_composer": "LLM Composer (optional)",
+    "prefer_cloud_ai": "Prefer cloud AI (MusicGen) when available",
+    "rule_based": "Rule-Based"
   },
   "lyrics": {
     "title": "AI Lyrics Generator",

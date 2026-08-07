@@ -107,7 +107,22 @@
     "generating_music": "正在生成音乐...",
     "bpm": "节拍",
     "please_enter_prompt": "请输入音乐描述",
-    "generation_failed": "生成失败"
+    "generation_failed": "生成失败",
+    "generate_real_audio": "生成真实音频",
+    "api_settings": "API设置",
+    "composing_score": "正在作曲编曲...",
+    "rendering_audio": "正在渲染音频...",
+    "processing": "处理中...",
+    "cloud_available": "AI云端渲染可用",
+    "procedural_preview": "即时程序化预览",
+    "hybrid_description": "完整AI生成：30-60秒 · MusicGen渲染真实音频",
+    "procedural_description": "即时预览：Tone.js程序化合成（无需GPU）",
+    "procedural_tag": "程序化",
+    "ai_generated_tag": "AI生成",
+    "hf_token_label": "HuggingFace AI令牌",
+    "llm_composer": "LLM作曲家（可选）",
+    "prefer_cloud_ai": "优先使用云端AI（MusicGen）",
+    "rule_based": "规则引擎"
   },
   "lyrics": {
     "title": "AI歌词生成器",

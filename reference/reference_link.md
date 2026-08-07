@@ -7,6 +7,8 @@
 - https://suno.com (Official)
 
 ### Muse AI
+
+https://muse.top/
 - https://mp.weixin.qq.com/s/ikX5JeNCvhE9vxAijFDUCQ?scene=1
 - https://weixin.qq.com/sph/Asct4CIXJM
 
