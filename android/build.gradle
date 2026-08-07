@@ -2,12 +2,15 @@
 
 buildscript {
 
+    // Official repositories first for CI reliability (GitHub Actions runners are
+    // US-based and hit 502 Bad Gateway on Aliyun mirrors). Aliyun kept as a
+    // fallback for faster local builds from China/HK networks.
     repositories {
+        google()
+        mavenCentral()
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/central' }
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-        google()
-        mavenCentral()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.2.1'
@@ -22,11 +25,11 @@ apply from: "variables.gradle"
 
 allprojects {
     repositories {
+        google()
+        mavenCentral()
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/central' }
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-        google()
-        mavenCentral()
     }
 }
 
