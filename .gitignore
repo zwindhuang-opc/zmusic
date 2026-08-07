@@ -29,6 +29,13 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Temp files (free music generation)
+temp/
+temp/freemusic/
+*.mp3
+*.wav
+generated/
+
 # Testing
 coverage/
 .nyc_output/
