@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run i18n:validate && npm run bundle:api && vite build",
-    "bundle:api": "node -e \"require('fs').copyFileSync('VERSION.json', 'netlify/functions/api/VERSION.json')\" && npx esbuild netlify/functions/api/_server_entry.cjs --bundle --platform=node --format=cjs --outfile=netlify/functions/api/_server_bundle.cjs --external:express --external:cors --log-level=warning",
+    "bundle:api": "node -e \"require('fs').copyFileSync('VERSION.json', 'netlify/functions/api/VERSION.json')\" && npx esbuild netlify/functions/api/_server_entry.cjs --bundle --platform=node --format=cjs --outfile=netlify/functions/api/_server_bundle.cjs --external:express --external:cors --external:ffmpeg-static --external:better-sqlite3 --log-level=warning",
     "preview": "vite preview",
     "server": "node src/server.js",
     "dev:full": "concurrently \"npm run server\" \"npm run dev\"",

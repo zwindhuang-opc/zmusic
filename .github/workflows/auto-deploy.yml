@@ -11,6 +11,7 @@ on:
       - 'capacitor.config.*'
       - 'VERSION.json'
       - 'vite.config.*'
+      - 'scripts/**'
       - '.github/workflows/**'
   workflow_dispatch:
     inputs:
