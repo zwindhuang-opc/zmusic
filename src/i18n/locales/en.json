@@ -122,7 +122,20 @@
     "hf_token_label": "HuggingFace AI Token",
     "llm_composer": "LLM Composer (optional)",
     "prefer_cloud_ai": "Prefer cloud AI (MusicGen) when available",
-    "rule_based": "Rule-Based"
+    "rule_based": "Rule-Based",
+    "tagline": "Music Creation Within Reach",
+    "quick_mode": "Quick Mode",
+    "quick_mode_desc": "One sentence → full song",
+    "master_mode": "Master Mode",
+    "master_mode_desc": "Choose style, tempo, duration",
+    "generate_song": "Generate Song",
+    "generating_audio": "Generating audio...",
+    "instant_procedural": "Instant procedural synthesis · No tokens needed",
+    "works_gallery": "Works Gallery",
+    "composing_score": "Composing musical score...",
+    "processing": "Processing...",
+    "more": "More ▼",
+    "collapse": "Collapse ▲"
   },
   "lyrics": {
     "title": "AI Lyrics Generator",

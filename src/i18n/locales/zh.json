@@ -122,7 +122,20 @@
     "hf_token_label": "HuggingFace AI令牌",
     "llm_composer": "LLM作曲家（可选）",
     "prefer_cloud_ai": "优先使用云端AI（MusicGen）",
-    "rule_based": "规则引擎"
+    "rule_based": "规则引擎",
+    "tagline": "让音乐创作触想即及",
+    "quick_mode": "极简模式",
+    "quick_mode_desc": "一句话生成一首歌",
+    "master_mode": "大师模式",
+    "master_mode_desc": "选择风格、速度、时长",
+    "generate_song": "生成歌曲",
+    "generating_audio": "正在生成音频...",
+    "instant_procedural": "即时程序化合成 · 无需代币",
+    "works_gallery": "作品集",
+    "composing_score": "正在作曲编曲...",
+    "processing": "处理中...",
+    "more": "更多 ▼",
+    "collapse": "收起 ▲"
   },
   "lyrics": {
     "title": "AI歌词生成器",
