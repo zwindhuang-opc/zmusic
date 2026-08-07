@@ -12,6 +12,7 @@ on:
       - 'VERSION.json'
       - 'vite.config.*'
       - 'scripts/**'
+      - 'android/**'
       - '.github/workflows/**'
   workflow_dispatch:
     inputs:
