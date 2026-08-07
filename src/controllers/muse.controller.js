@@ -100,6 +100,123 @@ function museHeaders() {
   };
 }
 
+// ===========================================================================
+// MOCK MODE — simulate muse.top generation without spending credits (14/song)
+// ===========================================================================
+// Enabled by config.museMock (env MUSE_MOCK=1). When on, generate()/queryTask()
+// /getUser()/status() return fake but realistic data so the FULL frontend flow
+// (submit → poll → play) can be tested locally. The mock audio URLs are real
+// public CDN mp3s harvested from muse.top's explore gallery, so playback
+// actually works in the browser.
+//
+// Mock polling timeline (per taskId):
+//   poll 1 → status="processing"  (frontend shows "Muse AI正在生成音乐...")
+//   poll 2 → status="processing"
+//   poll 3 → status="success" + audioUrl  (frontend plays the song)
+// ===========================================================================
+
+/** Whether mock mode is active (env MUSE_MOCK=1). */
+const MUSE_MOCK = Boolean(config.museMock);
+
+/**
+ * In-memory state for each mock task: how many times it has been polled.
+ * Keyed by taskId. Deleted once the task reaches "success".
+ * @type {Map<string, {polls:number, createdAt:number, songIdx:number, params:object}>}
+ */
+const mockTaskState = new Map();
+
+/**
+ * Fake "completed" songs used by the mock. Audio/image URLs are REAL public
+ * muse.top CDN assets (from the explore gallery), so the browser can actually
+ * fetch and play them. This makes the mock test a true end-to-end playback test.
+ */
+const MOCK_SONGS = [
+  {
+    title: '一花一世界',
+    audioUrl: 'https://cdn-work.muse.top/work/audio/1f6967dbe39d434faf6b5824ebe7b58f.mp3',
+    imageUrl: 'https://cdn-work.muse.top/work/image/1f6967dbe39d434faf6b5824ebe7b58f.jpeg',
+    duration: 195,
+    userName: '寅诺',
+  },
+  {
+    title: '八仙过海·凡人封神',
+    audioUrl: 'https://cdn-work.muse.top/work/audio/573ec1fd68b344f882844eb26ad61dab.mp3',
+    imageUrl: 'https://cdn1.muse.top/upload/project_song/song/img/1282815969339518976.jpg',
+    duration: 220,
+    userName: 'muse用户',
+  },
+  {
+    title: '星河漫步 (Mock)',
+    audioUrl: 'https://cdn-work.muse.top/work/audio/1f6967dbe39d434faf6b5824ebe7b58f.mp3',
+    imageUrl: 'https://cdn-work.muse.top/work/image/1f6967dbe39d434faf6b5824ebe7b58f.jpeg',
+    duration: 180,
+    userName: 'ZMusic测试',
+  },
+];
+
+/** How many polls before a mock task flips to "success". */
+const MOCK_POLL_THRESHOLD = 3;
+
+/**
+ * Create a mock generation task. Returns immediately with a fake taskId.
+ * @param {object} params - The generate request body (mode, prompt, lyrics, ...).
+ * @returns {{taskId:string, status:string}}
+ */
+function mockGenerate(params) {
+  const taskId = `mock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const songIdx = Math.floor(Math.random() * MOCK_SONGS.length);
+  mockTaskState.set(taskId, {
+    polls: 0,
+    createdAt: Date.now(),
+    songIdx,
+    params,
+  });
+  logger.info(`[MOCK] generate → taskId=${taskId} mode=${params?.mode || 'quick'} songIdx=${songIdx}`);
+  return { taskId, status: 'pending', mock: true };
+}
+
+/**
+ * Return mock poll status for a taskId. Returns "processing" for the first
+ * MOCK_POLL_THRESHOLD-1 polls, then "success" with a real CDN audioUrl.
+ * @param {string} taskId
+ * @returns {object} Task data shaped like muse.top's response.
+ */
+function mockQueryTask(taskId) {
+  let state = mockTaskState.get(taskId);
+  // If unknown taskId (e.g. server restarted), treat as already complete.
+  if (!state) {
+    const song = MOCK_SONGS[0];
+    logger.info(`[MOCK] queryTask ${taskId} → unknown, returning success`);
+    return { status: 'success', ...song, taskId, mock: true };
+  }
+  state.polls += 1;
+  const song = MOCK_SONGS[state.songIdx] || MOCK_SONGS[0];
+
+  if (state.polls < MOCK_POLL_THRESHOLD) {
+    logger.info(`[MOCK] queryTask ${taskId} → processing (poll ${state.polls}/${MOCK_POLL_THRESHOLD})`);
+    return {
+      status: 'processing',
+      progress: Math.round((state.polls / MOCK_POLL_THRESHOLD) * 100),
+      taskId,
+      mock: true,
+    };
+  }
+
+  // Threshold reached — return success with a playable CDN audio URL.
+  mockTaskState.delete(taskId);
+  logger.info(`[MOCK] queryTask ${taskId} → success! title="${song.title}" audioUrl=${song.audioUrl.slice(0, 60)}...`);
+  return {
+    status: 'success',
+    title: state.params?.title || song.title,
+    audioUrl: song.audioUrl,
+    imageUrl: song.imageUrl,
+    duration: song.duration,
+    userName: song.userName,
+    taskId,
+    mock: true,
+  };
+}
+
 /**
  * Centralised fetch helper that logs every step (per project convention:
  * "Generation process must include detailed logging at each key step to
@@ -202,6 +319,8 @@ export class MuseController {
       tokenExpired: expSec ? nowSec > expSec : null,
       tokenDaysLeft: expSec ? Math.max(0, Math.floor((expSec - nowSec) / 86400)) : null,
       uid: payload.uid || null,
+      // Mock mode flag — frontend can show a "测试模式" badge when true.
+      mock: MUSE_MOCK,
     });
   }
 
@@ -211,6 +330,26 @@ export class MuseController {
    * Endpoint: POST /project/song/v1/user/info
    */
   async getUser(req, res) {
+    // Mock mode: return a fake user with plenty of credits for testing.
+    if (MUSE_MOCK) {
+      logger.info('[MOCK] user/info → returning mock user (100 credits, member)');
+      return res.json({
+        success: true,
+        data: {
+          ssid: 'mock-session-id',
+          loginStatus: 0,
+          deviceId: 'mock-device',
+          memberInfo: {
+            credit: 100,
+            paidMember: true,
+            isMember: true,
+            memberType: 1,
+            subscription: { dailyCredit: 100, dailyCreditMax: 500, expired: false },
+          },
+        },
+        mock: true,
+      });
+    }
     try {
       const result = await museFetch('user/info', '/project/song/v1/user/info');
       return sendMuseResult(res, 'user/info', result);
@@ -319,15 +458,23 @@ export class MuseController {
       songModel = 'general',
     } = req.body || {};
 
-    // Validate inputs
-    if (!MUSE_TOKEN) {
-      return res.status(503).json({ success: false, error: 'MUSE_API_KEY not configured on server' });
-    }
+    // Validate inputs (these run in both real and mock mode for good UX)
     if (mode === 'quick' && (!prompt || prompt.length < 5)) {
       return res.status(400).json({ success: false, error: 'Quick mode requires prompt (>=5 chars)' });
     }
     if (mode === 'master' && !lyrics) {
       return res.status(400).json({ success: false, error: 'Master mode requires lyrics' });
+    }
+
+    // Mock mode: skip the real muse.top call, return a fake taskId immediately.
+    // The frontend will then poll /api/muse/task/:id which also returns mock data.
+    if (MUSE_MOCK) {
+      const mockResult = mockGenerate({ mode, prompt, lyrics, style, title, vocal, instrumental });
+      return res.json({ success: true, data: mockResult, label: 'generate/mock', mock: true });
+    }
+
+    if (!MUSE_TOKEN) {
+      return res.status(503).json({ success: false, error: 'MUSE_API_KEY not configured on server' });
     }
 
     try {
@@ -376,6 +523,12 @@ export class MuseController {
     const taskId = req.params?.id || req.params?.taskId;
     if (!taskId) {
       return res.status(400).json({ success: false, error: 'Task id required' });
+    }
+
+    // Mock mode: return processing → success based on poll count.
+    if (MUSE_MOCK) {
+      const mockResult = mockQueryTask(taskId);
+      return res.json({ success: true, data: mockResult, label: 'task/mock', mock: true });
     }
 
     try {
