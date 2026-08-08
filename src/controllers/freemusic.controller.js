@@ -4,7 +4,7 @@
  * Combines:
  * 1. Edge TTS (Microsoft's free TTS, NO API KEY) → vocals from lyrics
  * 2. Tone.js (browser) or HuggingFace MusicGen (free) → instrumental backing
- * 3. ffmpeg-static → mix vocals + instrumental into final song
+ * 3. ffmpeg-static → mix vocals + instrumental into final song (optional)
  * 
  * No paid APIs. No tokens required. Completely free.
  * 
@@ -17,13 +17,34 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import ffmpegPath from 'ffmpeg-static';
 import { config } from '../config/index.js';
 import Logger from '../utils/logger.js';
 
 const logger = new Logger('FreeMusicController');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+/**
+ * Lazy-loaded ffmpeg path. Returns null if ffmpeg-static is not available.
+ * ffmpeg-static is optional — the controller gracefully falls back to
+ * vocal-only or instrumental-only output when mixing is unavailable.
+ */
+let _ffmpegPath = null;
+let _ffmpegChecked = false;
+
+async function getFfmpegPath() {
+  if (_ffmpegChecked) return _ffmpegPath;
+  _ffmpegChecked = true;
+  try {
+    const mod = await import('ffmpeg-static');
+    _ffmpegPath = mod.default || mod;
+    logger.info(`ffmpeg-static available: ${_ffmpegPath}`);
+  } catch {
+    logger.warn('ffmpeg-static not installed — audio mixing disabled. Install with: npm install ffmpeg-static');
+    _ffmpegPath = null;
+  }
+  return _ffmpegPath;
+}
 
 const TEMP_DIR = join(__dirname, '..', '..', 'temp', 'freemusic');
 const OUTPUT_DIR = join(__dirname, '..', '..', 'public', 'generated');
@@ -182,10 +203,17 @@ async function generateSingingWithBark(lyrics) {
 }
 
 /**
- * Mix vocals + instrumental using ffmpeg
+ * Mix vocals + instrumental using ffmpeg (if available).
  * Adjusts vocal volume and applies reverb for a polished sound.
+ * Returns null if ffmpeg is not installed.
  */
 async function mixAudio(vocalPath, instrumentalPath, outputPath, options = {}) {
+  const ffmpeg = await getFfmpegPath();
+  if (!ffmpeg) {
+    logger.warn('Skipping audio mix — ffmpeg-static not available');
+    return null;
+  }
+
   const vocalVolume = options.vocalVolume || 1.5;
   const instrumentalVolume = options.instrumentalVolume || 0.6;
 
@@ -202,7 +230,7 @@ async function mixAudio(vocalPath, instrumentalPath, outputPath, options = {}) {
     ];
 
     logger.info(`ffmpeg mixing: ${args.join(' ')}`);
-    const proc = spawn(ffmpegPath, args);
+    const proc = spawn(ffmpeg, args);
 
     let stderr = '';
     proc.stderr.on('data', (data) => { stderr += data.toString(); });
@@ -298,12 +326,18 @@ export class FreeMusicController {
         try {
           const instResult = await generateInstrumentalWithMusicGen(prompt || `${style} background music`, Math.min(duration, 30));
           const mixedPath = join(OUTPUT_DIR, `song_${Date.now()}.mp3`);
-          await mixAudio(resultAudioPath, instResult.path, mixedPath, {
+          const mixedResult = await mixAudio(resultAudioPath, instResult.path, mixedPath, {
             vocalVolume: 1.5,
             instrumentalVolume: 0.5,
           });
-          resultAudioPath = mixedPath;
-          resultType = 'edge-tts-musicgen-mixed';
+          if (mixedResult) {
+            resultAudioPath = mixedPath;
+            resultType = 'edge-tts-musicgen-mixed';
+          } else {
+            logger.warn('Mix skipped (ffmpeg unavailable) — returning vocal-only with MusicGen instrumental as separate track');
+            // Store instrumental alongside vocal for potential future mixing
+            resultType = 'edge-tts-vocals-plus-musicgen';
+          }
         } catch (err) {
           logger.warn(`MusicGen instrumental mixing failed, using vocals only: ${err.message}`);
           // Keep vocal-only result

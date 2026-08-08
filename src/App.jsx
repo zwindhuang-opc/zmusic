@@ -2,7 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useTranslation } from './i18n/useTranslation.js';
 import {
   LayoutDashboard, Music, Mic, Video, Settings, Sparkles, TrendingUp,
-  Activity, Cpu, Zap, BarChart3, Server, Bot, Globe, ArrowLeft, Wand2, Sliders, Image
+  Activity, Cpu, Zap, BarChart3, Server, Bot, Globe, ArrowLeft, Wand2, Sliders, Image, Headphones
 } from 'lucide-react';
 import api, { isMobileEnvironment } from './services/api.client.js';
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
@@ -10,6 +10,7 @@ const MusicPage = lazy(() => import('./pages/MusicPage.jsx'));
 const LyricsPage = lazy(() => import('./pages/LyricsPage.jsx'));
 const ImageLyricsPage = lazy(() => import('./pages/ImageLyricsPage.jsx'));
 const MVPage = lazy(() => import('./pages/MVPage.jsx'));
+const MusePage = lazy(() => import('./pages/MusePage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 import FloatingChatBall from './components/FloatingChatBall.jsx';
 import EasyMode from './components/EasyMode.jsx';
@@ -75,6 +76,7 @@ function App() {
     { id: 'lyrics', label: t('nav.lyrics'), icon: Mic },
     { id: 'image-lyrics', label: t('nav.image_lyrics'), icon: Image },
     { id: 'mv', label: t('nav.mv'), icon: Video },
+    { id: 'muse', label: t('nav.muse'), icon: Headphones },
     { id: 'settings', label: t('nav.settings'), icon: Settings },
   ];
 
@@ -229,6 +231,7 @@ function App() {
             )}
             {currentPage === 'image-lyrics' && <ImageLyricsPage onNavigate={setCurrentPage} />}
             {currentPage === 'mv' && <MVPage />}
+            {currentPage === 'muse' && <MusePage />}
             {currentPage === 'settings' && <SettingsPage />}
           </Suspense>
         </div>

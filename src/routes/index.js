@@ -217,10 +217,39 @@ export async function handleRoute(req, res, url, method, body) {
       return museController.generate(req, res);
     }
 
+    // Task polling
     const taskMatch = subPath.match(/^task\/(.+)$/);
     if (taskMatch && method === 'GET') {
       req.params = { id: taskMatch[1] };
       return museController.queryTask(req, res);
+    }
+  }
+
+  // Audio proxy - bypasses CORS for external audio URLs
+  if (path === '/api/proxy/audio' && method === 'GET') {
+    const targetUrl = url.searchParams.get('url');
+    if (!targetUrl) {
+      return res.status(400).json({ success: false, error: 'Missing url parameter' });
+    }
+    try {
+      const response = await fetch(targetUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ZMusicBot/1.0)' },
+        redirect: 'follow',
+      });
+      if (!response.ok) {
+        return res.status(response.status).json({ success: false, error: `Upstream ${response.status}` });
+      }
+      const contentType = response.headers.get('content-type') || 'audio/mpeg';
+      const contentLength = response.headers.get('content-length');
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      if (contentLength) {
+        res.setHeader('Content-Length', contentLength);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      return res.send(Buffer.from(arrayBuffer));
+    } catch (e) {
+      return res.status(502).json({ success: false, error: e.message });
     }
   }
 
