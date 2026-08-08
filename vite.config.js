@@ -68,7 +68,10 @@ export default defineConfig(async ({ mode }) => {
     server: {
       port: fePort,
       host: '0.0.0.0',
-      strictPort: false, // Vite's own fallback as safety net
+      strictPort: false,
+      watch: {
+        ignored: ['**/edge_profile/**', '**/android/**', '**/ios/**'],
+      },
       proxy: {
         '/api': {
           target: `http://localhost:${bePort}`,
