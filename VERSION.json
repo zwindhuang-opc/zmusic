@@ -1,8 +1,8 @@
 {
-  "version": "6.2.0",
+  "version": "6.3.0",
   "major": 6,
-  "minor": 2,
+  "minor": 3,
   "patch": 0,
   "releaseDate": "2026-08-09",
-  "notes": "v6.2.0 — 5-algorithm lyrics generation (FSM/Network/Muse/Suno/Melo), AI page cross-navigation with auto-fill, redesigned mobile bottom nav with sub-menu, enhanced history panel with Melo support"
+  "notes": "v6.3.0 — AI Pro Mode for MV page with professional video tool integrations (Freebeat, Neural Frames, Kaiber, fal.ai/Hunyuan, Runway, Kling), scene templates, AI prompt builder, workflow guide. Restructured mobile nav with AI Music sub-group (Muse/Suno/Melo). Enhanced Basic Mode canvas generation."
 }
