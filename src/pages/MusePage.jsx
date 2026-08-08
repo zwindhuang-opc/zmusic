@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import MuseService from '../services/muse.service.js';
+import { useGeneration } from '../stores/generationStore.jsx';
 
 const API_BASE = '/api';
 
@@ -166,11 +167,10 @@ function StyledSelect({ value, onChange, options, placeholder, icon }) {
               <button
                 key={opt.value}
                 onClick={() => { onChange(opt.value); setOpen(false); }}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-all ${
-                  value === opt.value
-                    ? 'bg-fuchsia-500/20 text-fuchsia-200'
-                    : 'text-gray-300 hover:bg-white/5 hover:text-white'
-                }`}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-all ${value === opt.value
+                  ? 'bg-fuchsia-500/20 text-fuchsia-200'
+                  : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                  }`}
               >
                 {opt.icon && <span className="flex-shrink-0">{opt.icon}</span>}
                 <span className="truncate">{opt.label}</span>
@@ -186,6 +186,7 @@ function StyledSelect({ value, onChange, options, placeholder, icon }) {
 
 function MusePage() {
   const { t } = useTranslation();
+  const { pendingLyrics, clearPendingLyrics } = useGeneration();
 
   const [mode, setMode] = useState('quick');
   const [prompt, setPrompt] = useState('');
@@ -227,6 +228,13 @@ function MusePage() {
   useEffect(() => {
     loadMuseConfig();
   }, []);
+
+  useEffect(() => {
+    if (pendingLyrics) {
+      setLyrics(pendingLyrics);
+      clearPendingLyrics();
+    }
+  }, [pendingLyrics]);
 
   const loadMuseConfig = async () => {
     setLoadingConfig(true);
@@ -442,11 +450,10 @@ function MusePage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-              museStatus?.configured
-                ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
-                : 'bg-red-500/10 text-red-300 border border-red-500/30'
-            }`}>
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${museStatus?.configured
+              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+              : 'bg-red-500/10 text-red-300 border border-red-500/30'
+              }`}>
               <div className={`w-2 h-2 rounded-full ${museStatus?.configured ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
               {museStatus?.configured ? '已连接' : '未连接'}
               {loadingConfig && <Loader className="w-3 h-3 animate-spin" />}
@@ -472,11 +479,10 @@ function MusePage() {
       </div>
 
       {error && (
-        <div className={`p-4 rounded-xl border text-sm flex items-start gap-3 ${
-          error.includes('登录') || error.includes('LOGIN') || error.includes('expired')
-            ? 'bg-red-500/10 border-red-500/40 text-red-200'
-            : 'bg-red-500/10 border-red-500/30 text-red-300'
-        }`}>
+        <div className={`p-4 rounded-xl border text-sm flex items-start gap-3 ${error.includes('登录') || error.includes('LOGIN') || error.includes('expired')
+          ? 'bg-red-500/10 border-red-500/40 text-red-200'
+          : 'bg-red-500/10 border-red-500/30 text-red-300'
+          }`}>
           <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="font-medium">{error}</p>
@@ -508,22 +514,20 @@ function MusePage() {
           <div className="glass p-1.5 rounded-2xl flex gap-1 bg-white/5">
             <button
               onClick={() => { setMode('quick'); setGeneratedSong(null); setError(null); }}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                mode === 'quick'
-                  ? 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white shadow-lg shadow-fuchsia-500/30'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all ${mode === 'quick'
+                ? 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white shadow-lg shadow-fuchsia-500/30'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                }`}
             >
               <Sparkles className="w-4 h-4" />
               <span>快速模式</span>
             </button>
             <button
               onClick={() => { setMode('master'); setGeneratedSong(null); setError(null); }}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                mode === 'master'
-                  ? 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white shadow-lg shadow-fuchsia-500/30'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all ${mode === 'master'
+                ? 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white shadow-lg shadow-fuchsia-500/30'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                }`}
             >
               <Music2 className="w-4 h-4" />
               <span>大师模式</span>
@@ -628,11 +632,10 @@ function MusePage() {
                         <button
                           key={s.style}
                           onClick={() => setSelectedStyle(s.style)}
-                          className={`px-3 py-1.5 text-xs rounded-lg border transition-all flex items-center gap-1.5 ${
-                            selectedStyle === s.style
-                              ? 'bg-gradient-to-r from-fuchsia-500/20 to-purple-500/20 border-fuchsia-500/50 text-fuchsia-200 shadow-lg shadow-fuchsia-500/10'
-                              : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-white/30'
-                          }`}
+                          className={`px-3 py-1.5 text-xs rounded-lg border transition-all flex items-center gap-1.5 ${selectedStyle === s.style
+                            ? 'bg-gradient-to-r from-fuchsia-500/20 to-purple-500/20 border-fuchsia-500/50 text-fuchsia-200 shadow-lg shadow-fuchsia-500/10'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-white/30'
+                            }`}
                         >
                           <span>{STYLE_ICONS[s.style] || '🎵'}</span>
                           {s.style}
@@ -682,11 +685,10 @@ function MusePage() {
                   </label>
                   <button
                     onClick={() => setInstrumental(!instrumental)}
-                    className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-all ${
-                      instrumental
-                        ? 'bg-fuchsia-500/20 border border-fuchsia-500/50 text-fuchsia-200'
-                        : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white'
-                    }`}
+                    className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-all ${instrumental
+                      ? 'bg-fuchsia-500/20 border border-fuchsia-500/50 text-fuchsia-200'
+                      : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white'
+                      }`}
                   >
                     {instrumental ? '✓ 开启' : '关闭'}
                   </button>
@@ -756,16 +758,14 @@ function MusePage() {
                   { key: 'compose', label: '创作', icon: Music2 },
                   { key: 'master', label: '母带', icon: Disc3 },
                 ].map((step) => (
-                  <div key={step.key} className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${
-                    activeSteps[step.key]
-                      ? 'bg-fuchsia-500/10 border border-fuchsia-500/20'
-                      : 'bg-white/5 border border-white/5'
-                  }`}>
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                      activeSteps[step.key]
-                        ? 'bg-gradient-to-r from-fuchsia-500 to-purple-500'
-                        : 'bg-white/5'
+                  <div key={step.key} className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${activeSteps[step.key]
+                    ? 'bg-fuchsia-500/10 border border-fuchsia-500/20'
+                    : 'bg-white/5 border border-white/5'
                     }`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeSteps[step.key]
+                      ? 'bg-gradient-to-r from-fuchsia-500 to-purple-500'
+                      : 'bg-white/5'
+                      }`}>
                       <step.icon className={`w-4 h-4 ${activeSteps[step.key] ? 'text-white' : 'text-gray-500'}`} />
                     </div>
                     <span className={`text-[9px] text-center ${activeSteps[step.key] ? 'text-fuchsia-300' : 'text-gray-500'}`}>

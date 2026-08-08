@@ -135,6 +135,7 @@
     "save": "Save",
     "send_to_muse": "Send to Muse AI",
     "send_to_suno": "Send to Suno AI",
+    "send_to_melo": "Send to Melo AI",
     "success": "Success"
   },
   "dashboard": {

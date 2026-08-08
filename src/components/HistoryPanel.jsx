@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
-import { History, Copy, Music, Trash2, X, ChevronRight, Sparkles, Zap, Piano, ExternalLink } from 'lucide-react';
+import { History, Copy, Music, Trash2, X, ChevronRight, Sparkles, Zap, Piano, ExternalLink, Headphones, Cloud, Music2 } from 'lucide-react';
 
 function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
   const { t, ts } = useTranslation();
@@ -294,7 +294,17 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
                       className="flex items-center justify-center gap-1 py-2 px-3 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors text-xs"
                       title={t('common.send_to_suno')}
                     >
-                      <Music className="w-3 h-3" />
+                      <Cloud className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSendToAI(item, 'melo');
+                      }}
+                      className="flex items-center justify-center gap-1 py-2 px-3 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors text-xs"
+                      title={t('common.send_to_melo')}
+                    >
+                      <Music2 className="w-3 h-3" />
                     </button>
                   </div>
                 </div>

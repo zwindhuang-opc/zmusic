@@ -305,37 +305,64 @@ function App() {
           </Suspense>
         </div>
 
-        <nav className="mobile-bottom-nav safe-area-bottom glass border-t border-purple-500/10 px-2 py-3 justify-around items-center z-50 relative">
-          {navigationItems.flatMap((item) => {
-            if (item.isGroup) {
-              return item.children.map((child) => {
-                const Icon = child.icon;
-                const isActive = currentPage === child.id;
+        <nav className="mobile-bottom-nav safe-area-bottom glass border-t border-purple-500/10 z-50 relative">
+          {/* Secondary row: group children when a music group page is active */}
+          {(() => {
+            const musicGroup = navigationItems.find(i => i.isGroup);
+            const isMusicPage = musicGroup?.children.some(c => c.id === currentPage);
+            if (!isMusicPage) return null;
+            return (
+              <div className="flex items-center justify-center gap-1 px-2 py-2 border-b border-purple-500/10">
+                {musicGroup.children.map(child => {
+                  const Icon = child.icon;
+                  const isActive = currentPage === child.id;
+                  return (
+                    <button
+                      key={child.id}
+                      onClick={() => setCurrentPage(child.id)}
+                      className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all ${isActive ? 'text-violet-400 bg-violet-500/10' : 'text-gray-500'}`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="text-[9px] font-medium">{child.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* Primary bottom nav */}
+          <div className="flex items-center justify-around px-2 py-2">
+            {navigationItems.map((item) => {
+              if (item.isGroup) {
+                const Icon = item.icon;
+                const childrenActive = item.children.some(c => c.id === currentPage);
+                const primaryChild = item.children[0];
                 return (
                   <button
-                    key={child.id}
-                    onClick={() => setCurrentPage(child.id)}
-                    className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[60px] ${isActive ? 'text-violet-400' : 'text-gray-500'}`}
+                    key={item.id}
+                    onClick={() => setCurrentPage(childrenActive ? currentPage : primaryChild.id)}
+                    className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all ${childrenActive ? 'text-violet-400' : 'text-gray-500'}`}
                   >
                     <Icon className="w-6 h-6" />
-                    <span className="text-[10px] font-medium">{child.label}</span>
+                    <span className="text-[10px] font-medium">{item.label}</span>
                   </button>
                 );
-              });
-            }
-            const Icon = item.icon;
-            const isActive = currentPage === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setCurrentPage(item.id)}
-                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[60px] ${isActive ? 'text-violet-400' : 'text-gray-500'}`}
-              >
-                <Icon className="w-6 h-6" />
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </button>
-            );
-          })}
+              }
+              const Icon = item.icon;
+              const isActive = currentPage === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setCurrentPage(item.id)}
+                  className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all ${isActive ? 'text-violet-400' : 'text-gray-500'}`}
+                >
+                  <Icon className="w-6 h-6" />
+                  <span className="text-[10px] font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </nav>
       </main>
 

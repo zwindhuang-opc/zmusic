@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import SunoService from '../services/suno.service.js';
+import { useGeneration } from '../stores/generationStore.jsx';
 
 const PROMPT_INSPIRATIONS = [
   '追逐梦想的励志之歌，充满力量与希望',
@@ -55,6 +56,7 @@ function proxyAudioUrl(url) {
 
 function SunoPage() {
   const { t } = useTranslation();
+  const { pendingLyrics, clearPendingLyrics } = useGeneration();
 
   const [mode, setMode] = useState('prompt');
   const [prompt, setPrompt] = useState('');
@@ -100,6 +102,14 @@ function SunoPage() {
     loadConfig();
     loadAudioList();
   }, []);
+
+  useEffect(() => {
+    if (pendingLyrics) {
+      setMode('lyrics');
+      setLyrics(pendingLyrics);
+      clearPendingLyrics();
+    }
+  }, [pendingLyrics]);
 
   const loadConfig = async () => {
     setLoadingUser(true);
@@ -353,8 +363,8 @@ function SunoPage() {
 
           <div className="flex items-center gap-3">
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${configured
-                ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
-                : 'bg-red-500/10 text-red-300 border border-red-500/30'
+              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+              : 'bg-red-500/10 text-red-300 border border-red-500/30'
               }`}>
               <div className={`w-2 h-2 rounded-full ${configured ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
               {configured ? '已连接' : '未连接'}
@@ -429,8 +439,8 @@ function SunoPage() {
             <button
               onClick={() => { setMode('prompt'); setGeneratedSong(null); setError(null); }}
               className={`flex-1 flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium transition-all ${mode === 'prompt'
-                  ? 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white shadow-lg shadow-fuchsia-500/30'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                ? 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white shadow-lg shadow-fuchsia-500/30'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
             >
               <Sparkles className="w-4 h-4" />
@@ -440,8 +450,8 @@ function SunoPage() {
             <button
               onClick={() => { setMode('lyrics'); setGeneratedSong(null); setError(null); }}
               className={`flex-1 flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium transition-all ${mode === 'lyrics'
-                  ? 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white shadow-lg shadow-fuchsia-500/30'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                ? 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white shadow-lg shadow-fuchsia-500/30'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
             >
               <Mic className="w-4 h-4" />
@@ -827,13 +837,13 @@ function SunoPage() {
                   <div
                     key={step.key}
                     className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${activeSteps[step.key]
-                        ? 'bg-fuchsia-500/10 border border-fuchsia-500/20'
-                        : 'bg-white/5 border border-white/5'
+                      ? 'bg-fuchsia-500/10 border border-fuchsia-500/20'
+                      : 'bg-white/5 border border-white/5'
                       }`}
                   >
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeSteps[step.key]
-                        ? 'bg-gradient-to-r from-fuchsia-500 to-purple-500 shadow-lg shadow-fuchsia-500/20'
-                        : 'bg-white/5'
+                      ? 'bg-gradient-to-r from-fuchsia-500 to-purple-500 shadow-lg shadow-fuchsia-500/20'
+                      : 'bg-white/5'
                       }`}>
                       <step.icon className={`w-4 h-4 transition-colors ${activeSteps[step.key] ? 'text-white' : 'text-gray-500'
                         } ${activeSteps[step.key] && genProgress < 100 ? 'animate-pulse' : ''}`} />

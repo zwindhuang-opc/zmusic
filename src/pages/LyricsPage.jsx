@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Mic, Sparkles, Loader, FileText, Cpu, Network, BookOpen, Settings as SettingsIcon, Wand2, Clock, Music2, User, History, Copy, Video, AlertCircle, Search, ChevronDown, ChevronUp, ChevronRight, Sliders, Palette, Layers, Image as ImageIcon, Upload, X, Check, Share2, Layout, Music4 } from 'lucide-react';
+import { Mic, Sparkles, Loader, FileText, Cpu, Network, BookOpen, Settings as SettingsIcon, Wand2, Clock, Music2, User, History, Copy, Video, AlertCircle, Search, ChevronDown, ChevronUp, ChevronRight, Sliders, Palette, Layers, Image as ImageIcon, Upload, X, Check, Share2, Layout, Music4, Headphones, Cloud } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
 import { useGeneration } from '../stores/generationStore.jsx';
@@ -79,7 +79,8 @@ function LyricsPage({ onNavigate, defaultMode }) {
     { id: 'fsm', name: t('lyrics.fsm_name'), desc: t('lyrics.fsm_desc'), icon: Cpu, emoji: '⚙️' },
     { id: 'network_layer', name: t('lyrics.network_name'), desc: t('lyrics.network_desc'), icon: Layers, emoji: '🧱' },
     { id: 'muse', name: t('lyrics.muse_name'), desc: t('lyrics.muse_desc'), icon: BookOpen, emoji: '✨' },
-    { id: 'suno', name: t('lyrics.suno_name'), desc: t('lyrics.suno_desc'), icon: SettingsIcon, emoji: '🎛️' }
+    { id: 'suno', name: t('lyrics.suno_name'), desc: t('lyrics.suno_desc'), icon: SettingsIcon, emoji: '🎛️' },
+    { id: 'melo', name: t('lyrics.melo_name'), desc: t('lyrics.melo_desc'), icon: Music2, emoji: '🎵' }
   ];
 
   const LANGUAGES = [
@@ -515,6 +516,14 @@ function LyricsPage({ onNavigate, defaultMode }) {
   const [showExploreStyles, setShowExploreStyles] = useState(false);
   const [showExploreThemes, setShowExploreThemes] = useState(false);
 
+  const handleHistorySelect = (item, aiType) => {
+    if (aiType && ['muse', 'suno', 'melo'].includes(aiType)) {
+      const text = item.result?.lyricsText || item.result?.fullText || item.lyricsText || item.fullText || '';
+      setPendingLyrics(text);
+      onNavigate?.(aiType);
+    }
+  };
+
   return (
     <div className="space-y-4 md:space-y-6 animate-slide-in pb-52 md:pb-8">
       {/* Header */}
@@ -848,22 +857,22 @@ function LyricsPage({ onNavigate, defaultMode }) {
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+                  <div className="grid grid-cols-5 gap-1.5 md:gap-2">
                     {METHODS.map(m => {
                       const Icon = m.icon;
                       return (
                         <button
                           key={m.id}
                           onClick={() => setMethod(m.id)}
-                          className={`p-3 md:p-4 rounded-xl text-center transition-all flex flex-col items-center gap-1.5 ${method === m.id
-                            ? 'bg-gradient-to-br from-violet-500/30 to-pink-500/20 border-2 border-violet-500/50 scale-[1.02]'
+                          className={`p-2 md:p-3 rounded-lg text-center transition-all flex flex-col items-center gap-1 ${method === m.id
+                            ? 'bg-gradient-to-br from-violet-500/30 to-pink-500/20 border-2 border-violet-500/50'
                             : 'bg-white/5 border-2 border-white/5 hover:border-white/20 hover:bg-white/10'
                             }`}
                           title={m.desc}
                         >
-                          <span className="text-2xl md:text-3xl leading-none" aria-hidden="true">{m.emoji}</span>
-                          <Icon className={`w-5 h-5 md:w-6 md:h-6 ${method === m.id ? 'text-violet-300' : 'text-gray-400'}`} />
-                          <div className={`text-[11px] md:text-xs font-semibold ${method === m.id ? 'text-white' : 'text-gray-300'}`}>{m.name}</div>
+                          <span className="text-xl md:text-2xl leading-none" aria-hidden="true">{m.emoji}</span>
+                          <Icon className={`w-4 h-4 md:w-5 md:h-5 ${method === m.id ? 'text-violet-300' : 'text-gray-400'}`} />
+                          <div className={`text-[10px] md:text-[11px] font-semibold leading-tight ${method === m.id ? 'text-white' : 'text-gray-300'}`}>{m.name}</div>
                         </button>
                       );
                     })}
@@ -1543,7 +1552,7 @@ function LyricsPage({ onNavigate, defaultMode }) {
                 )}
 
                 {/* Both Tab - Command + Lyrics */}
-                {viewMode === 'both' && result.result?.fullText && (
+                {viewMode === 'both' && (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <button
@@ -1564,6 +1573,31 @@ function LyricsPage({ onNavigate, defaultMode }) {
                       >
                         <Video className="w-3.5 h-3.5" />{t('lyrics.send_to_mv')}
                       </button>
+                      {/* AI Generation Buttons */}
+                      <div className="flex items-center gap-1.5 ml-auto pl-3 border-l border-white/10">
+                        <span className="text-[10px] text-gray-500 uppercase tracking-wider">AI生成：</span>
+                        <button
+                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('muse'); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/30 text-xs text-fuchsia-300 hover:bg-fuchsia-500/25 transition-all"
+                          title="发送到 Muse AI 生成歌曲"
+                        >
+                          <Headphones className="w-3.5 h-3.5" /> Muse
+                        </button>
+                        <button
+                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('suno'); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-xs text-cyan-300 hover:bg-cyan-500/25 transition-all"
+                          title="发送到 Suno AI 生成歌曲"
+                        >
+                          <Cloud className="w-3.5 h-3.5" /> Suno
+                        </button>
+                        <button
+                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('melo'); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-xs text-amber-300 hover:bg-amber-500/25 transition-all"
+                          title="发送到 Melo AI 生成歌曲"
+                        >
+                          <Music2 className="w-3.5 h-3.5" /> Melo
+                        </button>
+                      </div>
                     </div>
                     <div className="rounded-xl bg-black/30 border border-emerald-500/20 overflow-hidden allow-select">
                       <pre className="p-5 text-sm text-white whitespace-pre-wrap font-mono leading-relaxed max-h-[70vh] overflow-y-auto">{result.result.fullText}</pre>
@@ -1574,14 +1608,34 @@ function LyricsPage({ onNavigate, defaultMode }) {
                 {/* Commands Tab */}
                 {viewMode === 'commands' && (result.result?.fullCommand || result.command) && (
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
                       <span className="text-[10px] text-gray-500 uppercase tracking-wider">{t('lyrics.commands_only')}</span>
-                      <button
-                        onClick={() => copyToClipboard(result.result?.fullCommand || result.command)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-500/15 border border-pink-500/30 text-xs text-pink-300 hover:bg-pink-500/25 transition-all"
-                      >
-                        <Copy className="w-3.5 h-3.5" />{t('lyrics.copy_commands')}
-                      </button>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          onClick={() => copyToClipboard(result.result?.fullCommand || result.command)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-500/15 border border-pink-500/30 text-xs text-pink-300 hover:bg-pink-500/25 transition-all"
+                        >
+                          <Copy className="w-3.5 h-3.5" />{t('lyrics.copy_commands')}
+                        </button>
+                        <button
+                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('muse'); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/30 text-xs text-fuchsia-300 hover:bg-fuchsia-500/25 transition-all"
+                        >
+                          <Headphones className="w-3.5 h-3.5" /> Muse
+                        </button>
+                        <button
+                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('suno'); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-xs text-cyan-300 hover:bg-cyan-500/25 transition-all"
+                        >
+                          <Cloud className="w-3.5 h-3.5" /> Suno
+                        </button>
+                        <button
+                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('melo'); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-xs text-amber-300 hover:bg-amber-500/25 transition-all"
+                        >
+                          <Music2 className="w-3.5 h-3.5" /> Melo
+                        </button>
+                      </div>
                     </div>
                     <div className="rounded-xl bg-black/30 border border-pink-500/20 overflow-hidden allow-select">
                       <pre className="p-4 text-xs text-pink-200 font-mono whitespace-pre-wrap break-words max-h-[70vh] overflow-y-auto leading-relaxed">{result.result?.fullCommand || result.command}</pre>
@@ -1590,9 +1644,9 @@ function LyricsPage({ onNavigate, defaultMode }) {
                 )}
 
                 {/* Lyrics Tab */}
-                {viewMode === 'lyrics' && (result.result?.lyricsText || result.result?.fullText) && (
+                {viewMode === 'lyrics' && (result.result.lyricsText || result.result.fullText) && (
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <button
                         onClick={() => copyToClipboard(result.result.lyricsText || result.result.fullText)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/15 border border-violet-500/30 text-xs text-violet-300 hover:bg-violet-500/25 transition-all"
@@ -1611,6 +1665,27 @@ function LyricsPage({ onNavigate, defaultMode }) {
                       >
                         <Video className="w-3.5 h-3.5" />{t('lyrics.send_to_mv')}
                       </button>
+                      <div className="flex items-center gap-1.5 ml-auto pl-3 border-l border-white/10">
+                        <span className="text-[10px] text-gray-500 uppercase tracking-wider">AI生成：</span>
+                        <button
+                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('muse'); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/30 text-xs text-fuchsia-300 hover:bg-fuchsia-500/25 transition-all"
+                        >
+                          <Headphones className="w-3.5 h-3.5" /> Muse
+                        </button>
+                        <button
+                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('suno'); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-xs text-cyan-300 hover:bg-cyan-500/25 transition-all"
+                        >
+                          <Cloud className="w-3.5 h-3.5" /> Suno
+                        </button>
+                        <button
+                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('melo'); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-xs text-amber-300 hover:bg-amber-500/25 transition-all"
+                        >
+                          <Music2 className="w-3.5 h-3.5" /> Melo
+                        </button>
+                      </div>
                     </div>
                     <div className="rounded-xl bg-black/30 border border-violet-500/20 overflow-hidden allow-select">
                       <pre className="p-5 text-sm text-white whitespace-pre-wrap font-sans leading-loose max-h-[70vh] overflow-y-auto">{result.result.lyricsText || result.result.fullText}</pre>
@@ -1638,10 +1713,11 @@ function LyricsPage({ onNavigate, defaultMode }) {
             )}
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* History Panel - accessible in both modes */}
-      <HistoryPanel isOpen={showHistory} onClose={() => setShowHistory(false)} />
+      <HistoryPanel isOpen={showHistory} onClose={() => setShowHistory(false)} onSelectItem={handleHistorySelect} />
 
       {/* Style Explore Modal */}
       {

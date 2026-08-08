@@ -357,7 +357,8 @@ export function GenerationProvider({ children }) {
     stats,
     getHistoryByType,
     pendingLyrics,
-    setPendingLyrics
+    setPendingLyrics,
+    clearPendingLyrics: () => setPendingLyrics('')
   };
 
   return (

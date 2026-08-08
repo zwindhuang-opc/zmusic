@@ -7,6 +7,7 @@ import {
   Layers, Gauge, KeyRound, Star, Tag, FileText, Wand2
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
+import { useGeneration } from '../stores/generationStore.jsx';
 
 const API_BASE = '/api';
 
@@ -31,7 +32,7 @@ const MELO_STYLE_TAGS = {
   ],
   moods: [
     '欢快', '忧伤', '浪漫', '激昂', '平静', '神秘', '紧张',
-    '轻松', '深情', '激昂', '治愈', '孤独', '狂欢', '思念',
+    '轻松', '深情', '豪迈', '治愈', '孤独', '狂欢', '思念',
     '励志', '怀旧', '梦幻', '力量', '温柔', '激情',
   ],
   vocal: [
@@ -56,7 +57,7 @@ const STRUCTURE_TEMPLATES = [
 
 const BPM_PRESETS = [60, 80, 100, 120, 140, 160, 180];
 const KEY_OPTIONS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
-                     'Cm', 'C#m', 'Dm', 'D#m', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'A#m', 'Bm'];
+  'Cm', 'C#m', 'Dm', 'D#m', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'A#m', 'Bm'];
 const TIME_SIGNATURES = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8'];
 
 const LAYER_TEMPLATES = {
@@ -77,6 +78,7 @@ const QUICK_LYRICS_TEMPLATES = [
 
 function MeloPage() {
   const { t } = useTranslation();
+  const { pendingLyrics, clearPendingLyrics } = useGeneration();
 
   const [lyrics, setLyrics] = useState('');
   const [title, setTitle] = useState('');
@@ -127,6 +129,13 @@ function MeloPage() {
   useEffect(() => {
     loadMeloConfig();
   }, []);
+
+  useEffect(() => {
+    if (pendingLyrics) {
+      setLyrics(pendingLyrics);
+      clearPendingLyrics();
+    }
+  }, [pendingLyrics]);
 
   const loadMeloConfig = async () => {
     setLoadingConfig(true);
@@ -416,8 +425,8 @@ function MeloPage() {
 
           <div className="flex items-center gap-3">
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${meloStatus?.configured
-                ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
-                : 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
+              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+              : 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
               }`}>
               <div className={`w-2 h-2 rounded-full ${meloStatus?.configured ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
               {meloStatus?.configured ? '已连接' : '未连接'}
@@ -569,8 +578,8 @@ function MeloPage() {
                       key={tag}
                       onClick={() => toggleTag(tag, group.selected, group.setter)}
                       className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${group.selected.includes(tag)
-                          ? 'bg-gradient-to-r from-amber-500/30 to-orange-500/30 border-amber-500/50 text-amber-100 shadow-lg shadow-amber-500/10'
-                          : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-white/30 hover:bg-white/10'
+                        ? 'bg-gradient-to-r from-amber-500/30 to-orange-500/30 border-amber-500/50 text-amber-100 shadow-lg shadow-amber-500/10'
+                        : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-white/30 hover:bg-white/10'
                         }`}
                     >
                       {tag}
@@ -606,8 +615,8 @@ function MeloPage() {
                     key={tpl.id}
                     onClick={() => setSelectedStructure(selectedStructure === tpl.id ? '' : tpl.id)}
                     className={`p-3 rounded-xl border text-left transition-all ${selectedStructure === tpl.id
-                        ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/50 shadow-lg shadow-amber-500/10'
-                        : 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10'
+                      ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/50 shadow-lg shadow-amber-500/10'
+                      : 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10'
                       }`}
                   >
                     <div className="flex items-center gap-1.5 mb-1">
@@ -655,8 +664,8 @@ function MeloPage() {
                             key={b}
                             onClick={() => setBpm(b)}
                             className={`w-6 h-6 text-[10px] rounded transition-all ${bpm === b
-                                ? 'bg-amber-500/30 text-amber-200'
-                                : 'bg-white/5 text-gray-500 hover:text-white'
+                              ? 'bg-amber-500/30 text-amber-200'
+                              : 'bg-white/5 text-gray-500 hover:text-white'
                               }`}
                           >
                             {b}
@@ -785,13 +794,13 @@ function MeloPage() {
                   <div
                     key={step.key}
                     className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${activeSteps[step.key]
-                        ? 'bg-amber-500/10 border border-amber-500/20'
-                        : 'bg-white/5 border border-white/5'
+                      ? 'bg-amber-500/10 border border-amber-500/20'
+                      : 'bg-white/5 border border-white/5'
                       }`}
                   >
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeSteps[step.key]
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/20'
-                        : 'bg-white/5'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/20'
+                      : 'bg-white/5'
                       }`}>
                       <step.icon className={`w-4 h-4 transition-colors ${activeSteps[step.key] ? 'text-white' : 'text-gray-500'
                         } ${activeSteps[step.key] && progress < (idx + 1) * 25 ? 'animate-pulse' : ''}`} />
