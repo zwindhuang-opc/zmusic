@@ -2,7 +2,8 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useTranslation } from './i18n/useTranslation.js';
 import {
   LayoutDashboard, Music, Mic, Video, Settings, Sparkles, TrendingUp,
-  Activity, Cpu, Zap, BarChart3, Server, Bot, Globe, ArrowLeft, Wand2, Sliders, Image, Headphones, Cloud, Music2
+  Activity, Cpu, Zap, BarChart3, Server, Bot, Globe, ArrowLeft, Wand2, Sliders, Image, Headphones, Cloud, Music2,
+  ChevronDown, ChevronRight
 } from 'lucide-react';
 import api, { isMobileEnvironment } from './services/api.client.js';
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
@@ -26,6 +27,7 @@ function App() {
   const [apiStatus, setApiStatus] = useState({ configured: false, version: BUILD_VERSION, uptime: 0 });
   const [agentStatus, setAgentStatus] = useState(null);
   const [uiMode, setUiMode] = useState(() => localStorage.getItem(UI_MODE_KEY) || 'expert');
+  const [musicGroupExpanded, setMusicGroupExpanded] = useState(true);
 
   useEffect(() => {
     if (!isMobileEnvironment()) {
@@ -74,15 +76,34 @@ function App() {
 
   const navigationItems = [
     { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
-    { id: 'music', label: t('nav.music'), icon: Music },
+    {
+      id: 'music-group',
+      label: t('nav.music'),
+      icon: Music,
+      isGroup: true,
+      children: [
+        { id: 'music', label: t('nav.music'), icon: Music },
+        { id: 'muse', label: t('nav.muse'), icon: Headphones },
+        { id: 'suno', label: t('nav.suno'), icon: Cloud },
+        { id: 'melo', label: t('nav.melo'), icon: Music2 },
+      ],
+    },
     { id: 'lyrics', label: t('nav.lyrics'), icon: Mic },
     { id: 'image-lyrics', label: t('nav.image_lyrics'), icon: Image },
     { id: 'mv', label: t('nav.mv'), icon: Video },
-    { id: 'muse', label: t('nav.muse'), icon: Headphones },
-    { id: 'suno', label: t('nav.suno'), icon: Cloud },
-    { id: 'melo', label: t('nav.melo'), icon: Music2 },
     { id: 'settings', label: t('nav.settings'), icon: Settings },
   ];
+
+  const currentLabel = (() => {
+    for (const item of navigationItems) {
+      if (item.id === currentPage) return item.label;
+      if (item.isGroup) {
+        const found = item.children.find(c => c.id === currentPage);
+        if (found) return found.label;
+      }
+    }
+    return '';
+  })();
 
   return (
     <div className="flex h-screen bg-[#0a0a0f] text-white overflow-hidden">
@@ -102,6 +123,48 @@ function App() {
         <nav className="flex-1 p-3 space-y-1">
           {navigationItems.map((item) => {
             const Icon = item.icon;
+
+            if (item.isGroup) {
+              const groupActive = item.children.some(c => currentPage === c.id);
+              const expanded = musicGroupExpanded;
+              return (
+                <div key={item.id}>
+                  <button
+                    onClick={() => setMusicGroupExpanded(!expanded)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${groupActive
+                      ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 text-white border border-violet-500/30'
+                      : 'text-gray-300 hover:text-white hover:bg-white/5'
+                      }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="font-medium flex-1 text-left">{item.label}</span>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                  </button>
+                  {expanded && (
+                    <div className="mt-1 ml-4 pl-3 border-l border-violet-500/20 space-y-0.5">
+                      {item.children.map((child) => {
+                        const ChildIcon = child.icon;
+                        const isActive = currentPage === child.id;
+                        return (
+                          <button
+                            key={child.id}
+                            onClick={() => setCurrentPage(child.id)}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${isActive
+                              ? 'bg-gradient-to-r from-violet-500/30 to-pink-500/30 text-white border border-violet-500/40'
+                              : 'text-gray-400 hover:text-white hover:bg-white/5'
+                              }`}
+                          >
+                            <ChildIcon className="w-3.5 h-3.5" />
+                            <span className="text-[13px]">{child.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             const isActive = currentPage === item.id;
             return (
               <button
@@ -199,7 +262,7 @@ function App() {
               </div>
             </div>
             <h2 className="text-base md:text-sm font-semibold">
-              {navigationItems.find(item => item.id === currentPage)?.label}
+              {currentLabel}
             </h2>
             <span className="text-[10px] px-2 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
               v{apiStatus.version}
@@ -243,7 +306,23 @@ function App() {
         </div>
 
         <nav className="mobile-bottom-nav safe-area-bottom glass border-t border-purple-500/10 px-2 py-3 justify-around items-center z-50 relative">
-          {navigationItems.map((item) => {
+          {navigationItems.flatMap((item) => {
+            if (item.isGroup) {
+              return item.children.map((child) => {
+                const Icon = child.icon;
+                const isActive = currentPage === child.id;
+                return (
+                  <button
+                    key={child.id}
+                    onClick={() => setCurrentPage(child.id)}
+                    className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[60px] ${isActive ? 'text-violet-400' : 'text-gray-500'}`}
+                  >
+                    <Icon className="w-6 h-6" />
+                    <span className="text-[10px] font-medium">{child.label}</span>
+                  </button>
+                );
+              });
+            }
             const Icon = item.icon;
             const isActive = currentPage === item.id;
             return (
