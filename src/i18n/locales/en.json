@@ -1170,6 +1170,8 @@
     "music": "Music Generation",
     "mv": "MV Video",
     "muse": "Muse AI",
+    "suno": "Suno AI",
+    "melo": "Melo AI",
     "settings": "Settings"
   },
   "section_presets": {

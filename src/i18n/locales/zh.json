@@ -1170,6 +1170,8 @@
     "music": "音乐生成",
     "mv": "MV视频",
     "muse": "Muse AI",
+    "suno": "Suno AI",
+    "melo": "Melo AI",
     "settings": "设置"
   },
   "section_presets": {

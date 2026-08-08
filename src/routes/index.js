@@ -13,6 +13,7 @@ import sunoController from '../controllers/suno.controller.js';
 import freemusicController from '../controllers/freemusic.controller.js';
 import visionController from '../controllers/vision.controller.js';
 import museController from '../controllers/muse.controller.js';
+import meloController from '../controllers/melo.controller.js';
 import Logger from '../utils/logger.js';
 
 const logger = new Logger('Routes');
@@ -222,6 +223,31 @@ export async function handleRoute(req, res, url, method, body) {
     if (taskMatch && method === 'GET') {
       req.params = { id: taskMatch[1] };
       return museController.queryTask(req, res);
+    }
+  }
+
+  // Melo AI endpoints - advanced composition with multi-layer system
+  const meloMatch = path.match(/^\/api\/melo\/(.+)$/);
+  if (meloMatch) {
+    const subPath = meloMatch[1];
+
+    if (subPath === 'status' && method === 'GET') {
+      return meloController.status(req, res);
+    }
+
+    if (subPath === 'user' && method === 'GET') {
+      return meloController.getUser(req, res);
+    }
+
+    if (subPath === 'generate' && method === 'POST') {
+      req.body = body;
+      return meloController.generate(req, res);
+    }
+
+    const meloTaskMatch = subPath.match(/^task\/(.+)$/);
+    if (meloTaskMatch && method === 'GET') {
+      req.params = { id: meloTaskMatch[1] };
+      return meloController.queryTask(req, res);
     }
   }
 
