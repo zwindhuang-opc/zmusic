@@ -9,6 +9,7 @@ import { compositionToWavBlob } from '../utils/audioEngine.js';
 import { generateMVVideo } from '../utils/mvComposer.js';
 import MuseService from '../services/muse.service.js';
 import SunoService from '../services/suno.service.js';
+import MeloService from '../services/melo.service.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 import { MVEngineSelector, MVControls, MVVideoPlayer, MVTimelinePreview } from '../components/mv/index.js';
 
@@ -134,6 +135,9 @@ function MVPage() {
   const [engine, setEngine] = useState('muse');
   const [museCredits, setMuseCredits] = useState(null);
   const [museTaskId, setMuseTaskId] = useState(null);
+  const [museAvailable, setMuseAvailable] = useState(false);
+  const [sunoAvailable, setSunoAvailable] = useState(false);
+  const [meloAvailable, setMeloAvailable] = useState(false);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [genProgress, setGenProgress] = useState(0);
@@ -157,10 +161,38 @@ function MVPage() {
     if (!isMobileEnvironment()) {
       loadGenres();
     }
+    checkServiceAvailability();
+  }, []);
+
+  useEffect(() => {
     if (engine === 'muse' && MuseService.isConfigured() && museCredits === null) {
       loadMuseCredits();
     }
-  }, [engine]);
+  }, [engine, museCredits]);
+
+  const checkServiceAvailability = async () => {
+    try {
+      const [museOk, sunoOk, meloOk] = await Promise.all([
+        MuseService.checkConfigured(),
+        SunoService.checkConfigured(),
+        MeloService.checkConfigured(),
+      ]);
+      setMuseAvailable(museOk);
+      setSunoAvailable(sunoOk);
+      setMeloAvailable(meloOk);
+      if (!museOk && sunoOk) {
+        setEngine('suno');
+      } else if (!museOk && !sunoOk && meloOk) {
+        setEngine('melo');
+      } else if (!museOk && !sunoOk && !meloOk) {
+        setEngine('procedural');
+      }
+    } catch {
+      setMuseAvailable(MuseService.isConfigured());
+      setSunoAvailable(SunoService.isConfigured());
+      setMeloAvailable(MeloService.isConfigured());
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -327,6 +359,34 @@ function MVPage() {
         }
         setGenProgress(0.45);
 
+      } else if (engine === 'melo' && MeloService.isConfigured()) {
+        setGenStage('generating');
+        setGenProgress(0.1);
+
+        const meloParams = {
+          prompt,
+          ...(lyricsInput.trim() ? { lyrics: lyricsInput.trim() } : {}),
+          genre,
+          style,
+          duration,
+        };
+
+        const genResult = await MeloService.generateSong(meloParams);
+        const taskId = genResult?.taskId || genResult?.id;
+        if (!taskId) throw new Error('Melo did not return a taskId');
+
+        setGenProgress(0.25);
+        const finalTask = await MeloService.pollUntilDone(taskId, {
+          intervalMs: 5000,
+          timeoutMs: 300000,
+        });
+
+        realAudioUrl = finalTask?.audioUrl || finalTask?.data?.audioUrl || finalTask?.data?.url;
+        if (!realAudioUrl) {
+          throw new Error(finalTask?.error || finalTask?.msg || 'Melo generation produced no audio');
+        }
+        setGenProgress(0.45);
+
       } else {
         setGenStage('composing');
         setGenProgress(0.1);
@@ -418,7 +478,7 @@ function MVPage() {
         audioUrl: realAudioUrl,
         composition,
         engine,
-        provider: engine === 'muse' ? 'muse' : engine === 'suno' ? 'suno' : 'tonejs',
+        provider: engine === 'muse' ? 'muse' : engine === 'suno' ? 'suno' : engine === 'melo' ? 'melo' : 'tonejs',
       });
 
       showToast('MV generated successfully!', 'success');
@@ -482,8 +542,6 @@ function MVPage() {
     }
   };
 
-  const museAvailable = MuseService.isConfigured();
-  const sunoAvailable = SunoService.isConfigured();
   const museInsufficient = engine === 'muse' && museCredits !== null && museCredits < 14;
 
   return (
@@ -542,6 +600,7 @@ function MVPage() {
               museCredits={museCredits}
               museAvailable={museAvailable}
               sunoAvailable={sunoAvailable}
+              meloAvailable={meloAvailable}
               onEngineChange={setEngine}
               t={t}
             />

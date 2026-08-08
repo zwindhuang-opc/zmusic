@@ -37,8 +37,27 @@ const API_BASE = '/api/muse';
  * Uses VITE_MUSE_ENABLED boolean flag — the real JWT stays server-side only.
  * @returns {boolean}
  */
+let _configuredCache = null;
+let _configuredPromise = null;
+
 export function isConfigured() {
+  if (_configuredCache !== null) return _configuredCache;
   return import.meta.env?.VITE_MUSE_ENABLED === 'true';
+}
+
+export async function checkConfigured() {
+  if (_configuredPromise) return _configuredPromise;
+  _configuredPromise = (async () => {
+    try {
+      const status = await getStatus();
+      _configuredCache = !!(status?.success && status?.data?.configured);
+    } catch {
+      _configuredCache = import.meta.env?.VITE_MUSE_ENABLED === 'true';
+    }
+    _configuredPromise = null;
+    return _configuredCache;
+  })();
+  return _configuredPromise;
 }
 
 /**

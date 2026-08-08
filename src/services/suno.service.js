@@ -18,8 +18,27 @@ const API_BASE = '/api/suno';
  * Uses VITE_SUNO_ENABLED boolean flag — the real API key stays server-side only.
  * @returns {boolean}
  */
+let _configuredCache = null;
+let _configuredPromise = null;
+
 export function isConfigured() {
+  if (_configuredCache !== null) return _configuredCache;
   return import.meta.env?.VITE_SUNO_ENABLED === 'true';
+}
+
+export async function checkConfigured() {
+  if (_configuredPromise) return _configuredPromise;
+  _configuredPromise = (async () => {
+    try {
+      const info = await getUserInfo();
+      _configuredCache = !!(info?.success !== false);
+    } catch {
+      _configuredCache = import.meta.env?.VITE_SUNO_ENABLED === 'true';
+    }
+    _configuredPromise = null;
+    return _configuredCache;
+  })();
+  return _configuredPromise;
 }
 
 /**
@@ -119,6 +138,7 @@ export async function getMusicList(page = 1, pageSize = 10) {
 
 export default {
   isConfigured,
+  checkConfigured,
   getUserInfo,
   generateMusic,
   queryTaskStatus,
