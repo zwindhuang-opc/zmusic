@@ -31,7 +31,7 @@ export async function checkConfigured() {
   _configuredPromise = (async () => {
     try {
       const info = await getUserInfo();
-      _configuredCache = !!(info?.success !== false);
+      _configuredCache = !!(info?.success !== false && info?.data);
     } catch {
       _configuredCache = import.meta.env?.VITE_SUNO_ENABLED === 'true';
     }

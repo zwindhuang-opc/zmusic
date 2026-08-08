@@ -4,5 +4,5 @@
   "minor": 4,
   "patch": 0,
   "releaseDate": "2026-08-09",
-  "notes": "v6.4.0 — Melo AI added as MV engine (4th option). Runtime service availability checks via backend API (replaces hardcoded env-var checks). Muse/Suno/Melo now auto-detect live connection status. Fallback chain: Muse → Suno → Melo → Preview."
+  "notes": "v6.4.0 — Full Melo integration: backend config (meloApiKey/meloBaseUrl/meloMock), status endpoint returns data.configured, Settings page shows Melo API status & key config, Health endpoint includes meloConfigured. Fixed all checkConfigured() to handle multiple response shapes."
 }

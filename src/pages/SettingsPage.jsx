@@ -84,6 +84,13 @@ function SettingsPage() {
                   {config.museConfigured ? t('settings.connected') : t('settings.not_configured')}
                 </span>
               </div>
+              <div className="flex justify-between p-3 rounded-lg bg-white/5">
+                <span className="text-xs text-gray-400">{t('settings.melo_api')}</span>
+                <span className={`text-xs flex items-center gap-1 ${config.meloConfigured ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {config.meloConfigured ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                  {config.meloConfigured ? t('settings.connected') : t('settings.not_configured')}
+                </span>
+              </div>
             </div>
           )}
         </div>
@@ -102,8 +109,8 @@ function SettingsPage() {
                 window.location.reload();
               }}
               className={`p-4 rounded-xl border-2 transition-all text-left ${localStorage.getItem(UI_MODE_KEY) === 'easy'
-                  ? 'border-violet-400 bg-violet-500/20'
-                  : 'border-white/10 bg-white/5 hover:border-white/30'
+                ? 'border-violet-400 bg-violet-500/20'
+                : 'border-white/10 bg-white/5 hover:border-white/30'
                 }`}
             >
               <div className="text-3xl mb-2">😊</div>
@@ -117,8 +124,8 @@ function SettingsPage() {
                 window.location.reload();
               }}
               className={`p-4 rounded-xl border-2 transition-all text-left ${localStorage.getItem(UI_MODE_KEY) !== 'easy'
-                  ? 'border-violet-400 bg-violet-500/20'
-                  : 'border-white/10 bg-white/5 hover:border-white/30'
+                ? 'border-violet-400 bg-violet-500/20'
+                : 'border-white/10 bg-white/5 hover:border-white/30'
                 }`}
             >
               <div className="flex items-center gap-1 mb-2">
@@ -183,6 +190,12 @@ function SettingsPage() {
             <div className="text-xs text-amber-300 font-medium mb-1">{t('settings.muse_ai_api_key')}</div>
             <div className="text-[10px] text-gray-400">
               {t('settings.set_env_hint', { key: 'MUSE_AI_API_KEY', provider: 'Muse AI' })}
+            </div>
+          </div>
+          <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+            <div className="text-xs text-amber-300 font-medium mb-1">{t('settings.melo_ai_api_key')}</div>
+            <div className="text-[10px] text-gray-400">
+              {t('settings.set_env_hint', { key: 'MELO_API_KEY', provider: 'Melo AI' })}
             </div>
           </div>
           <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">

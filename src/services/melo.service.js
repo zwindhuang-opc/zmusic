@@ -13,7 +13,7 @@ export async function checkConfigured() {
   _configuredPromise = (async () => {
     try {
       const status = await getStatus();
-      _configuredCache = !!(status?.success && status?.data?.configured);
+      _configuredCache = !!(status?.data?.configured ?? status?.configured ?? status?.success);
     } catch {
       _configuredCache = import.meta.env?.VITE_MELO_ENABLED === 'true';
     }

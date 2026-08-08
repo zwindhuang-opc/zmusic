@@ -1237,6 +1237,8 @@
     "expert_mode_desc": "完整功能，适合进阶用户",
     "fsm_states": "FSM状态",
     "hermes": "Hermes",
+    "melo_ai_api_key": "Melo AI API密钥",
+    "melo_api": "Melo AI API",
     "muse_ai_api_key": "Muse AI API密钥",
     "muse_api": "Muse AI API",
     "mvc_info": "MVC模式与服务层",

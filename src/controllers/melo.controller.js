@@ -151,18 +151,23 @@ export class MeloController {
    * Reports configuration status.
    */
   async status(req, res) {
+    const isAvailable = MELO_CONFIGURED || MELO_MOCK;
     return res.json({
       success: true,
-      configured: MELO_CONFIGURED,
-      host: MELO_HOST,
-      mock: MELO_MOCK,
-      engine: 'Melo AI (字节旋律)',
-      features: {
-        lyricsGeneration: true,
-        styleTags: true,
-        multiLayer: true,
-        referenceAudio: false,
-        advancedControls: true,
+      data: {
+        configured: isAvailable,
+        apiConfigured: MELO_CONFIGURED,
+        mock: MELO_MOCK,
+        available: isAvailable,
+        host: MELO_HOST,
+        engine: 'Melo AI',
+        features: {
+          lyricsGeneration: true,
+          styleTags: true,
+          multiLayer: true,
+          referenceAudio: false,
+          advancedControls: true,
+        },
       },
     });
   }

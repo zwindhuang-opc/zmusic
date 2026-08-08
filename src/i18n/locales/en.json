@@ -1237,6 +1237,8 @@
     "expert_mode_desc": "Full controls for advanced users",
     "fsm_states": "FSM States",
     "hermes": "Hermes",
+    "melo_ai_api_key": "Melo AI API Key",
+    "melo_api": "Melo AI API",
     "muse_ai_api_key": "Muse AI API Key",
     "muse_api": "Muse AI API",
     "mvc_info": "MVC Pattern with Service Layer",

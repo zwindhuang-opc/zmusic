@@ -11,6 +11,7 @@
 
 import sunoService from '../services/suno.service.js';
 import museService from '../services/muse.service.js';
+import meloService from '../services/melo.service.js';
 import Logger from '../utils/logger.js';
 import { config } from '../config/index.js';
 import fs from 'fs';
@@ -88,6 +89,7 @@ export class HealthController {
       port: config.port,
       apiConfigured: sunoService.isConfigured(),
       museConfigured: museService.isConfigured(),
+      meloConfigured: meloService.isConfigured(),
       architecture: 'MVC Pattern',
       layers: ['Model', 'View', 'Controller', 'Service', 'Agent'],
       endpoints: [
