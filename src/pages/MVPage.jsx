@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Video, History, AlertCircle, Settings, ChevronDown, Loader, Sparkles, ExternalLink, Copy, Check, Clapperboard, Wand2, Brain, Palette, Music, Users, Sun, Moon, Cloud, Zap, Film, Camera } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
@@ -13,110 +13,16 @@ import MeloService from '../services/melo.service.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 import { MVEngineSelector, MVControls, MVVideoPlayer, MVTimelinePreview } from '../components/mv/index.js';
 
-const MUSE_STYLE_MAP = {
-  pop: '流行音乐', rock: '摇滚', electronic: '电子音乐', hip_hop: '嘻哈/说唱',
-  ballad: '民谣', chinese_traditional: '中国风', jazz: '爵士', classical: '古典',
-  rnb: 'R&B', country: '乡村', love_song: '情歌', chinese_classical: '古风',
-  concert: '演唱会', modern: '现代', cinematic: '电影配乐', retro: '复古',
-  anime: '动漫', gothic_rock: '哥特摇滚'
+const ICON_MAP = {
+  Users, Cloud, Sun, Moon, Sparkles, Film, Brain, Palette, Clapperboard, Camera, Zap, Wand2, Music, Video,
 };
 
-const MUSIC_STYLES = {
-  pop: { sunoTags: 'pop', museStyle: '流行音乐' },
-  rock: { sunoTags: 'rock', museStyle: '摇滚' },
-  electronic: { sunoTags: 'electronic', museStyle: '电子音乐' },
-  hip_hop: { sunoTags: 'hip-hop', museStyle: '嘻哈/说唱' },
-  ballad: { sunoTags: 'ballad', museStyle: '民谣' },
-};
+function resolveIcon(name) {
+  if (!name) return Wand2;
+  return ICON_MAP[name] || Wand2;
+}
 
 const FALLBACK_GENRES = ['pop', 'rock', 'electronic', 'hip_hop', 'ballad', 'chinese_traditional', 'jazz', 'classical', 'rnb', 'country', 'love_song', 'chinese_classical', 'concert', 'modern', 'cinematic', 'retro', 'anime', 'gothic_rock'];
-
-const MV_EFFECTS = [
-  { id: 'rain_wind', name: 'effects.rain_wind' },
-  { id: 'footsteps', name: 'effects.footsteps' },
-  { id: 'reverb', name: 'effects.reverb' },
-  { id: 'delay', name: 'effects.delay' },
-  { id: 'di_da_delay', name: 'effects.di_da_delay' },
-  { id: 'shimmer_reverb', name: 'effects.shimmer_reverb' },
-  { id: 'vocals', name: 'effects.vocals' },
-  { id: 'tropical_percussion', name: 'effects.tropical_percussion' },
-  { id: 'bass_line', name: 'effects.bass_line' },
-  { id: 'guitar_riffs', name: 'effects.guitar_riffs' },
-  { id: 'ambient_pads', name: 'effects.ambient_pads' },
-  { id: 'modulation', name: 'effects.modulation' }
-];
-
-const AI_VIDEO_TOOLS = [
-  {
-    id: 'freebeat',
-    name: 'Freebeat',
-    icon: Film,
-    url: 'https://freebeat.ai',
-    description: 'AI music video agent — beat-synced, full-song output',
-    features: ['Full-song video', 'Beat sync', 'Suno import', 'Lip sync'],
-    pricing: 'Free tier + $4.99/week',
-    bestFor: 'Complete song-to-video'
-  },
-  {
-    id: 'neuralframes',
-    name: 'Neural Frames',
-    icon: Brain,
-    url: 'https://play.neuralframes.com',
-    description: '8-stem audio analysis, AI video generation',
-    features: ['8-stem analysis', 'Autopilot mode', 'Kling/Seedance/Runway'],
-    pricing: '$26/mo',
-    bestFor: 'Audio-reactive visuals'
-  },
-  {
-    id: 'kaiber',
-    name: 'Kaiber',
-    icon: Palette,
-    url: 'https://kaiber.ai',
-    description: 'Stylized artistic music videos with beat sync',
-    features: ['Beat Sync', 'Flipbook/Motion modes', 'Stylized visuals'],
-    pricing: '$10/mo',
-    bestFor: 'Artistic/Stylized videos'
-  },
-  {
-    id: 'fal',
-    name: 'fal.ai (Hunyuan)',
-    icon: Zap,
-    url: 'https://fal.ai/models/fal-ai/hunyuan-video',
-    description: 'Tencent Hunyuan Video — open source, high quality',
-    features: ['720p', '5s clips', '$0.4/video', 'Commercial OK'],
-    pricing: 'Pay-per-use',
-    bestFor: 'API integration'
-  },
-  {
-    id: 'runway',
-    name: 'Runway Gen-4',
-    icon: Clapperboard,
-    url: 'https://runwayml.com',
-    description: 'Cinematic AI clips with director control',
-    features: ['Motion Brush', 'Camera control', '4K quality'],
-    pricing: 'From $12/mo',
-    bestFor: 'Cinematic clips'
-  },
-  {
-    id: 'kling',
-    name: 'Kling AI',
-    icon: Camera,
-    url: 'https://klingai.com',
-    description: 'Affordable, longer videos, strong human motion',
-    features: ['~3min clips', 'Lip sync', 'Multi-shot'],
-    pricing: 'From $6.99/mo',
-    bestFor: 'Character performance'
-  },
-];
-
-const SCENE_TEMPLATES = [
-  { id: 'cinematic_concert', label: '电影演唱会', icon: Users, prompt: 'Cinematic concert stage with dramatic lighting, crowd silhouettes, sweeping camera moves' },
-  { id: 'neon_city', label: '霓虹都市', icon: Cloud, prompt: 'Cyberpunk neon city at night, rain reflections, dynamic camera angles' },
-  { id: 'dreamy_pastel', label: '梦幻粉彩', icon: Sun, prompt: 'Dreamy pastel aesthetic, soft lighting, ethereal atmosphere, floating particles' },
-  { id: 'epic_fantasy', label: '史诗奇幻', icon: Sparkles, prompt: 'Epic fantasy landscape, magical effects, golden hour, dramatic scale' },
-  { id: 'dark_moody', label: '暗黑氛围', icon: Moon, prompt: 'Dark moody atmosphere, low lighting, shadow play, intense emotions' },
-  { id: 'summer_vibes', label: '夏日氛围', icon: Sun, prompt: 'Summer beach vibes, golden sunlight, waves, carefree atmosphere' },
-];
 
 function MVPage() {
   const { t, ts } = useTranslation();
@@ -139,6 +45,11 @@ function MVPage() {
   const [sunoAvailable, setSunoAvailable] = useState(false);
   const [meloAvailable, setMeloAvailable] = useState(false);
 
+  const [contentData, setContentData] = useState({
+    genres: [], sceneTemplates: [], aiVideoTools: [], effects: [], stylePalettes: [], musicStyles: []
+  });
+  const [contentLoaded, setContentLoaded] = useState(false);
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [genProgress, setGenProgress] = useState(0);
   const [genStage, setGenStage] = useState('');
@@ -147,823 +58,599 @@ function MVPage() {
   const [audioUrl, setAudioUrl] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
   const [videoBlob, setVideoBlob] = useState(null);
-  const [composition, setComposition] = useState(null);
+  const [timelineResult, setTimelineResult] = useState(null);
 
-  const [lyricsInput, setLyricsInput] = useState('');
+  const resultRef = useRef(null);
 
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [customPrompt, setCustomPrompt] = useState('');
-  const [copiedPrompt, setCopiedPrompt] = useState('');
+  useEffect(() => { resultRef.current = result; }, [result]);
 
-  const videoRef = useRef(null);
-
+  // Database-driven content loading
   useEffect(() => {
-    if (!isMobileEnvironment()) {
-      loadGenres();
+    let cancelled = false;
+    async function loadContent() {
+      console.log('[MVPage] Fetching content from /content/all...');
+      try {
+        const d = await api.request('/content/all');
+        if (cancelled) return;
+        console.log('[MVPage] Content API response:', { success: d.success, genres: d.data?.genres?.length, templates: d.data?.sceneTemplates?.length, tools: d.data?.aiVideoTools?.length });
+        if (d.success && d.data) {
+          setContentData(d.data);
+          if (d.data.genres && d.data.genres.length > 0) {
+            setGenres(d.data.genres.map(g => g.key));
+          }
+          setContentLoaded(true);
+        } else {
+          console.warn('[MVPage] Content API returned unexpected shape:', d);
+          setContentLoaded(true);
+        }
+      } catch (e) {
+        console.error('[MVPage] Content API failed, using fallback:', e.message);
+        setContentLoaded(true);
+      }
     }
-    checkServiceAvailability();
+    loadContent();
+    return () => { cancelled = true; };
   }, []);
 
+  const getGenreLabel = useCallback((key) => {
+    const g = contentData.genres.find(x => x.key === key);
+    return g ? g.label_zh : key;
+  }, [contentData.genres]);
+
+  const getGenreLabelEn = useCallback((key) => {
+    const g = contentData.genres.find(x => x.key === key);
+    return g ? g.label_en : key;
+  }, [contentData.genres]);
+
+  const getSceneIcon = useCallback((key) => {
+    const s = contentData.sceneTemplates.find(x => x.key === key);
+    return resolveIcon(s ? s.icon : null);
+  }, [contentData.sceneTemplates]);
+
+  const getToolIcon = useCallback((key) => {
+    const tool = contentData.aiVideoTools.find(x => x.key === key);
+    return resolveIcon(tool ? tool.icon : null);
+  }, [contentData.aiVideoTools]);
+
+  const sceneTemplates = contentData.sceneTemplates.length > 0
+    ? contentData.sceneTemplates.map(s => ({
+      id: s.key,
+      label: t('scenes.' + s.key) || s.label_zh,
+      icon: resolveIcon(s.icon),
+      prompt: s.prompt,
+    }))
+    : [];
+
+  const aiVideoTools = contentData.aiVideoTools.length > 0
+    ? contentData.aiVideoTools.map(tool => ({
+      id: tool.key,
+      name: tool.name,
+      icon: resolveIcon(tool.icon),
+      url: tool.url,
+      description: t('tools.' + tool.key) || tool.description_en,
+      description_zh: tool.description_zh,
+      features: tool.features || [],
+      pricing: tool.pricing,
+      bestFor: tool.best_for_en,
+    }))
+    : [];
+
+  const effectList = contentData.effects.length > 0
+    ? contentData.effects.map(e => ({
+      id: e.key,
+      name: t('effects.' + e.key) || e.label_zh,
+    }))
+    : [];
+
+  const paletteList = contentData.stylePalettes.length > 0
+    ? contentData.stylePalettes.map(p => ({
+      id: p.key,
+      zh: p.label_zh,
+      en: p.label_en,
+      colors: p.colors ? JSON.parse(p.colors) : [],
+    }))
+    : [];
+
+  // API status checks
   useEffect(() => {
-    if (engine === 'muse' && MuseService.isConfigured() && museCredits === null) {
-      loadMuseCredits();
-    }
-  }, [engine, museCredits]);
+    let cancelled = false;
+    async function checkStatus() {
+      try {
+        const [muse, suno, melo] = await Promise.all([
+          MuseService.checkConfigured(),
+          SunoService.checkConfigured(),
+          MeloService.checkConfigured(),
+        ]);
+        if (cancelled) return;
+        const museOk = typeof muse === 'boolean' ? muse : (muse?.configured ?? false);
+        const sunoOk = typeof suno === 'boolean' ? suno : (suno?.configured ?? false);
+        const meloOk = typeof melo === 'boolean' ? melo : (melo?.configured ?? false);
+        setMuseAvailable(museOk);
+        setSunoAvailable(sunoOk);
+        setMeloAvailable(meloOk);
 
-  const checkServiceAvailability = async () => {
+        if (engine === 'muse' && museOk) {
+          try {
+            const credits = await MuseService.getCredits();
+            if (!cancelled && credits) setMuseCredits(credits);
+          } catch { }
+        }
+      } catch { }
+    }
+    checkStatus();
+    return () => { cancelled = true; };
+  }, [engine]);
+
+  const handleCopyToClipboard = async (text) => {
     try {
-      const [museOk, sunoOk, meloOk] = await Promise.all([
-        MuseService.checkConfigured(),
-        SunoService.checkConfigured(),
-        MeloService.checkConfigured(),
-      ]);
-      setMuseAvailable(museOk);
-      setSunoAvailable(sunoOk);
-      setMeloAvailable(meloOk);
-      if (!museOk && sunoOk) {
-        setEngine('suno');
-      } else if (!museOk && !sunoOk && meloOk) {
-        setEngine('melo');
-      } else if (!museOk && !sunoOk && !meloOk) {
-        setEngine('procedural');
+      await copyToClipboard(text);
+      showToast(t('clipboard.copied'));
+    } catch { }
+  };
+
+  const handleCopyTimeline = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Timeline copied to clipboard');
+    } catch { }
+  };
+
+  const generateWithMuse = async (params) => {
+    try {
+      setGenStage('Initializing Muse AI...');
+      const taskId = await MuseService.generateMusic(params);
+      setMuseTaskId(taskId);
+
+      setGenStage('Waiting for Muse AI...');
+      const result = await MuseService.waitForResult(taskId, (p, s) => {
+        setGenProgress(p);
+        setGenStage(s);
+      });
+
+      if (result.audio_url) {
+        // Route through backend audio proxy to avoid CORS on muse.top CDN.
+        const raw = result.audio_url;
+        const audioSrc = (raw.startsWith('/api/') || raw.startsWith('blob:'))
+          ? raw
+          : `/api/proxy/audio?url=${encodeURIComponent(raw)}`;
+        const audioResp = await fetch(audioSrc);
+        const audioBlob = await audioResp.blob();
+        return { blob: audioBlob, url: URL.createObjectURL(audioBlob), lyrics: result.lyrics || params.prompt };
       }
-    } catch {
-      setMuseAvailable(MuseService.isConfigured());
-      setSunoAvailable(SunoService.isConfigured());
-      setMeloAvailable(MeloService.isConfigured());
+      throw new Error('Muse AI returned no audio');
+    } catch (e) {
+      throw e;
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (videoUrl) URL.revokeObjectURL(videoUrl);
-      if (audioUrl) {
-        try { new URL(audioUrl); URL.revokeObjectURL(audioUrl); } catch { /* not a blob URL */ }
-      }
-    };
-  }, [videoUrl, audioUrl]);
+  const generateWithSuno = async (params) => {
+    const prompt = params.prompt || '';
+    const style = params.style || '';
 
-  const loadGenres = async () => {
-    try {
-      const data = await api.mvGenres();
-      if (data.success && data.data?.length > 0) {
-        setGenres(data.data);
-      }
-    } catch { /* use fallback */ }
+    setGenStage('Initializing Suno AI...');
+    // SunoService.generateMusic returns the full response {success, serialNos};
+    // extract the first serial number as the task id for polling.
+    const res = await SunoService.generateMusic({ prompt, style, title: params.title });
+    const taskId = res?.serialNos?.[0];
+    if (!taskId) throw new Error('Suno AI returned no task id');
+
+    setGenStage('Waiting for Suno AI...');
+    const finalResult = await SunoService.waitForResult(taskId, (p, s) => {
+      setGenProgress(p);
+      setGenStage(s);
+    });
+
+    if (finalResult && finalResult.audio_url) {
+      return {
+        blob: params.blob,
+        url: finalResult.audio_url,
+        lyrics: finalResult.lyrics || prompt,
+        result: finalResult,
+      };
+    }
+    throw new Error('Failed to generate music');
   };
 
-  const loadMuseCredits = async () => {
-    try {
-      const user = await MuseService.getUser();
-      const credit = user?.memberInfo?.credit ?? user?.credit ?? 0;
-      setMuseCredits(credit);
-    } catch {
-      setMuseCredits(0);
+  const generateWithMelo = async (params) => {
+    setGenStage('Initializing Melo AI...');
+    const taskId = await MeloService.generateMusic(params);
+    setGenStage('Waiting for Melo AI...');
+    const finalResult = await MeloService.waitForResult(taskId, (p, s) => {
+      setGenProgress(p);
+      setGenStage(s);
+    });
+    if (finalResult && finalResult.audio_url) {
+      return {
+        blob: params.blob,
+        url: finalResult.audio_url,
+        lyrics: finalResult.lyrics || params.prompt,
+        result: finalResult,
+      };
     }
+    throw new Error('Melo AI returned no audio');
   };
 
-  const getPrompt = () => {
-    if (lyricsInput.trim()) {
-      return lyricsInput.trim();
-    }
-    const genreLabel = ts(`lyrics_styles.${genre}`) || ts(`styles.${genre}`) || genre;
-    return `${genreLabel} song with ${style} style`;
-  };
+  const generateLocally = async (params) => {
+    console.log('[MVPage] generateLocally start:', { genre: params.genre, duration: params.duration, style: params.style });
+    setGenStage('Composing music locally...');
+    const composition = composeMusic({
+      genre: params.genre,
+      style: params.style,
+      duration: params.duration,
+      lyrics: params.lyrics,
+      scene: params.scene,
+    });
 
-  const generateAIPrompt = () => {
-    const parts = [];
-    const genreLabel = ts(`lyrics_styles.${genre}`) || genre;
-    parts.push(`${genreLabel} music video`);
-    parts.push(`${style} style`);
+    setGenStage('Rendering audio...');
+    const blob = await compositionToWavBlob(composition);
+    const audioUrl = URL.createObjectURL(blob);
+    console.log('[MVPage] Audio rendered:', { size: blob.size, url: audioUrl });
 
-    if (selectedTemplate) {
-      const template = SCENE_TEMPLATES.find(s => s.id === selectedTemplate);
-      if (template) parts.push(template.prompt);
-    }
+    setGenProgress(55);
+    setGenStage('Composing video...');
 
-    if (lyricsInput.trim()) {
-      const firstLine = lyricsInput.trim().split('\n')[0].slice(0, 100);
-      parts.push(`lyrics: "${firstLine}"`);
-    }
+    const mvData = generateMV({ genre: params.genre, duration: params.duration });
+    console.log('[MVPage] MV timeline generated:', { scenes: mvData.timeline.length, palette: mvData.colorPalette });
+    setTimelineResult(mvData);
 
-    parts.push(`${duration} seconds`);
-    parts.push('professional quality, 4K, cinematic');
-    return parts.join(', ');
-  };
+    const videoBlob = await generateMVVideo({
+      audioUrl,
+      timeline: mvData.timeline,
+      colorPalette: params.colorPalette || mvData.colorPalette,
+      effects: params.effects,
+      lyrics: params.lyrics,
+      duration: params.duration,
+    });
 
-  const handleCopyPrompt = async (promptKey) => {
-    const prompt = generateAIPrompt();
-    try {
-      await navigator.clipboard.writeText(prompt);
-      setCopiedPrompt(promptKey);
-      showToast('Prompt copied to clipboard!', 'success');
-      setTimeout(() => setCopiedPrompt(''), 2000);
-    } catch {
-      showToast('Failed to copy', 'error');
-    }
+    const videoUrl = URL.createObjectURL(videoBlob);
+    console.log('[MVPage] Video composed:', { videoSize: videoBlob.size, duration: params.duration });
+
+    return { blob, url: audioUrl, videoBlob, videoUrl, lyrics: params.lyrics };
   };
 
   const handleGenerate = async () => {
-    setIsGenerating(true);
-    setResult(null);
+    if (isGenerating) return;
     setError(null);
-    setVideoBlob(null);
+    setResult(null);
+    setAudioUrl(null);
     setVideoUrl(null);
-    setComposition(null);
-    setGenProgress(0);
+    setVideoBlob(null);
 
-    if (videoUrl) { URL.revokeObjectURL(videoUrl); setVideoUrl(null); }
-    if (audioUrl) {
-      try { new URL(audioUrl); URL.revokeObjectURL(audioUrl); } catch { /* not blob */ }
-      setAudioUrl(null);
+    const prompt = pendingLyrics?.text || '';
+    const title = pendingLyrics?.title || `${genre} MV`;
+
+    const styleMap = contentData.musicStyles.find(s => s.genre_key === genre);
+    const sunoStyle = styleMap ? styleMap.style_suno : '';
+    const museStyle = styleMap ? styleMap.style_muse : '';
+
+    const params = {
+      prompt,
+      title,
+      genre,
+      style: sunoStyle || museStyle || style,
+      museStyle,
+      duration,
+      lyrics: prompt,
+      scene: style,
+      colorPalette,
+      effects: selectedEffects,
+    };
+
+    if (engine === 'muse' && !museAvailable) {
+      setError(t('muse.notConfigured'));
+      return;
+    }
+    if (engine === 'suno' && !sunoAvailable) {
+      setError(t('suno.notConfigured'));
+      return;
+    }
+    if (engine === 'melo' && !meloAvailable) {
+      setError(t('melo.notConfigured'));
+      return;
     }
 
+    setIsGenerating(true);
+    setGenProgress(5);
+    setGenStage('Starting...');
+
     try {
-      const prompt = getPrompt();
+      let musicResult;
 
-      let realAudioUrl = null;
+      console.log('[MVPage] Starting generation:', { engine, genre, duration, hasPrompt: !!prompt });
 
-      if (engine === 'muse' && MuseService.isConfigured()) {
-        setGenStage('credits');
-        setGenProgress(0.05);
+      if (engine === 'muse') {
+        console.log('[MVPage] Calling Muse AI generateMusic...');
+        musicResult = await generateWithMuse(params);
+        console.log('[MVPage] Muse result:', { hasAudio: !!musicResult?.url });
+      } else if (engine === 'suno') {
+        console.log('[MVPage] Calling Suno AI generateMusic...');
+        musicResult = await generateWithSuno(params);
+        console.log('[MVPage] Suno result:', { hasAudio: !!musicResult?.url });
+      } else if (engine === 'melo') {
+        console.log('[MVPage] Calling Melo AI generateMusic...');
+        musicResult = await generateWithMelo(params);
+        console.log('[MVPage] Melo result:', { hasAudio: !!musicResult?.url });
+      } else {
+        console.log('[MVPage] Using local generation...');
+        musicResult = await generateLocally(params);
+      }
 
-        let currentCredits = museCredits;
-        if (currentCredits === null) {
-          try {
-            const user = await MuseService.getUser();
-            currentCredits = user?.memberInfo?.credit ?? user?.credit ?? 0;
-            setMuseCredits(currentCredits);
-          } catch {
-            currentCredits = 0;
-          }
-        }
-        if (currentCredits < 14) {
-          throw new Error(`Muse credits insufficient: ${currentCredits} available, 14 required. Please use Preview mode or add credits.`);
-        }
+      setGenProgress(65);
+      setGenStage('Composing video...');
 
-        setGenStage('generating');
-        setGenProgress(0.1);
-        const museStyle = MUSE_STYLE_MAP[genre] || '';
-        const museParams = {
-          mode: lyricsInput.trim() ? 'master' : 'quick',
-          prompt: lyricsInput.trim() ? undefined : prompt,
-          ...(lyricsInput.trim() ? { lyrics: lyricsInput.trim() } : {}),
-          ...(museStyle ? { style: museStyle } : {}),
-          title: prompt.slice(0, 30) || `${genre} MV Song`,
-          vocal: '',
-          instrumental: 0,
-          languageId: 1001,
-        };
+      let finalVideoBlob = musicResult.videoBlob;
+      let finalVideoUrl = musicResult.videoUrl;
 
-        const genResult = await MuseService.generateSong(museParams);
-        const taskId = genResult?.taskId || genResult?.workId;
-        if (!taskId) throw new Error('Muse did not return a taskId');
-        setMuseTaskId(taskId);
-        setGenProgress(0.25);
-
-        const finalTask = await MuseService.pollUntilDone(taskId, {
-          intervalMs: 6000,
-          timeoutMs: 300000,
-          onPoll: () => { },
+      if (!finalVideoBlob && engine !== 'local') {
+        console.log('[MVPage] Composing video from AI audio:', { engine, audioUrl: musicResult.url });
+        const mvData = generateMV({ genre, duration });
+        setTimelineResult(mvData);
+        const videoBlob = await generateMVVideo({
+          audioUrl: musicResult.url,
+          timeline: mvData.timeline,
+          colorPalette: colorPalette || mvData.colorPalette,
+          effects: selectedEffects,
+          lyrics: params.prompt,
+          duration,
         });
+        finalVideoBlob = videoBlob;
+        finalVideoUrl = URL.createObjectURL(videoBlob);
+        console.log('[MVPage] AI video composed:', { videoSize: videoBlob.size });
+      }
 
-        realAudioUrl = finalTask?.audioUrl || finalTask?.data?.audioUrl;
-        if (!realAudioUrl) {
-          throw new Error(finalTask?.msg || 'Muse generation produced no audio');
-        }
-        setGenProgress(0.45);
+      const finalResult = {
+        id: Date.now().toString(),
+        title,
+        prompt,
+        audioUrl: musicResult.url,
+        videoUrl: finalVideoUrl,
+        videoBlob: finalVideoBlob,
+        lyrics: musicResult.lyrics,
+        engine,
+        genre,
+        style,
+        timestamp: Date.now(),
+      };
 
-      } else if (engine === 'suno' && SunoService.isConfigured()) {
-        setGenStage('generating');
-        setGenProgress(0.1);
+      setResult(finalResult);
+      setAudioUrl(musicResult.url);
+      setVideoUrl(finalVideoUrl);
+      setVideoBlob(finalVideoBlob);
 
-        const styleTag = MUSIC_STYLES[genre]?.sunoTags || genre;
-        const result = await SunoService.generateMusic(prompt, styleTag, duration, false, false);
-
-        if (!result.success || !result.serialNos?.length) {
-          throw new Error('Suno generation failed');
-        }
-
-        let taskResult;
-        for (let attempt = 0; attempt < 10; attempt++) {
-          taskResult = await SunoService.queryTaskStatus(result.serialNos[0], false);
-          if (taskResult.status === 'success' || taskResult.status === 'failed') break;
-          setGenProgress(0.1 + (attempt / 10) * 0.3);
-          await new Promise(r => setTimeout(r, 3000));
-        }
-
-        if (taskResult.status === 'success' && taskResult.audioUrl) {
-          realAudioUrl = taskResult.audioUrl;
-        } else {
-          throw new Error('Suno generation failed or timed out');
-        }
-        setGenProgress(0.45);
-
-      } else if (engine === 'melo' && MeloService.isConfigured()) {
-        setGenStage('generating');
-        setGenProgress(0.1);
-
-        const meloParams = {
-          prompt,
-          ...(lyricsInput.trim() ? { lyrics: lyricsInput.trim() } : {}),
+      try {
+        await addToHistory({
+          id: finalResult.id,
+          title,
+          text: prompt,
+          translation: null,
+          audioUrl: musicResult.url,
+          videoUrl: finalVideoUrl,
+          videoBlob: finalVideoBlob,
+          lyrics: musicResult.lyrics,
+          engine,
           genre,
           style,
-          duration,
-        };
-
-        const genResult = await MeloService.generateSong(meloParams);
-        const taskId = genResult?.taskId || genResult?.id;
-        if (!taskId) throw new Error('Melo did not return a taskId');
-
-        setGenProgress(0.25);
-        const finalTask = await MeloService.pollUntilDone(taskId, {
-          intervalMs: 5000,
-          timeoutMs: 300000,
+          timestamp: Date.now(),
+          source: 'mv',
         });
+      } catch { }
 
-        realAudioUrl = finalTask?.audioUrl || finalTask?.data?.audioUrl || finalTask?.data?.url;
-        if (!realAudioUrl) {
-          throw new Error(finalTask?.error || finalTask?.msg || 'Melo generation produced no audio');
-        }
-        setGenProgress(0.45);
-
-      } else {
-        setGenStage('composing');
-        setGenProgress(0.1);
-        const comp = composeMusic({
-          prompt,
-          style: genre,
-          theme: style || 'love',
-          duration: Math.min(duration, 120),
-          bpm: 120,
-        });
-        setComposition(comp);
-        setGenProgress(0.3);
-
-        setGenStage('audio');
-        setGenProgress(0.4);
-        const wavBlob = await compositionToWavBlob(comp);
-        const audUrl = URL.createObjectURL(wavBlob);
-        setAudioUrl(audUrl);
-        realAudioUrl = audUrl;
-        setGenProgress(0.55);
-      }
-
-      setGenStage('timeline');
-      if (genProgress < 0.55) setGenProgress(0.55);
-      else setGenProgress(Math.max(genProgress, 0.5));
-
-      let mvData;
-      if (isMobileEnvironment()) {
-        mvData = generateMV({ genre, duration, style, colorPalette, effects: selectedEffects });
-      } else {
-        try {
-          const data = await api.generateMV({ genre, duration, style, colorPalette, effects: selectedEffects });
-          if (data?.success) {
-            mvData = data.data;
-          } else {
-            mvData = generateMV({ genre, duration, style, colorPalette, effects: selectedEffects });
-          }
-        } catch {
-          mvData = generateMV({ genre, duration, style, colorPalette, effects: selectedEffects });
-        }
-      }
-      setResult(mvData);
-      setGenProgress(0.6);
-
-      setGenStage('video');
-      setGenProgress(0.65);
-
-      const videoDuration = mvData.timeline.length > 0
-        ? mvData.timeline[mvData.timeline.length - 1].endTime
-        : Math.min(duration, 60);
-
-      const videoBlobResult = await generateMVVideo({
-        audioUrl: realAudioUrl,
-        timeline: mvData.timeline,
-        colorPalette: mvData.colorPalette || colorPalette,
-        effects: mvData.effects || selectedEffects,
-        lyrics: lyricsInput.trim() || pendingLyrics || '',
-        duration: videoDuration,
-        width: 1280,
-        height: 720,
-        fps: 30,
-        onProgress: (p) => {
-          setGenProgress(0.65 + p * 0.3);
-        },
-      });
-
-      setVideoBlob(videoBlobResult);
-      const vidUrl = URL.createObjectURL(videoBlobResult);
-      setVideoUrl(vidUrl);
-      if (!audioUrl) setAudioUrl(realAudioUrl);
-      setGenProgress(1);
-      setGenStage('complete');
-
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.play().catch(() => { });
-        }
-      }, 300);
-
-      addToHistory({
-        type: 'mv',
-        genre,
-        duration: videoDuration,
-        style,
-        colorPalette: mvData.colorPalette || colorPalette,
-        effects: selectedEffects,
-        result: mvData,
-        videoUrl: vidUrl,
-        audioUrl: realAudioUrl,
-        composition,
-        engine,
-        provider: engine === 'muse' ? 'muse' : engine === 'suno' ? 'suno' : engine === 'melo' ? 'melo' : 'tonejs',
-      });
-
-      showToast('MV generated successfully!', 'success');
-    } catch (err) {
-      console.error('MV generation failed:', err);
-      setError(err.message || 'MV generation failed');
-      setGenStage('');
+      setGenProgress(100);
+      setGenStage('Complete!');
+    } catch (e) {
+      setError(e.message || t('generation.failed'));
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleDownloadVideo = () => {
-    if (!videoBlob) return;
-    const url = URL.createObjectURL(videoBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${genre}_mv_${Date.now()}.webm`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-  };
-
-  const handleDownloadAudio = () => {
-    if (!audioUrl) return;
-    const a = document.createElement('a');
-    a.href = audioUrl;
-    a.download = `${genre}_audio_${Date.now()}.mp3`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-
-  const styleOptions = [
-    { value: 'modern', label: t('mv.modern') },
-    { value: 'cinematic', label: t('mv.cinematic') },
-    { value: 'artistic', label: t('mv.artistic') },
-    { value: 'minimalist', label: t('mv.minimalist') },
-  ];
-
-  const paletteOptions = [
-    { value: 'purple_pink_gradient', label: t('mv.purple_pink_gradient') },
-    { value: 'red_black_contrast', label: t('mv.red_black_contrast') },
-    { value: 'gold_red_jade', label: t('mv.gold_red_jade') },
-    { value: 'neon_cyber', label: t('mv.neon_cyber') },
-    { value: 'urban_gold', label: t('mv.urban_gold') },
-    { value: 'soft_pastel', label: t('mv.soft_pastel') },
-  ];
-
-  const getStageLabel = () => {
-    switch (genStage) {
-      case 'credits': return t('mv.credits_stage');
-      case 'generating': return t('mv.generating_stage');
-      case 'composing': return t('mv.composing_stage');
-      case 'timeline': return t('mv.timeline_stage');
-      case 'audio': return t('mv.audio_stage');
-      case 'video': return t('mv.record_stage');
-      case 'complete': return t('mv.complete_stage');
-      default: return '';
+  const handleDownload = () => {
+    if (!result) return;
+    if (result.videoBlob) {
+      const url = URL.createObjectURL(result.videoBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${result.title || 'mv'}.mp4`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else if (result.videoUrl) {
+      const a = document.createElement('a');
+      a.href = result.videoUrl;
+      a.download = `${result.title || 'mv'}.mp4`;
+      a.target = '_blank';
+      a.click();
     }
   };
 
-  const museInsufficient = engine === 'muse' && museCredits !== null && museCredits < 14;
+  // Download just the audio track (used by MVVideoPlayer's audio button).
+  const handleDownloadAudio = () => {
+    if (!result) return;
+    const url = result.audioUrl || result.url;
+    if (!url) return;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${result.title || 'mv'}.mp3`;
+    a.target = '_blank';
+    a.click();
+  };
+
+  const shareUrl = result ? `${window.location.origin}/share/${result.id}` : '';
 
   return (
-    <div className="space-y-4 md:space-y-6 animate-slide-in pb-8">
-      {/* Header */}
-      <div className="gradient-border p-4 md:p-6">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-              <Video className="w-5 h-5 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-100 text-slate-800">
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+              <Video className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-lg md:text-xl font-bold text-white">{t('mv.mv_video_generator')}</h1>
-              <p className="text-[10px] md:text-xs text-gray-400">{t('mv.description')}</p>
+              <h1 className="text-2xl font-bold text-slate-800">{t('mv.title')}</h1>
+              <p className="text-slate-500 text-sm">{t('mv.subtitle')}</p>
             </div>
           </div>
           <button
             onClick={() => setShowHistory(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-xs md:text-sm text-gray-300"
+            className="btn-ghost flex items-center gap-2"
           >
-            <History className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            {t('mv.history')}
+            <History className="w-5 h-5" />
+            <span>{t('mv.history')}</span>
           </button>
         </div>
 
-        {/* Mode toggle */}
-        <div className="flex items-center gap-2 mt-3 p-1 bg-white/5 rounded-lg">
-          <button
-            onClick={() => setMode('basic')}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all ${mode === 'basic'
-              ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
-              : 'text-gray-400 hover:text-white'
-              }`}
-          >
-            <Music className="w-3.5 h-3.5" />
-            {t('mv.mode_basic')}
-          </button>
-          <button
-            onClick={() => setMode('pro')}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all ${mode === 'pro'
-              ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
-              : 'text-gray-400 hover:text-white'
-              }`}
-          >
-            <Wand2 className="w-3.5 h-3.5" />
-            {t('mv.mode_pro')}
-          </button>
+        <div className="mb-6 p-4 bg-white/70 rounded-xl border border-blue-200/60 backdrop-blur-sm flex items-center gap-3">
+          <Sparkles className="w-5 h-5 text-blue-500 flex-shrink-0" />
+          <span className="text-sm text-slate-600">{t('mv.aide_text')}</span>
         </div>
-      </div>
 
-      {mode === 'basic' && (
-        <>
-          <div className="gradient-border p-4 md:p-5 space-y-4">
-            <MVEngineSelector
-              engine={engine}
-              museCredits={museCredits}
-              museAvailable={museAvailable}
-              sunoAvailable={sunoAvailable}
-              meloAvailable={meloAvailable}
-              onEngineChange={setEngine}
-              t={t}
-            />
+        <MVEngineSelector
+          engine={engine}
+          onEngineChange={setEngine}
+          museAvailable={museAvailable}
+          sunoAvailable={sunoAvailable}
+          meloAvailable={meloAvailable}
+          museCredits={museCredits}
+          t={t}
+        />
 
-            <MVControls
-              lyricsInput={lyricsInput}
-              onLyricsChange={setLyricsInput}
-              genre={genre}
-              genres={genres}
-              onGenreChange={setGenre}
-              style={style}
-              styles={styleOptions}
-              onStyleChange={setStyle}
-              isGenerating={isGenerating}
-              genProgress={genProgress}
-              genStage={genStage}
-              onGenerate={handleGenerate}
-              t={t}
-              ts={ts}
-              engine={engine}
-              museCredits={museCredits}
-            />
+        <MVControls
+          mode={mode}
+          onModeChange={setMode}
+          genres={genres}
+          genre={genre}
+          onGenreChange={setGenre}
+          genreLabel={getGenreLabel(genre)}
+          style={style}
+          onStyleChange={setStyle}
+          duration={duration}
+          onDurationChange={setDuration}
+          colorPalette={colorPalette}
+          onColorPaletteChange={setColorPalette}
+          selectedEffects={selectedEffects}
+          onEffectsChange={setSelectedEffects}
+          sceneTemplates={sceneTemplates}
+          stylePalettes={paletteList}
+          effects={effectList}
+          isGenerating={isGenerating}
+          onGenerate={handleGenerate}
+          showAdvanced={showAdvanced}
+          onShowAdvancedChange={setShowAdvanced}
+          engine={engine}
+          museCredits={museCredits}
+          t={t}
+        />
+
+        {isGenerating && (
+          <div className="mt-6 p-6 bg-white/70 rounded-xl border border-blue-200/60 backdrop-blur-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <Loader className="w-5 h-5 text-blue-500 animate-spin" />
+              <span className="font-semibold text-slate-700">{genStage}</span>
+            </div>
+            <div className="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300"
+                style={{ width: `${genProgress}%` }}
+              />
+            </div>
+            <p className="text-center text-slate-500 mt-2">{genProgress}%</p>
           </div>
+        )}
 
-          <div className="gradient-border p-4 md:p-5">
-            <button
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="w-full flex items-center justify-between text-xs font-medium text-gray-300 hover:text-white transition-colors"
-            >
-              <span className="flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                {t('mv.advanced_settings')}
-              </span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
-            </button>
-            {showAdvanced && (
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label className="text-xs font-medium text-gray-300 mb-2 block">{t('mv.duration_seconds')}</label>
-                  <input
-                    type="range"
-                    min="30"
-                    max="180"
-                    step="15"
-                    value={duration}
-                    onChange={(e) => setDuration(parseInt(e.target.value))}
-                    className="w-full accent-violet-500"
-                  />
-                  <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
-                    <span>30s</span>
-                    <span className="text-violet-300 font-semibold">{duration}s</span>
-                    <span>180s</span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-gray-300 mb-2 block">{t('mv.color_palette_label')}</label>
-                  <select
-                    value={colorPalette}
-                    onChange={(e) => setColorPalette(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50"
-                  >
-                    {paletteOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-gray-300 mb-2 block">{t('layers.effects')}</label>
-                  <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                    {MV_EFFECTS.map(effect => (
-                      <button
-                        key={effect.id}
-                        onClick={() => {
-                          if (selectedEffects.includes(effect.id)) {
-                            setSelectedEffects(selectedEffects.filter(e => e !== effect.id));
-                          } else {
-                            setSelectedEffects([...selectedEffects, effect.id]);
-                          }
-                        }}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${selectedEffects.includes(effect.id)
-                          ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
-                          : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
-                          }`}
-                      >
-                        {t(effect.name)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+        {error && (
+          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <span className="text-red-700">{error}</span>
           </div>
+        )}
 
-          {error && (
-            <div className="gradient-border p-4 md:p-6">
-              <div className="text-center py-8 md:py-12">
-                <AlertCircle className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 text-red-400" />
-                <div className="text-sm md:text-base text-red-300 mb-2">{error}</div>
-                <button
-                  onClick={handleGenerate}
-                  className="px-4 py-2 rounded-lg bg-white/10 text-white text-xs hover:bg-white/20 transition-all"
-                >
-                  {t('common.retry')}
-                </button>
-              </div>
-            </div>
-          )}
+        {result && (
+          <MVVideoPlayer
+            result={result}
+            videoUrl={videoUrl}
+            videoBlob={videoBlob}
+            audioUrl={audioUrl}
+            duration={duration}
+            colorPalette={colorPalette}
+            onDownloadVideo={handleDownload}
+            onDownloadAudio={handleDownloadAudio}
+            onCopyText={handleCopyToClipboard}
+            onShare={() => {
+              if (shareUrl) {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                  showToast(t('clipboard.copied'));
+                });
+              }
+            }}
+            t={t}
+          />
+        )}
 
-          {videoUrl && (
-            <MVVideoPlayer
-              videoUrl={videoUrl}
-              videoBlob={videoBlob}
-              audioUrl={audioUrl}
-              result={result}
-              duration={duration}
-              videoRef={videoRef}
-              onDownloadVideo={handleDownloadVideo}
-              onDownloadAudio={handleDownloadAudio}
-              t={t}
-              colorPalette={colorPalette}
-            />
-          )}
+        {timelineResult && (
+          <MVTimelinePreview
+            result={timelineResult}
+            onCopy={handleCopyTimeline}
+            t={t}
+          />
+        )}
 
-          {result && (
-            <MVTimelinePreview
-              result={result}
-              onCopy={copyToClipboard}
-              t={t}
-            />
-          )}
-
-          {!result && !isGenerating && !error && (
-            <div className="gradient-border p-4 md:p-6">
-              <div className="text-center py-12 md:py-20 text-gray-500">
-                <Video className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 opacity-30" />
-                <div className="text-xs md:text-sm">Configure your MV settings and click Generate</div>
-                <div className="text-[10px] text-gray-600 mt-2">Creates real music video with actual songs + animated visuals</div>
-              </div>
-            </div>
-          )}
-
-          {isGenerating && (
-            <div className="gradient-border p-4 md:p-6">
-              <div className="text-center py-8 md:py-12">
-                <Loader className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-3 md:mb-4 text-cyan-400 animate-spin" />
-                <div className="text-sm font-medium text-white mb-2">{getStageLabel()}</div>
-                <div className="w-full max-w-xs mx-auto h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300"
-                    style={{ width: `${genProgress * 100}%` }}
-                  />
-                </div>
-                <div className="text-[10px] text-gray-500 mt-2">{Math.round(genProgress * 100)}%</div>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {mode === 'pro' && (
-        <>
-          {/* Scene Templates */}
-          <div className="gradient-border p-4 md:p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-violet-400" />
-              <h3 className="text-sm font-semibold text-white">{t('mv.scene_templates')}</h3>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {SCENE_TEMPLATES.map(template => {
-                const IconComp = template.icon;
-                const isSelected = selectedTemplate === template.id;
+        {aiVideoTools.length > 0 && (
+          <div className="mt-10">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800">
+              <Wand2 className="w-5 h-5 text-blue-500" />
+              {t('mv.ai_tools_title')}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {aiVideoTools.map(tool => {
+                const Icon = tool.icon;
                 return (
-                  <button
-                    key={template.id}
-                    onClick={() => setSelectedTemplate(isSelected ? null : template.id)}
-                    className={`flex items-center gap-2 p-2.5 rounded-lg text-xs font-medium transition-all text-left ${isSelected
-                      ? 'bg-gradient-to-r from-violet-500/30 to-pink-500/30 text-white border border-violet-500/50'
-                      : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
-                      }`}
+                  <a
+                    key={tool.id}
+                    href={tool.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-4 bg-white/70 border border-blue-200/60 rounded-xl hover:bg-white hover:border-blue-400/60 hover:shadow-md transition-all group backdrop-blur-sm"
                   >
-                    <IconComp className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-violet-300' : ''}`} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate">{template.label}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* AI Prompt Builder */}
-          <div className="gradient-border p-4 md:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Brain className="w-4 h-4 text-violet-400" />
-                <h3 className="text-sm font-semibold text-white">{t('mv.ai_prompt_builder')}</h3>
-              </div>
-              <button
-                onClick={() => handleCopyPrompt('all')}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-pink-500 text-white text-xs font-medium hover:opacity-90 transition-all"
-              >
-                {copiedPrompt === 'all' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                {t('mv.copy_prompt')}
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-gray-300 mb-1.5 block">{t('mv.genre_label')}</label>
-                <select
-                  value={genre}
-                  onChange={(e) => setGenre(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50"
-                >
-                  {genres.map(g => (
-                    <option key={g} value={g}>{ts(`lyrics_styles.${g}`) || ts(`styles.${g}`) || g}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-gray-300 mb-1.5 block">{t('mv.style_label')}</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {styleOptions.map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setStyle(opt.value)}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${style === opt.value
-                        ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white'
-                        : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
-                        }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-gray-300 mb-1.5 block">{t('mv.lyrics_label')}</label>
-                <textarea
-                  value={lyricsInput}
-                  onChange={(e) => setLyricsInput(e.target.value)}
-                  placeholder={t('mv.lyrics_placeholder')}
-                  rows={3}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-gray-300 mb-1.5 block">{t('mv.custom_prompt')}</label>
-                <textarea
-                  value={customPrompt}
-                  onChange={(e) => setCustomPrompt(e.target.value)}
-                  placeholder={t('mv.custom_prompt_placeholder')}
-                  rows={2}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 resize-none"
-                />
-              </div>
-
-              {/* Generated Prompt Preview */}
-              <div className="bg-black/30 rounded-lg p-3 border border-violet-500/20">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs text-violet-300 font-medium">{t('mv.generated_prompt')}</span>
-                </div>
-                <p className="text-xs text-gray-300 leading-relaxed font-mono break-words">
-                  {customPrompt.trim() || generateAIPrompt()}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Professional AI Video Tools */}
-          <div className="gradient-border p-4 md:p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Film className="w-4 h-4 text-pink-400" />
-              <h3 className="text-sm font-semibold text-white">{t('mv.pro_tools_title')}</h3>
-            </div>
-            <p className="text-[11px] text-gray-500 mb-4">{t('mv.pro_tools_desc')}</p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {AI_VIDEO_TOOLS.map(tool => {
-                const IconComp = tool.icon;
-                return (
-                  <div key={tool.id} className="bg-white/5 border border-white/10 rounded-lg p-3 hover:bg-white/10 transition-all">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
-                          <IconComp className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium text-white">{tool.name}</h4>
-                          <p className="text-[10px] text-gray-500">{tool.pricing}</p>
-                        </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-5 h-5 text-blue-600" />
                       </div>
-                      <a
-                        href={tool.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold truncate text-slate-800">{tool.name}</h3>
+                          <ExternalLink className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition flex-shrink-0" />
+                        </div>
+                        <p className="text-sm text-slate-500 line-clamp-2">{tool.description}</p>
+                        {tool.features?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {tool.features.slice(0, 3).map((f, i) => (
+                              <span key={i} className="px-2 py-0.5 text-xs bg-blue-50 text-blue-600 rounded">
+                                {f}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-xs text-slate-400 mt-2">{tool.pricing} · {tool.bestFor}</p>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-gray-400 mb-2">{tool.description}</p>
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {tool.features.map(f => (
-                        <span key={f} className="px-1.5 py-0.5 rounded bg-violet-500/10 text-[9px] text-violet-300 border border-violet-500/20">
-                          {f}
-                        </span>
-                      ))}
-                    </div>
-                    <p className="text-[10px] text-gray-500">
-                      <span className="text-gray-400">{t('mv.best_for')}:</span> {tool.bestFor}
-                    </p>
-                    <button
-                      onClick={() => handleCopyPrompt(tool.id)}
-                      className="mt-2 w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-gradient-to-r from-violet-500/20 to-pink-500/20 border border-violet-500/30 text-[11px] font-medium text-violet-300 hover:from-violet-500/30 hover:to-pink-500/30 transition-all"
-                    >
-                      {copiedPrompt === tool.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                      {t('mv.copy_prompt_for')} {tool.name}
-                    </button>
-                  </div>
+                  </a>
                 );
               })}
             </div>
           </div>
+        )}
 
-          {/* Workflow Guide */}
-          <div className="gradient-border p-4 md:p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="w-4 h-4 text-cyan-400" />
-              <h3 className="text-sm font-semibold text-white">{t('mv.workflow_title')}</h3>
-            </div>
-            <div className="space-y-3">
-              {[
-                { step: 1, title: t('mv.workflow_1_title'), desc: t('mv.workflow_1_desc') },
-                { step: 2, title: t('mv.workflow_2_title'), desc: t('mv.workflow_2_desc') },
-                { step: 3, title: t('mv.workflow_3_title'), desc: t('mv.workflow_3_desc') },
-                { step: 4, title: t('mv.workflow_4_title'), desc: t('mv.workflow_4_desc') },
-              ].map(item => (
-                <div key={item.step} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
-                    {item.step}
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-medium text-white">{item.title}</h4>
-                    <p className="text-[11px] text-gray-500 mt-0.5">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
-      <HistoryPanel
-        isOpen={showHistory}
-        onClose={() => setShowHistory(false)}
-        filterType="mv"
-      />
+        <HistoryPanel
+          show={showHistory}
+          onClose={() => setShowHistory(false)}
+          source="mv"
+          onSelect={(item) => {
+            if (item.audioUrl) setAudioUrl(item.audioUrl);
+            if (item.videoUrl) setVideoUrl(item.videoUrl);
+            if (item.videoBlob) setVideoBlob(item.videoBlob);
+            setResult(item);
+          }}
+        />
+      </div>
     </div>
   );
 }

@@ -1,8 +1,9 @@
 {
-  "version": "6.4.0",
+  "version": "6.6.0",
   "major": 6,
-  "minor": 4,
+  "minor": 6,
   "patch": 0,
+  "buildNumber": 1,
   "releaseDate": "2026-08-09",
-  "notes": "v6.4.0 — Full Melo integration: backend config (meloApiKey/meloBaseUrl/meloMock), status endpoint returns data.configured, Settings page shows Melo API status & key config, Health endpoint includes meloConfigured. Fixed all checkConfigured() to handle multiple response shapes."
+  "notes": "v6.6.0 — Fix Muse/Suno/Melo service interface mismatch (root cause of 'Muse API not connected'), restore MV page pale-blue theme, complete i18n for MV video player, and broaden iOS IPA build to deploy with every master push. Service layer: added checkConfigured/getCredits/generateMusic/waitForResult to muse.service.js, polymorphic generateMusic + waitForResult to suno.service.js, generateMusic/waitForResult to melo.service.js. MVPage: correct MVVideoPlayer props, extract Suno serialNos, proxy Muse audio to avoid CORS. UI: MVPage + MVControls + MVEngineSelector + MVVideoPlayer + MVTimelinePreview migrated to pale-blue theme. i18n: 12 new mv.* keys synced to DB. Cleanup: gitignored Muse CDP debug scratch files."
 }

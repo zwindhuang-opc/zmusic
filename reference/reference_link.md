@@ -12,6 +12,10 @@ https://muse.top/
 - https://mp.weixin.qq.com/s/ikX5JeNCvhE9vxAijFDUCQ?scene=1
 - https://weixin.qq.com/sph/Asct4CIXJM
 
+### MELO AI
+https://h.51melo.com/?from=bing_ad&utm_source=bing&utm_medium=cpc&msclkid=64cea330d71e1b17f59bc948cffaedf1
+
+
 ### Tencent Music
 - https://y.tencentmusic.com/#/home
 

@@ -16,8 +16,15 @@ on:
     branches:
       - master
     paths:
-      - 'ios/**'
+      - 'src/**'
+      - 'index.html'
+      - 'package.json'
       - 'capacitor.config.*'
+      - 'VERSION.json'
+      - 'vite.config.*'
+      - 'scripts/**'
+      - 'ios/**'
+      - '.github/workflows/build-ios.yml'
 
 jobs:
   build-ios:

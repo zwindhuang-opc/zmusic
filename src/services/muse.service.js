@@ -26,6 +26,7 @@
  */
 
 import Logger from '../utils/logger.js';
+import { config } from '../config/index.js';
 
 const logger = new Logger('MuseService');
 
@@ -34,28 +35,45 @@ const API_BASE = '/api/muse';
 
 /**
  * Check if Muse is configured on the backend.
- * Uses VITE_MUSE_ENABLED boolean flag — the real JWT stays server-side only.
+ * Works in both Node.js (backend) and browser (frontend) environments.
  * @returns {boolean}
  */
 let _configuredCache = null;
 let _configuredPromise = null;
+let _lastCheckTime = 0;
+const CACHE_TTL = 30000;
 
 export function isConfigured() {
   if (_configuredCache !== null) return _configuredCache;
-  return import.meta.env?.VITE_MUSE_ENABLED === 'true';
+  if (config.museApiKey) return true;
+  return !!(import.meta.env?.VITE_MUSE_ENABLED === 'true');
 }
 
-export async function checkConfigured() {
+export function resetConfigCache() {
+  _configuredCache = null;
+  _lastCheckTime = 0;
+}
+
+export async function checkConfigured(force = false) {
+  const now = Date.now();
+  if (!force && _configuredCache !== null && (now - _lastCheckTime) < CACHE_TTL) {
+    return _configuredCache;
+  }
   if (_configuredPromise) return _configuredPromise;
   _configuredPromise = (async () => {
+    let result = false;
     try {
       const status = await getStatus();
-      _configuredCache = !!(status?.data?.configured ?? status?.configured ?? status?.success);
+      result = !!(status?.data?.configured ?? status?.configured ?? status?.success);
     } catch {
-      _configuredCache = import.meta.env?.VITE_MUSE_ENABLED === 'true';
+      const envFlag = import.meta.env?.VITE_MUSE_ENABLED === 'true';
+      const hasKey = !!config.museApiKey;
+      result = envFlag || hasKey;
     }
+    _configuredCache = result;
+    _lastCheckTime = now;
     _configuredPromise = null;
-    return _configuredCache;
+    return result;
   })();
   return _configuredPromise;
 }
@@ -228,8 +246,87 @@ export async function pollUntilDone(taskId, opts = {}) {
   throw new Error(`Generation timed out after ${timeout / 1000}s`);
 }
 
+// ===========================================================================
+// MV-facing convenience interface
+// MVPage.jsx calls a uniform contract across Muse/Suno/Melo:
+//   checkConfigured() -> boolean
+//   getCredits()      -> number | null
+//   generateMusic(p)  -> taskId (string)
+//   waitForResult(id, onProgress) -> { audio_url, lyrics, title }
+// The methods below adapt the canonical muse.top calls to that contract.
+// ===========================================================================
+
+/**
+ * Get the logged-in user's current credit balance.
+ * @returns {Promise<number|null>} Credit count, or null if unavailable.
+ */
+export async function getCredits() {
+  try {
+    const status = await getStatus();
+    const login = status?.data?.login || status?.login;
+    if (login) {
+      return login.totalCredits ?? login.credits ?? null;
+    }
+    const user = await getUser();
+    return user?.memberInfo?.credit ?? user?.credit ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Start a Muse generation and return only the task id (MV-facing wrapper).
+ * Accepts the same params object as generateSong() but returns a bare taskId
+ * string so MVPage can treat Muse/Suno/Melo identically.
+ * @param {object} params - Generation params (mode, prompt, lyrics, style, ...)
+ * @returns {Promise<string>} taskId
+ */
+export async function generateMusic(params) {
+  const r = await generateSong(params);
+  return r?.taskId || r?.id || null;
+}
+
+/**
+ * Poll a generation task until completion, reporting progress to MVPage.
+ * Normalizes the muse.top response (audioUrl camelCase) into the MV-facing
+ * shape (audio_url snake_case) used by all engines.
+ *
+ * @param {string} taskId - Task id returned by generateMusic()
+ * @param {(progress:number, stage:string)=>void} [onProgress] - Progress callback
+ * @returns {Promise<{audio_url:string, lyrics:string, title:string}>}
+ */
+export async function waitForResult(taskId, onProgress) {
+  const interval = 4000;
+  const timeout = 300000;
+  const start = Date.now();
+  let polls = 0;
+
+  while (Date.now() - start < timeout) {
+    const task = await queryTask(taskId);
+    polls += 1;
+    const status = String(task?.status || task?.state || '').toLowerCase();
+    const progress = task?.progress ?? Math.min(95, polls * 12);
+    if (onProgress) onProgress(progress, status || 'processing');
+
+    if (status.includes('success') || status.includes('complete') || task?.audioUrl) {
+      return {
+        audio_url: task.audioUrl || task.audio_url || null,
+        lyrics: task.lyrics || '',
+        title: task.title || '',
+      };
+    }
+    if (status.includes('fail') || status.includes('error')) {
+      throw new Error(`Muse generation failed: ${task?.msg || task?.failReason || status}`);
+    }
+    await new Promise(r => setTimeout(r, interval));
+  }
+  throw new Error('Muse generation timed out');
+}
+
 export default {
   isConfigured,
+  checkConfigured,
+  resetConfigCache,
   getStatus,
   getUser,
   getStyles,
@@ -238,6 +335,9 @@ export default {
   getTemplates,
   getExplore,
   generateSong,
+  generateMusic,
+  getCredits,
   queryTask,
   pollUntilDone,
+  waitForResult,
 };

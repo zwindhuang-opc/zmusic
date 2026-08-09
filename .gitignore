@@ -107,3 +107,37 @@ prisma/i18n.db
 prisma/i18n.db-journal
 prisma/i18n.db-wal
 prisma/i18n.db-shm
+
+# Muse CDP debug artifacts — scratch captures from Edge browser exploration.
+# These are NOT source files; keep them locally but exclude from version control.
+muse_*.png
+muse_*.json
+edge_profile/
+scripts/muse_cookies.json
+scripts/extracted_auth.json
+scripts/*.png
+scripts/cdp_*.mjs
+scripts/cdp_*.py
+scripts/test_cdp_*.mjs
+scripts/extract_*.mjs
+scripts/extract_*.py
+scripts/check_*.mjs
+scripts/check_*.py
+scripts/probe_*.mjs
+scripts/launch_zmusic_edge.mjs
+scripts/inspect_edge.mjs
+scripts/click_play.mjs
+scripts/play_song.mjs
+scripts/download_song.mjs
+scripts/get_cover.mjs
+scripts/generate_song*.mjs
+scripts/capture_muse_request.mjs
+scripts/analyze_and_play.mjs
+scripts/dump_muse_localstorage.py
+scripts/explore_muse_storage.mjs
+scripts/scan_muse_localstorage.py
+scripts/list_muse_cookies.py
+scripts/inspect_cookie.py
+scripts/find_all_jwt.py
+scripts/test_muse_*.py
+scripts/test_generate.mjs

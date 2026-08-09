@@ -11,11 +11,13 @@
  * @version 2.0.0
  */
 
+import { config } from '../config/index.js';
+
 const API_BASE = '/api/suno';
 
 /**
  * Check if Suno is available (configured on the backend).
- * Uses VITE_SUNO_ENABLED boolean flag — the real API key stays server-side only.
+ * Works in both Node.js (backend) and browser (frontend) environments.
  * @returns {boolean}
  */
 let _configuredCache = null;
@@ -23,7 +25,8 @@ let _configuredPromise = null;
 
 export function isConfigured() {
   if (_configuredCache !== null) return _configuredCache;
-  return import.meta.env?.VITE_SUNO_ENABLED === 'true';
+  if (config.sunoApiKey) return true;
+  return !!(import.meta.env?.VITE_SUNO_ENABLED === 'true');
 }
 
 export async function checkConfigured() {
@@ -57,14 +60,33 @@ export async function getUserInfo() {
 
 /**
  * Generate music via Suno.cn
- * @param {string} prompt - Music description or lyrics
+ *
+ * Accepts EITHER positional args (legacy, used by SunoPage/MusicPage) OR a
+ * single params object (MV-facing contract used by MVPage). When an object is
+ * passed the full response {success, serialNos} is still returned so callers
+ * can extract serialNos[0] as the task id.
+ *
+ * @param {string|object} promptOrParams - Prompt string, OR params object
+ *   {prompt, style, duration, customMode, instrumental, title}
  * @param {string} [style=''] - Style tags (e.g., 'pop,electronic')
  * @param {number} [duration=60] - Target duration in seconds
  * @param {boolean} [customMode=false] - Use custom lyrics mode
  * @param {boolean} [instrumental=false] - Generate instrumental only
- * @returns {Promise<Object>} Generation result
+ * @returns {Promise<Object>} Generation result {success, serialNos, ...}
  */
-export async function generateMusic(prompt, style = '', duration = 60, customMode = false, instrumental = false) {
+export async function generateMusic(promptOrParams, style = '', duration = 60, customMode = false, instrumental = false) {
+  let prompt;
+  if (promptOrParams && typeof promptOrParams === 'object' && !Array.isArray(promptOrParams)) {
+    const p = promptOrParams;
+    prompt = p.prompt || '';
+    style = p.style || '';
+    duration = p.duration || 60;
+    customMode = p.customMode || false;
+    instrumental = p.instrumental || false;
+  } else {
+    prompt = promptOrParams;
+  }
+
   const response = await fetch(`${API_BASE}/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -77,6 +99,43 @@ export async function generateMusic(prompt, style = '', duration = 60, customMod
   }
 
   return response.json();
+}
+
+/**
+ * Poll a Suno task until completion, reporting progress to MVPage.
+ * MV-facing wrapper: normalizes the Suno response into {audio_url, lyrics,
+ * title} so MVPage can treat Suno identically to Muse/Melo.
+ *
+ * @param {string} serialNo - Task serial number returned by generateMusic()
+ * @param {(progress:number, stage:string)=>void} [onProgress] - Progress callback
+ * @returns {Promise<{audio_url:string, lyrics:string, title:string}>}
+ */
+export async function waitForResult(serialNo, onProgress) {
+  const interval = 3000;
+  const timeout = 180000;
+  const start = Date.now();
+  let attempts = 0;
+
+  while (Date.now() - start < timeout) {
+    const task = await queryTaskStatus(serialNo, false);
+    attempts += 1;
+    const status = String(task?.status || '').toLowerCase();
+    const progress = task?.progress ?? Math.min(95, attempts * 8);
+    if (onProgress) onProgress(progress, status || 'processing');
+
+    if (status === 'success') {
+      return {
+        audio_url: task.audioUrl || task.url || null,
+        lyrics: task.lyrics || '',
+        title: task.title || '',
+      };
+    }
+    if (status === 'failed') {
+      throw new Error(task?.error || 'Suno generation failed');
+    }
+    await new Promise(r => setTimeout(r, interval));
+  }
+  throw new Error('Suno generation timed out');
 }
 
 /**
@@ -141,6 +200,7 @@ export default {
   checkConfigured,
   getUserInfo,
   generateMusic,
+  waitForResult,
   queryTaskStatus,
   generateLyrics,
   getMusicList

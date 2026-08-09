@@ -14,6 +14,7 @@ import freemusicController from '../controllers/freemusic.controller.js';
 import visionController from '../controllers/vision.controller.js';
 import museController from '../controllers/muse.controller.js';
 import meloController from '../controllers/melo.controller.js';
+import contentController from '../controllers/content.controller.js';
 import Logger from '../utils/logger.js';
 
 const logger = new Logger('Routes');
@@ -248,6 +249,35 @@ export async function handleRoute(req, res, url, method, body) {
     if (meloTaskMatch && method === 'GET') {
       req.params = { id: meloTaskMatch[1] };
       return meloController.queryTask(req, res);
+    }
+  }
+
+  // Content endpoints — database-driven, replaces hardcoded arrays
+  if (path === '/api/content/all' && method === 'GET') {
+    return contentController.getAll(req, res);
+  }
+
+  const contentMatch = path.match(/^\/api\/content\/(.+)$/);
+  if (contentMatch) {
+    const subPath = contentMatch[1];
+
+    if (subPath === 'genres' && method === 'GET') {
+      return contentController.getGenres(req, res);
+    }
+    if (subPath === 'scene-templates' && method === 'GET') {
+      return contentController.getSceneTemplates(req, res);
+    }
+    if (subPath === 'ai-tools' && method === 'GET') {
+      return contentController.getAIVideoTools(req, res);
+    }
+    if (subPath === 'effects' && method === 'GET') {
+      return contentController.getEffects(req, res);
+    }
+    if (subPath === 'palettes' && method === 'GET') {
+      return contentController.getStylePalettes(req, res);
+    }
+    if (subPath === 'music-styles' && method === 'GET') {
+      return contentController.getMusicStyles(req, res);
     }
   }
 

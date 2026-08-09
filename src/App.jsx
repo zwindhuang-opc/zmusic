@@ -85,17 +85,9 @@ function App() {
       isGroup: true,
       children: [
         { id: 'music', label: t('nav.music_create'), icon: Music },
-        {
-          id: 'ai-music-sub',
-          label: t('nav.ai_music'),
-          icon: Bot,
-          isSubGroup: true,
-          children: [
-            { id: 'muse', label: t('nav.muse'), icon: Headphones },
-            { id: 'suno', label: t('nav.suno'), icon: Cloud },
-            { id: 'melo', label: t('nav.melo'), icon: Music2 },
-          ],
-        },
+        { id: 'muse', label: t('nav.muse'), icon: Headphones, engine: 'muse' },
+        { id: 'suno', label: t('nav.suno'), icon: Cloud, engine: 'suno' },
+        { id: 'melo', label: t('nav.melo'), icon: Music2, engine: 'melo' },
       ],
     },
     { id: 'lyrics', label: t('nav.lyrics'), icon: Mic },
@@ -110,10 +102,6 @@ function App() {
       if (item.isGroup) {
         for (const child of item.children) {
           if (child.id === currentPage) return child.label;
-          if (child.isSubGroup) {
-            const found = child.children.find(c => c.id === currentPage);
-            if (found) return found.label;
-          }
         }
       }
     }
@@ -158,46 +146,6 @@ function App() {
                   {expanded && (
                     <div className="mt-1 ml-4 pl-3 border-l border-violet-500/20 space-y-0.5">
                       {item.children.map((child) => {
-                        if (child.isSubGroup) {
-                          const subActive = child.children.some(c => currentPage === c.id);
-                          const subExpanded = aiMusicSubExpanded;
-                          return (
-                            <div key={child.id}>
-                              <button
-                                onClick={() => setAiMusicSubExpanded(!subExpanded)}
-                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${subActive
-                                  ? 'text-white'
-                                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                  }`}
-                              >
-                                <child.icon className="w-3.5 h-3.5" />
-                                <span className="text-[13px] flex-1 text-left">{child.label}</span>
-                                <ChevronDown className={`w-3 h-3 transition-transform ${subExpanded ? 'rotate-180' : ''}`} />
-                              </button>
-                              {subExpanded && (
-                                <div className="mt-0.5 ml-3 pl-2 border-l border-violet-500/10 space-y-0.5">
-                                  {child.children.map((sub) => {
-                                    const SubIcon = sub.icon;
-                                    const isActive = currentPage === sub.id;
-                                    return (
-                                      <button
-                                        key={sub.id}
-                                        onClick={() => setCurrentPage(sub.id)}
-                                        className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-all ${isActive
-                                          ? 'bg-gradient-to-r from-violet-500/30 to-pink-500/30 text-white border border-violet-500/40'
-                                          : 'text-gray-500 hover:text-white hover:bg-white/5'
-                                          }`}
-                                      >
-                                        <SubIcon className="w-3 h-3" />
-                                        <span>{sub.label}</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        }
                         const ChildIcon = child.icon;
                         const isActive = currentPage === child.id;
                         return (
@@ -361,61 +309,27 @@ function App() {
         </div>
 
         <nav className="mobile-bottom-nav safe-area-bottom glass border-t border-purple-500/10 z-50 relative">
-          {/* Tertiary row: AI music sub-group children when an AI page is active */}
+          {/* Group children row — shows sub-items when a group page is active */}
           {(() => {
-            const musicGroup = navigationItems.find(i => i.isGroup);
-            const aiSub = musicGroup?.children.find(c => c.isSubGroup);
-            const isAIPage = aiSub?.children.some(c => c.id === currentPage);
-            if (!isAIPage) return null;
+            const activeGroup = navigationItems.find(i => {
+              if (!i.isGroup) return false;
+              if (i.children.some(c => c.id === currentPage)) return true;
+              return false;
+            });
+            if (!activeGroup) return null;
             return (
               <div className="flex items-center justify-center gap-1 px-2 py-1.5 border-b border-purple-500/10 bg-violet-500/5">
-                {aiSub.children.map(child => {
+                {activeGroup.children.map(child => {
                   const Icon = child.icon;
                   const isActive = currentPage === child.id;
                   return (
                     <button
                       key={child.id}
                       onClick={() => setCurrentPage(child.id)}
-                      className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all ${isActive ? 'text-pink-400 bg-pink-500/10' : 'text-gray-500'}`}
+                      className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all ${isActive ? 'text-violet-400 bg-violet-500/10' : 'text-gray-500'}`}
                     >
                       <Icon className="w-4 h-4" />
                       <span className="text-[8px] font-medium">{child.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })()}
-
-          {/* Secondary row: group children when a music group page is active */}
-          {(() => {
-            const musicGroup = navigationItems.find(i => i.isGroup);
-            const isMusicPage = musicGroup?.children.some(c =>
-              c.id === currentPage || (c.isSubGroup && c.children.some(sc => sc.id === currentPage))
-            );
-            if (!isMusicPage) return null;
-            return (
-              <div className="flex items-center justify-center gap-1 px-2 py-2 border-b border-purple-500/10">
-                {musicGroup.children.map(child => {
-                  const Icon = child.icon;
-                  const isActive = child.isSubGroup
-                    ? child.children.some(c => c.id === currentPage)
-                    : currentPage === child.id;
-                  return (
-                    <button
-                      key={child.id}
-                      onClick={() => {
-                        if (child.isSubGroup) {
-                          const firstSub = child.children[0];
-                          setCurrentPage(firstSub.id);
-                        } else {
-                          setCurrentPage(child.id);
-                        }
-                      }}
-                      className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all ${isActive ? 'text-violet-400 bg-violet-500/10' : 'text-gray-500'}`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span className="text-[9px] font-medium">{child.label}</span>
                     </button>
                   );
                 })}
@@ -428,14 +342,18 @@ function App() {
             {navigationItems.map((item) => {
               if (item.isGroup) {
                 const Icon = item.icon;
-                const childrenActive = item.children.some(c =>
-                  c.id === currentPage || (c.isSubGroup && c.children.some(sc => sc.id === currentPage))
-                );
+                const childrenActive = item.children.some(c => c.id === currentPage);
                 const primaryChild = item.children[0];
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setCurrentPage(childrenActive ? currentPage : primaryChild.id)}
+                    onClick={() => {
+                      if (childrenActive) {
+                        setCurrentPage(currentPage);
+                      } else {
+                        setCurrentPage(primaryChild.id);
+                      }
+                    }}
                     className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all ${childrenActive ? 'text-violet-400' : 'text-gray-500'}`}
                   >
                     <Icon className="w-6 h-6" />

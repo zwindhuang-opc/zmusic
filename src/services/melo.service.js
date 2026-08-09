@@ -1,3 +1,5 @@
+import { config } from '../config/index.js';
+
 const API_BASE = '/api/melo';
 
 let _configuredCache = null;
@@ -5,7 +7,8 @@ let _configuredPromise = null;
 
 export function isConfigured() {
   if (_configuredCache !== null) return _configuredCache;
-  return import.meta.env?.VITE_MELO_ENABLED === 'true';
+  if (config.meloApiKey) return true;
+  return !!(import.meta.env?.VITE_MELO_ENABLED === 'true');
 }
 
 export async function checkConfigured() {
@@ -79,12 +82,57 @@ export async function pollUntilDone(taskId, options = {}) {
   throw new Error('Melo generation timed out');
 }
 
+// ===========================================================================
+// MV-facing convenience interface
+// MVPage.jsx calls a uniform contract across Muse/Suno/Melo:
+//   generateMusic(p)  -> taskId (string)
+//   waitForResult(id, onProgress) -> { audio_url, lyrics, title }
+// ===========================================================================
+
+/**
+ * Start a Melo generation and return only the task id (MV-facing wrapper).
+ * @param {object} params - Generation params
+ * @returns {Promise<string>} taskId
+ */
+export async function generateMusic(params) {
+  const r = await generateSong(params);
+  return r?.data?.taskId || r?.taskId || r?.id || null;
+}
+
+/**
+ * Poll a Melo task until completion, reporting progress to MVPage.
+ * Normalizes the Melo response (audioUrl camelCase) into the MV-facing
+ * shape (audio_url snake_case) used by all engines.
+ *
+ * @param {string} taskId - Task id returned by generateMusic()
+ * @param {(progress:number, stage:string)=>void} [onProgress] - Progress callback
+ * @returns {Promise<{audio_url:string, lyrics:string, title:string}>}
+ */
+export async function waitForResult(taskId, onProgress) {
+  const result = await pollUntilDone(taskId, {
+    intervalMs: 3000,
+    timeoutMs: 180000,
+    onPoll: (data) => {
+      const status = String(data?.status || '').toLowerCase();
+      const progress = data?.progress ?? 30;
+      if (onProgress) onProgress(progress, status || 'processing');
+    },
+  });
+  return {
+    audio_url: result.audioUrl || result.audio_url || null,
+    lyrics: result.lyrics || '',
+    title: result.title || '',
+  };
+}
+
 export default {
   isConfigured,
   checkConfigured,
   getStatus,
   getUser,
   generateSong,
+  generateMusic,
+  waitForResult,
   queryTask,
   pollUntilDone,
 };

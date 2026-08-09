@@ -1,121 +1,228 @@
 import React from 'react';
-import { Sparkles, Loader } from 'lucide-react';
+import { Sparkles, Loader, Wand2, Palette, Zap, Film } from 'lucide-react';
 
 function MVControls({
-  lyricsInput,
-  onLyricsChange,
-  genre,
+  mode,
+  onModeChange,
   genres,
+  genre,
   onGenreChange,
   style,
-  styles,
   onStyleChange,
+  duration,
+  onDurationChange,
+  colorPalette,
+  onColorPaletteChange,
+  selectedEffects,
+  onEffectsChange,
+  sceneTemplates,
+  stylePalettes,
+  effects,
   isGenerating,
-  genProgress,
-  genStage,
   onGenerate,
-  t,
-  ts,
   engine,
-  museCredits = null,
+  museCredits,
+  t,
 }) {
-  const museInsufficient = engine === 'muse' && museCredits !== null && museCredits < 14;
-
-  const getStageLabel = () => {
-    switch (genStage) {
-      case 'credits': return t('mv.credits_stage');
-      case 'generating': return t('mv.generating_stage');
-      case 'composing': return t('mv.composing_stage');
-      case 'timeline': return t('mv.timeline_stage');
-      case 'audio': return t('mv.audio_stage');
-      case 'video': return t('mv.record_stage');
-      case 'complete': return t('mv.complete_stage');
-      default: return '';
+  const toggleEffect = (effectId) => {
+    if (selectedEffects.includes(effectId)) {
+      onEffectsChange(selectedEffects.filter(e => e !== effectId));
+    } else {
+      onEffectsChange([...selectedEffects, effectId]);
     }
   };
 
   return (
-    <>
-      {engine !== 'procedural' && (
-        <div>
-          <label className="text-xs font-medium text-gray-300 mb-2 block">
-            {t('mv.song_lyrics_prompt')} {engine === 'muse' && t('mv.prompt_muse_optional')}
-          </label>
-          <textarea
-            value={lyricsInput}
-            onChange={(e) => onLyricsChange(e.target.value)}
-            placeholder={engine === 'muse'
-              ? t('mv.leave_blank_or_write')
-              : t('mv.prompt_enter_lyrics_or_describe')}
-            rows={3}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 resize-none"
-          />
-        </div>
+    <div className="space-y-6">
+      {/* Mode Selector */}
+      <div className="p-1.5 rounded-2xl flex gap-1 bg-white/70 border border-blue-200/60 backdrop-blur-sm">
+        <button
+          onClick={() => onModeChange('basic')}
+          className={`flex-1 py-2 text-sm font-medium rounded-xl transition-all ${mode === 'basic' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+        >
+          {t('mv.mode_basic_label')}
+        </button>
+        <button
+          onClick={() => onModeChange('advanced')}
+          className={`flex-1 py-2 text-sm font-medium rounded-xl transition-all ${mode === 'advanced' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+        >
+          {t('mv.mode_advanced_label')}
+        </button>
+      </div>
+
+      {mode === 'basic' && (
+        <>
+          {/* Genre Selector */}
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-2 block">{t('mv.genre_section')}</label>
+            <div className="flex flex-wrap gap-1.5">
+              {genres.map((g) => (
+                <button
+                  key={g}
+                  onClick={() => onGenreChange(g)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${genre === g
+                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-sm'
+                      : 'bg-white/70 text-slate-600 border border-blue-200/60 hover:bg-blue-50'
+                    }`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Scene Templates (from DB) */}
+          {sceneTemplates.length > 0 && (
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-2 block flex items-center gap-1.5">
+                <Film className="w-3.5 h-3.5" />
+                {t('mv.scene_templates_label')}
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {sceneTemplates.map((s) => {
+                  const Icon = s.icon || Wand2;
+                  const isSelected = style === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => onStyleChange(s.id)}
+                      className={`p-3 rounded-xl border transition-all text-left ${isSelected
+                          ? 'border-blue-500/60 bg-blue-50'
+                          : 'border-blue-200/60 bg-white/70 hover:bg-blue-50'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <Icon className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
+                        <span className="text-xs font-medium text-slate-700">{s.label}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Duration */}
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-2 block">
+              {t('mv.duration_section')}: {duration}s
+            </label>
+            <input
+              type="range"
+              min="15"
+              max="120"
+              step="15"
+              value={duration}
+              onChange={(e) => onDurationChange(Number(e.target.value))}
+              className="w-full h-2 bg-blue-100 rounded-lg cursor-pointer accent-blue-500"
+            />
+            <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+              <span>15s</span>
+              <span>60s</span>
+              <span>120s</span>
+            </div>
+          </div>
+        </>
       )}
 
-      <div>
-        <label className="text-xs font-medium text-gray-300 mb-2 block">{t('mv.mv_genre')}</label>
-        <div className="flex flex-wrap gap-1.5 md:gap-2">
-          {genres.map(g => (
-            <button
-              key={g}
-              onClick={() => onGenreChange(g)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${genre === g
-                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
-                : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                }`}
-            >
-              {ts(`lyrics_styles.${g}`) || ts(`styles.${g}`) || ts(`styles_extra.${g}`) || g}
-            </button>
-          ))}
-        </div>
-      </div>
+      {mode === 'advanced' && (
+        <>
+          {/* Duration */}
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-2 block">
+              {t('mv.duration_section')}: {duration}s
+            </label>
+            <input
+              type="range"
+              min="15"
+              max="120"
+              step="15"
+              value={duration}
+              onChange={(e) => onDurationChange(Number(e.target.value))}
+              className="w-full h-2 bg-blue-100 rounded-lg cursor-pointer accent-blue-500"
+            />
+          </div>
 
-      <div>
-        <label className="text-xs font-medium text-gray-300 mb-2 block">{t('mv.style')}</label>
-        <div className="flex flex-wrap gap-1.5 md:gap-2">
-          {styles.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => onStyleChange(opt.value)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${style === opt.value
-                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
-                : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
+          {/* Color Palettes (from DB) */}
+          {stylePalettes.length > 0 && (
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-2 block flex items-center gap-1.5">
+                <Palette className="w-3.5 h-3.5" />
+                {t('mv.color_palette_section')}
+              </label>
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                {stylePalettes.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => onColorPaletteChange(p.id)}
+                    className={`p-2 rounded-lg border transition-all ${colorPalette === p.id
+                        ? 'border-blue-500/60 bg-blue-50'
+                        : 'border-blue-200/60 bg-white/70 hover:bg-blue-50'
+                      }`}
+                  >
+                    <div className="flex gap-0.5 mb-1">
+                      {(p.colors || []).map((c, i) => (
+                        <div
+                          key={i}
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[10px] text-slate-500 truncate block">{p.en}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
+          {/* Effects (from DB) */}
+          {effects.length > 0 && (
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-2 block flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5" />
+                {t('mv.visual_effects')}
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {effects.map((e) => (
+                  <button
+                    key={e.id}
+                    onClick={() => toggleEffect(e.id)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${selectedEffects.includes(e.id)
+                        ? 'bg-blue-500/15 text-blue-700 border border-blue-400/50'
+                        : 'bg-white/70 text-slate-500 border border-blue-200/60 hover:bg-blue-50'
+                      }`}
+                  >
+                    {e.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Generate Button */}
       <button
         onClick={onGenerate}
-        disabled={isGenerating || museInsufficient}
+        disabled={isGenerating}
         className="w-full py-3.5 md:py-4 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold text-sm md:text-base flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 shadow-lg shadow-cyan-500/20 active:scale-[0.98] transition-transform"
       >
         {isGenerating ? (
           <>
             <Loader className="w-4 h-4 animate-spin" />
-            {getStageLabel() || t('mv.generating_mv')}
+            {t('mv.generating_label')}
           </>
         ) : (
           <>
             <Sparkles className="w-4 h-4" />
-            {engine !== 'procedural' ? t('mv.generate_button_real') : t('mv.generate_button_preview')}
+            {t('mv.generate_mv_button')}
           </>
         )}
       </button>
-
-      {isGenerating && genProgress > 0 && (
-        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300"
-            style={{ width: `${genProgress * 100}%` }}
-          />
-        </div>
-      )}
-    </>
+    </div>
   );
 }
 
