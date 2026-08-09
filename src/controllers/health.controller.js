@@ -12,6 +12,7 @@
 import sunoService from '../services/suno.service.js';
 import museService from '../services/muse.service.js';
 import meloService from '../services/melo.service.js';
+import { getServiceStatusSummary, clearCache as clearBrowserCache } from '../services/browserStatus.service.js';
 import Logger from '../utils/logger.js';
 import { config } from '../config/index.js';
 import fs from 'fs';
@@ -81,17 +82,69 @@ export class HealthController {
    * @returns {string[]} returns.endpoints - 可用API端点列表
    */
   async health(req, res) {
+    // Try to get real-time service status from Edge browser (CDP)
+    // This detects which music services the user is logged into in Edge
+    let browserStatus = null;
+    let edgeConnected = false;
+    let browserMuse = false;
+    let browserSuno = false;
+    let browserMelo = false;
+
+    try {
+      const summary = await getServiceStatusSummary();
+      edgeConnected = summary.edgeConnected;
+      browserMuse = summary.museConfigured;
+      browserSuno = summary.sunoConfigured;
+      browserMelo = summary.meloConfigured;
+      browserStatus = summary.browserStatus;
+    } catch (e) {
+      // Browser check failed - fall back to config-based status
+      logger.warn(`[Health] Browser status check failed: ${e.message}`);
+    }
+
+    // Get config-based status (API keys)
+    const configMuse = museService.isConfigured();
+    const configSuno = sunoService.isConfigured();
+    const configMelo = meloService.isConfigured();
+
+    // Use browser-detected status if available, otherwise config-based
+    // A service is "configured" if either the browser shows login OR we have an API key
+    const museConfigured = browserMuse || configMuse;
+    const sunoConfigured = browserSuno || configSuno;
+    const meloConfigured = browserMelo || configMelo;
+
     return res.json({
       success: true,
       status: 'healthy',
       version: versionFile.version,
       uptime: Math.floor(process.uptime()),
       port: config.port,
-      apiConfigured: sunoService.isConfigured(),
-      museConfigured: museService.isConfigured(),
-      meloConfigured: meloService.isConfigured(),
+      apiConfigured: sunoConfigured,
+      museConfigured,
+      meloConfigured,
       architecture: 'MVC Pattern',
       layers: ['Model', 'View', 'Controller', 'Service', 'Agent'],
+      browser: {
+        connected: edgeConnected,
+        port: 9222,
+        services: browserStatus ? {
+          muse: browserStatus.services?.muse ? {
+            tabFound: browserStatus.services.muse.tabFound,
+            loginDetected: browserStatus.services.muse.loginDetected,
+            loginSource: browserStatus.services.muse.loginSource,
+          } : null,
+          suno: browserStatus.services?.suno ? {
+            tabFound: browserStatus.services.suno.tabFound,
+            loginDetected: browserStatus.services.suno.loginDetected,
+            loginSource: browserStatus.services.suno.loginSource,
+          } : null,
+          melo: browserStatus.services?.melo ? {
+            tabFound: browserStatus.services.melo.tabFound,
+            loginDetected: browserStatus.services.melo.loginDetected,
+            loginSource: browserStatus.services.melo.loginSource,
+          } : null,
+        } : null,
+      },
       endpoints: [
         'GET  /api/health',
         'GET  /api/agent/status',

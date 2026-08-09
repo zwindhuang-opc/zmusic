@@ -477,180 +477,185 @@ function MVPage() {
   const shareUrl = result ? `${window.location.origin}/share/${result.id}` : '';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-100 text-slate-800">
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-              <Video className="w-6 h-6 text-white" />
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Hero Header — matches Muse/Suno/Melo dark theme + pale blue accents */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600/20 via-sky-600/20 to-cyan-600/20 border border-white/10 p-6">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-sky-500/20 to-blue-500/0 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-cyan-500/20 to-transparent rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/30">
+              <Video className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">{t('mv.title')}</h1>
-              <p className="text-slate-500 text-sm">{t('mv.subtitle')}</p>
+              <h1 className="text-2xl font-bold text-white bg-gradient-to-r from-white via-sky-100 to-cyan-200 bg-clip-text text-transparent">
+                {t('mv.title')}
+              </h1>
+              <p className="text-sky-200/70 text-sm mt-0.5">{t('mv.subtitle')}</p>
             </div>
           </div>
           <button
             onClick={() => setShowHistory(true)}
-            className="btn-ghost flex items-center gap-2"
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
           >
-            <History className="w-5 h-5" />
-            <span>{t('mv.history')}</span>
+            <History className="w-5 h-5 text-sky-400" />
+            <span className="text-sm">{t('mv.history')}</span>
           </button>
         </div>
-
-        <div className="mb-6 p-4 bg-white/70 rounded-xl border border-blue-200/60 backdrop-blur-sm flex items-center gap-3">
-          <Sparkles className="w-5 h-5 text-blue-500 flex-shrink-0" />
-          <span className="text-sm text-slate-600">{t('mv.aide_text')}</span>
-        </div>
-
-        <MVEngineSelector
-          engine={engine}
-          onEngineChange={setEngine}
-          museAvailable={museAvailable}
-          sunoAvailable={sunoAvailable}
-          meloAvailable={meloAvailable}
-          museCredits={museCredits}
-          t={t}
-        />
-
-        <MVControls
-          mode={mode}
-          onModeChange={setMode}
-          genres={genres}
-          genre={genre}
-          onGenreChange={setGenre}
-          genreLabel={getGenreLabel(genre)}
-          style={style}
-          onStyleChange={setStyle}
-          duration={duration}
-          onDurationChange={setDuration}
-          colorPalette={colorPalette}
-          onColorPaletteChange={setColorPalette}
-          selectedEffects={selectedEffects}
-          onEffectsChange={setSelectedEffects}
-          sceneTemplates={sceneTemplates}
-          stylePalettes={paletteList}
-          effects={effectList}
-          isGenerating={isGenerating}
-          onGenerate={handleGenerate}
-          showAdvanced={showAdvanced}
-          onShowAdvancedChange={setShowAdvanced}
-          engine={engine}
-          museCredits={museCredits}
-          t={t}
-        />
-
-        {isGenerating && (
-          <div className="mt-6 p-6 bg-white/70 rounded-xl border border-blue-200/60 backdrop-blur-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <Loader className="w-5 h-5 text-blue-500 animate-spin" />
-              <span className="font-semibold text-slate-700">{genStage}</span>
-            </div>
-            <div className="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300"
-                style={{ width: `${genProgress}%` }}
-              />
-            </div>
-            <p className="text-center text-slate-500 mt-2">{genProgress}%</p>
-          </div>
-        )}
-
-        {error && (
-          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-            <span className="text-red-700">{error}</span>
-          </div>
-        )}
-
-        {result && (
-          <MVVideoPlayer
-            result={result}
-            videoUrl={videoUrl}
-            videoBlob={videoBlob}
-            audioUrl={audioUrl}
-            duration={duration}
-            colorPalette={colorPalette}
-            onDownloadVideo={handleDownload}
-            onDownloadAudio={handleDownloadAudio}
-            onCopyText={handleCopyToClipboard}
-            onShare={() => {
-              if (shareUrl) {
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                  showToast(t('clipboard.copied'));
-                });
-              }
-            }}
-            t={t}
-          />
-        )}
-
-        {timelineResult && (
-          <MVTimelinePreview
-            result={timelineResult}
-            onCopy={handleCopyTimeline}
-            t={t}
-          />
-        )}
-
-        {aiVideoTools.length > 0 && (
-          <div className="mt-10">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800">
-              <Wand2 className="w-5 h-5 text-blue-500" />
-              {t('mv.ai_tools_title')}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {aiVideoTools.map(tool => {
-                const Icon = tool.icon;
-                return (
-                  <a
-                    key={tool.id}
-                    href={tool.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-4 bg-white/70 border border-blue-200/60 rounded-xl hover:bg-white hover:border-blue-400/60 hover:shadow-md transition-all group backdrop-blur-sm"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold truncate text-slate-800">{tool.name}</h3>
-                          <ExternalLink className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition flex-shrink-0" />
-                        </div>
-                        <p className="text-sm text-slate-500 line-clamp-2">{tool.description}</p>
-                        {tool.features?.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {tool.features.slice(0, 3).map((f, i) => (
-                              <span key={i} className="px-2 py-0.5 text-xs bg-blue-50 text-blue-600 rounded">
-                                {f}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <p className="text-xs text-slate-400 mt-2">{tool.pricing} · {tool.bestFor}</p>
-                      </div>
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <HistoryPanel
-          show={showHistory}
-          onClose={() => setShowHistory(false)}
-          source="mv"
-          onSelect={(item) => {
-            if (item.audioUrl) setAudioUrl(item.audioUrl);
-            if (item.videoUrl) setVideoUrl(item.videoUrl);
-            if (item.videoBlob) setVideoBlob(item.videoBlob);
-            setResult(item);
-          }}
-        />
       </div>
+
+      <div className="mb-6 p-4 rounded-xl bg-white/5 border border-sky-500/20 backdrop-blur-sm flex items-center gap-3">
+        <Sparkles className="w-5 h-5 text-sky-400 flex-shrink-0" />
+        <span className="text-sm text-gray-300">{t('mv.aide_text')}</span>
+      </div>
+
+      <MVEngineSelector
+        engine={engine}
+        onEngineChange={setEngine}
+        museAvailable={museAvailable}
+        sunoAvailable={sunoAvailable}
+        meloAvailable={meloAvailable}
+        museCredits={museCredits}
+        t={t}
+      />
+
+      <MVControls
+        mode={mode}
+        onModeChange={setMode}
+        genres={genres}
+        genre={genre}
+        onGenreChange={setGenre}
+        genreLabel={getGenreLabel(genre)}
+        style={style}
+        onStyleChange={setStyle}
+        duration={duration}
+        onDurationChange={setDuration}
+        colorPalette={colorPalette}
+        onColorPaletteChange={setColorPalette}
+        selectedEffects={selectedEffects}
+        onEffectsChange={setSelectedEffects}
+        sceneTemplates={sceneTemplates}
+        stylePalettes={paletteList}
+        effects={effectList}
+        isGenerating={isGenerating}
+        onGenerate={handleGenerate}
+        showAdvanced={showAdvanced}
+        onShowAdvancedChange={setShowAdvanced}
+        engine={engine}
+        museCredits={museCredits}
+        t={t}
+      />
+
+      {isGenerating && (
+        <div className="mt-6 p-6 glass rounded-xl border border-sky-500/20">
+          <div className="flex items-center gap-3 mb-4">
+            <Loader className="w-5 h-5 text-sky-400 animate-spin" />
+            <span className="font-semibold text-white">{genStage}</span>
+          </div>
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-sky-500 to-cyan-500 transition-all duration-300"
+              style={{ width: `${genProgress}%` }}
+            />
+          </div>
+          <p className="text-center text-gray-400 mt-2">{genProgress}%</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-6 p-4 rounded-xl bg-red-500/10 border border-red-500/40 text-red-200 text-sm flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {result && (
+        <MVVideoPlayer
+          result={result}
+          videoUrl={videoUrl}
+          videoBlob={videoBlob}
+          audioUrl={audioUrl}
+          duration={duration}
+          colorPalette={colorPalette}
+          onDownloadVideo={handleDownload}
+          onDownloadAudio={handleDownloadAudio}
+          onCopyText={handleCopyToClipboard}
+          onShare={() => {
+            if (shareUrl) {
+              navigator.clipboard.writeText(shareUrl).then(() => {
+                showToast(t('clipboard.copied'));
+              });
+            }
+          }}
+          t={t}
+        />
+      )}
+
+      {timelineResult && (
+        <MVTimelinePreview
+          result={timelineResult}
+          onCopy={handleCopyTimeline}
+          t={t}
+        />
+      )}
+
+      {aiVideoTools.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-white">
+            <Wand2 className="w-5 h-5 text-sky-400" />
+            {t('mv.ai_tools_title')}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {aiVideoTools.map(tool => {
+              const Icon = tool.icon;
+              return (
+                <a
+                  key={tool.id}
+                  href={tool.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="glass p-4 rounded-xl border border-white/10 hover:border-sky-500/30 hover:shadow-lg hover:shadow-sky-500/10 transition-all group"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-sky-500/20 flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-5 h-5 text-sky-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold truncate text-white">{tool.name}</h3>
+                        <ExternalLink className="w-3 h-3 text-gray-500 opacity-0 group-hover:opacity-100 transition flex-shrink-0" />
+                      </div>
+                      <p className="text-sm text-gray-400 line-clamp-2">{tool.description}</p>
+                      {tool.features?.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {tool.features.slice(0, 3).map((f, i) => (
+                            <span key={i} className="px-2 py-0.5 text-xs rounded bg-sky-500/10 text-sky-300 border border-sky-500/20">
+                              {f}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500 mt-2">{tool.pricing} · {tool.bestFor}</p>
+                    </div>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <HistoryPanel
+        show={showHistory}
+        onClose={() => setShowHistory(false)}
+        source="mv"
+        onSelect={(item) => {
+          if (item.audioUrl) setAudioUrl(item.audioUrl);
+          if (item.videoUrl) setVideoUrl(item.videoUrl);
+          if (item.videoBlob) setVideoBlob(item.videoBlob);
+          setResult(item);
+        }}
+      />
     </div>
   );
 }

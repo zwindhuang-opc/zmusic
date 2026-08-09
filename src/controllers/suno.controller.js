@@ -33,6 +33,72 @@ async function proxyFetch(path, options = {}) {
 }
 
 export class SunoController {
+  /**
+   * GET /api/suno/status
+   * Reports configuration status + REAL credit balance from Suno.cn API.
+   *
+   * — NEVER guesses or hardcodes credits: always hits /mcp/api/user and
+   *   returns whatever credit field the API actually uses.
+   * — configured=true ONLY when the real Suno API accepts the key and
+   *   returns a user profile.
+   */
+  async status(req, res) {
+    const hasKey = Boolean(config.sunoApiKey);
+    let user = null;
+    let apiError = null;
+
+    if (hasKey) {
+      try {
+        const { status, data } = await proxyFetch('/mcp/api/user');
+        if (status < 400 && data && typeof data === 'object' && !data.error) {
+          user = data?.data || data;
+        } else if (data?.error || data?.message || data?.msg) {
+          apiError = data.error || data.message || data.msg || `HTTP ${status}`;
+        } else if (status >= 400) {
+          apiError = `HTTP ${status}`;
+        }
+      } catch (e) {
+        logger.warn(`[suno/status] user failed: ${e.message}`);
+        apiError = e.message;
+      }
+    }
+
+    // Extract the actual credits from the real API response. Match ALL
+    // possible field names; DO NOT invent a number. 0 pts from the API is
+    // a perfectly valid answer and must be shown, not "improved".
+    let credits = 0;
+    if (user) {
+      credits =
+        user.points ??
+        user.credit ??
+        user.credits ??
+        user.memberCredit ??
+        user.member_credit ??
+        user.balance ??
+        user.remaining ??
+        user.quota ??
+        user.data?.points ??
+        user.data?.credit ??
+        user.data?.credits ??
+        user.user?.points ??
+        user.user?.credit ??
+        0;
+    }
+
+    // "configured" = real API accepted our credentials and gave back profile
+    const configured = !!user;
+
+    return res.json({
+      success: true,
+      configured,
+      host: SUNO_BASE,
+      hasKey,
+      apiError,
+      credits,
+      rawUser: user,
+    });
+  }
+
   async getUser(req, res) {
     try {
       const { status, data } = await proxyFetch('/mcp/api/user');

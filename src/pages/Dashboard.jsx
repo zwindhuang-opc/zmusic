@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Music, Mic, Video, Activity, TrendingUp, Cpu, Bot, Sparkles, BarChart3, Server, Zap, ChevronRight } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
@@ -19,6 +19,7 @@ function Dashboard({ apiStatus, agentStatus, onNavigate }) {
     { name: t('dashboard.network_layers_text'), desc: t('dashboard.layered_composition'), color: 'text-pink-400', count: 4, countLabel: t('dashboard.layers') },
     { name: t('dashboard.muse_style'), desc: t('dashboard.natural_language_commands'), color: 'text-blue-400', count: t('dashboard.infinite'), countLabel: '' },
     { name: t('dashboard.suno_style'), desc: t('dashboard.structured_parameters'), color: 'text-emerald-400', count: t('dashboard.infinite'), countLabel: '' },
+    { name: t('dashboard.melo_style'), desc: t('dashboard.multi_layer_composition'), color: 'text-amber-400', count: t('dashboard.infinite'), countLabel: '' },
   ];
 
   const architectureLayers = [
@@ -116,6 +117,17 @@ function Dashboard({ apiStatus, agentStatus, onNavigate }) {
               </div>
               <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                 <div className={`h-full ${apiStatus.museConfigured ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: apiStatus.museConfigured ? '100%' : '30%' }} />
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-xs mb-1.5">
+                <span className="text-gray-400">{t('dashboard.melo_ai')}</span>
+                <span className={apiStatus.meloConfigured ? 'text-emerald-400' : 'text-amber-400'}>
+                  {apiStatus.meloConfigured ? t('header.connected') : t('dashboard.not_configured')}
+                </span>
+              </div>
+              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className={`h-full ${apiStatus.meloConfigured ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: apiStatus.meloConfigured ? '100%' : '30%' }} />
               </div>
             </div>
             <div>

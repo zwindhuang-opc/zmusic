@@ -101,7 +101,7 @@ function MeloPage() {
     effects: '',
   });
 
-  const [meloStatus, setMeloStatus] = useState({ configured: false, mock: true });
+  const [meloStatus, setMeloStatus] = useState({ configured: false, mock: false });
   const [userInfo, setUserInfo] = useState(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
 
@@ -143,12 +143,16 @@ function MeloPage() {
       const statusRes = await fetch('/api/melo/status');
       if (statusRes.ok) {
         const statusData = await statusRes.json();
-        setMeloStatus(statusData);
+        setMeloStatus(statusData?.data || statusData);
       }
 
       const userRes = await fetch('/api/melo/user');
       if (userRes.ok) {
         const userData = await userRes.json();
+        // Surface the raw payload so we can see which credit field the API
+        // actually sends — never hardcode or guess the field name.
+        // eslint-disable-next-line no-console
+        console.log('[MeloPage] Raw /api/melo/user response:', JSON.stringify(userData, null, 2));
         setUserInfo(userData.data || userData);
       }
     } catch (e) {
@@ -396,10 +400,28 @@ function MeloPage() {
     setLayers({ foundation: '', melody: '', expression: '', effects: '' });
   };
 
-  const isMock = Boolean(meloStatus?.mock);
-  const credits = userInfo?.credits ?? 0;
-  const canGenerate = (meloStatus?.configured || isMock) && !generating &&
-    (isMock || credits > 0);
+  // Match ALL possible credit field names returned by Melo API — no guessing,
+  // pick whichever field the actual API sends back. If none match, fall back
+  // to the credits reported by /api/melo/status (which already resolved the
+  // real number from Melo's /api/v1/user/info), then 0.
+  const userCredits =
+    userInfo?.credits ??
+    userInfo?.credit ??
+    userInfo?.points ??
+    userInfo?.point ??
+    userInfo?.balance ??
+    userInfo?.remaining ??
+    userInfo?.memberCredit ??
+    userInfo?.member_credit ??
+    userInfo?.quota ??
+    userInfo?.data?.credits ??
+    userInfo?.data?.credit ??
+    userInfo?.data?.points ??
+    userInfo?.userInfo?.credits ??
+    userInfo?.userInfo?.credit ??
+    null;
+  const credits = userCredits ?? meloStatus?.credits ?? 0;
+  const canGenerate = meloStatus?.configured && !generating && credits > 0;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -432,12 +454,6 @@ function MeloPage() {
               {meloStatus?.configured ? '已连接' : '未连接'}
               {loadingConfig && <Loader className="w-3 h-3 animate-spin" />}
             </div>
-
-            {isMock && (
-              <span className="px-2 py-1 text-[10px] rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30 font-medium">
-                测试模式
-              </span>
-            )}
 
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
               <span className="text-xs text-gray-400">积分</span>
@@ -750,7 +766,7 @@ function MeloPage() {
             )}
           </button>
 
-          {!meloStatus?.configured && !isMock && (
+          {!meloStatus?.configured && (
             <p className="text-xs text-center text-amber-400 flex items-center justify-center gap-1">
               <AlertCircle className="w-3 h-3" />
               Melo AI 未配置，请联系管理员

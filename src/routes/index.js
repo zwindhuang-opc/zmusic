@@ -130,6 +130,10 @@ export async function handleRoute(req, res, url, method, body) {
   if (sunoMatch) {
     const subPath = sunoMatch[1];
 
+    if (subPath === 'status' && method === 'GET') {
+      return sunoController.status(req, res);
+    }
+
     if (subPath === 'user' && method === 'GET') {
       return sunoController.getUser(req, res);
     }

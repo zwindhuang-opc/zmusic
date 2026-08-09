@@ -1,7 +1,9 @@
 /**
  * Backend API Server
  * - Supports dynamic port allocation via centralizedhub-style port manager
- * - Priority: RESOLVED_BACKEND_PORT (from vite.config.js) → BACKEND_PORT/API_PORT (.env) → 5501 default → auto increment
+ * - NEVER uses 5500, 5501, 5502 (forbidden by user)
+ * - Reads shared port file (written by scripts/start-dev.mjs) for dynamic ports
+ * - Priority: shared port file → RESOLVED_BACKEND_PORT → BACKEND_PORT/API_PORT → auto-find
  * - Never fails due to port conflicts: automatically tries the next 100 ports, then falls back to OS-assigned (0)
  */
 
@@ -10,7 +12,7 @@ import './init.js';
 import express from 'express';
 import cors from 'cors';
 import net from 'net';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { config } from './config/index.js';
@@ -67,9 +69,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+/** Ports that must NEVER be used (user constraint). */
+const FORBIDDEN_PORTS = new Set([5500, 5501, 5502, 5173, 3000, 8000]);
+
+/** Path to shared port file written by scripts/start-dev.mjs */
+const PORT_FILE = join(__dirname, '..', '.dev-ports.json');
+
 /**
  * CentralizedHub-style dynamic port resolver.
  * Checks whether a TCP port is available (i.e. nothing is listening on it).
+ * Also rejects forbidden ports (5500, 5501, 5502).
  *
  * @param {number} port - Candidate port number
  * @returns {Promise<boolean>} true if available
@@ -77,6 +86,7 @@ app.get('/api/health', (req, res) => {
 function isPortAvailable(port) {
   return new Promise((resolve) => {
     if (!port || port < 1) resolve(false);
+    if (FORBIDDEN_PORTS.has(port)) { resolve(false); return; }
     const tester = net.createServer();
     tester.unref();
     tester.on('error', () => resolve(false));
@@ -89,6 +99,7 @@ function isPortAvailable(port) {
 /**
  * Find first available port starting from preferred, trying next maxAttempts ports.
  * Mimics the @centralizedhub/port-manager quickRegister behaviour locally.
+ * Skips forbidden ports (5500, 5501, 5502).
  *
  * @param {number} preferred    - Desired starting port
  * @param {number} maxAttempts  - Max sequential tries (default 100)
@@ -98,31 +109,49 @@ async function findAvailablePort(preferred, maxAttempts = 100) {
   for (let i = 0; i < maxAttempts; i++) {
     const p = preferred + i;
     if (p > 65535) break;
+    if (FORBIDDEN_PORTS.has(p)) continue;
     if (await isPortAvailable(p)) return p;
   }
   return 0;
 }
 
 /**
+ * Read the shared port file written by scripts/start-dev.mjs.
+ * @returns {{frontendPort:number, backendPort:number}|null}
+ */
+function readSharedPortFile() {
+  try {
+    if (!existsSync(PORT_FILE)) return null;
+    const raw = readFileSync(PORT_FILE, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Resolve the backend port using the priority chain, with automatic fallback.
  * Priority:
- *   1. RESOLVED_BACKEND_PORT — set by vite.config.js when frontend+backend start together
- *   2. BACKEND_PORT / API_PORT — from .env
- *   3. PORT — generic env port + 1 offset (to avoid clash with Vite frontend on same PORT)
- *   4. 5501 — project convention default
- * Then auto-increments until finding a free port.
+ *   1. Shared port file (written by scripts/start-dev.mjs) — backendPort field
+ *   2. RESOLVED_BACKEND_PORT — set by vite.config.js when frontend+backend start together
+ *   3. BACKEND_PORT / API_PORT — from .env
+ *   4. PORT + 1 — generic env port + 1 offset
+ *   5. 4201 — safe default (NOT 5501, which is forbidden)
+ * Then auto-increments until finding a free port, skipping forbidden ports.
  */
 async function resolveBackendPort() {
+  const shared = readSharedPortFile();
   const raw =
+    (shared?.backendPort ? String(shared.backendPort) : null) ||
     process.env.RESOLVED_BACKEND_PORT ||
     process.env.BACKEND_PORT ||
     process.env.API_PORT ||
     (process.env.PORT ? String(parseInt(process.env.PORT, 10) + 1) : null) ||
-    '5501';
-  const preferred = parseInt(raw, 10) || 5501;
+    '4201';
+  const preferred = parseInt(raw, 10) || 4201;
   const actual = await findAvailablePort(preferred);
   if (actual !== preferred) {
-    logger.warn(`Preferred backend port ${preferred} occupied → auto-switched to ${actual}`);
+    logger.warn(`Preferred backend port ${preferred} occupied or forbidden → auto-switched to ${actual}`);
   }
   return actual;
 }

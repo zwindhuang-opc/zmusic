@@ -18,8 +18,8 @@ export const config = {
   museBaseUrl: browserEnv.VITE_MUSE_BASE_URL || nodeEnv.MUSE_BASE_URL || 'https://project-api.atmob.com',
   museMock: nodeEnv.MUSE_MOCK === '1' || nodeEnv.MUSE_MOCK === 'true',
   meloApiKey: browserEnv.VITE_MELO_API_KEY || nodeEnv.MELO_API_KEY || '',
-  meloBaseUrl: browserEnv.VITE_MELO_BASE_URL || nodeEnv.MELO_BASE_URL || 'https://melo.bytedance.com',
-  meloMock: nodeEnv.MELO_MOCK !== '0' && nodeEnv.MELO_MOCK !== 'false',
+  meloBaseUrl: browserEnv.VITE_MELO_BASE_URL || nodeEnv.MELO_BASE_URL || 'https://api.51melo.com',
+  meloMock: nodeEnv.MELO_MOCK === '1' || nodeEnv.MELO_MOCK === 'true',
   hfToken: browserEnv.VITE_HF_TOKEN || nodeEnv.HF_TOKEN || '',
   env: browserEnv.MODE || nodeEnv.NODE_ENV || 'development',
   corsOrigin: nodeEnv.CORS_ORIGIN || '*'

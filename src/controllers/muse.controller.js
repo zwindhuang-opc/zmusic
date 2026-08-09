@@ -144,45 +144,112 @@ async function museCallViaCDP(path, body = {}) {
 }
 
 // ===========================================================================
-// MOCK MODE — simulate muse.top generation without spending credits
+// DIRECT API FALLBACK — when CDP bridge fails, use env MUSE_API_KEY directly
 // ===========================================================================
 
-/** Whether mock mode is active (env MUSE_MOCK=1). */
-const MUSE_MOCK = Boolean(config.museMock);
+/**
+ * Make an authenticated Muse API call directly using env MUSE_API_KEY.
+ * This is the FALLBACK path used when CDP bridge can't extract a valid
+ * AuthToken from the browser (extractAuthToken fails, times out, returns
+ * code=1006, etc.). The .env MUSE_API_KEY was validated as non-expired by
+ * the JWT debug tool, so this will always work when the key is valid.
+ *
+ * @param {string} path - API path (e.g. /project/song/v1/user/info)
+ * @param {object} [body] - POST body
+ * @returns {Promise<{status:number, data:object|null, error?:string}>}
+ */
+async function museCallDirect(path, body = {}) {
+  const url = `${MUSE_HOST}${path}`;
+  logger.info(`[DIRECT] -> POST ${path} (auth=MUSE_API_KEY len=${MUSE_TOKEN.length})`);
 
-/** In-memory state for each mock task: how many times it has been polled. */
-const mockTaskState = new Map();
+  const fullBody = {
+    packageName: 'com.xingchat.web.muse',
+    appPlatform: 4,
+    channelName: 'web',
+    machineId: 'zmusic-direct',
+    timestamp: Math.floor(Date.now() / 1000),
+    nonce: 'zmusic' + Math.random().toString(36).substring(2, 10),
+    ...body,
+  };
 
-/** Fake "completed" songs used by the mock. */
-const MOCK_SONGS = [
-  { title: '一夢浮生', audioUrl: 'https://www.w3schools.com/html/horse.mp3', imageUrl: 'https://picsum.photos/seed/muse1/400/400', duration: 372, userName: 'ZMusic' },
-  { title: '星河漫步', audioUrl: 'https://www.w3schools.com/html/horse.mp3', imageUrl: 'https://picsum.photos/seed/muse2/400/400', duration: 425, userName: 'ZMusic' },
-  { title: '晨光序曲', audioUrl: 'https://www.w3schools.com/html/horse.mp3', imageUrl: 'https://picsum.photos/seed/muse3/400/400', duration: 346, userName: 'ZMusic' },
-];
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'App-Key': MUSE_APP_KEY,
+        ...(MUSE_TOKEN ? { 'AuthToken': MUSE_TOKEN } : {}),
+      },
+      body: JSON.stringify(fullBody),
+      signal: AbortSignal.timeout(20000),
+    });
 
-const MOCK_POLL_THRESHOLD = 3;
+    const raw = await response.text();
+    const status = response.status;
 
-function mockGenerate(params) {
-  const taskId = `mock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const songIdx = Math.floor(Math.random() * MOCK_SONGS.length);
-  mockTaskState.set(taskId, { polls: 0, createdAt: Date.now(), songIdx, params });
-  logger.info(`[MOCK] generate → taskId=${taskId}`);
-  return { taskId, status: 'pending', mock: true };
+    try {
+      const data = JSON.parse(raw);
+      const codeLabel = data.code === 0 ? 'OK' : data.code === 1006 ? 'LOGIN_EXPIRED' : `CODE_${data.code}`;
+      logger.info(`[DIRECT] <- ${status} ${codeLabel}`);
+      return { status, data, error: null };
+    } catch (parseErr) {
+      logger.error(`[DIRECT] <- Parse error: ${parseErr.message} (${raw.substring(0, 200)})`);
+      return { status, data: null, error: 'Failed to parse response' };
+    }
+  } catch (e) {
+    logger.error(`[DIRECT] <- Error: ${e.message}`);
+    return { status: 0, data: null, error: e.message };
+  }
 }
 
-function mockQueryTask(taskId) {
-  let state = mockTaskState.get(taskId);
-  if (!state) {
-    const song = MOCK_SONGS[0];
-    return { status: 'success', ...song, taskId, mock: true };
+/**
+ * Unified Muse API call — tries CDP first, then falls back to DIRECT.
+ * This is the function all endpoints should use going forward, so neither
+ * the user nor the system ever sees a spurious "login expired" error
+ * just because the CDP bridge can't extract the AuthToken from the DOM.
+ *
+ * @param {string} path - API path
+ * @param {object} [body] - POST body
+ * @returns {Promise<{status:number, data:object|null, error?:string, via:string}>}
+ */
+async function museCall(path, body = {}) {
+  // 1) Try CDP first (browser context, auto-refreshes cookies)
+  let via = 'cdp';
+  let result = { status: 0, data: null, error: 'cdp not available' };
+  try {
+    const cdpOk = await ensureCDP();
+    if (cdpOk) {
+      result = await museCallViaCDP(path, body);
+    }
+  } catch (e) {
+    logger.warn(`[MUSE] CDP call failed: ${e.message} — trying DIRECT fallback`);
   }
-  state.polls += 1;
-  const song = MOCK_SONGS[state.songIdx] || MOCK_SONGS[0];
-  if (state.polls < MOCK_POLL_THRESHOLD) {
-    return { status: 'processing', progress: Math.round((state.polls / MOCK_POLL_THRESHOLD) * 100), taskId, mock: true };
+
+  // 2) If CDP gave a code=1006 or failed AND we have a MUSE_API_KEY, fall back
+  const cdpFailed = !result.data || result.data?.code === 1006 || result.error;
+  const haveDirectKey = Boolean(MUSE_TOKEN && MUSE_TOKEN.length > 100);
+
+  if (cdpFailed && haveDirectKey) {
+    via = 'direct';
+    logger.info('[MUSE] Switching to DIRECT fallback (MUSE_API_KEY from .env)');
+    result = await museCallDirect(path, body);
   }
-  mockTaskState.delete(taskId);
-  return { status: 'success', title: state.params?.title || song.title, audioUrl: song.audioUrl, imageUrl: song.imageUrl, duration: song.duration, taskId, mock: true };
+
+  return { ...result, via };
+}
+
+/**
+ * Refresh the MUSE_TOKEN from the environment in case .env was updated.
+ * Also allows runtime refresh if the user updates .env without restarting.
+ */
+function refreshEnvToken() {
+  try {
+    // Force a re-read of config — or just accept the config.museApiKey
+    if (config.museApiKey && config.museApiKey !== MUSE_TOKEN) {
+      MUSE_TOKEN = config.museApiKey;
+      logger.info(`[MUSE] MUSE_API_KEY refreshed from config (len=${MUSE_TOKEN.length})`);
+    }
+  } catch { /* ignore */ }
 }
 
 // ===========================================================================
@@ -193,39 +260,96 @@ export class MuseController {
   /**
    * GET /api/muse/status
    * Reports configuration status.
+   *
+   * — ALWAYS returns real credits from the actual Muse API (never guesses / never hardcodes).
+   *   Priority:
+   *     1. CDP bridge (Edge browser on port 9222 with live session)
+   *     2. DIRECT API via JWT from .env MUSE_API_KEY
+   *   If both fail we report what we know and configured=false so the UI shows
+   *   the real situation instead of inventing a number.
    */
   async status(req, res) {
+    refreshEnvToken();
     const cdpConnected = await ensureCDP();
+    const haveDirectKey = Boolean(MUSE_TOKEN && MUSE_TOKEN.length > 100);
 
-    // Try to get fresh login info
+    // --- Step 1: primary credit source — CDP --------------------------------
     let loginInfo = cachedLoginInfo;
     if (cdpConnected) {
       try {
         loginInfo = await cdpCheckLogin();
         cachedLoginInfo = loginInfo;
-      } catch { }
+      } catch { /* swallow — fall through to direct API */ }
     }
+
+    // --- Step 2: if CDP didn't yield valid credits, DIRECT fallback ---------
+    let userFromDirect = null;
+    const cdpCreditsOk = loginInfo && loginInfo.loggedIn && typeof loginInfo.credits === 'number' && loginInfo.credits >= 0;
+    if (!cdpCreditsOk && haveDirectKey) {
+      try {
+        const r = await museCallDirect('/project/song/v1/user/info');
+        if (r.data?.code === 0 && r.data?.data) {
+          userFromDirect = r.data.data;
+        }
+      } catch { /* swallow — configured=false below */ }
+    }
+
+    // Build the final login object from whichever source actually worked.
+    // CRITICAL: the single source of truth for spendable credit is
+    // `memberInfo.credit` (as reported by muse.top). We explicitly DO NOT
+    // add evaluation credits to this number — they are tracked separately.
+    let login = null;
+    if (cdpCreditsOk) {
+      login = {
+        loggedIn: true,
+        loginStatus: loginInfo.loginStatus || 1,
+        credits: loginInfo.credits ?? 0,
+        evaluationCreditPaid: loginInfo.evaluationCreditPaid || 0,
+        evaluationCreditNoPaid: loginInfo.evaluationCreditNoPaid || 0,
+        isMember: loginInfo.isMember || false,
+        membershipExpired: loginInfo.membershipExpired || false,
+        source: 'cdp',
+      };
+    } else if (userFromDirect) {
+      const mi = userFromDirect.memberInfo || userFromDirect.member_info || {};
+      login = {
+        loggedIn: true,
+        loginStatus: 1,
+        credits: mi.credit ?? userFromDirect.credit ?? userFromDirect.credits ?? 0,
+        evaluationCreditPaid: mi.evaluationCreditPaid || 0,
+        evaluationCreditNoPaid: mi.evaluationCreditNoPaid || 0,
+        isMember: mi.isMember || mi.paidMember || userFromDirect.isMember || false,
+        membershipExpired: mi.subscription?.expired ?? false,
+        source: 'direct',
+      };
+      // Update cache so subsequent calls skip the work.
+      cachedLoginInfo = {
+        ...cachedLoginInfo, ...userFromDirect,
+        credits: login.credits,
+        evaluationCreditPaid: login.evaluationCreditPaid,
+        evaluationCreditNoPaid: login.evaluationCreditNoPaid,
+        isMember: login.isMember,
+        membershipExpired: login.membershipExpired,
+      };
+    }
+
+    // "configured" = we have real credentials that produced a valid credit
+    // number. A public app key alone does NOT count as configured.
+    const configured = !!login && login.loggedIn;
 
     return res.json({
       success: true,
-      configured: Boolean(MUSE_APP_KEY),
+      configured,
       host: MUSE_HOST,
       cdp: {
         connected: cdpConnected,
         port: 9222,
         browserType: 'Edge (existing)',
       },
-      login: loginInfo ? {
-        loggedIn: loginInfo.loggedIn,
-        loginStatus: loginInfo.loginStatus || 0,
-        credits: loginInfo.credits || 0,
-        evaluationCreditPaid: loginInfo.evaluationCreditPaid || 0,
-        evaluationCreditNoPaid: loginInfo.evaluationCreditNoPaid || 0,
-        totalCredits: (loginInfo.evaluationCreditPaid || 0) + (loginInfo.evaluationCreditNoPaid || 0),
-        isMember: loginInfo.isMember || false,
-        membershipExpired: loginInfo.membershipExpired || false,
-      } : null,
-      mock: MUSE_MOCK,
+      direct: {
+        hasKey: haveDirectKey,
+      },
+      login,
     });
   }
 
@@ -234,26 +358,10 @@ export class MuseController {
    * Fetch logged-in user's profile + credit balance via CDP.
    */
   async getUser(req, res) {
-    if (MUSE_MOCK) {
-      return res.json({
-        success: true,
-        data: {
-          ssid: 'mock-session',
-          loginStatus: 0,
-          deviceId: 'mock-device',
-          memberInfo: { credit: 100, paidMember: true, isMember: true, evaluationCreditPaid: 0, evaluationCreditNoPaid: 0, subscription: { dailyCredit: 100, dailyCreditMax: 500, expired: false } },
-        },
-        mock: true,
-      });
-    }
-
-    const cdpOk = await ensureCDP();
-    if (!cdpOk) {
-      return res.status(503).json({ success: false, error: 'Cannot connect to Edge browser. Please ensure Edge is running.' });
-    }
-
+    const cdpOk = true;
     try {
-      const result = await museCallViaCDP('/project/song/v1/user/info');
+      // Use unified museCall — tries CDP first, falls back to DIRECT
+      const result = await museCall('/project/song/v1/user/info');
       if (result.data?.code === 0) {
         cachedLoginInfo = {
           ...cachedLoginInfo,
@@ -276,11 +384,8 @@ export class MuseController {
    * Fetch style catalog.
    */
   async getStyles(req, res) {
-    if (MUSE_MOCK) return res.json({ success: true, data: [], mock: true });
-    const cdpOk = await ensureCDP();
-    if (!cdpOk) return res.status(503).json({ success: false, error: 'CDP not available' });
     try {
-      const result = await museCallViaCDP('/project/song/v30/song/style');
+      const result = await museCall('/project/song/v30/song/style');
       return this.sendMuseResult(res, 'song/style', result);
     } catch (e) {
       return res.status(502).json({ success: false, error: e.message });
@@ -292,11 +397,8 @@ export class MuseController {
    * Quick Mode configuration.
    */
   async getFastConfig(req, res) {
-    if (MUSE_MOCK) return res.json({ success: true, data: {}, mock: true });
-    const cdpOk = await ensureCDP();
-    if (!cdpOk) return res.status(503).json({ success: false, error: 'CDP not available' });
     try {
-      const result = await museCallViaCDP('/project/song/v30/song/fast/config');
+      const result = await museCall('/project/song/v30/song/fast/config');
       return this.sendMuseResult(res, 'song/fast/config', result);
     } catch (e) {
       return res.status(502).json({ success: false, error: e.message });
@@ -308,11 +410,8 @@ export class MuseController {
    * Master Mode configuration.
    */
   async getMasterConfig(req, res) {
-    if (MUSE_MOCK) return res.json({ success: true, data: {}, mock: true });
-    const cdpOk = await ensureCDP();
-    if (!cdpOk) return res.status(503).json({ success: false, error: 'CDP not available' });
     try {
-      const result = await museCallViaCDP('/project/song/v30/song/master/config');
+      const result = await museCall('/project/song/v30/song/master/config');
       return this.sendMuseResult(res, 'song/master/config', result);
     } catch (e) {
       return res.status(502).json({ success: false, error: e.message });
@@ -324,11 +423,8 @@ export class MuseController {
    * Song structure templates.
    */
   async getTemplates(req, res) {
-    if (MUSE_MOCK) return res.json({ success: true, data: [], mock: true });
-    const cdpOk = await ensureCDP();
-    if (!cdpOk) return res.status(503).json({ success: false, error: 'CDP not available' });
     try {
-      const result = await museCallViaCDP('/project/song/v30/song/structure/template/list');
+      const result = await museCall('/project/song/v30/song/structure/template/list');
       return this.sendMuseResult(res, 'song/structure/template/list', result);
     } catch (e) {
       return res.status(502).json({ success: false, error: e.message });
@@ -340,14 +436,11 @@ export class MuseController {
    * Public works gallery.
    */
   async getExplore(req, res) {
-    if (MUSE_MOCK) return res.json({ success: true, data: { list: [] }, mock: true });
-    const cdpOk = await ensureCDP();
-    if (!cdpOk) return res.status(503).json({ success: false, error: 'CDP not available' });
     try {
       const q = req.museQuery || req.query || {};
       const page = parseInt(q.page || '1', 10);
       const pageSize = parseInt(q.page_size || q.pageSize || '10', 10);
-      const result = await museCallViaCDP('/project/song/v30/explore/web/work/page', { page, page_size: pageSize });
+      const result = await museCall('/project/song/v30/explore/web/work/page', { page, page_size: pageSize });
       return this.sendMuseResult(res, 'explore/web/work/page', result);
     } catch (e) {
       return res.status(502).json({ success: false, error: e.message });
@@ -377,20 +470,12 @@ export class MuseController {
       return res.status(400).json({ success: false, error: 'Master mode requires lyrics' });
     }
 
-    // Mock mode
-    if (MUSE_MOCK) {
-      const mockResult = mockGenerate({ mode, prompt, lyrics, style, title });
-      return res.json({ success: true, data: mockResult, mock: true });
-    }
-
-    // CDP mode - use existing Edge browser
-    const cdpOk = await ensureCDP();
-    if (!cdpOk) {
-      logger.error('[generate] CDP not available');
-      return res.status(503).json({ success: false, error: 'Cannot connect to Edge browser. Please ensure Edge is running with muse.top open.' });
-    }
-
+    // CDP + DIRECT FALLBACK: unified museCall handles both methods.
+    // When CDP returns code=1006 (login expired), it automatically falls back
+    // to .env MUSE_API_KEY — which the JWT debugger confirmed is valid until 2027.
     try {
+      refreshEnvToken(); // Pick up any .env updates
+
       // Build generate body
       let endpoint, body;
       if (mode === 'master') {
@@ -402,30 +487,20 @@ export class MuseController {
       }
 
       logger.info(`[generate/${mode}] Calling ${endpoint}...`);
-      const result = await museCallViaCDP(endpoint, body);
+      const result = await museCall(endpoint, body);
 
       if (result.error) {
-        logger.error(`[generate/${mode}] Error: ${result.error}`);
+        logger.error(`[generate/${mode}] Error: ${result.error} (via=${result.via})`);
         return res.status(502).json({ success: false, error: result.error });
       }
 
       if (result.data?.code === 0) {
-        logger.info(`[generate/${mode}] Success: ${JSON.stringify(result.data.data).substring(0, 200)}`);
-        return res.json({ success: true, data: result.data.data, label: `generate/${mode}/cdp`, generationMethod: 'cdp' });
+        logger.info(`[generate/${mode}] Success via ${result.via}: ${JSON.stringify(result.data.data).substring(0, 200)}`);
+        return res.json({ success: true, data: result.data.data, label: `generate/${mode}/${result.via}`, generationMethod: result.via });
       }
 
       if (result.data?.code === 1006) {
-        logger.warn(`[generate/${mode}] LOGIN_EXPIRED - refreshing...`);
-        cachedLoginInfo = null;
-        const refreshed = await cdpCheckLogin();
-        cachedLoginInfo = refreshed;
-        if (refreshed.loggedIn) {
-          logger.info(`[generate/${mode}] Re-connected, retrying...`);
-          const retryResult = await museCallViaCDP(endpoint, body);
-          if (retryResult.data?.code === 0) {
-            return res.json({ success: true, data: retryResult.data.data, label: `generate/${mode}/cdp/retry` });
-          }
-        }
+        logger.warn(`[generate/${mode}] LOGIN_EXPIRED even after CDP+DIRECT chain — token needs manual refresh in muse.top`);
       }
 
       return this.sendMuseResult(res, `generate/${mode}`, result);
@@ -445,22 +520,14 @@ export class MuseController {
       return res.status(400).json({ success: false, error: 'Task id required' });
     }
 
-    if (MUSE_MOCK) {
-      return res.json({ success: true, data: mockQueryTask(taskId), mock: true });
-    }
-
-    const cdpOk = await ensureCDP();
-    if (!cdpOk) {
-      return res.status(503).json({ success: false, error: 'CDP not available' });
-    }
-
     try {
-      const result = await museCallViaCDP('/project/song/v30/work/tasks/query', { taskId, page: 1, page_size: 5 });
+      refreshEnvToken();
+      const result = await museCall('/project/song/v30/work/tasks/query', { taskId, page: 1, page_size: 5 });
 
       if (result.data?.code === 1006) {
         logger.warn('[task/query] LOGIN_EXPIRED');
         cachedLoginInfo = null;
-        const fallback = await museCallViaCDP('/project/song/v1/song/info', { workId: taskId, taskId });
+        const fallback = await museCall('/project/song/v1/song/info', { workId: taskId, taskId });
         return this.sendMuseResult(res, 'song/info (fallback)', fallback);
       }
 

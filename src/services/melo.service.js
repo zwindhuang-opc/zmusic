@@ -5,10 +5,22 @@ const API_BASE = '/api/melo';
 let _configuredCache = null;
 let _configuredPromise = null;
 
+/**
+ * Check if Melo is available.
+ * Melo is considered configured if ANY of:
+ *   - MELO_API_KEY is set (real API)
+ *   - VITE_MELO_ENABLED=true (frontend flag)
+ *   - MELO_MOCK is not disabled (mock mode is on by default)
+ * @returns {boolean}
+ */
 export function isConfigured() {
   if (_configuredCache !== null) return _configuredCache;
   if (config.meloApiKey) return true;
-  return !!(import.meta.env?.VITE_MELO_ENABLED === 'true');
+  if (import.meta.env?.VITE_MELO_ENABLED === 'true') return true;
+  // Mock mode is on by default (config.meloMock !== false)
+  // In Node.js, import.meta.env may be undefined; check config.meloMock directly
+  if (config.meloMock !== false) return true;
+  return false;
 }
 
 export async function checkConfigured() {
@@ -66,14 +78,17 @@ export async function pollUntilDone(taskId, options = {}) {
     const result = await queryTask(taskId);
     lastResult = result;
 
-    if (onPoll) onPoll(result.data || result);
+    const data = result.data || result;
+    if (onPoll) onPoll(data);
 
-    const s = String(result.data?.status || result.status || '').toLowerCase();
-    if (s === 'success' || s === 'completed' || s === 'done') {
-      return result.data || result;
+    const s = String(data?.status || result.status || '').toLowerCase();
+    // Melo status flow: queue → pending → processing → streaming → completed | failed
+    if (s === 'success' || s === 'completed' || s === 'done' || s === 'streaming') {
+      // On streaming/completed, songs[] is populated — return the normalized payload.
+      return data;
     }
     if (s === 'failed' || s === 'error') {
-      throw new Error(result.error || 'Melo generation failed');
+      throw new Error(data?.error || data?.failReason || result.error || 'Melo generation failed');
     }
 
     await new Promise(r => setTimeout(r, intervalMs));
@@ -106,7 +121,8 @@ export async function generateMusic(params) {
  *
  * @param {string} taskId - Task id returned by generateMusic()
  * @param {(progress:number, stage:string)=>void} [onProgress] - Progress callback
- * @returns {Promise<{audio_url:string, lyrics:string, title:string}>}
+ * @returns {Promise<{audio_url:string, image_url:string, lyrics:string,
+ *            title:string, duration:number, songs:Array}>}
  */
 export async function waitForResult(taskId, onProgress) {
   const result = await pollUntilDone(taskId, {
@@ -120,8 +136,11 @@ export async function waitForResult(taskId, onProgress) {
   });
   return {
     audio_url: result.audioUrl || result.audio_url || null,
+    image_url: result.imageUrl || result.image_url || null,
     lyrics: result.lyrics || '',
     title: result.title || '',
+    duration: result.duration || 0,
+    songs: result.songs || [],
   };
 }
 

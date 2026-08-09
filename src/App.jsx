@@ -30,15 +30,14 @@ function App() {
   const [musicGroupExpanded, setMusicGroupExpanded] = useState(true);
 
   useEffect(() => {
-    if (!isMobileEnvironment()) {
+    // Always load status on app start (desktop and mobile)
+    loadStatus();
+    const interval = setInterval(() => {
       loadStatus();
-      const interval = setInterval(() => {
-        loadStatus();
-      }, 60000);
-      return () => {
-        clearInterval(interval);
-      };
-    }
+    }, 60000);
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   const loadStatus = async () => {
@@ -48,8 +47,12 @@ function App() {
         setApiStatus({
           configured: health.apiConfigured || health.data?.apiConfigured,
           museConfigured: health.museConfigured || health.data?.museConfigured || false,
+          meloConfigured: health.meloConfigured || health.data?.meloConfigured || false,
           version: health.version || health.data?.version || BUILD_VERSION,
-          uptime: health.uptime || health.data?.uptime || 0
+          uptime: health.uptime || health.data?.uptime || 0,
+          browserConnected: health.browser?.connected || health.data?.browser?.connected || false,
+          browserPort: health.browser?.port || health.data?.browser?.port || 9222,
+          browserServices: health.browser?.services || health.data?.browser?.services || null,
         });
       }
       const agent = await api.agentStatus();
@@ -233,6 +236,13 @@ function App() {
             <div className={`flex items-center gap-1.5 ${apiStatus.configured ? 'text-emerald-400' : 'text-amber-400'}`}>
               <div className={`w-1.5 h-1.5 rounded-full ${apiStatus.configured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
               <span className="text-[10px] font-medium">{apiStatus.configured ? t('header.live') : t('header.offline')}</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-400">Edge CDP</span>
+            <div className={`flex items-center gap-1.5 ${apiStatus.browserConnected ? 'text-emerald-400' : 'text-gray-500'}`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${apiStatus.browserConnected ? 'bg-emerald-400' : 'bg-gray-500'}`} />
+              <span className="text-[10px] font-medium">{apiStatus.browserConnected ? t('header.connected') : t('header.offline')}</span>
             </div>
           </div>
           <div className="flex items-center justify-between">

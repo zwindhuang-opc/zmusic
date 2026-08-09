@@ -421,18 +421,14 @@ function MusePage() {
   };
 
   const memberInfo = userInfo?.memberInfo || userInfo?.member_info || {};
+  // Use ONLY the actual credit balance reported by the API (no guessing/combining fields).
+  // The API returns the real usable credit in memberInfo.credit — do NOT add evaluation
+  // credits, since those are tracked separately on muse.top and may not be spendable.
   const credit = memberInfo.credit ?? userInfo?.credit ?? userInfo?.credits ?? 0;
-  const evaluationCreditPaid = memberInfo.evaluationCreditPaid ?? 0;
-  const evaluationCreditNoPaid = memberInfo.evaluationCreditNoPaid ?? 0;
-  const totalEvaluationCredit = evaluationCreditPaid + evaluationCreditNoPaid;
   const subscription = memberInfo.subscription || {};
   const isSubscriptionExpired = subscription.expired ?? false;
   const isMember = memberInfo.isMember || memberInfo.paidMember || userInfo?.isMember || false;
-  const isMock = Boolean(userInfo?.mock) || museStatus?.mock;
-  const totalCredits = credit + totalEvaluationCredit;
-
-  const canGenerate = museStatus?.configured && !generating &&
-    (isMock || (!isSubscriptionExpired && totalCredits > 0));
+  const canGenerate = museStatus?.configured && !generating && credit > 0;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -458,18 +454,10 @@ function MusePage() {
               {museStatus?.configured ? '已连接' : '未连接'}
               {loadingConfig && <Loader className="w-3 h-3 animate-spin" />}
             </div>
-            {isMock && (
-              <span className="px-2 py-1 text-[10px] rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30 font-medium">
-                测试模式
-              </span>
-            )}
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
               <CreditCard className="w-4 h-4 text-fuchsia-400" />
               <span className="text-xs text-gray-400">{isMember ? '会员' : '积分'}</span>
               <span className="text-base font-mono text-fuchsia-300 font-bold">{credit}</span>
-              {totalEvaluationCredit > 0 && (
-                <span className="text-[10px] text-amber-300">+{totalEvaluationCredit} 体验</span>
-              )}
               {isMember && (
                 <span className="px-1.5 py-0.5 text-[9px] rounded bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-300 border border-yellow-500/30 font-medium">VIP</span>
               )}
@@ -496,12 +484,22 @@ function MusePage() {
         </div>
       )}
 
-      {isSubscriptionExpired && !isMock && !error && (
+      {isSubscriptionExpired && !error && credit > 0 && (
         <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 text-amber-200 text-sm flex items-start gap-3">
           <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold">Muse 订阅已过期</p>
-            <p className="text-xs text-amber-300/70 mt-0.5">当前积分余额为 0。你还有 {totalEvaluationCredit} 体验积分可用。</p>
+            <p className="text-xs text-amber-300/70 mt-0.5">会员权益已到期。你还有 {credit} 积分可用。</p>
+          </div>
+        </div>
+      )}
+
+      {isSubscriptionExpired && !error && credit <= 0 && (
+        <div className="p-4 rounded-xl bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/30 text-red-200 text-sm flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold">Muse 订阅已过期</p>
+            <p className="text-xs text-red-300/70 mt-0.5">账户无可用积分，请前往 muse.top 充值</p>
           </div>
         </div>
       )}
@@ -721,7 +719,7 @@ function MusePage() {
                 Muse AI 未连接
               </p>
             )}
-            {!isMock && isSubscriptionExpired && credit === 0 && totalEvaluationCredit === 0 && (
+            {isSubscriptionExpired && credit <= 0 && (
               <p className="text-xs text-center text-red-400">账户无可用积分，请前往 muse.top 充值</p>
             )}
           </div>

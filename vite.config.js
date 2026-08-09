@@ -2,11 +2,22 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import pkg from './package.json' with { type: 'json' };
 import net from 'node:net';
+import { readFileSync, existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __viteFilename = fileURLToPath(import.meta.url);
+const __viteDirname = dirname(__viteFilename);
+const PORT_FILE = join(__viteDirname, '.dev-ports.json');
+
+/** Ports that must NEVER be used (user constraint). */
+const FORBIDDEN_PORTS = new Set([5500, 5501, 5502, 5173, 3000, 8000]);
 
 /**
  * CentralizedHub-style Dynamic Port Manager
  * Checks if a port is available; if not, increments until finding a free port.
  * Ports are allocated from a configurable base range to avoid cross-project conflicts.
+ * NEVER uses 5500, 5501, 5502 — these are explicitly forbidden by the user.
  *
  * @param {number} preferredPort - User's preferred starting port
  * @param {number} maxAttempts  - How many consecutive ports to try before failing
@@ -14,9 +25,11 @@ import net from 'node:net';
  */
 async function findAvailablePort(preferredPort, maxAttempts = 100) {
   for (let i = 0; i < maxAttempts; i++) {
-    const port = preferredPort + i;
+    let port = preferredPort + i;
     // Port numbers max out at 65535 per TCP/IP spec
     if (port > 65535) break;
+    // Skip forbidden ports
+    if (FORBIDDEN_PORTS.has(port)) continue;
     const available = await new Promise((resolve) => {
       const server = net.createServer();
       server.unref();
@@ -32,31 +45,49 @@ async function findAvailablePort(preferredPort, maxAttempts = 100) {
 }
 
 /**
+ * Read the shared port file written by scripts/start-dev.mjs.
+ * This allows the frontend and backend to agree on ports when started together.
+ * @returns {{frontendPort:number, backendPort:number}|null}
+ */
+function readSharedPortFile() {
+  try {
+    if (!existsSync(PORT_FILE)) return null;
+    const raw = readFileSync(PORT_FILE, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Vite configuration with dynamic port allocation + centralizedhub integration.
  * - Loads .env via Vite's built-in loader
- * - Auto-increments frontend port if 5500 is occupied
- * - Proxies /api to the backend port (reads BACKEND_PORT from env or defaults)
+ * - Reads shared port file (written by scripts/start-dev.mjs) for dynamic ports
+ * - Falls back to env VITE_PORT/PORT, then auto-finds available port
+ * - NEVER uses 5500, 5501, 5502 (forbidden by user)
+ * - Proxies /api to the backend port
  * - strictPort is disabled so Vite also uses its built-in fallback
  */
 export default defineConfig(async ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
-  // Frontend port: read env VITE_PORT / PORT, default 5500, then auto-find available
-  const preferredFePort = parseInt(env.VITE_PORT || env.PORT || '5500', 10);
+  // Try shared port file first (set by scripts/start-dev.mjs)
+  const sharedPorts = readSharedPortFile();
+
+  // Frontend port: shared file → env VITE_PORT/PORT → default 4200 → auto-find
+  const preferredFePort = sharedPorts?.frontendPort
+    || parseInt(env.VITE_PORT || env.PORT || '4200', 10);
   const fePort = await findAvailablePort(preferredFePort);
 
-  // Backend proxy port: read BACKEND_PORT / API_PORT explicitly from env.
-  // DO NOT auto-discover this — if BACKEND_PORT is unset we follow the project
-  // convention: frontend PORT + 1 (e.g. 5500 → 5501). The backend server.js uses
-  // the identical convention so they always line up even if ports drift.
-  const bePortRaw = env.BACKEND_PORT || env.API_PORT ||
-    (env.PORT ? String(parseInt(env.PORT, 10) + 1) : null) ||
-    '5501';
-  const bePort = parseInt(bePortRaw, 10) || 5501;
+  // Backend proxy port: shared file → env BACKEND_PORT/API_PORT → fePort+1
+  const bePort = sharedPorts?.backendPort
+    || parseInt(env.BACKEND_PORT || env.API_PORT || '0', 10)
+    || (fePort + 1);
 
   console.log(`\n  🚦 [CentralizedHub Port Manager]`);
   console.log(`     Frontend : ${preferredFePort === fePort ? fePort : `${preferredFePort} ➜ ${fePort}`} (available)`);
-  console.log(`     Backend→  : ${bePort} (proxy target, matches server.js convention)\n`);
+  console.log(`     Backend→  : ${bePort} (proxy target)`);
+  console.log(`     Source    : ${sharedPorts ? 'shared port file' : 'env/default'}\n`);
 
   return {
     plugins: [react()],

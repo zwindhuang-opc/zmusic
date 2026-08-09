@@ -36,7 +36,7 @@ const MV_ENGINES = [
 function MVEngineSelector({ engine, museCredits, museAvailable, sunoAvailable, meloAvailable, onEngineChange, t }) {
   return (
     <div>
-      <label className="text-xs font-medium text-slate-500 mb-2 block">{t ? t('music.engine') || 'Music Engine' : 'Music Engine'}</label>
+      <label className="text-xs font-medium text-gray-400 mb-2 block">{t ? t('music.engine') || 'Music Engine' : 'Music Engine'}</label>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {MV_ENGINES.map(e => {
           const isAvailable = e.id === 'muse' ? museAvailable : e.id === 'suno' ? sunoAvailable : e.id === 'melo' ? meloAvailable : true;
@@ -56,23 +56,23 @@ function MVEngineSelector({ engine, museCredits, museAvailable, sunoAvailable, m
               onClick={() => onEngineChange(e.id)}
               disabled={disabled}
               className={`p-3 rounded-xl border text-left transition-all disabled:opacity-40 disabled:cursor-not-allowed ${engine === e.id
-                ? 'border-blue-400/60 bg-gradient-to-br ' + e.color + ' text-white shadow-sm'
-                : 'border-blue-200/60 bg-white/70 text-slate-600 hover:bg-blue-50'
+                ? 'border-sky-400/60 bg-gradient-to-br ' + e.color + ' text-white shadow-sm shadow-sky-500/30'
+                : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white'
                 }`}
             >
               <div className="flex items-center gap-2 mb-1">
                 <e.icon className="w-4 h-4" />
                 <span className="text-sm font-semibold">{label}</span>
                 {e.id === 'muse' && museCredits !== null && (
-                  <span className={`ml-auto text-[10px] ${engine === e.id ? 'opacity-80' : 'text-slate-400'}`}>{museCredits}cr</span>
+                  <span className={`ml-auto text-[10px] ${engine === e.id ? 'opacity-80' : 'text-gray-500'}`}>{museCredits}cr</span>
                 )}
               </div>
-              <div className={`text-[10px] ${engine === e.id ? 'opacity-90' : 'text-slate-400'}`}>{desc}</div>
+              <div className={`text-[10px] ${engine === e.id ? 'opacity-90' : 'text-gray-500'}`}>{desc}</div>
               {!isAvailable && (
-                <div className="text-[10px] text-red-500 mt-1">{t ? t('mv.engine_not_configured') || 'Not configured' : 'Not configured'}</div>
+                <div className="text-[10px] text-red-400 mt-1">{t ? t('mv.engine_not_configured') || 'Not configured' : 'Not configured'}</div>
               )}
               {isInsufficient && (
-                <div className="text-[10px] text-amber-600 mt-1">
+                <div className="text-[10px] text-amber-400 mt-1">
                   {t ? (t('mv.need_credits') || 'Need 14+ credits') : 'Need 14+ credits'}
                 </div>
               )}

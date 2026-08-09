@@ -39,17 +39,17 @@ function MVVideoPlayer({
   const scenes = result?.totalScenes || result?.timeline?.length || 0;
 
   return (
-    <div className="mt-6 p-4 md:p-6 bg-white/80 rounded-xl border border-blue-200/60 backdrop-blur-sm space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-          <Film className="w-4 h-4 text-blue-500" />
+    <div className="mt-6 p-4 md:p-6 glass rounded-xl border border-white/10 space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+          <Film className="w-4 h-4 text-sky-400" />
           {safeT('mv.video_title')}
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {onCopyText && result?.lyrics && (
             <button
               onClick={() => onCopyText(result.lyrics)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/70 border border-blue-200/60 hover:bg-blue-50 transition-colors text-xs text-slate-600"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-colors text-xs text-gray-300"
               title={safeT('mv.copy_lyrics')}
             >
               <Copy className="w-3.5 h-3.5" />
@@ -59,7 +59,7 @@ function MVVideoPlayer({
           {onShare && (
             <button
               onClick={onShare}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/70 border border-blue-200/60 hover:bg-blue-50 transition-colors text-xs text-slate-600"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-colors text-xs text-gray-300"
               title={safeT('mv.share')}
             >
               <Share2 className="w-3.5 h-3.5" />
@@ -68,7 +68,7 @@ function MVVideoPlayer({
           )}
           <button
             onClick={onDownloadAudio}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/70 border border-blue-200/60 hover:bg-blue-50 transition-colors text-xs text-slate-600"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-colors text-xs text-gray-300"
             title={safeT('mv.download_audio_title')}
           >
             <Music className="w-3.5 h-3.5" />
@@ -76,7 +76,7 @@ function MVVideoPlayer({
           </button>
           <button
             onClick={onDownloadVideo}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-colors text-xs text-white font-medium shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-sky-500 to-cyan-500 hover:opacity-90 transition-colors text-xs text-white font-medium shadow-sm shadow-sky-500/30"
           >
             <Download className="w-3.5 h-3.5" />
             {safeT('mv.download_video')}
@@ -95,27 +95,27 @@ function MVVideoPlayer({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-        <div className="p-3 rounded-lg bg-white/70 border border-blue-200/60">
-          <Clock className="w-4 h-4 md:w-3.5 md:h-3.5 text-blue-500 mb-1" />
-          <div className="text-[10px] text-slate-400 uppercase">{safeT('mv.duration_label')}</div>
-          <div className="text-sm font-semibold text-slate-800">{dur ? `${dur}s` : '-'}</div>
+        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+          <Clock className="w-4 h-4 md:w-3.5 md:h-3.5 text-sky-400 mb-1" />
+          <div className="text-[10px] text-gray-500 uppercase">{safeT('mv.duration_label')}</div>
+          <div className="text-sm font-semibold text-white">{dur ? `${dur}s` : '-'}</div>
         </div>
-        <div className="p-3 rounded-lg bg-white/70 border border-blue-200/60">
-          <Palette className="w-4 h-4 md:w-3.5 md:h-3.5 text-blue-500 mb-1" />
-          <div className="text-[10px] text-slate-400 uppercase">{safeT('mv.palette_label')}</div>
-          <div className="text-sm font-semibold text-slate-800 truncate">
+        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+          <Palette className="w-4 h-4 md:w-3.5 md:h-3.5 text-sky-400 mb-1" />
+          <div className="text-[10px] text-gray-500 uppercase">{safeT('mv.palette_label')}</div>
+          <div className="text-sm font-semibold text-white truncate">
             {safeT(`mv.${palette}`) || palette || '-'}
           </div>
         </div>
-        <div className="p-3 rounded-lg bg-white/70 border border-blue-200/60">
-          <Film className="w-4 h-4 md:w-3.5 md:h-3.5 text-blue-500 mb-1" />
-          <div className="text-[10px] text-slate-400 uppercase">{safeT('mv.scenes_label')}</div>
-          <div className="text-sm font-semibold text-slate-800">{scenes}</div>
+        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+          <Film className="w-4 h-4 md:w-3.5 md:h-3.5 text-sky-400 mb-1" />
+          <div className="text-[10px] text-gray-500 uppercase">{safeT('mv.scenes_label')}</div>
+          <div className="text-sm font-semibold text-white">{scenes}</div>
         </div>
-        <div className="p-3 rounded-lg bg-white/70 border border-blue-200/60">
-          <Disc3 className="w-4 h-4 md:w-3.5 md:h-3.5 text-blue-500 mb-1" />
-          <div className="text-[10px] text-slate-400 uppercase">{safeT('mv.size_label')}</div>
-          <div className="text-sm font-semibold text-slate-800">
+        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+          <Disc3 className="w-4 h-4 md:w-3.5 md:h-3.5 text-sky-400 mb-1" />
+          <div className="text-[10px] text-gray-500 uppercase">{safeT('mv.size_label')}</div>
+          <div className="text-sm font-semibold text-white">
             {vBlob ? `${(vBlob.size / 1024 / 1024).toFixed(1)} MB` : (aUrl ? 'Stream' : '-')}
           </div>
         </div>

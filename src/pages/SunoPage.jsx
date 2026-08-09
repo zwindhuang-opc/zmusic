@@ -114,11 +114,38 @@ function SunoPage() {
   const loadConfig = async () => {
     setLoadingUser(true);
     try {
-      const isOk = SunoService.isConfigured();
-      setConfigured(isOk);
-      if (isOk) {
-        const user = await SunoService.getUserInfo();
-        setUserInfo(user);
+      // Trust the BACKEND /api/suno/status, NOT a client-side env check.
+      // The backend actually calls suno.cn /mcp/api/user with the real API
+      // key (stored server-side in .env), so configured=true only when the
+      // real API accepts our credentials.
+      const statusRes = await fetch('/api/suno/status');
+      if (statusRes.ok) {
+        const statusData = await statusRes.json();
+        // configured from backend = real API returned a valid user profile
+        setConfigured(Boolean(statusData?.configured));
+        // Debug log: show the raw response so we can verify what credit
+        // field Suno actually sent (0 pts is a valid answer — display it).
+        // eslint-disable-next-line no-console
+        console.log('[SunoPage] Raw /api/suno/status response:', JSON.stringify(statusData, null, 2));
+
+        // If status endpoint returned rawUser, prefer that as userInfo
+        // (avoids a duplicate GET /api/suno/user call).
+        if (statusData?.rawUser) {
+          setUserInfo(statusData.rawUser);
+        } else if (statusData?.configured) {
+          const user = await SunoService.getUserInfo();
+          // eslint-disable-next-line no-console
+          console.log('[SunoPage] Raw /api/suno/user response:', JSON.stringify(user, null, 2));
+          setUserInfo(user);
+        }
+      } else {
+        // Fallback: try client-side cache flag only if backend is unreachable.
+        setConfigured(SunoService.isConfigured());
+        if (SunoService.isConfigured()) {
+          const user = await SunoService.getUserInfo();
+          console.log('[SunoPage] Raw /api/suno/user response:', JSON.stringify(user, null, 2));
+          setUserInfo(user);
+        }
       }
     } catch (e) {
       setError(e.message);
@@ -140,9 +167,29 @@ function SunoPage() {
     }
   };
 
-  const credit = userInfo?.credit ?? userInfo?.credits ?? userInfo?.memberCredit ?? 0;
+  // Match ALL possible credit field names from the real Suno API — no guessing,
+  // use whatever field is actually populated in the response.
+  const credit =
+    userInfo?.points ??
+    userInfo?.credit ??
+    userInfo?.credits ??
+    userInfo?.memberCredit ??
+    userInfo?.member_credit ??
+    userInfo?.balance ??
+    userInfo?.remaining ??
+    userInfo?.quota ??
+    userInfo?.data?.points ??
+    userInfo?.data?.credit ??
+    userInfo?.data?.credits ??
+    userInfo?.user?.points ??
+    userInfo?.user?.credit ??
+    0;
+  const nickname = userInfo?.nickname || userInfo?.name || '';
+  const isVip = !!(userInfo?.vip_status || userInfo?.memberInfo?.isMember || userInfo?.isVip);
   const isSubscribed = userInfo?.memberInfo?.subscription?.expired !== true;
-  const canGenerate = configured && !generating && isSubscribed && credit > 0;
+  // Allow attempting generation even with 0 credits — the backend will return
+  // a clear error message ("用户积点不足") that proves the API is connected.
+  const canGenerate = configured && !generating;
 
   const addStyleChip = () => {
     const val = styleInputValue.trim();
@@ -184,10 +231,10 @@ function SunoPage() {
       setError('请输入歌词内容');
       return;
     }
-    if (credit <= 0) {
-      setError('积分不足，请充值后再使用');
-      return;
-    }
+    // Note: we intentionally do NOT block on credit <= 0 here.
+    // The backend will return a clear "用户积点不足" error from Suno.cn,
+    // which proves the API integration is working. The user can see the
+    // actual API response on screen.
 
     setGenerating(true);
     setGenProgress(5);
@@ -356,7 +403,7 @@ function SunoPage() {
                 Suno AI 音乐生成
               </h1>
               <p className="text-sm text-gray-400 mt-0.5">
-                由 Suno.cn 提供强力 AI 音乐生成服务
+                {nickname ? `${nickname} · ` : ''}由 Suno.cn 提供强力 AI 音乐生成服务
               </p>
             </div>
           </div>
@@ -375,7 +422,7 @@ function SunoPage() {
               <CreditCard className="w-4 h-4 text-fuchsia-400" />
               <span className="text-xs text-gray-400">积分</span>
               <span className="text-base font-mono text-fuchsia-300 font-bold">{credit}</span>
-              {userInfo?.memberInfo?.isMember && (
+              {isVip && (
                 <span className="px-1.5 py-0.5 text-[9px] rounded bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-300 border border-yellow-500/30 font-medium">
                   VIP
                 </span>
@@ -697,9 +744,9 @@ function SunoPage() {
               </p>
             )}
             {configured && credit <= 0 && (
-              <p className="text-xs text-center text-red-400 flex items-center justify-center gap-1">
+              <p className="text-xs text-center text-amber-400 flex items-center justify-center gap-1">
                 <AlertCircle className="w-3 h-3" />
-                积分不足，请前往 Suno.cn 充值
+                积分为 0 — 可点击生成测试 API 连接，将返回"积点不足"提示
               </p>
             )}
           </div>
