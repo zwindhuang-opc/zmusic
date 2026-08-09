@@ -40,19 +40,11 @@ const SESSION_KEY = 'zmusic_session_id';
  * @constant {number}
  */
 const MAX_HISTORY_ITEMS = 100;
+const MAX_LOG_ENTRIES = 200;
+const SESSION_STORAGE_KEY = 'zmusic_active_generation';
 
-/**
- * React Context for sharing generation state across components
- * @type {React.Context}
- */
 const GenerationContext = createContext(null);
 
-/**
- * Generate a unique session ID for user tracking
- * Creates a persistent ID stored in localStorage to identify unique browser sessions
- * @returns {string} Unique session identifier
- * @private
- */
 function getOrCreateSessionId() {
   let sessionId = localStorage.getItem(SESSION_KEY);
   if (!sessionId) {
@@ -60,6 +52,15 @@ function getOrCreateSessionId() {
     localStorage.setItem(SESSION_KEY, sessionId);
   }
   return sessionId;
+}
+
+function createLogEntry(level, message) {
+  return {
+    id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 7)}`,
+    level: level || 'info',
+    message,
+    timestamp: new Date().toISOString(),
+  };
 }
 
 /**
@@ -106,6 +107,32 @@ export function GenerationProvider({ children }) {
    */
   const [sessionId] = useState(getOrCreateSessionId);
   const [toast, setToast] = useState(null);
+
+  const [sessions, setSessions] = useState([]);
+  const [activeSessionId, setActiveSessionId] = useState(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('zmusic_generation_sessions');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setSessions(parsed);
+        const active = parsed.find(s => s.status === 'submitting' || s.status === 'processing' || s.status === 'polling');
+        if (active) setActiveSessionId(active.id);
+      } catch (e) {
+        console.error('Failed to parse generation sessions:', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('zmusic_generation_sessions', JSON.stringify(sessions));
+  }, [sessions]);
+
+  const activeSession = useMemo(
+    () => sessions.find(s => s.id === activeSessionId) || null,
+    [sessions, activeSessionId]
+  );
 
   /**
    * Load history from localStorage on mount
@@ -171,6 +198,102 @@ export function GenerationProvider({ children }) {
     setHistory([]);
     setSelectedId(null);
     localStorage.removeItem(STORAGE_KEY);
+  }, []);
+
+  const startSession = useCallback((config) => {
+    const newSession = {
+      id: `sess-${Date.now()}-${Math.random().toString(36).substr(2, 7)}`,
+      type: config.type || 'song',
+      engine: config.engine || 'unknown',
+      status: 'submitting',
+      progress: 0,
+      title: config.title || 'Untitled',
+      lyrics: config.lyrics || '',
+      params: config.params || {},
+      logs: [createLogEntry('info', 'Starting generation...')],
+      taskId: null,
+      audioUrl: null,
+      imageUrl: null,
+      result: null,
+      error: null,
+      startedAt: new Date().toISOString(),
+      completedAt: null,
+      cancelledAt: null,
+      duration: null,
+    };
+    setSessions(prev => [newSession, ...prev].slice(0, 50));
+    setActiveSessionId(newSession.id);
+    return newSession;
+  }, []);
+
+  const updateSession = useCallback((id, updates) => {
+    setSessions(prev => prev.map(s => {
+      if (s.id !== id) return s;
+      const merged = { ...s, ...updates };
+      if (updates.logs) {
+        merged.logs = updates.logs;
+      } else if (updates.logEntry) {
+        merged.logs = [...s.logs, createLogEntry(updates.logLevel || 'info', updates.logEntry)].slice(-MAX_LOG_ENTRIES);
+      }
+      if (updates.status && updates.status !== s.status) {
+        merged.logs = [...(merged.logs || s.logs), createLogEntry('info', `Status: ${updates.status}`)].slice(-MAX_LOG_ENTRIES);
+      }
+      return merged;
+    }));
+  }, []);
+
+  const appendLog = useCallback((id, level, message) => {
+    setSessions(prev => prev.map(s => {
+      if (s.id !== id) return s;
+      return {
+        ...s,
+        logs: [...s.logs, createLogEntry(level, message)].slice(-MAX_LOG_ENTRIES),
+      };
+    }));
+  }, []);
+
+  const cancelSession = useCallback((id) => {
+    setSessions(prev => prev.map(s => {
+      if (s.id !== id) return s;
+      return {
+        ...s,
+        status: 'cancelled',
+        cancelledAt: new Date().toISOString(),
+        logs: [...s.logs, createLogEntry('warn', 'Generation cancelled by user')].slice(-MAX_LOG_ENTRIES),
+      };
+    }));
+    setActiveSessionId(null);
+  }, []);
+
+  const completeSession = useCallback((id, result) => {
+    setSessions(prev => prev.map(s => {
+      if (s.id !== id) return s;
+      const completedAt = new Date().toISOString();
+      const start = new Date(s.startedAt);
+      const duration = Math.round((new Date(completedAt) - start) / 1000);
+      return {
+        ...s,
+        status: result?.error ? 'failed' : 'completed',
+        progress: result?.error ? s.progress : 100,
+        audioUrl: result?.audioUrl || s.audioUrl,
+        imageUrl: result?.imageUrl || s.imageUrl,
+        result: result || s.result,
+        error: result?.error || null,
+        completedAt,
+        duration,
+        logs: [
+          ...s.logs,
+          createLogEntry(result?.error ? 'error' : 'success', result?.error || 'Generation completed successfully'),
+        ].slice(-MAX_LOG_ENTRIES),
+      };
+    }));
+    setActiveSessionId(null);
+  }, []);
+
+  const clearSessions = useCallback(() => {
+    setSessions([]);
+    setActiveSessionId(null);
+    localStorage.removeItem('zmusic_generation_sessions');
   }, []);
 
   /**
@@ -358,7 +481,15 @@ export function GenerationProvider({ children }) {
     getHistoryByType,
     pendingLyrics,
     setPendingLyrics,
-    clearPendingLyrics: () => setPendingLyrics('')
+    clearPendingLyrics: () => setPendingLyrics(''),
+    sessions,
+    activeSession,
+    startSession,
+    updateSession,
+    appendLog,
+    cancelSession,
+    completeSession,
+    clearSessions,
   };
 
   return (

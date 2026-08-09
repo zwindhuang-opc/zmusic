@@ -4,7 +4,8 @@ import {
   Headphones, User, AlertCircle, ChevronDown, Send,
   Disc3, Volume2, Copy, Download, Upload,
   Music2, Zap, BarChart3, RefreshCw, X, ChevronRight,
-  Layers, Gauge, KeyRound, Star, Tag, FileText, Wand2
+  Layers, Gauge, KeyRound, Star, Tag, FileText, Wand2,
+  XCircle, CheckCircle, Info, AlertTriangle, ChevronUp,
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
@@ -78,7 +79,8 @@ const QUICK_LYRICS_TEMPLATES = [
 
 function MeloPage() {
   const { t } = useTranslation();
-  const { pendingLyrics, clearPendingLyrics } = useGeneration();
+  const { pendingLyrics, clearPendingLyrics, startSession, updateSession, appendLog, cancelSession, completeSession, activeSession, sessions } = useGeneration();
+  const cancelRef = useRef(false);
 
   const [lyrics, setLyrics] = useState('');
   const [title, setTitle] = useState('');
@@ -187,7 +189,16 @@ function MeloPage() {
     return result;
   };
 
+  const handleCancelGeneration = useCallback(() => {
+    cancelRef.current = true;
+    if (taskId) {
+      cancelSession(activeSession?.id);
+    }
+    setPollMessage('已取消生成');
+  }, [cancelSession, activeSession, taskId]);
+
   const handleGenerate = async () => {
+    cancelRef.current = false;
     setError(null);
     setGeneratedSong(null);
     setGenerating(true);
@@ -196,27 +207,37 @@ function MeloPage() {
     setProgress(5);
     setActiveSteps({ submit: true, analyze: false, compose: false, master: false });
 
-    try {
-      const fullLyrics = buildFullLyrics();
-      const styleTags = [
-        ...selectedGenres,
-        ...selectedInstruments,
-        ...selectedMoods,
-        ...selectedVocals,
-        ...selectedEffects,
-      ];
+    const fullLyrics = buildFullLyrics();
+    const styleTags = [
+      ...selectedGenres,
+      ...selectedInstruments,
+      ...selectedMoods,
+      ...selectedVocals,
+      ...selectedEffects,
+    ];
 
-      const params = {
-        lyrics: fullLyrics,
-        title: title || undefined,
-        styleTags,
-        bpm,
-        key: audioKey,
-        timeSignature,
-        structure: selectedStructure,
-        audioWeight,
-        layers,
-      };
+    const params = {
+      lyrics: fullLyrics,
+      title: title || undefined,
+      styleTags,
+      bpm,
+      key: audioKey,
+      timeSignature,
+      structure: selectedStructure,
+      audioWeight,
+      layers,
+    };
+
+    const session = startSession({
+      type: 'song',
+      engine: 'melo',
+      title: title || 'Untitled',
+      lyrics: fullLyrics,
+      params,
+    });
+
+    try {
+      appendLog(session.id, 'info', `Submitting to Melo AI with ${styleTags.length} style tags...`);
 
       const response = await fetch('/api/melo/generate', {
         method: 'POST',
@@ -236,7 +257,14 @@ function MeloPage() {
       setProgress(20);
       setActiveSteps({ submit: true, analyze: true, compose: false, master: false });
 
-      const finalSong = await pollUntilDone(tid);
+      updateSession(session.id, {
+        status: 'processing',
+        taskId: tid,
+        progress: 10,
+        logEntry: `Task created: ${tid}`,
+      });
+
+      const finalSong = await pollUntilDone(tid, session.id);
 
       setPollStatus('success');
       setProgress(100);
@@ -256,6 +284,12 @@ function MeloPage() {
       setGeneratedSong(songData);
       setPollMessage('生成完成！');
 
+      completeSession(session.id, {
+        audioUrl: songData.audioUrl,
+        imageUrl: songData.imageUrl,
+        result: songData,
+      });
+
       if (songData.audioUrl) {
         setTimeout(() => {
           if (audioRef.current) {
@@ -264,22 +298,33 @@ function MeloPage() {
         }, 300);
       }
     } catch (e) {
-      setError(e.message);
-      setPollStatus('failed');
-      setPollMessage('生成失败');
-      setActiveSteps({ submit: false, analyze: false, compose: false, master: false });
+      if (cancelRef.current) {
+        setPollStatus('cancelled');
+        setPollMessage('已取消生成');
+        completeSession(session.id, { error: 'Cancelled by user' });
+      } else {
+        setError(e.message);
+        setPollStatus('failed');
+        setPollMessage('生成失败');
+        setActiveSteps({ submit: false, analyze: false, compose: false, master: false });
+        completeSession(session.id, { error: e.message });
+      }
     } finally {
       setGenerating(false);
     }
   };
 
-  const pollUntilDone = async (tid) => {
+  const pollUntilDone = async (tid, sessionId) => {
     const interval = 3000;
     const timeout = 120000;
     const start = Date.now();
     let pollCount = 0;
 
     while (Date.now() - start < timeout) {
+      if (cancelRef.current) {
+        throw new Error('Cancelled by user');
+      }
+
       pollCount++;
       try {
         const res = await fetch(`/api/melo/task/${encodeURIComponent(tid)}`);
@@ -287,36 +332,59 @@ function MeloPage() {
         const task = data.data || data;
 
         const status = String(task?.status || '').toLowerCase();
+        let newProgress;
         if (task?.progress) {
+          newProgress = task.progress;
           setProgress(task.progress);
         } else {
+          newProgress = Math.min(85, 20 + pollCount * 10);
           setProgress(prev => Math.min(85, prev + 10));
         }
 
+        let stageMessage = '';
+        let newSteps = { submit: true, analyze: false, compose: false, master: false };
+
         if (pollCount <= 1) {
-          setPollMessage('AI 正在分析指令...');
+          stageMessage = 'AI 正在分析指令...';
+          newSteps = { submit: true, analyze: true, compose: false, master: false };
         } else if (pollCount <= 2) {
-          setPollMessage('AI 正在编排旋律...');
-          setActiveSteps({ submit: true, analyze: true, compose: false, master: false });
+          stageMessage = 'AI 正在编排旋律...';
+          newSteps = { submit: true, analyze: true, compose: false, master: false };
         } else if (pollCount <= 3) {
-          setPollMessage('AI 正在合成人声...');
-          setActiveSteps({ submit: true, analyze: true, compose: true, master: false });
+          stageMessage = 'AI 正在合成人声...';
+          newSteps = { submit: true, analyze: true, compose: true, master: false };
         } else {
-          setPollMessage('AI 正在母带处理...');
-          setActiveSteps({ submit: true, analyze: true, compose: true, master: true });
+          stageMessage = 'AI 正在母带处理...';
+          newSteps = { submit: true, analyze: true, compose: true, master: true };
+        }
+
+        setPollMessage(stageMessage);
+        setActiveSteps(newSteps);
+
+        if (sessionId) {
+          updateSession(sessionId, {
+            status: 'processing',
+            progress: newProgress,
+            logEntry: `[Poll ${pollCount}] ${stageMessage} (progress: ${newProgress}%)`,
+          });
         }
 
         if (status.includes('success') || status.includes('complete') || task?.audioUrl) {
+          if (sessionId) {
+            appendLog(sessionId, 'success', `Generation complete! Task: ${tid}`);
+          }
           return task;
         }
         if (status.includes('fail') || status.includes('error')) {
           throw new Error(`生成失败: ${task?.msg || task?.failReason || status}`);
         }
       } catch (e) {
-        if (e.message.includes('生成失败')) {
+        if (e.message.includes('生成失败') || e.message.includes('Cancelled')) {
           throw e;
         }
-        // Silently retry on transient errors
+        if (sessionId) {
+          appendLog(sessionId, 'warn', `Poll retry ${pollCount}: ${e.message}`);
+        }
       }
       await new Promise(r => setTimeout(r, interval));
     }
@@ -747,24 +815,35 @@ function MeloPage() {
             </details>
           </div>
 
-          {/* Generate Button */}
-          <button
-            onClick={handleGenerate}
-            disabled={!canGenerate}
-            className="w-full flex items-center justify-center gap-2.5 px-6 py-4 rounded-xl text-base font-bold text-white bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 hover:from-amber-400 hover:via-orange-400 hover:to-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-[1.01] active:scale-[0.99]"
-          >
-            {generating ? (
-              <>
-                <Loader className="w-5 h-5 animate-spin" />
-                {pollMessage}
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5" />
-                生成歌曲
-              </>
+          {/* Generate Button & Cancel */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleGenerate}
+              disabled={!canGenerate || generating}
+              className="flex-1 w-full flex items-center justify-center gap-2.5 px-6 py-4 rounded-xl text-base font-bold text-white bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 hover:from-amber-400 hover:via-orange-400 hover:to-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-[1.01] active:scale-[0.99]"
+            >
+              {generating ? (
+                <>
+                  <Loader className="w-5 h-5 animate-spin" />
+                  {pollMessage}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  生成歌曲
+                </>
+              )}
+            </button>
+            {generating && (
+              <button
+                onClick={handleCancelGeneration}
+                className="flex items-center justify-center gap-2 px-4 py-4 rounded-xl text-sm font-semibold text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 transition-all"
+              >
+                <XCircle className="w-5 h-5" />
+                取消
+              </button>
             )}
-          </button>
+          </div>
 
           {!meloStatus?.configured && (
             <p className="text-xs text-center text-amber-400 flex items-center justify-center gap-1">
@@ -776,23 +855,32 @@ function MeloPage() {
 
         {/* Right Panel - Result / Progress */}
         <div className="lg:col-span-2 space-y-5">
-          {/* Generation Progress */}
-          {generating && pollStatus !== 'success' && (
+          {/* Generation Progress with Logs */}
+          {(generating || activeSession) && pollStatus !== 'success' && (
             <div className="glass p-5 rounded-2xl space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center">
-                  <Loader className="w-5 h-5 text-white animate-spin" />
+                  {pollStatus === 'cancelled' ? (
+                    <XCircle className="w-5 h-5 text-red-400" />
+                  ) : (
+                    <Loader className="w-5 h-5 text-white animate-spin" />
+                  )}
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-white">{pollMessage}</p>
-                  <p className="text-[11px] text-gray-500">AI 正在分析你的指令、编排音乐、合成人声...</p>
+                  <p className="text-[11px] text-gray-500">
+                    {pollStatus === 'cancelled' ? 'Generation cancelled' : 'AI analyzing your instructions, arranging music, synthesizing vocals...'}
+                  </p>
                 </div>
               </div>
 
               {/* Progress Bar */}
               <div className="h-2.5 bg-white/5 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 transition-all duration-700 ease-out relative"
+                  className={`h-full transition-all duration-700 ease-out relative ${pollStatus === 'cancelled'
+                    ? 'bg-gradient-to-r from-red-500 to-red-400'
+                    : 'bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500'
+                    }`}
                   style={{ width: `${progress}%` }}
                 >
                   <div className="absolute inset-0 bg-white/20 animate-pulse" />
@@ -827,6 +915,44 @@ function MeloPage() {
                     </span>
                   </div>
                 ))}
+              </div>
+
+              {/* Log Panel */}
+              {activeSession?.logs?.length > 0 && (
+                <div className="bg-black/30 rounded-xl border border-white/5 p-3 max-h-40 overflow-y-auto">
+                  <p className="text-[10px] font-semibold text-gray-400 mb-2 flex items-center gap-1">
+                    <FileText className="w-3 h-3" />
+                    生成日志
+                  </p>
+                  <div className="space-y-1">
+                    {activeSession.logs.slice(-8).map((log) => (
+                      <div key={log.id} className="flex items-start gap-2 text-[10px] font-mono">
+                        <span className={`mt-0.5 ${log.level === 'success' ? 'text-emerald-400'
+                          : log.level === 'warn' ? 'text-amber-400'
+                            : log.level === 'error' ? 'text-red-400'
+                              : 'text-sky-400'
+                          }`}>
+                          {log.level === 'success' ? '✓' : log.level === 'warn' ? '⚠' : log.level === 'error' ? '✗' : '›'}
+                        </span>
+                        <span className="text-gray-400">
+                          {new Date(log.timestamp).toLocaleTimeString()}
+                        </span>
+                        <span className="text-gray-300 flex-1">{log.message}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Generation History */}
+          {!generating && activeSession && activeSession.status === 'cancelled' && (
+            <div className="glass p-4 rounded-2xl border border-red-500/20 bg-red-500/5 flex items-center gap-3">
+              <XCircle className="w-5 h-5 text-red-400" />
+              <div>
+                <p className="text-sm font-semibold text-red-300">生成已取消</p>
+                <p className="text-[11px] text-gray-400">你可以修改歌词或参数后重新生成</p>
               </div>
             </div>
           )}
@@ -970,6 +1096,77 @@ function MeloPage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Generation History */}
+          {sessions && sessions.filter(s => s.engine === 'melo' && (s.status === 'completed' || s.status === 'failed' || s.status === 'cancelled')).length > 0 && (
+            <div className="glass p-5 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-gray-400" />
+                  <h3 className="text-sm font-semibold text-white">生成历史</h3>
+                  <span className="text-[10px] text-gray-500">
+                    {sessions.filter(s => s.engine === 'melo' && (s.status === 'completed' || s.status === 'failed' || s.status === 'cancelled')).length} 条记录
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {sessions
+                  .filter(s => s.engine === 'melo' && (s.status === 'completed' || s.status === 'failed' || s.status === 'cancelled'))
+                  .slice(0, 10)
+                  .map((session) => (
+                    <div
+                      key={session.id}
+                      className={`p-3 rounded-xl border transition-all ${session.status === 'completed' ? 'bg-emerald-500/5 border-emerald-500/20' :
+                        session.status === 'failed' ? 'bg-red-500/5 border-red-500/20' :
+                          'bg-gray-500/5 border-gray-500/20'
+                        }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            {session.status === 'completed' ? (
+                              <CheckCircle className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                            ) : session.status === 'failed' ? (
+                              <AlertTriangle className="w-3 h-3 text-red-400 flex-shrink-0" />
+                            ) : (
+                              <XCircle className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                            )}
+                            <span className="text-xs font-medium text-white truncate">{session.title}</span>
+                          </div>
+                          <p className="text-[10px] text-gray-400 line-clamp-2 font-mono">
+                            {session.lyrics?.slice(0, 80)}{session.lyrics?.length > 80 ? '...' : ''}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1.5 text-[10px] text-gray-500">
+                            <span>{new Date(session.startedAt).toLocaleTimeString()}</span>
+                            {session.duration && (
+                              <span>· {session.duration}s</span>
+                            )}
+                            <span>· {session.params?.styleTags?.length || 0} tags</span>
+                          </div>
+                        </div>
+                        {session.status === 'completed' && session.audioUrl && (
+                          <button
+                            onClick={() => {
+                              setGeneratedSong({
+                                title: session.result?.title || session.title,
+                                audioUrl: session.audioUrl,
+                                imageUrl: session.imageUrl,
+                                duration: session.result?.duration || 0,
+                                taskId: session.taskId,
+                              });
+                            }}
+                            className="flex-shrink-0 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
+                            title="Restore this song"
+                          >
+                            <Play className="w-4 h-4 text-amber-400" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
           )}
 

@@ -1,9 +1,9 @@
 {
-  "version": "6.6.3",
+  "version": "6.6.4",
   "major": 6,
   "minor": 6,
-  "patch": 3,
+  "patch": 4,
   "buildNumber": 1,
   "releaseDate": "2026-08-09",
-  "notes": "v6.6.3 — Fix iOS IPA export failure. The xcodebuild archive succeeded but exportArchive failed with 'teamID should be non-empty' because the unsigned ExportOptions.plist contained an empty <string></string> for teamID. Removed the teamID key entirely from the unsigned export path (it is only needed for signed exports with a valid Apple Developer team). iOS build now: archive SUCCEEDED + export expected to pass. Remaining CI failures are infrastructure-only: Netlify account credits exhausted, Cloudflare missing apiToken secret — both require repo/account configuration, not code changes."
+  "notes": "v6.6.4 — Resume previous unfinished work: commit verified-but-uncommitted changes for song generation session tracking and MV page translations. (1) generationStore.jsx: add full session lifecycle (startSession, updateSession, appendLog, cancelSession, completeSession, clearSessions) with localStorage persistence (max 50 sessions, 200 log entries) so users can monitor, log, and cancel song generation in real time. (2) MeloPage.jsx: integrate session tracking — cancel button, live log panel, progress indicators, persistent generation history; cancelRef cooperates with pollUntilDone to abort polling cleanly. (3) i18n: add 11 missing MV page keys (mode_basic_label, generate_mv_button, scene_templates_label, color_palette_section, duration_section, genre_section, ai_tools_title, aide_text, generating_label, mode_advanced_label, visual_effects) to both zh.json and en.json to eliminate raw-key fallback. Build verified: i18n:validate passes JSON parity, vite build succeeds in 24s with no errors."
 }
