@@ -27,7 +27,7 @@
 import { config } from '../config/index.js';
 import Logger from '../utils/logger.js';
 import { createRequire } from 'module';
-import { connectCDP, fetchFromEdge, checkLogin as cdpCheckLogin, disconnect as cdpDisconnect } from '../services/museCdpBridge.js';
+import { connectCDP, fetchFromEdge, checkLogin as cdpCheckLogin, extractAuthToken, disconnect as cdpDisconnect } from '../services/museCdpBridge.js';
 
 const require = createRequire(import.meta.url);
 const logger = new Logger('MuseController');
@@ -60,9 +60,25 @@ async function ensureCDP() {
     cdpReady = true;
     logger.info('[CDP] Connected to existing Edge on port 9222');
 
-    // Cache login info
+    // Cache login info. checkLogin now extracts the AuthToken JWT from the
+    // page's localStorage and sends it as the AuthToken header — without it
+    // the muse.top gateway returns code=1006 (login expired) even though the
+    // user is fully logged in via cookies.
     cachedLoginInfo = await cdpCheckLogin();
-    logger.info(`[CDP] Login status: loggedIn=${cachedLoginInfo.loggedIn} credits=${cachedLoginInfo.credits}`);
+    const li = cachedLoginInfo || {};
+    logger.info(
+      `[CDP] Login status: loggedIn=${li.loggedIn} credits=${li.credits}` +
+      ` tokenFound=${li.tokenFound} tokenSource=${li.tokenSource || 'none'}` +
+      ` pageOrigin=${li.pageOrigin || 'n/a'}`
+    );
+    if (!li.loggedIn) {
+      // Surface the raw muse.top response so we can see exactly why auth
+      // failed (e.g. code 1006 vs network error vs missing token).
+      logger.warn(
+        `[CDP] Not logged in — code=${li.code} msg=${li.msg}` +
+        ` error=${li.error || 'n/a'} responseBody=${li.responseBody || li.rawBody || 'n/a'}`
+      );
+    }
     return true;
   } catch (e) {
     logger.warn(`[CDP] Failed to connect: ${e.message}`);
@@ -85,6 +101,11 @@ async function museCallViaCDP(path, body = {}) {
 
   const loginInfo = cachedLoginInfo || await cdpCheckLogin();
 
+  // Extract the AuthToken JWT from the browser's localStorage. The muse.top
+  // API gateway requires this header — cookies alone yield code=1006.
+  const tokenInfo = await extractAuthToken();
+  const authToken = tokenInfo.token;
+
   // Build full request body with base fields
   const fullBody = {
     packageName: 'com.xingchat.web.muse',
@@ -100,6 +121,7 @@ async function museCallViaCDP(path, body = {}) {
   const result = await fetchFromEdge(url, {
     method: 'POST',
     body: fullBody,
+    authToken,
   });
 
   if (result.error) {
@@ -110,7 +132,7 @@ async function museCallViaCDP(path, body = {}) {
   try {
     const data = JSON.parse(result.body);
     const codeLabel = data.code === 0 ? 'OK' : data.code === 1006 ? 'LOGIN_EXPIRED' : `CODE_${data.code}`;
-    logger.info(`[CDP] <- ${result.status} ${codeLabel}`);
+    logger.info(`[CDP] <- ${result.status} ${codeLabel} (tokenSource=${tokenInfo.source || 'none'})`);
     if (data.code !== 0 && data.code !== undefined) {
       logger.warn(`[CDP] msg: ${data.msg}`);
     }

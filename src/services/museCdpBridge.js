@@ -16,6 +16,69 @@ let cdpWs = null;
 let cdpMsgId = 0;
 const pending = new Map();
 let messageLogger = null;
+/** URL of the browser tab CDP attached to (used for localStorage extraction). */
+let attachedPageUrl = '';
+/** Target id of the browser tab CDP attached to. */
+let attachedPageId = '';
+
+/**
+ * Extract the muse.top AuthToken (JWT) from the attached page's localStorage.
+ *
+ * The muse.top web app stores its session JWT in localStorage under one of
+ * several possible keys and sends it as the `AuthToken` HTTP header on every
+ * API call to project-api.atmob.com. Cookies alone are NOT enough — the API
+ * gateway validates the JWT header. We probe a list of known storage keys and
+ * also fall back to cookie-style names so the bridge stays in sync with
+ * upstream muse.top bundle renames.
+ *
+ * @returns {Promise<{token:string|null, source:string}>} The JWT (or null)
+ */
+async function extractAuthToken() {
+  // If we are not on a muse.top origin, localStorage will belong to a
+  // different origin and won't contain the muse token — navigate first.
+  if (attachedPageUrl && !attachedPageUrl.includes('muse.top')) {
+    try {
+      await navigateTo('https://muse.top/', 2500);
+      attachedPageUrl = 'https://muse.top/';
+    } catch { /* ignore — best effort */ }
+  }
+
+  // Probe localStorage + sessionStorage for the JWT. The muse.top bundle has
+  // used several key names across versions, so we try them in priority order.
+  const expression = `
+    (function() {
+      var keys = ['AuthToken','authToken','token','muse_token','museToken','Authorization','access_token','accessToken','ssid','sid'];
+      var found = null;
+      var source = '';
+      for (var i = 0; i < keys.length && !found; i++) {
+        try {
+          var v = localStorage.getItem(keys[i]) || sessionStorage.getItem(keys[i]);
+          if (v && v.length > 10) { found = v; source = keys[i]; }
+        } catch(e) {}
+      }
+      // Some muse.top builds store the JWT inside a JSON object under 'userInfo'/'user'
+      if (!found) {
+        try {
+          var raw = localStorage.getItem('userInfo') || localStorage.getItem('user') || sessionStorage.getItem('userInfo');
+          if (raw) {
+            var obj = JSON.parse(raw);
+            var cand = obj.token || obj.authToken || obj.Authorization || obj.ssid || (obj.data && (obj.data.token || obj.data.ssid));
+            if (cand && cand.length > 10) { found = cand; source = 'userInfo.token'; }
+          }
+        } catch(e) {}
+      }
+      return JSON.stringify({ token: found, source: source, origin: location.origin, href: location.href });
+    })()
+  `;
+  try {
+    const val = await evaluate(expression);
+    if (val) {
+      const parsed = JSON.parse(val);
+      return { token: parsed.token, source: parsed.source, origin: parsed.origin, href: parsed.href };
+    }
+  } catch { /* ignore */ }
+  return { token: null, source: null };
+}
 
 /**
  * Connect to existing Edge CDP and find a muse.top page target.
@@ -42,6 +105,11 @@ async function connectCDP(port = CDP_PORT) {
     || targets.find(t => t.type === 'page');
 
   if (!page) throw new Error('No page target found on CDP');
+
+  // Remember which page we attached to so checkLogin can extract the JWT
+  // from the correct origin's localStorage.
+  attachedPageUrl = page.url || '';
+  attachedPageId = page.id || '';
 
   cdpWs = new WebSocket(page.webSocketDebuggerUrl);
 
@@ -152,12 +220,15 @@ async function fetchFromEdge(url, options = {}) {
     method = 'POST',
     headers = {},
     body = null,
+    authToken = null,
   } = options;
 
-  // Build headers
+  // Build headers. The muse.top API gateway requires an `AuthToken` JWT
+  // header (in addition to App-Key) — cookies alone return code=1006.
   const headerObj = {
     'Content-Type': 'application/json',
     'App-Key': '8e33a5e60ef347df808d14026f27d227',
+    ...(authToken ? { 'AuthToken': authToken } : {}),
     ...headers,
   };
 
@@ -224,13 +295,36 @@ async function getCookies(urls = ['https://muse.top', 'https://project-api.atmob
   }
 }
 
+/** Cached AuthToken JWT extracted from the browser's localStorage. */
+let cachedAuthToken = null;
+/** Where the cached token came from (localStorage key name). */
+let cachedTokenSource = null;
+
 /**
  * Check if the browser is logged into muse.top.
+ *
+ * Strategy:
+ *   1. Extract the AuthToken JWT from the attached page's localStorage.
+ *   2. POST /project/song/v1/user/info with App-Key + AuthToken headers.
+ *   3. code===0  → logged in (return credits/deviceId/etc.)
+ *      code===1006 → token missing/expired (return diagnostic info)
+ *
  * @returns {Promise<{loggedIn:boolean, credits:number, deviceId:string, ssid:string}>}
  */
 async function checkLogin() {
+  // Step 1: extract the JWT from the browser. This is the crucial step that
+  // was missing before — cookies alone don't authenticate against the
+  // project-api.atmob.com gateway.
+  const tokenInfo = await extractAuthToken();
+  if (tokenInfo.token) {
+    cachedAuthToken = tokenInfo.token;
+    cachedTokenSource = tokenInfo.source;
+  }
+
   const result = await fetchFromEdge('https://project-api.atmob.com/project/song/v1/user/info', {
     method: 'POST',
+    headers: cachedAuthToken ? { AuthToken: cachedAuthToken } : {},
+    authToken: cachedAuthToken,
     body: {
       packageName: 'com.xingchat.web.muse',
       appPlatform: 4,
@@ -242,25 +336,55 @@ async function checkLogin() {
   });
 
   if (result.error) {
-    return { loggedIn: false, error: result.error };
+    return {
+      loggedIn: false,
+      error: result.error,
+      tokenFound: Boolean(cachedAuthToken),
+      tokenSource: cachedTokenSource,
+      pageOrigin: tokenInfo.origin,
+      pageHref: tokenInfo.href,
+    };
   }
 
   try {
     const data = JSON.parse(result.body);
     if (data.code === 0 && data.data) {
       const d = data.data;
+      const mi = d.memberInfo || {};
       return {
         loggedIn: true,
-        credits: d.memberInfo?.credit || d.credit || 0,
+        credits: mi.credit || d.credit || 0,
         deviceId: d.deviceId,
         ssid: d.ssid,
-        isMember: d.memberInfo?.isMember || d.memberInfo?.paidMember || false,
+        loginStatus: d.loginStatus || 0,
+        isMember: mi.isMember || mi.paidMember || false,
+        membershipExpired: mi.subscription?.expired || false,
+        evaluationCreditPaid: mi.evaluationCreditPaid || 0,
+        evaluationCreditNoPaid: mi.evaluationCreditNoPaid || 0,
+        totalCredits: (mi.evaluationCreditPaid || 0) + (mi.evaluationCreditNoPaid || 0) + (mi.credit || 0),
+        tokenFound: true,
+        tokenSource: cachedTokenSource,
         raw: d,
       };
     }
-    return { loggedIn: false, code: data.code, msg: data.msg };
+    // Not logged in — return rich diagnostics so the UI/log shows WHY.
+    return {
+      loggedIn: false,
+      code: data.code,
+      msg: data.msg,
+      tokenFound: Boolean(cachedAuthToken),
+      tokenSource: cachedTokenSource,
+      pageOrigin: tokenInfo.origin,
+      pageHref: tokenInfo.href,
+      responseBody: (result.body || '').substring(0, 300),
+    };
   } catch (e) {
-    return { loggedIn: false, error: 'Failed to parse response' };
+    return {
+      loggedIn: false,
+      error: 'Failed to parse response',
+      tokenFound: Boolean(cachedAuthToken),
+      rawBody: (result.body || '').substring(0, 300),
+    };
   }
 }
 
@@ -323,6 +447,7 @@ async function generateSong(params) {
   const result = await fetchFromEdge(`https://project-api.atmob.com${endpoint}`, {
     method: 'POST',
     body: fullBody,
+    authToken: cachedAuthToken,
   });
 
   if (result.error) {
@@ -348,6 +473,7 @@ async function generateSong(params) {
 async function queryTask(taskId) {
   const result = await fetchFromEdge('https://project-api.atmob.com/project/song/v30/work/tasks/query', {
     method: 'POST',
+    authToken: cachedAuthToken,
     body: {
       packageName: 'com.xingchat.web.muse',
       appPlatform: 4,
@@ -393,6 +519,7 @@ export {
   checkLogin,
   generateSong,
   queryTask,
+  extractAuthToken,
   disconnect,
   CDP_HOST,
   CDP_PORT,

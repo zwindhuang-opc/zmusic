@@ -72,6 +72,11 @@ export default defineConfig(async ({ mode }) => {
       watch: {
         ignored: ['**/edge_profile/**', '**/android/**', '**/ios/**'],
       },
+      // Block serving files from the Edge browser profile (debug leftover) so
+      // neither the dev server nor its dependency scanner ever touches them.
+      fs: {
+        deny: ['**/edge_profile/**', '**/.git/**', '**/.history/**'],
+      },
       proxy: {
         '/api': {
           target: `http://localhost:${bePort}`,
@@ -80,6 +85,15 @@ export default defineConfig(async ({ mode }) => {
           ws: false,
         },
       },
+    },
+    // Restrict the esbuild dependency scanner to the HTML entry only. Vite then
+    // follows the import graph from index.html → src/main.jsx → browser modules,
+    // so it never crawls edge_profile/ (browser-extension JS with unresolvable
+    // dynamic imports) nor backend-only files like src/controllers/* (which import
+    // native Node deps such as ffmpeg-static / better-sqlite3).
+    optimizeDeps: {
+      entries: ['index.html'],
+      exclude: ['ffmpeg-static', 'better-sqlite3'],
     },
     build: {
       outDir: 'dist',
