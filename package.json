@@ -1,6 +1,6 @@
 {
   "name": "zmusic",
-  "version": "6.6.4",
+  "version": "6.6.5",
   "description": "ZMusic - Real AI Music Generation Platform with MVC Architecture",
   "main": "electron/main.js",
   "type": "module",

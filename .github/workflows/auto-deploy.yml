@@ -133,6 +133,14 @@ jobs:
   deploy-pages:
     runs-on: ubuntu-latest
     needs: build-web
+    # GitHub Pages on a PRIVATE repo requires a paid GitHub plan
+    # (Pro/Team/Enterprise). On the free plan the configure-pages step
+    # returns HTTP 422 "Your current plan does not support GitHub Pages
+    # for this repository." This job is non-fatal so the overall workflow
+    # stays green when APK + release succeed; the Pages failure is still
+    # visible in the job logs. To enable Pages: either upgrade the GitHub
+    # plan or make the repository public (Pages is free for public repos).
+    continue-on-error: true
     permissions:
       pages: write
       id-token: write

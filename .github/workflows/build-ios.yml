@@ -61,44 +61,48 @@ jobs:
           cd ios/App
           pod install --repo-update
 
-      - name: Build IPA (unsigned - development export)
+      - name: Build IPA (unsigned - manual packaging)
+        # Unsigned IPA export via xcodebuild -exportArchive always fails
+        # because exportArchive requires a signing team embedded in the
+        # archive (errors: "teamID should be non-empty" if teamID is empty,
+        # or "No Team Found in Archive" if teamID is omitted entirely).
+        # The reliable way to produce an unsigned IPA is to build the .app
+        # directly with CODE_SIGNING_ALLOWED=NO and package it manually into
+        # a Payload/ folder + zip. The resulting IPA can be re-signed later
+        # via Sideloadly, TrollStore, or similar tools.
         if: ${{ env.HAS_IOS_CERT == 'false' }}
         run: |
           cd ios/App
+
+          # Build .app directly (no archive, no signing)
           xcodebuild -workspace App.xcworkspace \
             -scheme App \
             -configuration Release \
-            -archivePath ../../build/App.xcarchive \
             -destination "generic/platform=iOS" \
-            -allowProvisioningUpdates \
-            archive \
+            -sdk iphoneos \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" \
+            build
 
-          mkdir -p ../../build/ipa-output
-          cat > ../../build/ExportOptions.plist << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>development</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>stripSwiftSymbols</key>
-              <true/>
-              <key>compileBitcode</key>
-              <false/>
-          </dict>
-          </plist>
-          PLIST
+          # Locate the built .app and package it into an unsigned IPA
+          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "App.app" -path "*Release-iphoneos*" | head -1)
+          if [ -z "$APP_PATH" ]; then
+            echo "ERROR: App.app not found in DerivedData"
+            exit 1
+          fi
+          echo "Found App.app at: $APP_PATH"
 
-          xcodebuild -exportArchive \
-            -archivePath ../../build/App.xcarchive \
-            -exportOptionsPlist ../../build/ExportOptions.plist \
-            -exportPath ../../build/ipa-output \
-            CODE_SIGNING_ALLOWED=NO
+          mkdir -p ../../build/ipa-output/Payload
+          cp -R "$APP_PATH" ../../build/ipa-output/Payload/
+
+          # Copy any provisioning profile alongside for reference (optional)
+          # cp -R "$APP_PATH/_CodeSignature" ../../build/ipa-output/Payload/App.app/ 2>/dev/null || true
+
+          cd ../../build/ipa-output
+          zip -qry zmusic-unsigned.ipa Payload
+          rm -rf Payload
+          echo "Unsigned IPA built: $(ls -la zmusic-unsigned.ipa)"
 
       - name: Build IPA (signed)
         if: ${{ env.HAS_IOS_CERT == 'true' }}
