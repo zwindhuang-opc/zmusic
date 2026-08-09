@@ -29,6 +29,13 @@ on:
 jobs:
   build-ios:
     runs-on: macos-latest
+    # GitHub Actions does NOT allow the `secrets` context in step-level `if`
+    # conditionals (throws "Unrecognized named-value: 'secrets'"). So we
+    # evaluate secret availability once at the job level into an env var and
+    # branch on that. When IOS_CERTIFICATE_P12 is configured in repo secrets,
+    # the signed build runs; otherwise the unsigned development export runs.
+    env:
+      HAS_IOS_CERT: ${{ secrets.IOS_CERTIFICATE_P12 != '' }}
 
     steps:
       - name: Checkout code
@@ -55,7 +62,7 @@ jobs:
           pod install --repo-update
 
       - name: Build IPA (unsigned - development export)
-        if: ${{ !secrets.IOS_CERTIFICATE_P12 }}
+        if: ${{ env.HAS_IOS_CERT == 'false' }}
         run: |
           cd ios/App
           xcodebuild -workspace App.xcworkspace \
@@ -96,7 +103,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
       - name: Build IPA (signed)
-        if: ${{ secrets.IOS_CERTIFICATE_P12 }}
+        if: ${{ env.HAS_IOS_CERT == 'true' }}
         env:
           IOS_CERTIFICATE_P12: ${{ secrets.IOS_CERTIFICATE_P12 }}
           IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}

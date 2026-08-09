@@ -15,7 +15,6 @@
  *   node scripts/i18n-db.mjs stats   — Show translation statistics
  */
 
-import Database from 'better-sqlite3';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -24,11 +23,41 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = resolve(__dirname, '../prisma/i18n.db');
 const LOCALES_DIR = resolve(__dirname, '../src/i18n/locales');
 
+/**
+ * Detect whether we are running on a CI build runner.
+ *
+ * `better-sqlite3` is a native addon whose prebuilt binary often mismatches
+ * the CI runner's Node.js ABI, causing an unrecoverable segfault (SIGSEGV)
+ * the moment `new Database(...)` is called. A segfault kills the process
+ * instantly — it cannot be caught with try/catch. So on CI we must avoid
+ * importing/constructing the Database entirely and fall back to JSON-only
+ * validation.
+ *
+ * @returns {boolean} true if running on Netlify / Cloudflare Pages / GitHub Actions
+ */
+function isCI() {
+  return Boolean(
+    process.env.CI === 'true' ||
+    process.env.NETLIFY === 'true' ||
+    process.env.CF_PAGES === '1' ||
+    process.env.GITHUB_ACTIONS === 'true' ||
+    process.env.VERCEL === '1'
+  );
+}
+
 // ============================================
 // DATABASE INITIALIZATION
 // ============================================
 
-function initDb() {
+/**
+ * Lazily import better-sqlite3 and open the database.
+ *
+ * The dynamic import ensures the native module is never loaded on CI runners
+ * (where it would segfault). Only local development calls this.
+ * @returns {Promise<import('better-sqlite3').Database>}
+ */
+async function initDb() {
+  const { default: Database } = await import('better-sqlite3');
   // Ensure the prisma directory exists before opening the database
   const dbDir = dirname(DB_PATH);
   if (!existsSync(dbDir)) {
@@ -176,8 +205,8 @@ function seedFromJson(db) {
 /**
  * Standalone seed command — opens DB, seeds from JSON, closes DB.
  */
-function seed() {
-  const db = initDb();
+async function seed() {
+  const db = await initDb();
   seedFromJson(db);
   db.close();
 }
@@ -186,8 +215,8 @@ function seed() {
 // SYNC: Database → JSON files (with validation)
 // ============================================
 
-function sync() {
-  const db = initDb();
+async function sync() {
+  const db = await initDb();
 
   const errors = validate(db);
   if (errors.length > 0) {
@@ -264,8 +293,8 @@ function validate(db) {
 // STATS: Show translation statistics
 // ============================================
 
-function stats() {
-  const db = initDb();
+async function stats() {
+  const db = await initDb();
 
   const total = db.prepare('SELECT COUNT(*) as cnt FROM translations').get().cnt;
   const validated = db.prepare('SELECT COUNT(*) as cnt FROM translations WHERE validated = 1').get().cnt;
@@ -273,9 +302,9 @@ function stats() {
   const missingEn = db.prepare("SELECT COUNT(*) as cnt FROM translations WHERE en = ''").get().cnt;
 
   const byCategory = db.prepare(`
-    SELECT category, COUNT(*) as cnt 
-    FROM translations 
-    GROUP BY category 
+    SELECT category, COUNT(*) as cnt
+    FROM translations
+    GROUP BY category
     ORDER BY cnt DESC
   `).all();
 
@@ -301,13 +330,85 @@ function stats() {
 }
 
 // ============================================
+// JSON-ONLY VALIDATION (CI fallback — no SQLite)
+// ============================================
+
+/**
+ * Validate translations using ONLY the JSON locale files, without opening
+ * the SQLite database. This is the CI fallback used when `better-sqlite3`
+ * would segfault (Netlify / Cloudflare Pages / GitHub Actions runners).
+ *
+ * Checks:
+ *   1. zh.json and en.json have the same set of keys
+ *   2. No empty translation values in either file
+ *   3. Known typo patterns (thems → themes)
+ *
+ * @returns {string[]} Array of error messages (empty = all good)
+ */
+function validateJsonOnly() {
+  const errors = [];
+
+  const zhRaw = JSON.parse(readFileSync(resolve(LOCALES_DIR, 'zh.json'), 'utf-8'));
+  const enRaw = JSON.parse(readFileSync(resolve(LOCALES_DIR, 'en.json'), 'utf-8'));
+  const zhFlat = flattenJson(zhRaw);
+  const enFlat = flattenJson(enRaw);
+
+  const zhKeys = new Set(Object.keys(zhFlat));
+  const enKeys = new Set(Object.keys(enFlat));
+
+  // Check 1: key parity between zh and en
+  for (const key of zhKeys) {
+    if (!enKeys.has(key)) errors.push(`Key missing in en.json: ${key}`);
+  }
+  for (const key of enKeys) {
+    if (!zhKeys.has(key)) errors.push(`Key missing in zh.json: ${key}`);
+  }
+
+  // Check 2: empty translations
+  for (const [key, val] of Object.entries(zhFlat)) {
+    if (!val) errors.push(`Empty zh value: ${key}`);
+  }
+  for (const [key, val] of Object.entries(enFlat)) {
+    if (!val) errors.push(`Empty en value: ${key}`);
+  }
+
+  // Check 3: known typo patterns
+  for (const key of zhKeys) {
+    if (key.includes('thems') && !key.includes('themes')) {
+      errors.push(`Typo detected: ${key} (should be "themes" not "thems")`);
+    }
+  }
+
+  return errors;
+}
+
+// ============================================
 // VALIDATE COMMAND
 // ============================================
 
-function validateCmd() {
-  const db = initDb();
+/**
+ * Validate translations. On CI runners, uses JSON-only validation (no DB)
+ * to avoid the better-sqlite3 segfault. Locally, uses full DB validation.
+ */
+async function validateCmd() {
+  // CI fallback: skip the native SQLite module entirely to avoid segfault.
+  if (isCI()) {
+    console.log('🔍 Validating translations (CI mode — JSON-only, no SQLite)...');
+    const errors = validateJsonOnly();
+    if (errors.length === 0) {
+      console.log('✅ All translations validated successfully! (JSON parity check passed)');
+    } else {
+      console.log(`❌ Found ${errors.length} validation issues:`);
+      errors.forEach(e => console.log(`   ${e}`));
+      process.exit(1);
+    }
+    return;
+  }
 
-  // Auto-seed from JSON if the database is empty (e.g. fresh CI runner)
+  // Local development: full DB-backed validation.
+  const db = await initDb();
+
+  // Auto-seed from JSON if the database is empty (e.g. fresh clone)
   const count = db.prepare('SELECT COUNT(*) as cnt FROM translations').get().cnt;
   if (count === 0) {
     console.log('📋 Database is empty, auto-seeding from JSON locale files...');
@@ -333,28 +434,36 @@ function validateCmd() {
 
 const command = process.argv[2];
 
-switch (command) {
-  case 'seed':
-    console.log('🌱 Seeding database from JSON files...');
-    seed();
-    break;
-  case 'sync':
-    console.log('🔄 Syncing database → JSON files...');
-    sync();
-    break;
-  case 'validate':
-    console.log('🔍 Validating translations...');
-    validateCmd();
-    break;
-  case 'stats':
-    stats();
-    break;
-  default:
-    console.log('Usage: node scripts/i18n-db.mjs <seed|sync|validate|stats>');
-    console.log('');
-    console.log('Commands:');
-    console.log('  seed      Import JSON files → SQLite database');
-    console.log('  sync      Export database → JSON files (with validation)');
-    console.log('  validate  Check for missing keys, typos, duplicates');
-    console.log('  stats     Show translation statistics');
-}
+// Wrap in an async IIFE so we can await the now-async DB operations.
+// Top-level await would also work, but the IIFE keeps the switch readable
+// and ensures unhandled rejections surface as non-zero exit codes.
+(async () => {
+  switch (command) {
+    case 'seed':
+      console.log('🌱 Seeding database from JSON files...');
+      await seed();
+      break;
+    case 'sync':
+      console.log('🔄 Syncing database → JSON files...');
+      await sync();
+      break;
+    case 'validate':
+      console.log('🔍 Validating translations...');
+      await validateCmd();
+      break;
+    case 'stats':
+      await stats();
+      break;
+    default:
+      console.log('Usage: node scripts/i18n-db.mjs <seed|sync|validate|stats>');
+      console.log('');
+      console.log('Commands:');
+      console.log('  seed      Import JSON files → SQLite database');
+      console.log('  sync      Export database → JSON files (with validation)');
+      console.log('  validate  Check for missing keys, typos, duplicates');
+      console.log('  stats     Show translation statistics');
+  }
+})().catch((err) => {
+  console.error('❌ Fatal error:', err.message);
+  process.exit(1);
+});
