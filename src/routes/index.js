@@ -223,6 +223,11 @@ export async function handleRoute(req, res, url, method, body) {
       return museController.generate(req, res);
     }
 
+    if (subPath === 'fill-input' && method === 'POST') {
+      req.body = body;
+      return museController.fillInput(req, res);
+    }
+
     // Task polling
     const taskMatch = subPath.match(/^task\/(.+)$/);
     if (taskMatch && method === 'GET') {
@@ -247,6 +252,11 @@ export async function handleRoute(req, res, url, method, body) {
     if (subPath === 'generate' && method === 'POST') {
       req.body = body;
       return meloController.generate(req, res);
+    }
+
+    if (subPath === 'fill-input' && method === 'POST') {
+      req.body = body;
+      return meloController.fillInput(req, res);
     }
 
     const meloTaskMatch = subPath.match(/^task\/(.+)$/);

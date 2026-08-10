@@ -79,7 +79,7 @@ const QUICK_LYRICS_TEMPLATES = [
 
 function MeloPage() {
   const { t } = useTranslation();
-  const { pendingLyrics, clearPendingLyrics, startSession, updateSession, appendLog, cancelSession, completeSession, activeSession, sessions } = useGeneration();
+  const { pendingLyrics, clearPendingLyrics, startSession, updateSession, appendLog, cancelSession, completeSession, activeSession, sessions, copyToClipboard, showToast } = useGeneration();
   const cancelRef = useRef(false);
 
   const [lyrics, setLyrics] = useState('');
@@ -189,6 +189,28 @@ function MeloPage() {
     return result;
   };
 
+  const copySessionItem = async (session) => {
+    const { params: p, lyrics: l } = session;
+    const text = [
+      `【Melo AI 生成记录】`,
+      `时间: ${new Date(session.startedAt).toLocaleString()}`,
+      p?.title ? `标题: ${p.title}` : '',
+      p?.structure ? `结构: ${p.structure}` : '',
+      p?.bpm ? `BPM: ${p.bpm}` : '',
+      p?.key ? `调性: ${p.key}` : '',
+      p?.timeSignature ? `拍号: ${p.timeSignature}` : '',
+      p?.styleTags?.length ? `风格标签 (${p.styleTags.length}个): ${p.styleTags.join(', ')}` : '',
+      '',
+      `【歌词内容】`,
+      l || '(空)',
+      '',
+      `【完整参数】`,
+      JSON.stringify(p, null, 2),
+    ].filter(Boolean).join('\n');
+    const ok = await copyToClipboard(text);
+    if (ok) showToast('已复制到剪贴板', 'success');
+  };
+
   const handleCancelGeneration = useCallback(() => {
     cancelRef.current = true;
     if (taskId) {
@@ -228,6 +250,23 @@ function MeloPage() {
       layers,
     };
 
+    // === DETAILED LOGGING for verification ===
+    // eslint-disable-next-line no-console
+    console.log('[MeloPage] handleGenerate clicked:', {
+      timestamp: new Date().toISOString(),
+      lyrics: fullLyrics,
+      title: params.title,
+      styleTags: params.styleTags,
+      bpm: params.bpm,
+      key: params.key,
+      timeSignature: params.timeSignature,
+      structure: params.structure,
+      audioWeight: params.audioWeight,
+      layers: params.layers,
+      styleTagsCount: styleTags.length,
+      fullParams: params,
+    });
+
     const session = startSession({
       type: 'song',
       engine: 'melo',
@@ -238,6 +277,28 @@ function MeloPage() {
 
     try {
       appendLog(session.id, 'info', `Submitting to Melo AI with ${styleTags.length} style tags...`);
+
+      // VISUAL BRIDGE: type the selected lyrics/lyrics-command into the
+      // h.51melo.com chat input field so the user can SEE the exact inputs on
+      // the h.51melo.com website — even when generation cannot complete due
+      // to insufficient credits. Best-effort: a failure here must NOT block
+      // the actual generation attempt.
+      setPollMessage('正在将歌词同步到 h.51melo.com...');
+      try {
+        const fillRes = await fetch('/api/melo/fill-input', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(params),
+        });
+        const fillData = await fillRes.json();
+        if (fillData?.success) {
+          appendLog(session.id, 'info', `歌词已同步到 h.51melo.com 聊天输入框（${String(fillData.data?.value || '').length} 字符）`);
+        } else {
+          appendLog(session.id, 'warn', `歌词同步到 h.51melo.com 失败：${fillData?.error || '未知原因'}（不影响生成）`);
+        }
+      } catch (fillErr) {
+        appendLog(session.id, 'warn', `歌词同步到 h.51melo.com 异常：${fillErr.message}（不影响生成）`);
+      }
 
       const response = await fetch('/api/melo/generate', {
         method: 'POST',
@@ -489,7 +550,7 @@ function MeloPage() {
     userInfo?.userInfo?.credit ??
     null;
   const credits = userCredits ?? meloStatus?.credits ?? 0;
-  const canGenerate = meloStatus?.configured && !generating && credits > 0;
+  const canGenerate = meloStatus?.configured && !generating;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -1106,15 +1167,15 @@ function MeloPage() {
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-gray-400" />
                   <h3 className="text-sm font-semibold text-white">生成历史</h3>
-                  <span className="text-[10px] text-gray-500">
+                  <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">
                     {sessions.filter(s => s.engine === 'melo' && (s.status === 'completed' || s.status === 'failed' || s.status === 'cancelled')).length} 条记录
                   </span>
                 </div>
               </div>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                 {sessions
                   .filter(s => s.engine === 'melo' && (s.status === 'completed' || s.status === 'failed' || s.status === 'cancelled'))
-                  .slice(0, 10)
+                  .slice(0, 15)
                   .map((session) => (
                     <div
                       key={session.id}
@@ -1136,33 +1197,48 @@ function MeloPage() {
                             <span className="text-xs font-medium text-white truncate">{session.title}</span>
                           </div>
                           <p className="text-[10px] text-gray-400 line-clamp-2 font-mono">
-                            {session.lyrics?.slice(0, 80)}{session.lyrics?.length > 80 ? '...' : ''}
+                            {session.lyrics?.slice(0, 100)}{session.lyrics?.length > 100 ? '...' : ''}
                           </p>
-                          <div className="flex items-center gap-2 mt-1.5 text-[10px] text-gray-500">
-                            <span>{new Date(session.startedAt).toLocaleTimeString()}</span>
+                          <div className="flex items-center gap-2 mt-1.5 text-[10px] text-gray-500 flex-wrap">
+                            <span>{new Date(session.startedAt).toLocaleString()}</span>
                             {session.duration && (
                               <span>· {session.duration}s</span>
                             )}
                             <span>· {session.params?.styleTags?.length || 0} tags</span>
+                            {session.params?.bpm && <span>· {session.params.bpm} BPM</span>}
+                            {session.params?.key && <span>· {session.params.key}</span>}
+                            {session.params?.structure && <span>· {session.params.structure}</span>}
+                            {session.status === 'failed' && session.error && (
+                              <span className="text-red-400">· 错误: {session.error}</span>
+                            )}
                           </div>
                         </div>
-                        {session.status === 'completed' && session.audioUrl && (
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <button
-                            onClick={() => {
-                              setGeneratedSong({
-                                title: session.result?.title || session.title,
-                                audioUrl: session.audioUrl,
-                                imageUrl: session.imageUrl,
-                                duration: session.result?.duration || 0,
-                                taskId: session.taskId,
-                              });
-                            }}
-                            className="flex-shrink-0 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
-                            title="Restore this song"
+                            onClick={() => copySessionItem(session)}
+                            className="p-2 rounded-lg bg-white/5 hover:bg-amber-500/20 text-gray-400 hover:text-amber-300 transition-all"
+                            title="复制完整记录（歌词+风格+参数）"
                           >
-                            <Play className="w-4 h-4 text-amber-400" />
+                            <Copy className="w-3.5 h-3.5" />
                           </button>
-                        )}
+                          {session.status === 'completed' && session.audioUrl && (
+                            <button
+                              onClick={() => {
+                                setGeneratedSong({
+                                  title: session.result?.title || session.title,
+                                  audioUrl: session.audioUrl,
+                                  imageUrl: session.imageUrl,
+                                  duration: session.result?.duration || 0,
+                                  taskId: session.taskId,
+                                });
+                              }}
+                              className="flex-shrink-0 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
+                              title="恢复此歌曲"
+                            >
+                              <Play className="w-3.5 h-3.5 text-amber-400" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

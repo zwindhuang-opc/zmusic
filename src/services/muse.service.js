@@ -200,6 +200,28 @@ export async function generateSong(params) {
 }
 
 /**
+ * Visual bridge: type the user-selected prompt/lyrics into the muse.top input
+ * field so the user can SEE the exact inputs on the muse.top website — even
+ * when generation cannot complete due to insufficient credits.
+ *
+ * This does NOT generate a song; it only fills the input for visual verification.
+ * Call this BEFORE generateSong() so the user sees the inputs appear on muse.top.
+ *
+ * @param {object} params
+ * @param {'quick'|'master'} [params.mode='quick'] - Which text to fill
+ * @param {string} [params.prompt] - Inspiration text (Quick Mode)
+ * @param {string} [params.lyrics] - Full lyrics (Master Mode)
+ * @returns {Promise<object>} { filled, matchedSelector, value, pageFound, mode }
+ */
+export async function fillInput(params) {
+  const r = await museFetch('fill-input', {
+    method: 'POST',
+    body: params,
+  });
+  return r.data;
+}
+
+/**
  * Poll a generation task's status.
  * @param {string} taskId - Task ID returned by generateSong()
  * @returns {Promise<object>} { status, audioUrl, imageUrl, title, ... }
@@ -258,17 +280,30 @@ export async function pollUntilDone(taskId, opts = {}) {
 
 /**
  * Get the logged-in user's current credit balance.
+ * Uses the SAME formula that muse.top's sidebar badge displays so the user
+ * sees the identical number they see on muse.top:
+ *   displayed = base credit + max(0, evaluationCreditPaid - evaluationCreditNoPaid)
+ * Verified 2026-08-09 via live DOM dump on https://muse.top/assets.
  * @returns {Promise<number|null>} Credit count, or null if unavailable.
  */
 export async function getCredits() {
   try {
     const status = await getStatus();
     const login = status?.data?.login || status?.login;
-    if (login) {
-      return login.totalCredits ?? login.credits ?? null;
+    if (login && typeof login.credits === 'number' && login.credits >= 0) {
+      // Prefer login.credits — backend already applied the correct formula
+      // (see muse.controller.js status endpoint).
+      return login.credits;
     }
     const user = await getUser();
-    return user?.memberInfo?.credit ?? user?.credit ?? null;
+    const mi = user?.memberInfo || user?.member_info || {};
+    if (mi) {
+      const base = mi.credit ?? user?.credit ?? user?.credits ?? 0;
+      const ep = mi.evaluationCreditPaid || 0;
+      const en = mi.evaluationCreditNoPaid || 0;
+      return base + Math.max(0, ep - en);
+    }
+    return null;
   } catch {
     return null;
   }
@@ -335,6 +370,7 @@ export default {
   getTemplates,
   getExplore,
   generateSong,
+  fillInput,
   generateMusic,
   getCredits,
   queryTask,

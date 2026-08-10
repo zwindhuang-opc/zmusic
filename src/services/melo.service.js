@@ -63,6 +63,31 @@ export async function generateSong(params) {
   return res.json();
 }
 
+/**
+ * Visual bridge: type the user-selected lyrics/lyrics-command into the
+ * h.51melo.com chat input field so the user can SEE the exact inputs on the
+ * h.51melo.com website — even when generation cannot complete due to
+ * insufficient credits.
+ *
+ * This does NOT generate a song; it only fills the chat input for visual
+ * verification. Call this BEFORE generateSong().
+ *
+ * @param {object} params - { lyrics, title, styleTags, bpm, key, timeSignature, layers }
+ * @returns {Promise<object>} { filled, matchedSelector, value, pageFound, composedPrompt }
+ */
+export async function fillInput(params) {
+  const res = await fetch(`${API_BASE}/fill-input`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || `Melo fill-input error: ${res.status}`);
+  }
+  return data.data;
+}
+
 export async function queryTask(taskId) {
   const res = await fetch(`${API_BASE}/task/${taskId}`);
   if (!res.ok) throw new Error(`Melo task error: ${res.status}`);
@@ -150,6 +175,7 @@ export default {
   getStatus,
   getUser,
   generateSong,
+  fillInput,
   generateMusic,
   waitForResult,
   queryTask,

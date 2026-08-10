@@ -40,10 +40,76 @@
 import crypto from 'node:crypto';
 import { config } from '../config/index.js';
 import Logger from '../utils/logger.js';
+import { extractMeloAuthFromPage, fillInputOnPage } from '../services/museCdpBridge.js';
 
 const logger = new Logger('MeloController');
 
-/** Whether Melo AI is configured (JWT present). */
+/** Cached Melo auth token: first from env, then from CDP (h.51melo.com tab). */
+let _meloTokenCache = config.meloApiKey || null;
+/** Metadata about the cached token (how it was obtained, expiry, etc.). */
+let _meloTokenInfo = {
+  source: config.meloApiKey ? 'env' : null,
+  userId: null,
+  lastCheckedAt: 0,
+  lastError: null,
+};
+
+/** Whether Melo AI is configured (JWT present — env OR CDP from browser tab). */
+function isMeloConfigured() {
+  return Boolean(_meloTokenCache && _meloTokenCache.length > 20);
+}
+
+/**
+ * Try to get a valid Melo auth token, using:
+ *   1. Env MELO_API_KEY (fast, persistent)
+ *   2. In-memory cache from a previous successful CDP extract
+ *   3. CDP extraction from the open h.51melo.com Edge tab
+ *
+ * When forceRefresh=true, re-read from CDP even if a cached token exists.
+ *
+ * @param {boolean} [forceRefresh] Skip CDP cache and re-read from browser
+ * @returns {Promise<string|null>} JWT or null
+ */
+async function resolveMeloToken(forceRefresh = false) {
+  if (!forceRefresh && _meloTokenCache && _meloTokenCache.length > 20) {
+    return _meloTokenCache;
+  }
+  if (config.meloApiKey && config.meloApiKey.length > 20) {
+    _meloTokenCache = config.meloApiKey;
+    _meloTokenInfo.source = 'env';
+    return _meloTokenCache;
+  }
+
+  // Primary CDP path: user has h.51melo.com open in the same Edge window
+  logger.info('[melo] Trying CDP extraction from h.51melo.com tab');
+  try {
+    const result = await extractMeloAuthFromPage();
+    if (result.token) {
+      _meloTokenCache = result.token;
+      _meloTokenInfo = {
+        source: 'cdp',
+        userId: result.userId,
+        lastCheckedAt: Date.now(),
+        lastError: null,
+      };
+      logger.info(
+        `[melo] Got auth_token from h.51melo.com tab via CDP: ` +
+        `userId=${result.userId || '?'} ` +
+        `jwtLen=${result.token.length}`
+      );
+      return _meloTokenCache;
+    } else {
+      _meloTokenInfo.lastError = result.error || 'Unknown CDP error';
+      logger.warn(`[melo] CDP token extraction failed: ${result.error}`);
+    }
+  } catch (e) {
+    _meloTokenInfo.lastError = e.message;
+    logger.warn(`[melo] CDP token extraction error: ${e.message}`);
+  }
+  return null;
+}
+
+/** @deprecated — use isMeloConfigured() instead. Kept for backward compat. */
 const MELO_CONFIGURED = Boolean(config.meloApiKey);
 
 /** Real Melo API host (api.51melo.com, NOT melo.bytedance.com). */
@@ -83,12 +149,13 @@ function meloAgentUrl(path) {
 
 /**
  * Standard headers for a Melo API call.
- * @param {string} [token] - Override JWT (defaults to env)
- * @returns {object} Headers object
+ * @param {string} [token] - Override JWT (defaults to resolving via CDP/env cache)
+ * @returns {Promise<object>} Headers object
  */
-function meloHeaders(token = config.meloApiKey) {
+async function meloHeaders(token = null) {
+  const t = token || await resolveMeloToken();
   return {
-    'Authorization': `Bearer ${token}`,
+    ...(t ? { 'Authorization': `Bearer ${t}` } : {}),
     'Content-Type': 'application/json',
     'Origin': 'https://h.51melo.com',
     'Referer': 'https://h.51melo.com/',
@@ -114,21 +181,40 @@ export class MeloController {
    * GET /api/melo/status
    * Reports configuration status + REAL credit balance from the Melo API.
    *
+   * AUTH RESOLUTION (priority order):
+   *   1. .env MELO_API_KEY (if set)
+   *   2. In-memory cache from a previous CDP extract
+   *   3. CDP extraction from open h.51melo.com Edge tab (localStorage['auth_token'])
+   *
    * — NEVER guesses or hardcodes credits: always queries /serv/api/v1/auth/me
    *   and returns whatever credit value the API actually reports.
    * — configured=true ONLY when the real Melo API accepts our JWT and returns
    *   a valid user profile (with the credit field).
    */
   async status(req, res) {
+    // 1. Try to resolve the Melo JWT (env → cache → CDP tab)
+    let tokenResolveError = null;
+    let hasToken = isMeloConfigured();
+    if (!hasToken) {
+      try {
+        const t = await resolveMeloToken(true); // force re-check CDP on status
+        hasToken = Boolean(t);
+      } catch (e) {
+        tokenResolveError = e.message;
+        logger.warn(`[melo/status] resolveMeloToken failed: ${e.message}`);
+      }
+    }
+
     let user = null;
-    let apiError = null;
+    let apiError = tokenResolveError;
     let rawStatus = null;
 
-    if (MELO_CONFIGURED) {
+    if (hasToken) {
       try {
+        const headers = await meloHeaders();
         const response = await fetch(meloUrl('/serv/api/v1/auth/me'), {
           method: 'GET',
-          headers: meloHeaders(),
+          headers,
         });
         rawStatus = response.status;
         const raw = await response.json();
@@ -142,8 +228,13 @@ export class MeloController {
         }
       } catch (e) {
         logger.warn(`[melo/status] /auth/me failed: ${e.message}`);
-        apiError = e.message;
+        apiError = apiError || e.message;
       }
+    } else if (!apiError) {
+      apiError =
+        'No Melo auth token found. ' +
+        'Please set MELO_API_KEY in .env OR open h.51melo.com and log in ' +
+        'on the same Edge browser window you use for ZMusic.';
     }
 
     // Extract the REAL spendable credit number from the API response.
@@ -169,7 +260,19 @@ export class MeloController {
       configured,
       host: MELO_HOST,
       engine: 'Melo AI',
-      hasKey: MELO_CONFIGURED,
+      hasKey: hasToken,
+      auth: {
+        source: _meloTokenInfo.source || 'none',
+        userId: _meloTokenInfo.userId,
+        lastCheckedAt: _meloTokenInfo.lastCheckedAt,
+        resolveError: _meloTokenInfo.lastError,
+      },
+      cdp: {
+        port: 9222,
+        browserType: 'Edge (existing)',
+        // h.51melo.com tab must be open in same Edge window for CDP to work
+        method: 'Read localStorage["auth_token"] from h.51melo.com tab',
+      },
       apiError,
       credits,
       rawUser: user,
@@ -189,17 +292,23 @@ export class MeloController {
    * Fetch user profile + credit balance from /serv/api/v1/auth/me.
    */
   async getUser(req, res) {
-    if (!MELO_CONFIGURED) {
+    const token = await resolveMeloToken();
+    if (!token) {
       return res.status(503).json({
         success: false,
-        error: 'Melo AI API not configured. Set MELO_API_KEY in environment.',
+        error:
+          'Melo AI API not configured. ' +
+          'Set MELO_API_KEY in environment OR open h.51melo.com and ' +
+          'log in on the same Edge browser window you use for ZMusic.',
+        authSource: _meloTokenInfo.source || 'none',
+        authError: _meloTokenInfo.lastError || null,
       });
     }
 
     try {
       const response = await fetch(meloUrl('/serv/api/v1/auth/me'), {
         method: 'GET',
-        headers: meloHeaders(),
+        headers: await meloHeaders(token),
       });
       const raw = await response.json();
       if (raw?.status !== 20000) {
@@ -212,6 +321,106 @@ export class MeloController {
       return res.json({ success: true, data: raw.data });
     } catch (e) {
       logger.error(`[getUser] Error: ${e.message}`);
+      return res.status(502).json({ success: false, error: e.message });
+    }
+  }
+
+  /**
+   * POST /api/melo/fill-input
+   * Visual bridge: type the user-selected lyrics/lyrics-command into the
+   * h.51melo.com chat input field so the user can SEE the exact inputs being
+   * passed — even when generation cannot complete due to insufficient credits.
+   *
+   * h.51melo.com is a CHAT interface (not a form), so we compose a natural-
+   * language "lyrics command" from the structured inputs ZMusic collected
+   * (lyrics + style tags + musical hints) and drop it into the chat box.
+   *
+   * Body: { lyrics, title, styleTags, bpm, key, timeSignature, layers }
+   * Response: { success, data: { filled, matchedSelector, value, pageFound, composedPrompt } }
+   */
+  async fillInput(req, res) {
+    const {
+      lyrics = '',
+      title = '',
+      styleTags = [],
+      bpm,
+      key: audioKey,
+      timeSignature,
+      layers = {},
+    } = req.body || {};
+
+    if (!lyrics || !String(lyrics).trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Lyrics required to fill h.51melo.com chat input',
+      });
+    }
+
+    // Compose a natural-language lyrics command for Melo's chat interface.
+    // Melo understands free-form Chinese prompts, so we assemble a clear
+    // instruction that mirrors what the user selected on the ZMusic Melo page.
+    const lyricsStr = Array.isArray(lyrics) ? lyrics.join('\n') : String(lyrics);
+    const styleArr = Array.isArray(styleTags) ? styleTags.filter(Boolean) : [];
+    const parts = [];
+
+    // Optional layer directives (Foundation/Melody/Expression/Effects)
+    const layerLines = ['foundation', 'melody', 'expression', 'effects']
+      .map((k) => (layers[k] && String(layers[k]).trim()) ? String(layers[k]).trim() : null)
+      .filter(Boolean);
+
+    if (title) parts.push(`歌名：《${title}》`);
+    if (styleArr.length) parts.push(`风格标签：${styleArr.join('、')}`);
+
+    const hints = [];
+    if (bpm) hints.push(`${bpm}BPM`);
+    if (audioKey) hints.push(`调性${audioKey}`);
+    if (timeSignature) hints.push(`${timeSignature}`);
+    if (hints.length) parts.push(`音乐参数：${hints.join('，')}`);
+
+    // Assemble the final chat prompt: instruction + lyrics (+ layer directives)
+    let composedPrompt = '请根据以下信息创作歌曲：\n';
+    if (parts.length) composedPrompt += parts.join('\n') + '\n';
+    composedPrompt += `\n【歌词】\n${lyricsStr}`;
+    if (layerLines.length) composedPrompt += `\n\n【分层指令】\n${layerLines.join('\n\n')}`;
+
+    try {
+      // h.51melo.com's chat input has placeholder "有什么要补充的..."
+      // We target the chat-detail page specifically (not the mine/index page).
+      // fallbackUrl: if only the /pages/mine tab is open (no chat page),
+      // navigate it to the chat entry so the user can see the inputs appear.
+      const result = await fillInputOnPage('51melo.com', '补充', composedPrompt, 'https://h.51melo.com/');
+
+      if (!result.pageFound) {
+        logger.warn('[fill-input] h.51melo.com chat tab not open in Edge browser');
+        return res.status(409).json({
+          success: false,
+          error: 'h.51melo.com chat page is not open in the Edge browser. Please open https://h.51melo.com/ and start a chat first.',
+          data: { pageFound: false },
+        });
+      }
+
+      if (!result.success) {
+        logger.warn(`[fill-input] Failed to fill Melo chat input: ${result.error}`);
+        return res.status(502).json({
+          success: false,
+          error: `Could not fill h.51melo.com chat input: ${result.error}`,
+          data: result,
+        });
+      }
+
+      logger.info(`[fill-input] Filled Melo chat input (${String(result.value).length} chars) via ${result.matchedSelector}`);
+      return res.json({
+        success: true,
+        data: {
+          filled: true,
+          matchedSelector: result.matchedSelector,
+          value: result.value,
+          pageFound: true,
+          composedPrompt,
+        },
+      });
+    } catch (e) {
+      logger.error(`[fill-input] Exception: ${e.message}`);
       return res.status(502).json({ success: false, error: e.message });
     }
   }
@@ -251,17 +460,28 @@ export class MeloController {
     } = req.body || {};
 
     // --- Validate input ---------------------------------------------------
-    if (!lyrics || (Array.isArray(lyrics) ? lyrics.join('') : lyrics).trim().length < 5) {
+    // Melo's API requires lyrics to be non-empty AND exceed 50 characters.
+    // We enforce this client-side so the user gets a clear message instead
+    // of a generic API rejection.
+    const lyricsStrForCheck = Array.isArray(lyrics) ? lyrics.join('') : String(lyrics || '');
+    if (lyricsStrForCheck.trim().length < 10) {
       return res.status(400).json({
         success: false,
-        error: '歌词不能为空，至少需要5个字符',
+        error: `歌词不能为空且必须至少10个字符（当前: ${lyricsStrForCheck.trim().length}个字符）`,
       });
     }
 
-    if (!MELO_CONFIGURED) {
+    // --- Check auth token -------------------------------------------------
+    const token = await resolveMeloToken();
+    if (!token) {
       return res.status(503).json({
         success: false,
-        error: 'Melo AI API not configured. Set MELO_API_KEY in environment.',
+        error:
+          'Melo AI API not configured. ' +
+          'Set MELO_API_KEY in environment OR open h.51melo.com and ' +
+          'log in on the same Edge browser window you use for ZMusic.',
+        authSource: _meloTokenInfo.source || 'none',
+        authError: _meloTokenInfo.lastError || null,
       });
     }
 
@@ -311,7 +531,7 @@ export class MeloController {
     try {
       const response = await fetch(meloAgentUrl('/agent/api/v1/music/generate'), {
         method: 'POST',
-        headers: meloHeaders(),
+        headers: await meloHeaders(token),
         body: JSON.stringify(genBody),
       });
 
@@ -383,17 +603,22 @@ export class MeloController {
       });
     }
 
-    if (!MELO_CONFIGURED) {
+    const token = await resolveMeloToken();
+    if (!token) {
       return res.status(503).json({
         success: false,
-        error: 'Melo AI API not configured.',
+        error:
+          'Melo AI API not configured. ' +
+          'Set MELO_API_KEY in environment OR open h.51melo.com and ' +
+          'log in on the same Edge browser window you use for ZMusic.',
+        taskId,
       });
     }
 
     try {
       const response = await fetch(meloUrl(`/serv/api/v1/queue/${taskId}`), {
         method: 'GET',
-        headers: meloHeaders(),
+        headers: await meloHeaders(token),
       });
 
       const rawText = await response.text();

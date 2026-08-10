@@ -19,7 +19,7 @@ function getHeaders() {
 async function proxyFetch(path, options = {}) {
   const url = `${SUNO_BASE}${path}`;
   logger.info(`Suno proxy: ${options.method || 'GET'} ${path}`);
-  
+
   const response = await fetch(url, {
     ...options,
     headers: { ...getHeaders(), ...options.headers }
@@ -110,22 +110,40 @@ export class SunoController {
 
   async generate(req, res) {
     try {
-      const { prompt, style, duration, customMode, instrumental } = req.body || {};
+      const { prompt, style, duration, customMode, instrumental, title } = req.body || {};
+
+      // Build the Suno generate body. Include title and duration when provided
+      // so the generated song has the correct name and length.
       const body = {
         prompt,
         mv: 'chirp-fenix',
         tags: style || undefined,
         custom_mode: customMode || false,
-        instrumental: instrumental || false
+        instrumental: instrumental || false,
+        ...(title ? { title } : {}),
+        ...(duration ? { duration: Number(duration) } : {}),
       };
+
+      logger.info(`[suno/generate] prompt="${(prompt || '').substring(0, 50)}..." style="${style || ''}" title="${title || ''}" duration=${duration || 'n/a'}`);
+      logger.debug(`[suno/generate] Body: ${JSON.stringify(body)}`);
 
       const { status, data } = await proxyFetch('/mcp/api/generate', {
         method: 'POST',
         body: JSON.stringify(body)
       });
 
+      // Log the full response so we can see exactly why generation fails
+      // (insufficient credits, invalid prompt, rate limit, etc.)
+      const dataStr = typeof data === 'string' ? data : JSON.stringify(data);
+      if (status >= 400 || (data && data.error)) {
+        logger.error(`[suno/generate] HTTP ${status} | error=${data?.error || data?.message || data?.msg || dataStr?.substring(0, 200)}`);
+      } else {
+        logger.info(`[suno/generate] HTTP ${status} | response=${dataStr?.substring(0, 300)}`);
+      }
+
       res.status(status).json(data);
     } catch (err) {
+      logger.error(`[suno/generate] Exception: ${err.message}`);
       res.status(502).json({ error: `Suno backend error: ${err.message}` });
     }
   }

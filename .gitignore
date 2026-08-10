@@ -86,6 +86,7 @@ netlify/functions/api/VERSION.json
 # GitHub auth temp files
 .gh_auth_output.txt
 .gh_refresh.txt
+temp_jwt.txt
 
 # Python vision model (auto-downloaded, ~12MB) — DO NOT commit
 services/vision/models/*.onnx

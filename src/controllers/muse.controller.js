@@ -27,7 +27,7 @@
 import { config } from '../config/index.js';
 import Logger from '../utils/logger.js';
 import { createRequire } from 'module';
-import { connectCDP, fetchFromEdge, checkLogin as cdpCheckLogin, extractAuthToken, disconnect as cdpDisconnect } from '../services/museCdpBridge.js';
+import { connectCDP, fetchFromEdge, checkLogin as cdpCheckLogin, extractAuthToken, disconnect as cdpDisconnect, startKeepalive, recoverSession, updateKeepaliveToken, readDisplayedCredit, fillInputOnPage } from '../services/museCdpBridge.js';
 
 const require = createRequire(import.meta.url);
 const logger = new Logger('MuseController');
@@ -38,6 +38,10 @@ const MUSE_HOST = (config.museBaseUrl || 'https://project-api.atmob.com').replac
 const MUSE_APP_KEY = config.museAppKey || '8e33a5e60ef347df808d14026f27d227';
 /** User auth JWT (fallback when CDP is unavailable). */
 let MUSE_TOKEN = config.museApiKey || '';
+// Sync token to keepalive for DIRECT-based keepalive pings
+if (MUSE_TOKEN && MUSE_TOKEN.length > 20) {
+  updateKeepaliveToken(MUSE_TOKEN);
+}
 /** Whether CDP bridge is available and connected. */
 let cdpReady = false;
 /** Cached login info from CDP. */
@@ -79,6 +83,14 @@ async function ensureCDP() {
         ` error=${li.error || 'n/a'} responseBody=${li.responseBody || li.rawBody || 'n/a'}`
       );
     }
+
+    // Start session keepalive — pings every 5 minutes to prevent expiry.
+    // Also auto-recovers sessions when loginStatus=0 is detected.
+    try {
+      startKeepalive(300000); // 5 minutes
+      logger.info('[CDP] Session keepalive started (5-min interval)');
+    } catch { /* best-effort */ }
+
     return true;
   } catch (e) {
     logger.warn(`[CDP] Failed to connect: ${e.message}`);
@@ -95,18 +107,21 @@ async function ensureCDP() {
  * @param {object} [body] - POST body
  * @returns {Promise<{status:number, data:object|null, error?:string}>}
  */
-async function museCallViaCDP(path, body = {}) {
+async function museCallViaCDP(path, body = {}, timeoutMs = 60000) {
   const url = `${MUSE_HOST}${path}`;
-  logger.info(`[CDP] -> POST ${path}`);
+  logger.info(`[CDP] -> POST ${path} (timeout=${timeoutMs}ms)`);
 
   const loginInfo = cachedLoginInfo || await cdpCheckLogin();
 
   // Extract the AuthToken JWT from the browser's localStorage. The muse.top
   // API gateway requires this header — cookies alone yield code=1006.
   const tokenInfo = await extractAuthToken();
-  const authToken = tokenInfo.token;
+  const authToken = tokenInfo.token || loginInfo.authToken;
 
-  // Build full request body with base fields
+  // Build full request body with base fields.
+  // IMPORTANT: muse.top's web app includes `authToken` in the REQUEST BODY
+  // as well as in the AuthToken header. We replicate this behavior to match
+  // the web app's request format exactly.
   const fullBody = {
     packageName: 'com.xingchat.web.muse',
     appPlatform: 4,
@@ -114,6 +129,7 @@ async function museCallViaCDP(path, body = {}) {
     machineId: loginInfo.deviceId || 'zmusic-cdp',
     timestamp: Math.floor(Date.now() / 1000),
     nonce: 'zmusic' + Math.random().toString(36).substring(2, 10),
+    ...(authToken ? { authToken } : {}),
     ...(loginInfo.ssid ? { sid: loginInfo.ssid } : {}),
     ...body,
   };
@@ -122,6 +138,7 @@ async function museCallViaCDP(path, body = {}) {
     method: 'POST',
     body: fullBody,
     authToken,
+    timeoutMs,
   });
 
   if (result.error) {
@@ -159,9 +176,24 @@ async function museCallViaCDP(path, body = {}) {
  * @returns {Promise<{status:number, data:object|null, error?:string}>}
  */
 async function museCallDirect(path, body = {}) {
+  // Try to refresh MUSE_TOKEN from the browser before each DIRECT call.
+  // When the user re-logs in on muse.top, the browser gets a fresh JWT in
+  // localStorage. We extract it here so DIRECT calls use the live token,
+  // not the stale one from .env.
+  try {
+    const freshToken = await extractAuthToken();
+    if (freshToken?.token && freshToken.token.length > 100 && freshToken.token !== MUSE_TOKEN) {
+      logger.info(`[DIRECT] Refreshed MUSE_TOKEN from browser (source=${freshToken.source}, len=${freshToken.token.length})`);
+      MUSE_TOKEN = freshToken.token;
+      updateKeepaliveToken(MUSE_TOKEN);
+    }
+  } catch { /* extraction failure is non-fatal — fall through to .env token */ }
+
   const url = `${MUSE_HOST}${path}`;
   logger.info(`[DIRECT] -> POST ${path} (auth=MUSE_API_KEY len=${MUSE_TOKEN.length})`);
 
+  // Build full request body. Like the CDP path, include authToken in the
+  // body to match muse.top's web app request format.
   const fullBody = {
     packageName: 'com.xingchat.web.muse',
     appPlatform: 4,
@@ -169,6 +201,7 @@ async function museCallDirect(path, body = {}) {
     machineId: 'zmusic-direct',
     timestamp: Math.floor(Date.now() / 1000),
     nonce: 'zmusic' + Math.random().toString(36).substring(2, 10),
+    ...(MUSE_TOKEN ? { authToken: MUSE_TOKEN } : {}),
     ...body,
   };
 
@@ -203,39 +236,95 @@ async function museCallDirect(path, body = {}) {
 }
 
 /**
- * Unified Muse API call — tries CDP first, then falls back to DIRECT.
- * This is the function all endpoints should use going forward, so neither
- * the user nor the system ever sees a spurious "login expired" error
- * just because the CDP bridge can't extract the AuthToken from the DOM.
+ * Unified Muse API call with smart routing.
+ *
+ * For GENERATION calls (POST /song/*): MUST use CDP because the Muse server
+ * requires a live browser session (cookies + server-side session). DIRECT
+ * HTTP never works for generation — the server always returns code=1006.
+ *
+ * For STATUS calls (POST /user/info, etc.): DIRECT is faster and more reliable.
+ * Falls back to CDP only if DIRECT fails.
  *
  * @param {string} path - API path
  * @param {object} [body] - POST body
+ * @param {object} [options] - { isGeneration?: boolean, timeoutMs?: number }
  * @returns {Promise<{status:number, data:object|null, error?:string, via:string}>}
  */
-async function museCall(path, body = {}) {
-  // 1) Try CDP first (browser context, auto-refreshes cookies)
-  let via = 'cdp';
-  let result = { status: 0, data: null, error: 'cdp not available' };
+async function museCall(path, body = {}, options = {}) {
+  const { isGeneration = false, timeoutMs = 60000 } = options;
+
+  // --- GENERATION: CDP PRIMARY (browser session is mandatory) -------------
+  if (isGeneration) {
+    try {
+      const cdpOk = await ensureCDP();
+      if (cdpOk) {
+        logger.info(`[MUSE] GEN: Using CDP-primary for ${path}`);
+        const result = await museCallViaCDP(path, body, timeoutMs);
+        if (result.data?.code === 0) {
+          return { ...result, via: 'cdp' };
+        }
+        // If code=1006, try recovery
+        if (result.data?.code === 1006) {
+          logger.warn(`[MUSE] GEN: CDP returned code=1006 — recovering...`);
+          const recovered = await recoverSession();
+          if (recovered) {
+            logger.info(`[MUSE] GEN: Recovered! Retrying...`);
+            const retry = await museCallViaCDP(path, body, timeoutMs);
+            if (retry.data?.code === 0) {
+              return { ...retry, via: 'cdp-recovered' };
+            }
+          }
+        }
+        return { ...result, via: 'cdp' };
+      }
+    } catch (e) {
+      logger.warn(`[MUSE] GEN: CDP failed: ${e.message}`);
+    }
+    // CDP not available — can't generate. Return error
+    return { status: 0, data: null, error: 'CDP not available — Edge must run with --remote-debugging-port=9222' };
+  }
+
+  // --- STATUS/CREDIT: DIRECT PRIMARY (fast, reliable) ---------------------
+  let via = 'direct';
+  let result = { status: 0, data: null, error: null };
+  const haveDirectKey = Boolean(MUSE_TOKEN && MUSE_TOKEN.length > 100);
+
+  if (haveDirectKey) {
+    result = await museCallDirect(path, body);
+    if (result.data?.code === 0) {
+      return { ...result, via };
+    }
+    if (result.data?.code === 1006) {
+      logger.warn(`[MUSE] STATUS: DIRECT code=1006 — recovering...`);
+      try {
+        const recovered = await recoverSession();
+        if (recovered) {
+          result = await museCallDirect(path, body);
+          if (result.data?.code === 0) {
+            return { ...result, via: 'direct-recovered' };
+          }
+        }
+      } catch (e) {
+        logger.warn(`[MUSE] STATUS: Recovery error: ${e.message}`);
+      }
+    }
+  }
+
+  // Fall back to CDP for status
   try {
     const cdpOk = await ensureCDP();
     if (cdpOk) {
-      result = await museCallViaCDP(path, body);
+      const cdpResult = await museCallViaCDP(path, body, 15000);
+      if (cdpResult.data?.code === 0) {
+        return { ...cdpResult, via: 'cdp' };
+      }
+      return { ...cdpResult, via: 'cdp' };
     }
   } catch (e) {
-    logger.warn(`[MUSE] CDP call failed: ${e.message} — trying DIRECT fallback`);
+    logger.warn(`[MUSE] STATUS: CDP fallback failed: ${e.message}`);
   }
 
-  // 2) If CDP gave a code=1006 or failed AND we have a MUSE_API_KEY, fall back
-  const cdpFailed = !result.data || result.data?.code === 1006 || result.error;
-  const haveDirectKey = Boolean(MUSE_TOKEN && MUSE_TOKEN.length > 100);
-
-  if (cdpFailed && haveDirectKey) {
-    via = 'direct';
-    logger.info('[MUSE] Switching to DIRECT fallback (MUSE_API_KEY from .env)');
-    result = await museCallDirect(path, body);
-  }
-
-  return { ...result, via };
+  return haveDirectKey ? { ...result, via } : { ...{ status: 0, data: null, error: 'CDP not available' }, via: 'cdp' };
 }
 
 /**
@@ -247,6 +336,7 @@ function refreshEnvToken() {
     // Force a re-read of config — or just accept the config.museApiKey
     if (config.museApiKey && config.museApiKey !== MUSE_TOKEN) {
       MUSE_TOKEN = config.museApiKey;
+      updateKeepaliveToken(MUSE_TOKEN);
       logger.info(`[MUSE] MUSE_API_KEY refreshed from config (len=${MUSE_TOKEN.length})`);
     }
   } catch { /* ignore */ }
@@ -273,68 +363,136 @@ export class MuseController {
     const cdpConnected = await ensureCDP();
     const haveDirectKey = Boolean(MUSE_TOKEN && MUSE_TOKEN.length > 100);
 
-    // --- Step 1: primary credit source — CDP --------------------------------
-    let loginInfo = cachedLoginInfo;
-    if (cdpConnected) {
-      try {
-        loginInfo = await cdpCheckLogin();
-        cachedLoginInfo = loginInfo;
-      } catch { /* swallow — fall through to direct API */ }
-    }
-
-    // --- Step 2: if CDP didn't yield valid credits, DIRECT fallback ---------
+    // --- PRIMARY: Direct API (more reliable than CDP bridge) ----------------
+    // The CDP bridge (Runtime.evaluate with awaitPromise) frequently times out
+    // on the user's Edge browser, causing spurious "Not connected" errors.
+    // The DIRECT path using MUSE_API_KEY from .env is faster and more reliable.
+    // We use CDP only as a secondary source and for session recovery.
+    let login = null;
     let userFromDirect = null;
-    const cdpCreditsOk = loginInfo && loginInfo.loggedIn && typeof loginInfo.credits === 'number' && loginInfo.credits >= 0;
-    if (!cdpCreditsOk && haveDirectKey) {
+
+    if (haveDirectKey) {
       try {
         const r = await museCallDirect('/project/song/v1/user/info');
         if (r.data?.code === 0 && r.data?.data) {
           userFromDirect = r.data.data;
+          const d = userFromDirect;
+          const mi = d.memberInfo || d.member_info || {};
+
+          // --- LOG ALL RAW FIELDS (no more guessing!) ---
+          logger.info(`[status] RAW API FIELDS: credit=${d.credit} mi.credit=${mi.credit} ep=${mi.evaluationCreditPaid} en=${mi.evaluationCreditNoPaid} liveCredit=${mi.liveCredit} loginStatus=${d.loginStatus}`);
+
+          // Try to read the ACTUAL displayed credit from the browser
+          // This reads the sidebar DOM / localStorage profile
+          let displayedCredit = mi.credit ?? d.credit ?? 0;
+          let creditSource = 'api_raw';
+
+          if (cdpConnected) {
+            try {
+              const readResult = await readDisplayedCredit();
+              if (readResult.credit > 0) {
+                displayedCredit = readResult.credit;
+                creditSource = readResult.source;
+                logger.info(`[status] CDP DOM credit=${displayedCredit} (source: ${creditSource})`);
+              }
+            } catch { /* DOM read failed — use API raw */ }
+          }
+
+          login = {
+            loggedIn: true,
+            loginStatus: d.loginStatus ?? 1,
+            credits: displayedCredit,
+            liveCredit: mi.credit ?? d.credit ?? 0,
+            evaluationCreditPaid: mi.evaluationCreditPaid ?? 0,
+            evaluationCreditNoPaid: mi.evaluationCreditNoPaid ?? 0,
+            isMember: mi.isMember || mi.paidMember || d.isMember || false,
+            membershipExpired: mi.subscription?.expired ?? false,
+            sessionExpired: (d.loginStatus || 0) === 0,
+            source: creditSource,
+          };
+          cachedLoginInfo = { ...cachedLoginInfo, ...d, credits: displayedCredit };
+          logger.info(`[status] Final credit: ${displayedCredit} (source: ${creditSource})`);
         }
-      } catch { /* swallow — configured=false below */ }
+      } catch (e) {
+        logger.warn(`[status] Direct API failed: ${e.message}`);
+      }
     }
 
-    // Build the final login object from whichever source actually worked.
-    // CRITICAL: the single source of truth for spendable credit is
-    // `memberInfo.credit` (as reported by muse.top). We explicitly DO NOT
-    // add evaluation credits to this number — they are tracked separately.
-    let login = null;
-    if (cdpCreditsOk) {
-      login = {
-        loggedIn: true,
-        loginStatus: loginInfo.loginStatus || 1,
-        credits: loginInfo.credits ?? 0,
-        evaluationCreditPaid: loginInfo.evaluationCreditPaid || 0,
-        evaluationCreditNoPaid: loginInfo.evaluationCreditNoPaid || 0,
-        isMember: loginInfo.isMember || false,
-        membershipExpired: loginInfo.membershipExpired || false,
-        source: 'cdp',
-      };
-    } else if (userFromDirect) {
-      const mi = userFromDirect.memberInfo || userFromDirect.member_info || {};
-      login = {
-        loggedIn: true,
-        loginStatus: 1,
-        credits: mi.credit ?? userFromDirect.credit ?? userFromDirect.credits ?? 0,
-        evaluationCreditPaid: mi.evaluationCreditPaid || 0,
-        evaluationCreditNoPaid: mi.evaluationCreditNoPaid || 0,
-        isMember: mi.isMember || mi.paidMember || userFromDirect.isMember || false,
-        membershipExpired: mi.subscription?.expired ?? false,
-        source: 'direct',
-      };
-      // Update cache so subsequent calls skip the work.
-      cachedLoginInfo = {
-        ...cachedLoginInfo, ...userFromDirect,
-        credits: login.credits,
-        evaluationCreditPaid: login.evaluationCreditPaid,
-        evaluationCreditNoPaid: login.evaluationCreditNoPaid,
-        isMember: login.isMember,
-        membershipExpired: login.membershipExpired,
-      };
+    // --- SECONDARY: If DIRECT failed, try CDP -------------------------------
+    if (!login && cdpConnected) {
+      try {
+        const loginInfo = await cdpCheckLogin();
+        if (loginInfo?.loggedIn) {
+          // Read the ACTUAL credit from the browser's localStorage profile
+          // This is exactly what the Muse sidebar displays
+          const mi = loginInfo.memberInfo || {};
+          const cachedCredit = mi.credit ?? loginInfo.credits ?? 0;
+
+          login = {
+            loggedIn: true,
+            loginStatus: loginInfo.loginStatus || 1,
+            credits: cachedCredit,
+            liveCredit: loginInfo.liveCredit ?? cachedCredit,
+            evaluationCreditPaid: loginInfo.evaluationCreditPaid ?? mi.evaluationCreditPaid ?? 0,
+            evaluationCreditNoPaid: loginInfo.evaluationCreditNoPaid ?? mi.evaluationCreditNoPaid ?? 0,
+            isMember: loginInfo.isMember || false,
+            membershipExpired: loginInfo.membershipExpired || false,
+            sessionExpired: (loginInfo.loginStatus || 0) === 0,
+            source: 'cdp_profile',
+          };
+          cachedLoginInfo = loginInfo;
+          logger.info(`[status] CDP credit: ${cachedCredit} (from browser profile)`);
+        }
+      } catch (e) {
+        logger.warn(`[status] CDP fallback also failed: ${e.message}`);
+      }
+    }
+
+    // --- AUTO-RECOVERY: If session expired, try to recover -----------------
+    if (login && (login.loginStatus || 0) === 0) {
+      logger.warn('[status] Session expired (loginStatus=0) — attempting auto-recovery...');
+      try {
+        const recovered = await recoverSession();
+        if (recovered) {
+          logger.info('[status] Session recovered successfully');
+          // Re-fetch via the primary path
+          if (haveDirectKey) {
+            const r = await museCallDirect('/project/song/v1/user/info');
+            if (r.data?.code === 0 && r.data?.data) {
+              const d = r.data.data;
+              login = {
+                ...login,
+                loginStatus: d.loginStatus ?? 1,
+                sessionExpired: (d.loginStatus || 0) === 0,
+              };
+              // Re-read displayed credit from browser after recovery
+              if (cdpConnected) {
+                try {
+                  const readResult = await readDisplayedCredit();
+                  if (readResult.credit > 0) {
+                    login.credits = readResult.credit;
+                    login.source = readResult.source;
+                  }
+                } catch { /* keep existing */ }
+              }
+            }
+          }
+        } else {
+          logger.warn('[status] Auto-recovery failed — user may need to re-login on muse.top');
+        }
+      } catch (e) {
+        logger.warn(`[status] Auto-recovery error: ${e.message}`);
+      }
+    }
+
+    // --- COMPUTE canGenerate flag ------------------------------------------
+    if (login) {
+      const sessionExpired = (login.loginStatus || 0) === 0;
+      login.sessionExpired = sessionExpired;
+      login.canGenerate = !sessionExpired;
     }
 
     // "configured" = we have real credentials that produced a valid credit
-    // number. A public app key alone does NOT count as configured.
     const configured = !!login && login.loggedIn;
 
     return res.json({
@@ -350,27 +508,29 @@ export class MuseController {
         hasKey: haveDirectKey,
       },
       login,
+      // Helpful message for the UI
+      note: !cdpConnected
+        ? 'CDP not connected. To read your actual credit balance from the browser, close all Edge windows and double-click "ZMusic-Edge" on your desktop to restart Edge with debugging enabled.'
+        : null,
     });
   }
 
   /**
    * GET /api/muse/user
-   * Fetch logged-in user's profile + credit balance via CDP.
+   * Fetch logged-in user's profile + credit balance.
    */
   async getUser(req, res) {
-    const cdpOk = true;
     try {
-      // Use unified museCall — tries CDP first, falls back to DIRECT
       const result = await museCall('/project/song/v1/user/info');
       if (result.data?.code === 0) {
+        const d = result.data.data || {};
+        const mi = d.memberInfo || {};
         cachedLoginInfo = {
           ...cachedLoginInfo,
-          ...result.data.data,
-          credits: result.data.data.memberInfo?.credit || result.data.data.credit || 0,
-          evaluationCreditPaid: result.data.data.memberInfo?.evaluationCreditPaid || 0,
-          evaluationCreditNoPaid: result.data.data.memberInfo?.evaluationCreditNoPaid || 0,
-          isMember: result.data.data.memberInfo?.isMember || false,
-          membershipExpired: result.data.data.memberInfo?.subscription?.expired || false,
+          ...d,
+          credits: mi.credit ?? d.credit ?? d.credits ?? 0,
+          isMember: mi.isMember || mi.paidMember || d.isMember || false,
+          membershipExpired: mi.subscription?.expired ?? false,
         };
       }
       return this.sendMuseResult(res, 'user/info', result);
@@ -448,6 +608,81 @@ export class MuseController {
   }
 
   /**
+   * POST /api/muse/fill-input
+   * Visual bridge: type the user-selected prompt/lyrics into the muse.top
+   * input field so the user can SEE the exact inputs being passed — even
+   * when generation cannot complete due to insufficient credits.
+   *
+   * Body: { mode, prompt, lyrics }
+   *   - quick mode  → fills muse.top with the inspiration `prompt`
+   *   - master mode → fills muse.top with the full `lyrics`
+   *
+   * Response: { success, data: { filled, matchedSelector, value, pageFound } }
+   */
+  async fillInput(req, res) {
+    const { mode = 'quick', prompt = '', lyrics = '' } = req.body || {};
+
+    // Decide what text to push into the muse.top input field.
+    const text = mode === 'master' ? lyrics : prompt;
+    if (!text || !text.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: mode === 'master' ? 'Lyrics required to fill muse.top input' : 'Prompt required to fill muse.top input',
+      });
+    }
+
+    try {
+      // muse.top's main input placeholder varies by browser locale:
+      //   English: "Enter your inspiration or lyrics, e.g.: ..."
+      //   Chinese: "输入你的灵感或歌词，如：一首关于青春回忆的歌曲"
+      // We match on multiple substrings so the bridge works regardless of
+      // the user's Edge language setting.
+      // fallbackUrl: if the only open muse.top tab is on a sub-route (e.g.
+      // /assets) that doesn't render the input, navigate it to the creation
+      // page so the user can see the inputs appear.
+      const result = await fillInputOnPage(
+        'muse.top',
+        ['inspiration', '灵感', '歌词'],
+        text,
+        'https://muse.top/'
+      );
+
+      if (!result.pageFound) {
+        logger.warn('[fill-input] muse.top tab not open in Edge browser');
+        return res.status(409).json({
+          success: false,
+          error: 'muse.top is not open in the Edge browser. Please open https://muse.top/ in a tab first.',
+          data: { pageFound: false },
+        });
+      }
+
+      if (!result.success) {
+        logger.warn(`[fill-input] Failed to fill muse.top input: ${result.error}`);
+        return res.status(502).json({
+          success: false,
+          error: `Could not fill muse.top input field: ${result.error}`,
+          data: result,
+        });
+      }
+
+      logger.info(`[fill-input] Filled muse.top input (${String(result.value).length} chars) via ${result.matchedSelector}`);
+      return res.json({
+        success: true,
+        data: {
+          filled: true,
+          matchedSelector: result.matchedSelector,
+          value: result.value,
+          pageFound: true,
+          mode,
+        },
+      });
+    } catch (e) {
+      logger.error(`[fill-input] Exception: ${e.message}`);
+      return res.status(502).json({ success: false, error: e.message });
+    }
+  }
+
+  /**
    * POST /api/muse/generate
    * Generate a song via the user's Edge browser context.
    * Body: { mode, prompt, lyrics, style, title, vocal, languageId, audioWeight, instrumental, structureId, songModel }
@@ -470,9 +705,8 @@ export class MuseController {
       return res.status(400).json({ success: false, error: 'Master mode requires lyrics' });
     }
 
-    // CDP + DIRECT FALLBACK: unified museCall handles both methods.
-    // When CDP returns code=1006 (login expired), it automatically falls back
-    // to .env MUSE_API_KEY — which the JWT debugger confirmed is valid until 2027.
+    // GENERATION: MUST use CDP (browser session required by Muse server)
+    // DIRECT HTTP always fails for generation with code=1006.
     try {
       refreshEnvToken(); // Pick up any .env updates
 
@@ -486,8 +720,8 @@ export class MuseController {
         body = { description: prompt, songModel, instrumental: instrumental ? 1 : 0, ...(style ? { style } : {}) };
       }
 
-      logger.info(`[generate/${mode}] Calling ${endpoint}...`);
-      const result = await museCall(endpoint, body);
+      logger.info(`[generate/${mode}] Calling ${endpoint} via CDP...`);
+      const result = await museCall(endpoint, body, { isGeneration: true, timeoutMs: 60000 });
 
       if (result.error) {
         logger.error(`[generate/${mode}] Error: ${result.error} (via=${result.via})`);
@@ -500,7 +734,23 @@ export class MuseController {
       }
 
       if (result.data?.code === 1006) {
-        logger.warn(`[generate/${mode}] LOGIN_EXPIRED even after CDP+DIRECT chain — token needs manual refresh in muse.top`);
+        logger.warn(`[generate/${mode}] Session expired — attempting auto-recovery...`);
+        try {
+          const recovered = await recoverSession();
+          if (recovered) {
+            logger.info(`[generate/${mode}] Session recovered! Retrying CDP generation...`);
+            const retryResult = await museCall(endpoint, body, { isGeneration: true, timeoutMs: 60000 });
+            if (retryResult.data?.code === 0) {
+              logger.info(`[generate/${mode}] Retry succeeded via ${retryResult.via}`);
+              return res.json({ success: true, data: retryResult.data.data, label: `generate/${mode}/${retryResult.via}/recovered`, generationMethod: retryResult.via });
+            }
+            logger.warn(`[generate/${mode}] Retry also failed: code=${retryResult.data?.code}`);
+            return this.sendMuseResult(res, `generate/${mode}/retry`, retryResult);
+          }
+        } catch (recoveryErr) {
+          logger.warn(`[generate/${mode}] Auto-recovery error: ${recoveryErr.message}`);
+        }
+        return this.sendMuseResult(res, `generate/${mode}`, result);
       }
 
       return this.sendMuseResult(res, `generate/${mode}`, result);

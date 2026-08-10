@@ -3,7 +3,8 @@ import {
   Cloud, Sparkles, Loader, Play, Pause, Clock, Users, CreditCard,
   AlertCircle, ChevronDown, Send, Disc3, Volume2, Download, Music,
   User, RefreshCw, X, ChevronRight, Mic, Wand2, Sliders, Tag,
-  ListMusic, Trash2, History, CheckCircle2, Loader2
+  ListMusic, Trash2, History, CheckCircle2, Loader2,
+  CheckCircle, XCircle, AlertTriangle, Copy
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import SunoService from '../services/suno.service.js';
@@ -56,7 +57,7 @@ function proxyAudioUrl(url) {
 
 function SunoPage() {
   const { t } = useTranslation();
-  const { pendingLyrics, clearPendingLyrics } = useGeneration();
+  const { pendingLyrics, clearPendingLyrics, startSession, updateSession, completeSession, sessions, copyToClipboard, showToast } = useGeneration();
 
   const [mode, setMode] = useState('prompt');
   const [prompt, setPrompt] = useState('');
@@ -236,13 +237,44 @@ function SunoPage() {
     // which proves the API integration is working. The user can see the
     // actual API response on screen.
 
+    const inputPrompt = mode === 'prompt' ? prompt : lyrics;
+    const params = {
+      mode,
+      inputPrompt,
+      finalStyle,
+      duration,
+      customMode,
+      instrumental,
+    };
+
+    // === DETAILED LOGGING for verification ===
+    // eslint-disable-next-line no-console
+    console.log('[SunoPage] handleGenerate clicked:', {
+      timestamp: new Date().toISOString(),
+      mode,
+      inputPrompt,
+      finalStyle,
+      duration,
+      customMode,
+      instrumental,
+      styleChips,
+      fullParams: params,
+    });
+
+    const session = startSession({
+      type: 'song',
+      engine: 'suno',
+      title: mode === 'prompt' ? prompt?.slice(0, 40) : 'Suno Song',
+      lyrics: inputPrompt,
+      params,
+    });
+
     setGenerating(true);
     setGenProgress(5);
     setGenStage('submitting');
     setActiveSteps({ submit: true, analyze: false, compose: false, complete: false });
 
     try {
-      const inputPrompt = mode === 'prompt' ? prompt : lyrics;
       const result = await SunoService.generateMusic(
         inputPrompt,
         finalStyle,
@@ -257,6 +289,13 @@ function SunoPage() {
         setGenProgress(25);
         setGenStage('analyzing');
         setActiveSteps({ submit: true, analyze: true, compose: false, complete: false });
+
+        updateSession(session.id, {
+          status: 'processing',
+          taskId: serialNo,
+          progress: 10,
+          logEntry: `Task created: ${serialNo}`,
+        });
 
         let taskResult = null;
         for (let attempt = 0; attempt < 20; attempt++) {
@@ -292,6 +331,11 @@ function SunoPage() {
           setGenStage('complete');
           setSuccessMsg('歌曲生成成功！');
 
+          completeSession(session.id, {
+            audioUrl,
+            result: songData,
+          });
+
           loadAudioList();
 
           setTimeout(() => {
@@ -308,6 +352,7 @@ function SunoPage() {
     } catch (e) {
       setError(e.message || '生成失败');
       setGenStage('failed');
+      completeSession(session.id, { error: e.message });
     } finally {
       setGenerating(false);
     }
@@ -380,6 +425,26 @@ function SunoPage() {
     a.download = `${title || 'suno-song'}.mp3`;
     a.target = '_blank';
     a.click();
+  };
+
+  const copySessionItem = async (session) => {
+    const { params: p, lyrics: l } = session;
+    const text = [
+      `【Suno AI 生成记录】`,
+      `时间: ${new Date(session.startedAt).toLocaleString()}`,
+      p?.mode === 'prompt' ? `模式: 描述生成` : `模式: 歌词生成`,
+      p?.mode === 'prompt' ? `描述词: ${p?.inputPrompt || ''}` : '',
+      p?.mode === 'lyrics' ? `歌词: ${p?.inputPrompt || ''}` : '',
+      p?.finalStyle ? `风格: ${p.finalStyle}` : '',
+      p?.duration ? `时长: ${p.duration}秒` : '',
+      p?.instrumental ? `纯乐器: 是` : '',
+      p?.customMode ? `自定义模式: 是` : '',
+      '',
+      `【完整参数】`,
+      JSON.stringify(p, null, 2),
+    ].filter(Boolean).join('\n');
+    const ok = await copyToClipboard(text);
+    if (ok) showToast('已复制到剪贴板', 'success');
   };
 
   const loadMoreHistory = () => {
@@ -1051,6 +1116,90 @@ function SunoPage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Generation History (Session-based) */}
+          {sessions && sessions.filter(s => s.engine === 'suno' && (s.status === 'completed' || s.status === 'failed' || s.status === 'cancelled')).length > 0 && (
+            <div className="glass p-5 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4 text-fuchsia-400" />
+                  <h3 className="text-sm font-semibold text-white">生成历史</h3>
+                  <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">
+                    {sessions.filter(s => s.engine === 'suno' && (s.status === 'completed' || s.status === 'failed' || s.status === 'cancelled')).length} 条记录
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {sessions
+                  .filter(s => s.engine === 'suno' && (s.status === 'completed' || s.status === 'failed' || s.status === 'cancelled'))
+                  .slice(0, 15)
+                  .map((session) => (
+                    <div
+                      key={session.id}
+                      className={`p-3 rounded-xl border transition-all ${session.status === 'completed' ? 'bg-emerald-500/5 border-emerald-500/20' :
+                          session.status === 'failed' ? 'bg-red-500/5 border-red-500/20' :
+                            'bg-gray-500/5 border-gray-500/20'
+                        }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            {session.status === 'completed' ? (
+                              <CheckCircle className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                            ) : session.status === 'failed' ? (
+                              <AlertTriangle className="w-3 h-3 text-red-400 flex-shrink-0" />
+                            ) : (
+                              <XCircle className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                            )}
+                            <span className="text-xs font-medium text-white truncate">{session.title}</span>
+                          </div>
+                          <p className="text-[10px] text-gray-400 line-clamp-2 font-mono">
+                            {session.lyrics?.slice(0, 100) || '(无输入内容)'}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1.5 text-[10px] text-gray-500 flex-wrap">
+                            <span>{new Date(session.startedAt).toLocaleString()}</span>
+                            {session.params?.mode && <span>· {session.params.mode === 'prompt' ? '描述' : '歌词'}</span>}
+                            {session.params?.finalStyle && <span>· 风格: {session.params.finalStyle}</span>}
+                            {session.params?.duration && <span>· {session.params.duration}秒</span>}
+                            {session.params?.instrumental && <span>· 纯乐器</span>}
+                            {session.status === 'failed' && session.error && (
+                              <span className="text-red-400">· 错误: {session.error}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => copySessionItem(session)}
+                            className="p-2 rounded-lg bg-white/5 hover:bg-fuchsia-500/20 text-gray-400 hover:text-fuchsia-300 transition-all"
+                            title="复制完整记录（输入+风格+参数）"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          {session.status === 'completed' && session.audioUrl && (
+                            <button
+                              onClick={() => {
+                                setGeneratedSong({
+                                  title: session.result?.title || session.title,
+                                  audioUrl: session.audioUrl,
+                                  duration: session.result?.duration || 0,
+                                  coverUrl: session.result?.coverUrl,
+                                  taskId: session.taskId,
+                                  style: session.result?.style,
+                                });
+                              }}
+                              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-fuchsia-400 transition-all"
+                              title="恢复此歌曲"
+                            >
+                              <Play className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
           )}
 

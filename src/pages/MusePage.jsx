@@ -4,7 +4,7 @@ import {
   Music2, User, CreditCard, AlertCircle, ChevronDown, Send,
   Disc3, Volume2, Copy, ExternalLink, Music, Download,
   Image, Wand2, Mic, BarChart3, RefreshCw, X, ChevronRight,
-  Globe, Type, Sliders, Languages
+  Globe, Type, Sliders, Languages, History, CheckCircle, XCircle
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import MuseService from '../services/muse.service.js';
@@ -186,7 +186,7 @@ function StyledSelect({ value, onChange, options, placeholder, icon }) {
 
 function MusePage() {
   const { t } = useTranslation();
-  const { pendingLyrics, clearPendingLyrics } = useGeneration();
+  const { pendingLyrics, clearPendingLyrics, startSession, updateSession, completeSession, sessions, copyToClipboard, showToast } = useGeneration();
 
   const [mode, setMode] = useState('quick');
   const [prompt, setPrompt] = useState('');
@@ -296,19 +296,63 @@ function MusePage() {
     setProgress(5);
     setActiveSteps({ submit: true, analyze: false, compose: false, master: false });
 
+    const params = {
+      mode,
+      prompt: mode === 'quick' ? prompt : undefined,
+      lyrics: mode === 'master' ? lyrics : undefined,
+      style: selectedStyle,
+      title: title || undefined,
+      vocal: selectedVocal || undefined,
+      languageId: selectedLanguage || undefined,
+      structureId: selectedTemplate || undefined,
+      instrumental,
+      songModel: fastConfig?.songModel || 'general',
+    };
+
+    // === DETAILED LOGGING for verification ===
+    // eslint-disable-next-line no-console
+    console.log('[MusePage] handleGenerate clicked:', {
+      timestamp: new Date().toISOString(),
+      mode,
+      prompt: params.prompt,
+      lyrics: params.lyrics,
+      style: params.style,
+      title: params.title,
+      vocal: params.vocal,
+      languageId: params.languageId,
+      structureId: params.structureId,
+      instrumental: params.instrumental,
+      songModel: params.songModel,
+      fullParams: params,
+    });
+
+    const session = startSession({
+      type: 'song',
+      engine: 'muse',
+      title: title || (mode === 'quick' ? prompt?.slice(0, 40) : lyrics?.slice(0, 40)) || 'Untitled',
+      lyrics: mode === 'master' ? lyrics : prompt,
+      params,
+    });
+
     try {
-      const params = {
-        mode,
-        prompt: mode === 'quick' ? prompt : undefined,
-        lyrics: mode === 'master' ? lyrics : undefined,
-        style: selectedStyle,
-        title: title || undefined,
-        vocal: selectedVocal || undefined,
-        languageId: selectedLanguage || undefined,
-        structureId: selectedTemplate || undefined,
-        instrumental,
-        songModel: fastConfig?.songModel || 'general',
-      };
+
+      // VISUAL BRIDGE: type the selected prompt/lyrics into the muse.top input
+      // field so the user can SEE the exact inputs on the muse.top website —
+      // even when generation cannot complete due to insufficient credits.
+      // Best-effort: a failure here (e.g. muse.top tab not open) must NOT block
+      // the actual generation attempt.
+      setPollMessage(t('muse.fillInput') || '正在将歌词同步到 muse.top...');
+      try {
+        await MuseService.fillInput({
+          mode,
+          prompt: mode === 'quick' ? prompt : undefined,
+          lyrics: mode === 'master' ? lyrics : undefined,
+        });
+      } catch (fillErr) {
+        // Non-fatal — log and continue with generation
+        // eslint-disable-next-line no-console
+        console.warn('[MusePage] fillInput (visual bridge) failed:', fillErr.message);
+      }
 
       const result = await MuseService.generateSong(params);
       const tid = result?.taskId || result?.workId;
@@ -317,6 +361,13 @@ function MusePage() {
       setPollMessage(t('muse.processing'));
       setProgress(20);
       setActiveSteps({ submit: true, analyze: true, compose: false, master: false });
+
+      updateSession(session.id, {
+        status: 'processing',
+        taskId: tid,
+        progress: 10,
+        logEntry: `Task created: ${tid}`,
+      });
 
       const final = await MuseService.pollUntilDone(tid, {
         intervalMs: 4000,
@@ -349,6 +400,12 @@ function MusePage() {
       setGeneratedSong(songData);
       setPollMessage(t('muse.complete'));
 
+      completeSession(session.id, {
+        audioUrl: songData.audioUrl,
+        imageUrl: songData.imageUrl,
+        result: songData,
+      });
+
       if (songData.audioUrl) {
         setTimeout(() => {
           if (audioRef.current) {
@@ -361,6 +418,7 @@ function MusePage() {
       setPollStatus('failed');
       setPollMessage(t('muse.failed'));
       setActiveSteps({ submit: false, analyze: false, compose: false, master: false });
+      completeSession(session.id, { error: e.message });
     } finally {
       setGenerating(false);
     }
@@ -403,6 +461,28 @@ function MusePage() {
     if (lyrics) navigator.clipboard?.writeText(lyrics);
   };
 
+  const copySessionItem = async (session) => {
+    const { params: p, lyrics: l } = session;
+    const text = [
+      `【Muse AI 生成记录】`,
+      `时间: ${new Date(session.startedAt).toLocaleString()}`,
+      `模式: ${p?.mode || 'unknown'}`,
+      p?.title ? `标题: ${p.title}` : '',
+      p?.style ? `风格: ${p.style}` : '',
+      p?.vocal ? `唱法: ${p.vocal}` : '',
+      p?.languageId ? `语言: ${p.languageId}` : '',
+      p?.instrumental ? `纯乐器: 是` : '',
+      '',
+      `【输入内容】`,
+      l || p?.prompt || '(空)',
+      '',
+      `【完整参数】`,
+      JSON.stringify(p, null, 2),
+    ].filter(Boolean).join('\n');
+    const ok = await copyToClipboard(text);
+    if (ok) showToast('已复制到剪贴板', 'success');
+  };
+
   const downloadAudio = () => {
     if (generatedSong?.audioUrl) {
       const a = document.createElement('a');
@@ -421,14 +501,21 @@ function MusePage() {
   };
 
   const memberInfo = userInfo?.memberInfo || userInfo?.member_info || {};
-  // Use ONLY the actual credit balance reported by the API (no guessing/combining fields).
-  // The API returns the real usable credit in memberInfo.credit — do NOT add evaluation
-  // credits, since those are tracked separately on muse.top and may not be spendable.
-  const credit = memberInfo.credit ?? userInfo?.credit ?? userInfo?.credits ?? 0;
+  // Read credit from backend — it now reads ACTUAL value from browser DOM/localStorage
+  // No more guessing formulas! The backend's /api/muse/status reads the
+  // exact credit displayed on the muse.top sidebar via CDP.
+  const credit = museStatus?.login?.credits ?? 0;
   const subscription = memberInfo.subscription || {};
-  const isSubscriptionExpired = subscription.expired ?? false;
-  const isMember = memberInfo.isMember || memberInfo.paidMember || userInfo?.isMember || false;
-  const canGenerate = museStatus?.configured && !generating && credit > 0;
+  const isSubscriptionExpired = subscription.expired
+    ?? museStatus?.login?.membershipExpired
+    ?? false;
+  const isMember = memberInfo.isMember || memberInfo.paidMember || userInfo?.isMember || museStatus?.login?.isMember || false;
+  // Note: we intentionally do NOT block on sessionExpired or credits.
+  // The user wants to click "生成歌曲" even when disconnected: the visual
+  // bridge (fillInput) will attempt to sync the inputs to muse.top so the
+  // user can see what lyrics/commands were submitted. Any API errors will
+  // be displayed as normal.
+  const canGenerate = museStatus?.configured && !generating;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -475,12 +562,25 @@ function MusePage() {
           <div className="flex-1">
             <p className="font-medium">{error}</p>
             {(error.includes('登录') || error.includes('LOGIN') || error.includes('expired')) && (
-              <p className="text-xs text-red-300/70 mt-1">请在 Edge 浏览器重新登录 muse.top</p>
+              <p className="text-xs text-red-300/70 mt-1">Please re-login on muse.top in your Edge browser</p>
             )}
           </div>
           <button onClick={() => setError(null)} className="text-red-300/50 hover:text-red-300">
             <X className="w-4 h-4" />
           </button>
+        </div>
+      )}
+
+      {museStatus?.note && (
+        <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-sm flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium">Browser connection needed</p>
+            <p className="text-xs mt-1 text-amber-200/80">{museStatus.note}</p>
+            <p className="text-xs mt-2 text-amber-300/60">
+              Steps: 1) Close all Edge windows &nbsp; 2) Double-click "ZMusic-Edge" on your desktop &nbsp; 3) After Edge reopens with your tabs, refresh this page
+            </p>
+          </div>
         </div>
       )}
 
@@ -490,6 +590,18 @@ function MusePage() {
           <div>
             <p className="font-semibold">Muse 订阅已过期</p>
             <p className="text-xs text-amber-300/70 mt-0.5">会员权益已到期。你还有 {credit} 积分可用。</p>
+          </div>
+        </div>
+      )}
+
+      {museStatus?.login?.sessionExpired && !error && (
+        <div className="p-4 rounded-xl bg-gradient-to-r from-red-500/10 to-pink-500/10 border border-red-500/30 text-red-200 text-sm flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold">Muse 会话已过期</p>
+            <p className="text-xs text-red-300/70 mt-0.5">
+              检测到 Muse 登录会话已过期。请在 Edge 浏览器中打开 <span className="font-mono text-red-200">muse.top</span> 并重新登录，然后返回此处继续生成。
+            </p>
           </div>
         </div>
       )}
@@ -881,6 +993,87 @@ function MusePage() {
                 <p className="text-[10px] text-gray-600 text-center">
                   ⚠ 此歌曲由 Muse AI 生成，仅临时展示。如需保存请前往 muse.top
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* Generation History with Copy */}
+          {sessions && sessions.filter(s => s.engine === 'muse' && (s.status === 'completed' || s.status === 'failed' || s.status === 'cancelled')).length > 0 && (
+            <div className="glass p-5 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4 text-fuchsia-400" />
+                  <h3 className="text-sm font-semibold text-white">生成历史</h3>
+                  <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">
+                    {sessions.filter(s => s.engine === 'muse' && (s.status === 'completed' || s.status === 'failed' || s.status === 'cancelled')).length} 条记录
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {sessions
+                  .filter(s => s.engine === 'muse' && (s.status === 'completed' || s.status === 'failed' || s.status === 'cancelled'))
+                  .slice(0, 15)
+                  .map((session) => (
+                    <div
+                      key={session.id}
+                      className={`p-3 rounded-xl border transition-all ${session.status === 'completed' ? 'bg-emerald-500/5 border-emerald-500/20' :
+                        session.status === 'failed' ? 'bg-red-500/5 border-red-500/20' :
+                          'bg-gray-500/5 border-gray-500/20'
+                        }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            {session.status === 'completed' ? (
+                              <CheckCircle className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                            ) : session.status === 'failed' ? (
+                              <AlertTriangle className="w-3 h-3 text-red-400 flex-shrink-0" />
+                            ) : (
+                              <XCircle className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                            )}
+                            <span className="text-xs font-medium text-white truncate">{session.title}</span>
+                          </div>
+                          <p className="text-[10px] text-gray-400 line-clamp-2 font-mono">
+                            {session.lyrics?.slice(0, 100) || session.params?.prompt?.slice(0, 100) || '(无输入内容)'}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1.5 text-[10px] text-gray-500 flex-wrap">
+                            <span>{new Date(session.startedAt).toLocaleString()}</span>
+                            {session.params?.mode && <span>· 模式: {session.params.mode}</span>}
+                            {session.params?.style && <span>· 风格: {session.params.style}</span>}
+                            {session.status === 'failed' && session.error && (
+                              <span className="text-red-400">· 错误: {session.error}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => copySessionItem(session)}
+                            className="p-2 rounded-lg bg-white/5 hover:bg-fuchsia-500/20 text-gray-400 hover:text-fuchsia-300 transition-all"
+                            title="复制完整记录（歌词+风格+参数）"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          {session.status === 'completed' && session.audioUrl && (
+                            <button
+                              onClick={() => {
+                                setGeneratedSong({
+                                  title: session.result?.title || session.title,
+                                  audioUrl: session.audioUrl,
+                                  imageUrl: session.imageUrl,
+                                  duration: session.result?.duration || 0,
+                                  taskId: session.taskId,
+                                });
+                              }}
+                              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-amber-400 transition-all"
+                              title="恢复此歌曲"
+                            >
+                              <Play className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
           )}
