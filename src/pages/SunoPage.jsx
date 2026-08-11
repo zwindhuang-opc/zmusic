@@ -140,7 +140,9 @@ function SunoPage() {
     return () => clearInterval(iv);
   }, [autoRunning]);
 
-  // === GLOBAL AUTO handshake: trigger AUTO modal when arriving from Dashboard via ?globalauto=1 ===
+  // === GLOBAL AUTO handshake: trigger AUTO modal when arriving from Dashboard ===
+  // Uses localStorage (cross-tab) + URL ?globalauto=1
+  // After AUTO starts, chains to next platform in the GLOBAL AUTO sequence
   const globalAutoHandledRef = useRef(false);
   useEffect(() => {
     if (globalAutoHandledRef.current) return;
@@ -149,7 +151,7 @@ function SunoPage() {
       const hasQueryParam = new URLSearchParams(window.location.search).get('globalauto') === '1';
       let hasHandshake = false;
       try {
-        const raw = sessionStorage.getItem('zmusic_globalauto');
+        const raw = localStorage.getItem('zmusic_globalauto');
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed?.platforms?.includes('suno')) hasHandshake = true;
@@ -165,19 +167,34 @@ function SunoPage() {
           url.searchParams.delete('globalauto');
           window.history.replaceState({}, '', url.toString());
         } catch (_e) { /* ignore */ }
-        try {
-          const raw = sessionStorage.getItem('zmusic_globalauto');
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            parsed.platforms = (parsed.platforms || []).filter(p => p !== 'suno');
-            if (parsed.platforms.length === 0) sessionStorage.removeItem('zmusic_globalauto');
-            else sessionStorage.setItem('zmusic_globalauto', JSON.stringify(parsed));
-          }
-        } catch (_e) { /* ignore */ }
       }
     } catch (_e) { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // === GLOBAL AUTO chain: after AUTO starts here, navigate to next platform ===
+  useEffect(() => {
+    if (!autoRunning) return;
+    try {
+      const raw = localStorage.getItem('zmusic_globalauto');
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!parsed?.platforms || !parsed.platforms.includes('suno')) return;
+      const remaining = parsed.platforms.filter(p => p !== 'suno');
+      if (remaining.length > 0) {
+        parsed.platforms = remaining;
+        parsed.currentIndex = (parsed.currentIndex || 0) + 1;
+        localStorage.setItem('zmusic_globalauto', JSON.stringify(parsed));
+        const next = remaining[0];
+        setTimeout(() => {
+          const routes = { suno: '/suno', muse: '/muse', melo: '/melo' };
+          window.location.href = routes[next] + '?globalauto=1';
+        }, 8000);
+      } else {
+        localStorage.removeItem('zmusic_globalauto');
+      }
+    } catch (_e) { /* ignore */ }
+  }, [autoRunning]);
 
   const randomizeSunoInputs = useCallback(() => {
     const { theme, style } = pickRandomThemeStyle();
@@ -1038,7 +1055,7 @@ function SunoPage() {
               <div className="flex gap-2">
                 <button
                   onClick={handleAutoClick}
-                  disabled={!canGenerate && !autoRunning}
+                  disabled={autoRunning}
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all shadow-lg
                     ${autoRunning
                       ? 'bg-gradient-to-r from-red-500 via-rose-500 to-orange-500 hover:from-red-400 hover:via-rose-400 hover:to-orange-400 text-white shadow-red-500/30 animate-pulse'

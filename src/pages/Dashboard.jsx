@@ -101,26 +101,28 @@ function Dashboard({ apiStatus, agentStatus, onNavigate }) {
     if (globalAutoStep < 3) {
       setGlobalAutoStep(prev => prev + 1);
     } else {
-      // Final confirm: open new tabs for selected platforms with ?globalauto=1
-      // Each page will detect this param and auto-open its own 3-step AUTO confirmation dialog.
+      // Final confirm: store GLOBAL AUTO state in localStorage (persists across tabs)
+      // and navigate to each platform sequentially. Each page reads localStorage
+      // + ?globalauto=1 to auto-open its own 3-step AUTO confirmation.
       cancelGlobalAuto();
       const routes = { suno: '/suno', muse: '/muse', melo: '/melo' };
-      // SessionStorage handshake: pages read this key to auto-trigger AUTO modal
+
+      // Store handshake in localStorage (works across tabs/sessions in all browsers)
       try {
-        sessionStorage.setItem('zmusic_globalauto', JSON.stringify({
+        localStorage.setItem('zmusic_globalauto', JSON.stringify({
           at: Date.now(),
           platforms: selectedPlatforms,
+          totalCount: selectedPlatforms.length,
+          currentIndex: 0,
         }));
       } catch (_e) { /* ignore */ }
-      selectedPlatforms.forEach(platform => {
-        const url = routes[platform] + (routes[platform].includes('?') ? '&' : '?') + 'globalauto=1';
-        // Use setTimeout per tab to avoid browser popup blocker rejecting chain
-        setTimeout(() => window.open(url, `_blank_zmusic_${platform}`), 150);
-      });
-      // Fallback: also navigate current tab to first selected so user sees something happen
-      if (selectedPlatforms.length > 0 && onNavigate) {
-        const first = selectedPlatforms[0];
-        setTimeout(() => onNavigate(first), 300);
+
+      // Navigate to first platform with ?globalauto=1
+      // Each platform page will auto-open its AUTO modal, and when confirmed,
+      // it will proceed to the next platform via the same localStorage chain
+      const first = selectedPlatforms[0];
+      if (first && onNavigate) {
+        onNavigate(first);
       }
     }
   };
