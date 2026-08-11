@@ -4,11 +4,21 @@ import {
   Music2, User, CreditCard, AlertCircle, ChevronDown, Send,
   Disc3, Volume2, Copy, ExternalLink, Music, Download,
   Image, Wand2, Mic, BarChart3, RefreshCw, X, ChevronRight,
-  Globe, Type, Sliders, Languages, History, CheckCircle, XCircle
+  Globe, Type, Sliders, Languages, History, CheckCircle, XCircle,
+  AlertTriangle, ShieldCheck, RotateCcw
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import MuseService from '../services/muse.service.js';
 import { useGeneration } from '../stores/generationStore.jsx';
+import {
+  pickRandomThemeStyle,
+  pickRandomMuseStyle,
+  generateAutoMusePrompt,
+  generateRandomTitle,
+  generateCreativeThought,
+  AUTO_CONFIRM,
+} from '../utils/autoGenUtils.js';
+import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 
 const API_BASE = '/api';
 
@@ -225,9 +235,206 @@ function MusePage() {
     submit: false, analyze: false, compose: false, master: false
   });
 
+  // === AUTO generation mode state ===
+  const [autoRunning, setAutoRunning] = useState(false);
+  const [autoStopRequested, setAutoStopRequested] = useState(false);
+  const [autoCount, setAutoCount] = useState(0);
+  const [showAutoConfirm, setShowAutoConfirm] = useState(false);
+  const [autoConfirmStep, setAutoConfirmStep] = useState(1);
+  const autoRunningRef = useRef(false);
+  const autoStopRequestedRef = useRef(false);
+  const autoConsecutiveErrorsRef = useRef(0);
+  const [autoThoughts, setAutoThoughts] = useState([]);
+  const [showCreativePanel, setShowCreativePanel] = useState(true);
+  const lastAutoCreditRef = useRef(0);
+
   useEffect(() => {
     loadMuseConfig();
   }, []);
+
+  // Sync AUTO refs with React state (so async finally block sees latest values)
+  useEffect(() => {
+    autoRunningRef.current = autoRunning;
+  }, [autoRunning]);
+  useEffect(() => {
+    autoStopRequestedRef.current = autoStopRequested;
+  }, [autoStopRequested]);
+
+  // Reload user/credits periodically during AUTO mode so we know when to stop
+  useEffect(() => {
+    if (!autoRunning) return;
+    const iv = setInterval(async () => {
+      try {
+        const r = await MuseService.getStatus();
+        if (r?.success && r?.data) {
+          setMuseStatus(prev => ({ ...(prev || {}), ...r.data }));
+        }
+        const u = await MuseService.getUser();
+        if (u) setUserInfo(u?.data || u);
+      } catch (_e) { /* ignore */ }
+    }, 8000);
+    return () => clearInterval(iv);
+  }, [autoRunning]);
+
+  // === GLOBAL AUTO handshake: trigger AUTO modal when arriving from Dashboard via ?globalauto=1 ===
+  const globalAutoHandledRef = useRef(false);
+  useEffect(() => {
+    if (globalAutoHandledRef.current) return;
+    globalAutoHandledRef.current = true;
+    try {
+      const hasQueryParam = new URLSearchParams(window.location.search).get('globalauto') === '1';
+      let hasHandshake = false;
+      try {
+        const raw = sessionStorage.getItem('zmusic_globalauto');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.platforms?.includes('muse')) hasHandshake = true;
+        }
+      } catch (_e) { /* ignore */ }
+      if (hasQueryParam || hasHandshake) {
+        // Open AUTO confirmation modal (still requires user to step through 3 confirmations)
+        setTimeout(() => {
+          setAutoConfirmStep(1);
+          setShowAutoConfirm(true);
+        }, 400);
+        // Clean up query param and handshake entry
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('globalauto');
+          window.history.replaceState({}, '', url.toString());
+        } catch (_e) { /* ignore */ }
+        try {
+          const raw = sessionStorage.getItem('zmusic_globalauto');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            parsed.platforms = (parsed.platforms || []).filter(p => p !== 'muse');
+            if (parsed.platforms.length === 0) {
+              sessionStorage.removeItem('zmusic_globalauto');
+            } else {
+              sessionStorage.setItem('zmusic_globalauto', JSON.stringify(parsed));
+            }
+          }
+        } catch (_e) { /* ignore */ }
+      }
+    } catch (_e) { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Before each auto-gen iteration: randomize all inputs so songs vary
+  const randomizeMuseInputs = useCallback(() => {
+    const { theme, style } = pickRandomThemeStyle();
+    // mode: randomly pick quick or master
+    const randMode = Math.random() < 0.6 ? 'quick' : 'master';
+    setMode(randMode);
+    let promptText = '';
+    let lyricsText = '';
+    if (randMode === 'quick') {
+      promptText = generateAutoMusePrompt(theme);
+      setPrompt(promptText);
+      setLyrics('');
+    } else {
+      const museResult = (global.__unicorn_cache || {});
+      const quickPrompt = generateAutoMusePrompt(theme);
+      promptText = quickPrompt;
+      setPrompt(quickPrompt);
+      // Fallback: if no unicorn-agent async available, build simple lyrics
+      const verseThemes = [theme, `${theme}_scene`, `${theme}_emotion`];
+      const builtLyrics = `[Verse 1]\n${generateAutoMusePrompt(verseThemes[0])}\n\n[Pre-Chorus]\n${generateAutoMusePrompt(verseThemes[1])}\n\n[Chorus]\n${generateAutoMusePrompt(verseThemes[2])}\n\n[Verse 2]\n${generateAutoMusePrompt(verseThemes[0])}\n\n[Bridge]\n${generateAutoMusePrompt(verseThemes[1])}\n\n[Chorus]\n${generateAutoMusePrompt(verseThemes[2])}`;
+      lyricsText = builtLyrics;
+      setLyrics(builtLyrics);
+      // prevent unused warning
+      void museResult;
+    }
+    const chosenStyle = pickRandomMuseStyle();
+    setSelectedStyle(chosenStyle);
+    const chosenTitle = generateRandomTitle();
+    setTitle(chosenTitle);
+    setInstrumental(Math.random() < 0.15);
+    // Random language: bias towards Chinese (most common) then mix
+    const roll = Math.random();
+    let chosenLang = '';
+    if (roll < 0.55) { setSelectedLanguage('1001'); chosenLang = '中文'; }
+    else if (roll < 0.7) { setSelectedLanguage('1004'); chosenLang = '英文'; }
+    else if (roll < 0.8) { setSelectedLanguage('1002'); chosenLang = '日文'; }
+    else if (roll < 0.88) { setSelectedLanguage('1005'); chosenLang = '韩文'; }
+    else { setSelectedLanguage(''); chosenLang = '自动'; }
+    const vocalRoll = Math.random();
+    const chosenVocal = vocalRoll < 0.4 ? '女声' : vocalRoll < 0.75 ? '男声' : '随机';
+    setSelectedVocal(vocalRoll < 0.4 ? 'f' : vocalRoll < 0.75 ? 'm' : '');
+    // Random template occasionally
+    setSelectedTemplate(Math.random() < 0.35 ? (['original', 'rap', 'love', 'epic'][Math.floor(Math.random() * 4)]) : '');
+
+    return {
+      theme,
+      style,
+      title: chosenTitle,
+      lyrics: lyricsText || promptText,
+      bpm: 120,
+      key: 'C',
+      command: `模式: ${randMode === 'quick' ? '快速灵感' : '大师创作'}\n风格: ${chosenStyle}\n语言: ${chosenLang}\n人声: ${chosenVocal}\n灵感: ${promptText.substring(0, 80)}`,
+    };
+  }, []);
+
+  // Handle AUTO button click: open 3-step danger confirmation
+  const handleAutoClick = () => {
+    if (autoRunning) {
+      // Already running → treat as stop request
+      setAutoStopRequested(true);
+      setAutoRunning(false);
+      showToast?.({ title: 'AUTO 停止中', description: '完成当前歌曲后将不再生成下一首', type: 'info' });
+      return;
+    }
+    if (credit <= 0) {
+      showToast?.({
+        title: '⚠️ 当前积分为 0',
+        description: 'AUTO 模式仍可启动用于真实测试（与 v6.6.6 credit bypass 一致），但 API 大概率会返回错误。继续请确认。',
+        type: 'warning',
+        duration: 6000,
+      });
+    }
+    setAutoConfirmStep(1);
+    setShowAutoConfirm(true);
+  };
+
+  const proceedAutoConfirmStep = () => {
+    if (autoConfirmStep < 3) {
+      setAutoConfirmStep(prev => prev + 1);
+    } else {
+      // Step 3 confirmed → start AUTO
+      setShowAutoConfirm(false);
+      setAutoConfirmStep(1);
+      setAutoCount(0);
+      setAutoStopRequested(false);
+      setAutoRunning(true);
+      setAutoThoughts([]);
+      autoConsecutiveErrorsRef.current = 0;
+      setShowCreativePanel(true);
+      lastAutoCreditRef.current = credit;
+      showToast?.({ title: 'AUTO 启动', description: 'Muse AI 自动生成已开始。点击 AUTO 按钮可随时停止。', type: 'warning' });
+      // Kick off first generation (small delay to ensure state commits)
+      setTimeout(() => {
+        const choices = randomizeMuseInputs();
+        const thought = generateCreativeThought({
+          iteration: 1,
+          theme: choices.theme,
+          style: choices.style,
+          title: choices.title,
+          bpm: choices.bpm,
+          key: choices.key,
+          engine: 'Muse AI',
+          lyricsSnippet: choices.lyrics,
+          commandSent: choices.command,
+        });
+        setAutoThoughts([thought]);
+        setTimeout(() => handleGenerate(true), 300);
+      }, 200);
+    }
+  };
+
+  const cancelAutoConfirm = () => {
+    setShowAutoConfirm(false);
+    setAutoConfirmStep(1);
+  };
 
   useEffect(() => {
     if (pendingLyrics) {
@@ -287,7 +494,7 @@ function MusePage() {
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (isAuto = false) => {
     setError(null);
     setGeneratedSong(null);
     setGenerating(true);
@@ -406,6 +613,9 @@ function MusePage() {
         result: songData,
       });
 
+      // Reset consecutive error counter on success
+      autoConsecutiveErrorsRef.current = 0;
+
       if (songData.audioUrl) {
         setTimeout(() => {
           if (audioRef.current) {
@@ -419,8 +629,66 @@ function MusePage() {
       setPollMessage(t('muse.failed'));
       setActiveSteps({ submit: false, analyze: false, compose: false, master: false });
       completeSession(session.id, { error: e.message });
+      // Increment consecutive error counter (safety: stop after 8 failures)
+      if (isAuto || autoRunningRef.current) {
+        autoConsecutiveErrorsRef.current += 1;
+      }
     } finally {
       setGenerating(false);
+
+      // === AUTO mode: schedule next iteration ===
+      if (isAuto || autoRunningRef.current) {
+        // Refresh credits status to detect consumption
+        try {
+          const r = await MuseService.getStatus();
+          if (r?.success && r?.data) setMuseStatus(prev => ({ ...(prev || {}), ...r.data }));
+        } catch (_e) { /* ignore */ }
+
+        // Decide whether to continue
+        setTimeout(() => {
+          // Safety: stop after 8 consecutive errors (credit check intentionally
+          //  DISABLED for real testing — user will enable it for production)
+          const shouldStop =
+            autoStopRequestedRef.current ||
+            !autoRunningRef.current ||
+            autoConsecutiveErrorsRef.current >= 8;
+
+          if (shouldStop) {
+            setAutoRunning(false);
+            setAutoStopRequested(false);
+            showToast?.({
+              title: 'AUTO 已停止',
+              description: autoStopRequestedRef.current
+                ? '已按您的请求停止自动生成。'
+                : autoConsecutiveErrorsRef.current >= 8
+                  ? '连续 8 次生成失败，AUTO 已自动停止（可能是积分不足或 API 异常）。'
+                  : 'AUTO 模式结束。',
+              type: autoStopRequestedRef.current ? 'info' : 'warning',
+            });
+            return;
+          }
+
+          const nextIteration = autoCount + 1;
+          setAutoCount(c => c + 1);
+          // Randomize inputs for NEXT generation + capture choices
+          const choices = randomizeMuseInputs();
+          // Log creative thinking process
+          const thought = generateCreativeThought({
+            iteration: nextIteration,
+            theme: choices.theme,
+            style: choices.style,
+            title: choices.title,
+            bpm: choices.bpm,
+            key: choices.key,
+            engine: 'Muse AI',
+            lyricsSnippet: choices.lyrics,
+            commandSent: choices.command,
+          });
+          setAutoThoughts(prev => [...prev.slice(-15), thought]);
+          // Schedule next song with small delay (so user sees the result briefly)
+          setTimeout(() => handleGenerate(true), 1800);
+        }, 1500);
+      }
     }
   };
 
@@ -825,6 +1093,52 @@ function MusePage() {
               )}
             </button>
 
+            {/* AUTO Button + Status */}
+            <div className="space-y-2.5 mt-1">
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAutoClick}
+                  disabled={!canGenerate && !autoRunning}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all shadow-lg
+                    ${autoRunning
+                      ? 'bg-gradient-to-r from-red-500 via-rose-500 to-orange-500 hover:from-red-400 hover:via-rose-400 hover:to-orange-400 text-white shadow-red-500/30 animate-pulse'
+                      : 'bg-gradient-to-r from-orange-500 via-red-500 to-rose-500 hover:from-orange-400 hover:via-red-400 hover:to-rose-400 text-white shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
+                    }`}
+                >
+                  {autoRunning ? (
+                    <>
+                      <RotateCcw className="w-5 h-5 animate-spin" />
+                      {t('auto.status_running')} · 停止
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-5 h-5" />
+                      {t('auto.btn_label')}
+                    </>
+                  )}
+                </button>
+              </div>
+              {(autoRunning || autoCount > 0) && (
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex w-2 h-2 rounded-full ${autoRunning ? 'bg-red-400 animate-pulse' : 'bg-gray-500'}`} />
+                    <span className="text-xs text-gray-300 font-medium">
+                      {autoRunning ? t('auto.status_running') : t('auto.status_idle')}
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-orange-300">
+                    {t('auto.song_count').replace('{count}', String(autoCount))}
+                  </span>
+                </div>
+              )}
+              {!autoRunning && autoCount === 0 && (
+                <p className="text-[11px] text-center text-amber-400/80 flex items-center justify-center gap-1 px-2">
+                  <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                  <span>AUTO 将持续生成直到积分耗尽，极消耗。请谨慎使用。</span>
+                </p>
+              )}
+            </div>
+
             {!museStatus?.configured && (
               <p className="text-xs text-center text-amber-400 flex items-center justify-center gap-1">
                 <AlertCircle className="w-3 h-3" />
@@ -1107,6 +1421,120 @@ function MusePage() {
           )}
         </div>
       </div>
+
+      {/* AUTO Danger Confirmation Modal (3-step) */}
+      {showAutoConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in"
+          onClick={cancelAutoConfirm}>
+          <div
+            className="w-full max-w-md bg-[#0f0f1a] border border-red-500/40 rounded-2xl shadow-2xl shadow-red-900/50 overflow-hidden animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 p-4 flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base font-bold text-white">
+                  {autoConfirmStep === 1 && AUTO_CONFIRM.title1('Muse AI')}
+                  {autoConfirmStep === 2 && AUTO_CONFIRM.title2}
+                  {autoConfirmStep === 3 && AUTO_CONFIRM.title3}
+                </h2>
+                <p className="text-[11px] text-white/80">
+                  {t('auto.step').replace('{curr}', String(autoConfirmStep))}
+                </p>
+              </div>
+              <button
+                onClick={cancelAutoConfirm}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+
+            {/* Step Indicators */}
+            <div className="px-4 py-2 bg-white/5 flex items-center gap-2">
+              {[1, 2, 3].map(step => (
+                <div key={step} className="flex-1 flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all
+                    ${autoConfirmStep >= step
+                      ? 'bg-gradient-to-br from-red-500 to-orange-500 text-white'
+                      : 'bg-white/10 text-gray-500'}`}>
+                    {autoConfirmStep > step ? <CheckCircle className="w-4 h-4" /> : step}
+                  </div>
+                  {step < 3 && (
+                    <div className={`flex-1 h-1 rounded-full transition-colors
+                      ${autoConfirmStep > step ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white/10'}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-3 max-h-[55vh] overflow-y-auto">
+              {autoConfirmStep === 1 && (
+                <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300 font-sans">
+                  {AUTO_CONFIRM.desc1('Muse AI', credit)}
+                </pre>
+              )}
+              {autoConfirmStep === 2 && (
+                <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300 font-sans">
+                  {AUTO_CONFIRM.desc2('Muse AI')}
+                </pre>
+              )}
+              {autoConfirmStep === 3 && (
+                <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300 font-sans">
+                  {AUTO_CONFIRM.desc3('Muse AI', credit)}
+                </pre>
+              )}
+
+              {autoConfirmStep === 3 && (
+                <div className="mt-2 p-3 rounded-xl border border-red-500/40 bg-red-500/10 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-red-300" />
+                    <p className="text-xs font-bold text-red-200">免责确认</p>
+                  </div>
+                  <p className="text-[11px] text-red-300/80">
+                    我已知晓此操作将消耗 Muse AI 账户的全部积分，后果由本人自行承担。
+                    zMusic 及相关开发者不对由此造成的积分损失、订阅费用或账号异常承担任何责任。
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-4 bg-white/5 border-t border-white/5 flex items-center gap-3">
+              <button
+                onClick={cancelAutoConfirm}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-300 bg-white/5 hover:bg-white/10 transition-colors border border-white/10"
+              >
+                {t('auto.cancel_btn')}
+              </button>
+              <button
+                onClick={proceedAutoConfirmStep}
+                className={`flex-[1.4] px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg
+                  ${autoConfirmStep === 3
+                    ? 'bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 hover:from-red-500 hover:via-rose-500 hover:to-orange-500 shadow-red-500/40 hover:shadow-red-500/60 hover:scale-[1.02] active:scale-[0.99]'
+                    : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 shadow-orange-500/30'
+                  }`}
+              >
+                {autoConfirmStep < 3 ? '下一步，我已了解风险 →' : t('auto.confirm_btn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Creative Thinking Panel — shows AI's reasoning for each AUTO song */}
+      <AutoCreativePanel
+        open={autoRunning || (autoThoughts.length > 0 && showCreativePanel)}
+        thoughts={autoThoughts}
+        autoRunning={autoRunning}
+        autoCount={autoCount}
+        engineName="Muse AI"
+        onClose={() => setShowCreativePanel(false)}
+      />
     </div>
   );
 }

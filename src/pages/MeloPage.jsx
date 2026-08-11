@@ -6,9 +6,19 @@ import {
   Music2, Zap, BarChart3, RefreshCw, X, ChevronRight,
   Layers, Gauge, KeyRound, Star, Tag, FileText, Wand2,
   XCircle, CheckCircle, Info, AlertTriangle, ChevronUp,
+  ShieldCheck, RotateCcw
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
+import {
+  pickRandomThemeStyle,
+  pickRandomMeloTags,
+  generateAutoLyrics,
+  generateRandomTitle,
+  generateCreativeThought,
+  AUTO_CONFIRM,
+} from '../utils/autoGenUtils.js';
+import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 
 const API_BASE = '/api';
 
@@ -125,8 +135,219 @@ function MeloPage() {
     submit: false, analyze: false, compose: false, master: false,
   });
 
+  // === AUTO generation mode state ===
+  const [autoRunning, setAutoRunning] = useState(false);
+  const [autoStopRequested, setAutoStopRequested] = useState(false);
+  const [autoCount, setAutoCount] = useState(0);
+  const [showAutoConfirm, setShowAutoConfirm] = useState(false);
+  const [autoConfirmStep, setAutoConfirmStep] = useState(1);
+  const autoRunningRef = useRef(false);
+  const autoStopRequestedRef = useRef(false);
+  const autoConsecutiveErrorsRef = useRef(0);
+  const [autoThoughts, setAutoThoughts] = useState([]);
+  const [showCreativePanel, setShowCreativePanel] = useState(true);
+
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showLayers, setShowLayers] = useState(false);
+
+  // Sync AUTO refs
+  useEffect(() => { autoRunningRef.current = autoRunning; }, [autoRunning]);
+  useEffect(() => { autoStopRequestedRef.current = autoStopRequested; }, [autoStopRequested]);
+
+  // Periodic credit refresh during AUTO mode
+  useEffect(() => {
+    if (!autoRunning) return;
+    const iv = setInterval(async () => {
+      try {
+        const r = await fetch('/api/melo/status');
+        if (r.ok) {
+          const d = await r.json();
+          setMeloStatus(d?.data || d);
+        }
+        const u = await fetch('/api/melo/user');
+        if (u.ok) {
+          const ud = await u.json();
+          setUserInfo(ud.data || ud);
+        }
+      } catch (_e) { /* ignore */ }
+    }, 8000);
+    return () => clearInterval(iv);
+  }, [autoRunning]);
+
+  // === GLOBAL AUTO handshake: trigger AUTO modal when arriving from Dashboard via ?globalauto=1 ===
+  const globalAutoHandledRef = useRef(false);
+  useEffect(() => {
+    if (globalAutoHandledRef.current) return;
+    globalAutoHandledRef.current = true;
+    try {
+      const hasQueryParam = new URLSearchParams(window.location.search).get('globalauto') === '1';
+      let hasHandshake = false;
+      try {
+        const raw = sessionStorage.getItem('zmusic_globalauto');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.platforms?.includes('melo')) hasHandshake = true;
+        }
+      } catch (_e) { /* ignore */ }
+      if (hasQueryParam || hasHandshake) {
+        setTimeout(() => {
+          setAutoConfirmStep(1);
+          setShowAutoConfirm(true);
+        }, 400);
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('globalauto');
+          window.history.replaceState({}, '', url.toString());
+        } catch (_e) { /* ignore */ }
+        try {
+          const raw = sessionStorage.getItem('zmusic_globalauto');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            parsed.platforms = (parsed.platforms || []).filter(p => p !== 'melo');
+            if (parsed.platforms.length === 0) sessionStorage.removeItem('zmusic_globalauto');
+            else sessionStorage.setItem('zmusic_globalauto', JSON.stringify(parsed));
+          }
+        } catch (_e) { /* ignore */ }
+      }
+    } catch (_e) { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const randomizeMeloInputs = useCallback(() => {
+    const { theme, style } = pickRandomThemeStyle();
+    // Lyrics
+    const lyrics = generateAutoLyrics(theme);
+    setLyrics(lyrics);
+    // Title
+    const title = generateRandomTitle();
+    setTitle(title);
+    // Genre + Mood tags
+    const tagRes = pickRandomMeloTags();
+    setSelectedGenres([...tagRes.genres]);
+    setSelectedMoods([...tagRes.moods]);
+    // Pick random instrument tags
+    const instrumentOptions = ['钢琴', '吉他', '鼓组', '贝斯', '弦乐', '合成器', '小提琴', '大提琴', '笛子', '古筝', '萨克斯', '口琴', '电子鼓', '琵琶', '二胡'];
+    const numInst = Math.floor(Math.random() * 3) + 1;
+    const shuffledInstruments = [...instrumentOptions].sort(() => Math.random() - 0.5);
+    setSelectedInstruments(shuffledInstruments.slice(0, numInst));
+    // Pick random vocal
+    const vocalOptions = ['男歌手', '女歌手', '男女合唱', '童声', '说唱', '和声'];
+    const numVocal = Math.random() < 0.7 ? 1 : 2;
+    const shuffledVocals = [...vocalOptions].sort(() => Math.random() - 0.5);
+    setSelectedVocals(shuffledVocals.slice(0, numVocal));
+    // Effects (sometimes)
+    const effectOptions = ['混响', '延迟', '合唱', '失真', '压缩', 'EQ均衡', 'Lo-Fi复古', '立体声加宽'];
+    if (Math.random() < 0.4) {
+      const numFx = Math.floor(Math.random() * 2) + 1;
+      const shuffledFx = [...effectOptions].sort(() => Math.random() - 0.5);
+      setSelectedEffects(shuffledFx.slice(0, numFx));
+    } else {
+      setSelectedEffects([]);
+    }
+    // Structure: sometimes Verse-Chorus-Verse-Chorus-Bridge-Chorus
+    const structures = ['', 'Verse-Chorus-Verse-Chorus-Bridge-Chorus', 'Intro-Verse-Chorus-Verse-Chorus-Outro', 'Verse-PreChorus-Chorus-Verse-Chorus-Bridge-Chorus'];
+    setSelectedStructure(structures[Math.floor(Math.random() * structures.length)]);
+    // BPM weighted
+    const bpmRoll = Math.random();
+    let chosenBpm;
+    if (bpmRoll < 0.25) chosenBpm = 70 + Math.floor(Math.random() * 20);      // slow ballad 70-89
+    else if (bpmRoll < 0.6) chosenBpm = 90 + Math.floor(Math.random() * 25);  // mid-tempo 90-114
+    else if (bpmRoll < 0.85) chosenBpm = 115 + Math.floor(Math.random() * 20); // pop/dance 115-134
+    else chosenBpm = 135 + Math.floor(Math.random() * 40);                   // upbeat/energetic 135-174
+    setBpm(chosenBpm);
+    // Key: common keys weighted
+    const keys = ['C', 'G', 'D', 'A', 'F', 'Am', 'Em', 'Dm', 'Bb', 'E'];
+    const chosenKey = keys[Math.floor(Math.random() * keys.length)];
+    setAudioKey(chosenKey);
+    // Time signature: almost always 4/4, occasionally 3/4 or 6/8
+    const tsRoll = Math.random();
+    setTimeSignature(tsRoll < 0.82 ? '4/4' : tsRoll < 0.92 ? '3/4' : '6/8');
+    // Layer commands: occasionally fill with theme-specific ones
+    let layerSummary = '';
+    if (Math.random() < 0.5) {
+      layerSummary =
+        `[LAYER: FOUNDATION] 流派=${tagRes.genres.join('+')}, 情绪=${tagRes.moods.join('&')}\n` +
+        `[LAYER: MELODY] 抒情流畅, 钩子旋律, 末段升key\n` +
+        `[LAYER: EXPRESSION] 从内敛到释放, 气声副歌\n` +
+        `[LAYER: EFFECTS] 音乐厅混响, 偶尔留白`;
+      setLayers({
+        foundation: `[LAYER: FOUNDATION]\n流派融合: ${tagRes.genres.join('+')}; 情绪基调: ${tagRes.moods.join(' & ')}; 动态起伏: 渐进渐强`,
+        melody: `[LAYER: MELODY]\n主旋律气质: 抒情流畅; 副歌记忆点: 钩子旋律明显; 转调处理: 末段升半key`,
+        expression: `[LAYER: EXPRESSION]\n情感层次: 从内敛到释放; 咬字处理: 自然真诚; 气声点缀: 副歌入`,
+        effects: `[LAYER: EFFECTS]\n空间感: 音乐厅混响; 特殊效果: 偶尔留白`,
+      });
+    } else {
+      setLayers({ foundation: '', melody: '', expression: '', effects: '' });
+    }
+    setAudioWeight(0.4 + Math.random() * 0.4); // 0.4 ~ 0.8
+
+    // Return chosen values for creative thought logging
+    return {
+      theme,
+      style,
+      title,
+      lyrics,
+      bpm: chosenBpm,
+      key: chosenKey,
+      command: layerSummary || `流派: ${tagRes.genres.join('+')} | 情绪: ${tagRes.moods.join('&')} | ${chosenBpm}BPM | ${chosenKey}`,
+    };
+  }, []);
+
+  const handleAutoClick = () => {
+    if (autoRunning) {
+      setAutoStopRequested(true);
+      setAutoRunning(false);
+      showToast?.({ title: 'AUTO 停止中', description: '完成当前歌曲后将不再生成下一首', type: 'info' });
+      return;
+    }
+    if (credits <= 0) {
+      showToast?.({
+        title: '⚠️ 当前积分为 0',
+        description: 'AUTO 模式仍可启动用于真实测试（与 v6.6.6 credit bypass 一致），但 API 大概率会返回错误。继续请确认。',
+        type: 'warning',
+        duration: 6000,
+      });
+    }
+    setAutoConfirmStep(1);
+    setShowAutoConfirm(true);
+  };
+
+  const proceedAutoConfirmStep = () => {
+    if (autoConfirmStep < 3) {
+      setAutoConfirmStep(prev => prev + 1);
+    } else {
+      setShowAutoConfirm(false);
+      setAutoConfirmStep(1);
+      setAutoCount(0);
+      setAutoStopRequested(false);
+      setAutoRunning(true);
+      setAutoThoughts([]);
+      autoConsecutiveErrorsRef.current = 0;
+      setShowCreativePanel(true);
+      showToast?.({ title: 'AUTO 启动', description: 'Melo AI 自动生成已开始。点击 AUTO 按钮可随时停止。', type: 'warning' });
+      setTimeout(() => {
+        const choices = randomizeMeloInputs();
+        const thought = generateCreativeThought({
+          iteration: 1,
+          theme: choices.theme,
+          style: choices.style,
+          title: choices.title,
+          bpm: choices.bpm,
+          key: choices.key,
+          engine: 'Melo AI',
+          lyricsSnippet: choices.lyrics,
+          commandSent: choices.command,
+        });
+        setAutoThoughts([thought]);
+        setTimeout(() => handleGenerate(true), 300);
+      }, 200);
+    }
+  };
+
+  const cancelAutoConfirm = () => {
+    setShowAutoConfirm(false);
+    setAutoConfirmStep(1);
+  };
 
   useEffect(() => {
     loadMeloConfig();
@@ -219,7 +440,7 @@ function MeloPage() {
     setPollMessage('已取消生成');
   }, [cancelSession, activeSession, taskId]);
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (isAuto = false) => {
     cancelRef.current = false;
     setError(null);
     setGeneratedSong(null);
@@ -351,6 +572,9 @@ function MeloPage() {
         result: songData,
       });
 
+      // Reset consecutive error counter on success
+      autoConsecutiveErrorsRef.current = 0;
+
       if (songData.audioUrl) {
         setTimeout(() => {
           if (audioRef.current) {
@@ -369,9 +593,76 @@ function MeloPage() {
         setPollMessage('生成失败');
         setActiveSteps({ submit: false, analyze: false, compose: false, master: false });
         completeSession(session.id, { error: e.message });
+        // Increment consecutive error counter (safety: stop after 8 failures)
+        if (isAuto || autoRunningRef.current) {
+          autoConsecutiveErrorsRef.current += 1;
+        }
       }
     } finally {
       setGenerating(false);
+
+      // === AUTO mode: schedule next iteration ===
+      if (isAuto || autoRunningRef.current) {
+        try {
+          const r = await fetch('/api/melo/status');
+          if (r.ok) {
+            const d = await r.json();
+            setMeloStatus(d?.data || d);
+          }
+          const u = await fetch('/api/melo/user');
+          if (u.ok) {
+            const ud = await u.json();
+            setUserInfo(ud.data || ud);
+          }
+        } catch (_e) { /* ignore */ }
+
+        setTimeout(() => {
+          // Safety: stop after 8 consecutive errors to avoid infinite loop
+          // (credit check is intentionally DISABLED for real testing —
+          //  user will enable it for production later)
+          const shouldStop =
+            autoStopRequestedRef.current ||
+            !autoRunningRef.current ||
+            autoConsecutiveErrorsRef.current >= 8;
+
+          if (shouldStop) {
+            setAutoRunning(false);
+            setAutoStopRequested(false);
+            showToast?.({
+              title: 'AUTO 已停止',
+              description: autoStopRequestedRef.current
+                ? '已按您的请求停止自动生成。'
+                : autoConsecutiveErrorsRef.current >= 8
+                  ? '连续 8 次生成失败，AUTO 已自动停止（可能是积分不足或 API 异常）。'
+                  : 'AUTO 模式结束。',
+              type: autoStopRequestedRef.current ? 'info' : 'warning',
+            });
+            return;
+          }
+
+          const nextIteration = autoCount + 1;
+          setAutoCount(c => c + 1);
+
+          // Randomize inputs + capture choices for creative thought
+          const choices = randomizeMeloInputs();
+
+          // Log creative thinking process
+          const thought = generateCreativeThought({
+            iteration: nextIteration,
+            theme: choices.theme,
+            style: choices.style,
+            title: choices.title,
+            bpm: choices.bpm,
+            key: choices.key,
+            engine: 'Melo AI',
+            lyricsSnippet: choices.lyrics,
+            commandSent: choices.command,
+          });
+          setAutoThoughts(prev => [...prev.slice(-15), thought]);
+
+          setTimeout(() => handleGenerate(true), 1800);
+        }, 1500);
+      }
     }
   };
 
@@ -906,6 +1197,52 @@ function MeloPage() {
             )}
           </div>
 
+          {/* AUTO Button + Status */}
+          <div className="space-y-2.5 mt-1">
+            <div className="flex gap-2">
+              <button
+                onClick={handleAutoClick}
+                disabled={!canGenerate && !autoRunning}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all shadow-lg
+                  ${autoRunning
+                    ? 'bg-gradient-to-r from-red-500 via-rose-500 to-orange-500 hover:from-red-400 hover:via-rose-400 hover:to-orange-400 text-white shadow-red-500/30 animate-pulse'
+                    : 'bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 hover:from-red-500 hover:via-rose-500 hover:to-orange-500 text-white shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
+                  }`}
+              >
+                {autoRunning ? (
+                  <>
+                    <RotateCcw className="w-5 h-5 animate-spin" />
+                    {t('auto.status_running')} · 停止
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-5 h-5" />
+                    {t('auto.btn_label')}
+                  </>
+                )}
+              </button>
+            </div>
+            {(autoRunning || autoCount > 0) && (
+              <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex w-2 h-2 rounded-full ${autoRunning ? 'bg-red-400 animate-pulse' : 'bg-gray-500'}`} />
+                  <span className="text-xs text-gray-300 font-medium">
+                    {autoRunning ? t('auto.status_running') : t('auto.status_idle')}
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-orange-300">
+                  {t('auto.song_count').replace('{count}', String(autoCount))}
+                </span>
+              </div>
+            )}
+            {!autoRunning && autoCount === 0 && (
+              <p className="text-[11px] text-center text-amber-400/80 flex items-center justify-center gap-1 px-2">
+                <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                <span>AUTO 将持续生成直到积分耗尽，极消耗。请谨慎使用。</span>
+              </p>
+            )}
+          </div>
+
           {!meloStatus?.configured && (
             <p className="text-xs text-center text-amber-400 flex items-center justify-center gap-1">
               <AlertCircle className="w-3 h-3" />
@@ -1305,6 +1642,115 @@ function MeloPage() {
           )}
         </div>
       </div>
+
+      {/* AUTO Danger Confirmation Modal (3-step) */}
+      {showAutoConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in"
+          onClick={cancelAutoConfirm}>
+          <div
+            className="w-full max-w-md bg-[#0f0f1a] border border-red-500/40 rounded-2xl shadow-2xl shadow-red-900/50 overflow-hidden animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 p-4 flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base font-bold text-white">
+                  {autoConfirmStep === 1 && AUTO_CONFIRM.title1('Melo AI')}
+                  {autoConfirmStep === 2 && AUTO_CONFIRM.title2}
+                  {autoConfirmStep === 3 && AUTO_CONFIRM.title3}
+                </h2>
+                <p className="text-[11px] text-white/80">
+                  {t('auto.step').replace('{curr}', String(autoConfirmStep))}
+                </p>
+              </div>
+              <button
+                onClick={cancelAutoConfirm}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+
+            <div className="px-4 py-2 bg-white/5 flex items-center gap-2">
+              {[1, 2, 3].map(step => (
+                <div key={step} className="flex-1 flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all
+                    ${autoConfirmStep >= step
+                      ? 'bg-gradient-to-br from-red-500 to-orange-500 text-white'
+                      : 'bg-white/10 text-gray-500'}`}>
+                    {autoConfirmStep > step ? <CheckCircle className="w-4 h-4" /> : step}
+                  </div>
+                  {step < 3 && (
+                    <div className={`flex-1 h-1 rounded-full transition-colors
+                      ${autoConfirmStep > step ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white/10'}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="p-5 space-y-3 max-h-[55vh] overflow-y-auto">
+              {autoConfirmStep === 1 && (
+                <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300 font-sans">
+                  {AUTO_CONFIRM.desc1('Melo AI', credits)}
+                </pre>
+              )}
+              {autoConfirmStep === 2 && (
+                <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300 font-sans">
+                  {AUTO_CONFIRM.desc2('Melo AI')}
+                </pre>
+              )}
+              {autoConfirmStep === 3 && (
+                <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300 font-sans">
+                  {AUTO_CONFIRM.desc3('Melo AI', credits)}
+                </pre>
+              )}
+              {autoConfirmStep === 3 && (
+                <div className="mt-2 p-3 rounded-xl border border-red-500/40 bg-red-500/10 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-red-300" />
+                    <p className="text-xs font-bold text-red-200">免责确认</p>
+                  </div>
+                  <p className="text-[11px] text-red-300/80">
+                    我已知晓此操作将消耗 Melo AI 账户的全部积分，后果由本人自行承担。
+                    zMusic 及相关开发者不对由此造成的积分损失、订阅费用或账号异常承担任何责任。
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="px-5 py-4 bg-white/5 border-t border-white/5 flex items-center gap-3">
+              <button
+                onClick={cancelAutoConfirm}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-300 bg-white/5 hover:bg-white/10 transition-colors border border-white/10"
+              >
+                {t('auto.cancel_btn')}
+              </button>
+              <button
+                onClick={proceedAutoConfirmStep}
+                className={`flex-[1.4] px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg
+                  ${autoConfirmStep === 3
+                    ? 'bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 hover:from-red-500 hover:via-rose-500 hover:to-orange-500 shadow-red-500/40 hover:shadow-red-500/60 hover:scale-[1.02] active:scale-[0.99]'
+                    : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 shadow-orange-500/30'
+                  }`}
+              >
+                {autoConfirmStep < 3 ? '下一步，我已了解风险 →' : t('auto.confirm_btn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Creative Thinking Panel — shows AI's reasoning for each AUTO song */}
+      <AutoCreativePanel
+        open={autoRunning || (autoThoughts.length > 0 && showCreativePanel)}
+        thoughts={autoThoughts}
+        autoRunning={autoRunning}
+        autoCount={autoCount}
+        engineName="Melo AI"
+        onClose={() => setShowCreativePanel(false)}
+      />
     </div>
   );
 }

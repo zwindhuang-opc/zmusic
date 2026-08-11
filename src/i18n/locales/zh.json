@@ -107,17 +107,35 @@
       "suno": {
         "desc": "音乐生成",
         "name": "Suno AI"
+      },
+      "melo": {
+        "desc": "字节旋律",
+        "name": "Melo AI"
       }
     },
     "default_response": "感谢您的提问！我会尽力帮助您完成音乐创作。",
     "fsm_response": "我是FSM编程助手，擅长状态机转换。您可以通过状态机来精确控制歌词的生成流程。",
     "muse_response": "我是Muse AI，擅长智能创作。您可以用自然语言描述您的创作意图，我会帮您实现。",
     "network_response": "我是网络层助手，擅长分层组合。我可以帮助您创建多层次的音乐作品。",
-    "placeholder": "输入您的创作想法...",
     "suno_response": "我是Suno AI，擅长音乐生成。请告诉我您想要创作什么样的音乐，我会为您生成专业的音频作品。",
+    "melo_response": "我是Melo AI，字节跳动旋律生成助手。我擅长多层指令系统、BPM精确控制、风格标签组合，为你生成结构严谨的专业音乐作品。",
+    "placeholder": "输入您的创作想法...",
     "title": "AI助手",
     "welcome": "您好！我是您的AI音乐创作助手。您可以选择不同的AI模型来帮助您创作音乐、歌词和MV。",
     "you": "您"
+  },
+  "auto": {
+    "btn_label": "AUTO",
+    "btn_stop": "停止 AUTO",
+    "status_running": "AUTO 运行中",
+    "status_idle": "AUTO 待机",
+    "song_count": "已生成 {count} 首",
+    "step": "步骤 {curr} / 3",
+    "confirm_btn": "我确认，启动 AUTO 模式",
+    "cancel_btn": "取消（我再想想）",
+    "global_title": "三平台 AUTO 同步生成",
+    "global_btn": "GLOBAL AUTO",
+    "global_desc": "同时启动 Muse / Suno / Melo 三个平台自动生成，直到各自积分耗尽。极度消耗积分，请谨慎操作。"
   },
   "common": {
     "cancel": "取消",

@@ -107,17 +107,35 @@
       "suno": {
         "desc": "Music Generation",
         "name": "Suno AI"
+      },
+      "melo": {
+        "desc": "Byte Melody",
+        "name": "Melo AI"
       }
     },
     "default_response": "Thank you for your question! I'll do my best to help you with music creation.",
     "fsm_response": "I'm FSM Programming Assistant, specialized in state machine transitions. You can precisely control the lyric generation process through state machines.",
     "muse_response": "I'm Muse AI, specialized in intelligent creation. You can describe your creative intent in natural language, and I'll help you realize it.",
     "network_response": "I'm Network Layer Assistant, specialized in layered composition. I can help you create multi-layered music works.",
-    "placeholder": "Enter your creative idea...",
     "suno_response": "I'm Suno AI, specialized in music generation. Tell me what kind of music you want to create, and I'll generate professional audio works for you.",
+    "melo_response": "I'm Melo AI, ByteDance melody generation assistant. I specialize in multi-layer instruction systems, precise BPM control, and style tag combinations to craft structurally rigorous professional music.",
+    "placeholder": "Enter your creative idea...",
     "title": "AI Assistant",
     "welcome": "Hello! I'm your AI music creation assistant. You can choose different AI models to help you create music, lyrics, and MVs.",
     "you": "You"
+  },
+  "auto": {
+    "btn_label": "AUTO",
+    "btn_stop": "Stop AUTO",
+    "status_running": "AUTO Running",
+    "status_idle": "AUTO Idle",
+    "song_count": "{count} songs generated",
+    "step": "Step {curr} / 3",
+    "confirm_btn": "I confirm, start AUTO mode",
+    "cancel_btn": "Cancel (I'll reconsider)",
+    "global_title": "Triple-Platform AUTO Generation",
+    "global_btn": "GLOBAL AUTO",
+    "global_desc": "Simultaneously start auto-generation across Muse / Suno / Melo until each platform's credits deplete. Extremely credit-intensive, use with extreme caution."
   },
   "common": {
     "cancel": "Cancel",

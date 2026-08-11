@@ -1,5 +1,11 @@
 # ZMusic Changelog
 
+## v6.7.0 (2026-08-11)
+
+- v6.7.0: AUTO creative thinking panel (shows AI's reasoning for each song) + credit-check-free test mode (stop after 8 consecutive errors) + manual stop button + icon color fixes (Suno=teal, Muse=fuchsia, Melo=amber) + floating ball overlap fix + full-screen desktop screenshots (1920x1080) + Android APK build + iOS project sync
+- Build #3
+
+
 ## v6.0.0 (2026-08-07)
 
 - V6.0.0 MAJOR: 100% FREE music generation engine - (1) Added FreeMusicController with Edge TTS (free vocals, no API key) reused from zinteligencevideoagent project; (2) Added HuggingFace MusicGen + Bark (Suno open-source) integration for free instrumental/singing; (3) Created backend proxy for Suno.cn API to fix CORS; (4) Added Muse-style AI Thinking Panel showing 5-step composition plan before generation; (5) Multi-engine selector: Free/Auto/Suno.cn/Tone.js; (6) Added lyrics input field + 6 free voice presets (zh/en); (7) ffmpeg-static for audio mixing; (8) edge_tts_helper.py to avoid Windows CLI encoding issues; (9) Comprehensive logging in generation pipeline

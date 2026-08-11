@@ -4,11 +4,21 @@ import {
   AlertCircle, ChevronDown, Send, Disc3, Volume2, Download, Music,
   User, RefreshCw, X, ChevronRight, Mic, Wand2, Sliders, Tag,
   ListMusic, Trash2, History, CheckCircle2, Loader2,
-  CheckCircle, XCircle, AlertTriangle, Copy
+  CheckCircle, XCircle, AlertTriangle, Copy, Zap, ShieldCheck, RotateCcw
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import SunoService from '../services/suno.service.js';
 import { useGeneration } from '../stores/generationStore.jsx';
+import {
+  pickRandomThemeStyle,
+  pickRandomSunoStyleTags,
+  generateAutoSunoPrompt,
+  generateAutoLyrics,
+  generateRandomTitle,
+  generateCreativeThought,
+  AUTO_CONFIRM,
+} from '../utils/autoGenUtils.js';
+import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 
 const PROMPT_INSPIRATIONS = [
   '追逐梦想的励志之歌，充满力量与希望',
@@ -83,6 +93,18 @@ function SunoPage() {
     submit: false, analyze: false, compose: false, complete: false,
   });
 
+  // === AUTO generation mode state ===
+  const [autoRunning, setAutoRunning] = useState(false);
+  const [autoStopRequested, setAutoStopRequested] = useState(false);
+  const [autoCount, setAutoCount] = useState(0);
+  const [showAutoConfirm, setShowAutoConfirm] = useState(false);
+  const [autoConfirmStep, setAutoConfirmStep] = useState(1);
+  const autoRunningRef = useRef(false);
+  const autoStopRequestedRef = useRef(false);
+  const autoConsecutiveErrorsRef = useRef(0);
+  const [autoThoughts, setAutoThoughts] = useState([]);
+  const [showCreativePanel, setShowCreativePanel] = useState(true);
+
   const [taskId, setTaskId] = useState(null);
   const [generatedSong, setGeneratedSong] = useState(null);
   const [error, setError] = useState(null);
@@ -98,6 +120,156 @@ function SunoPage() {
   const audioRef = useRef(null);
 
   const [styleInputValue, setStyleInputValue] = useState('');
+
+  // Sync AUTO refs with React state
+  useEffect(() => { autoRunningRef.current = autoRunning; }, [autoRunning]);
+  useEffect(() => { autoStopRequestedRef.current = autoStopRequested; }, [autoStopRequested]);
+
+  // Periodically refresh credits during AUTO
+  useEffect(() => {
+    if (!autoRunning) return;
+    const iv = setInterval(async () => {
+      try {
+        const r = await fetch('/api/suno/user');
+        if (r.ok) {
+          const d = await r.json();
+          if (d) setUserInfo(d.data || d);
+        }
+      } catch (_e) { /* ignore */ }
+    }, 8000);
+    return () => clearInterval(iv);
+  }, [autoRunning]);
+
+  // === GLOBAL AUTO handshake: trigger AUTO modal when arriving from Dashboard via ?globalauto=1 ===
+  const globalAutoHandledRef = useRef(false);
+  useEffect(() => {
+    if (globalAutoHandledRef.current) return;
+    globalAutoHandledRef.current = true;
+    try {
+      const hasQueryParam = new URLSearchParams(window.location.search).get('globalauto') === '1';
+      let hasHandshake = false;
+      try {
+        const raw = sessionStorage.getItem('zmusic_globalauto');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.platforms?.includes('suno')) hasHandshake = true;
+        }
+      } catch (_e) { /* ignore */ }
+      if (hasQueryParam || hasHandshake) {
+        setTimeout(() => {
+          setAutoConfirmStep(1);
+          setShowAutoConfirm(true);
+        }, 400);
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('globalauto');
+          window.history.replaceState({}, '', url.toString());
+        } catch (_e) { /* ignore */ }
+        try {
+          const raw = sessionStorage.getItem('zmusic_globalauto');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            parsed.platforms = (parsed.platforms || []).filter(p => p !== 'suno');
+            if (parsed.platforms.length === 0) sessionStorage.removeItem('zmusic_globalauto');
+            else sessionStorage.setItem('zmusic_globalauto', JSON.stringify(parsed));
+          }
+        } catch (_e) { /* ignore */ }
+      }
+    } catch (_e) { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const randomizeSunoInputs = useCallback(() => {
+    const { theme, style } = pickRandomThemeStyle();
+    const randMode = Math.random() < 0.55 ? 'prompt' : 'lyrics';
+    setMode(randMode);
+    let promptText = '';
+    let lyricsText = '';
+    if (randMode === 'prompt') {
+      promptText = generateAutoSunoPrompt(theme, style);
+      setPrompt(promptText);
+      setLyrics('');
+    } else {
+      lyricsText = generateAutoLyrics(theme);
+      setLyrics(lyricsText);
+      setPrompt('');
+    }
+    const tagRes = pickRandomSunoStyleTags();
+    setStyleChips([...tagRes.chips]);
+    setStyleInput(tagRes.tags);
+    const chosenDuration = Math.random() < 0.7 ? 60 : (Math.random() < 0.5 ? 90 : 120);
+    setDuration(chosenDuration);
+    setInstrumental(Math.random() < 0.18);
+    setCustomMode(Math.random() < 0.25);
+    const chosenTitle = generateRandomTitle();
+    void generateRandomTitle;
+
+    return {
+      theme,
+      style,
+      title: chosenTitle,
+      lyrics: lyricsText || promptText,
+      bpm: 120,
+      key: 'C',
+      command: `模式: ${randMode === 'prompt' ? '描述模式' : '歌词模式'}\n风格标签: ${tagRes.tags}\n时长: ${chosenDuration}s\n纯音乐: ${Math.random() < 0.18 ? '是' : '否'}\n${randMode === 'prompt' ? `描述: ${promptText.substring(0, 80)}` : `歌词预览: ${lyricsText.substring(0, 80)}`}`,
+    };
+  }, []);
+
+  const handleAutoClick = () => {
+    if (autoRunning) {
+      setAutoStopRequested(true);
+      setAutoRunning(false);
+      showToast?.({ title: 'AUTO 停止中', description: '完成当前歌曲后将不再生成下一首', type: 'info' });
+      return;
+    }
+    if (credit <= 0) {
+      showToast?.({
+        title: '⚠️ 当前积分为 0',
+        description: 'AUTO 模式仍可启动用于真实测试（与 v6.6.6 credit bypass 一致），但 API 大概率会返回错误。继续请确认。',
+        type: 'warning',
+        duration: 6000,
+      });
+    }
+    setAutoConfirmStep(1);
+    setShowAutoConfirm(true);
+  };
+
+  const proceedAutoConfirmStep = () => {
+    if (autoConfirmStep < 3) {
+      setAutoConfirmStep(prev => prev + 1);
+    } else {
+      setShowAutoConfirm(false);
+      setAutoConfirmStep(1);
+      setAutoCount(0);
+      setAutoStopRequested(false);
+      setAutoRunning(true);
+      setAutoThoughts([]);
+      autoConsecutiveErrorsRef.current = 0;
+      setShowCreativePanel(true);
+      showToast?.({ title: 'AUTO 启动', description: 'Suno AI 自动生成已开始。点击 AUTO 按钮可随时停止。', type: 'warning' });
+      setTimeout(() => {
+        const choices = randomizeSunoInputs();
+        const thought = generateCreativeThought({
+          iteration: 1,
+          theme: choices.theme,
+          style: choices.style,
+          title: choices.title,
+          bpm: choices.bpm,
+          key: choices.key,
+          engine: 'Suno AI',
+          lyricsSnippet: choices.lyrics,
+          commandSent: choices.command,
+        });
+        setAutoThoughts([thought]);
+        setTimeout(() => handleGenerate(true), 300);
+      }, 200);
+    }
+  };
+
+  const cancelAutoConfirm = () => {
+    setShowAutoConfirm(false);
+    setAutoConfirmStep(1);
+  };
 
   useEffect(() => {
     loadConfig();
@@ -217,7 +389,7 @@ function SunoPage() {
     setStyleChips(newChips);
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (isAuto = false) => {
     setError(null);
     setSuccessMsg(null);
     setGeneratedSong(null);
@@ -336,6 +508,9 @@ function SunoPage() {
             result: songData,
           });
 
+          // Reset consecutive error counter on success
+          autoConsecutiveErrorsRef.current = 0;
+
           loadAudioList();
 
           setTimeout(() => {
@@ -353,8 +528,64 @@ function SunoPage() {
       setError(e.message || '生成失败');
       setGenStage('failed');
       completeSession(session.id, { error: e.message });
+      // Increment consecutive error counter (safety: stop after 8 failures)
+      if (isAuto || autoRunningRef.current) {
+        autoConsecutiveErrorsRef.current += 1;
+      }
     } finally {
       setGenerating(false);
+
+      // === AUTO mode: schedule next iteration ===
+      if (isAuto || autoRunningRef.current) {
+        try {
+          const r = await fetch('/api/suno/user');
+          if (r.ok) {
+            const d = await r.json();
+            if (d) setUserInfo(d.data || d);
+          }
+        } catch (_e) { /* ignore */ }
+
+        setTimeout(() => {
+          // Safety: stop after 8 consecutive errors (credit check intentionally
+          //  DISABLED for real testing — user will enable it for production)
+          const shouldStop =
+            autoStopRequestedRef.current ||
+            !autoRunningRef.current ||
+            autoConsecutiveErrorsRef.current >= 8;
+
+          if (shouldStop) {
+            setAutoRunning(false);
+            setAutoStopRequested(false);
+            showToast?.({
+              title: 'AUTO 已停止',
+              description: autoStopRequestedRef.current
+                ? '已按您的请求停止自动生成。'
+                : autoConsecutiveErrorsRef.current >= 8
+                  ? '连续 8 次生成失败，AUTO 已自动停止（可能是积分不足或 API 异常）。'
+                  : 'AUTO 模式结束。',
+              type: autoStopRequestedRef.current ? 'info' : 'warning',
+            });
+            return;
+          }
+
+          const nextIteration = autoCount + 1;
+          setAutoCount(c => c + 1);
+          const choices = randomizeSunoInputs();
+          const thought = generateCreativeThought({
+            iteration: nextIteration,
+            theme: choices.theme,
+            style: choices.style,
+            title: choices.title,
+            bpm: choices.bpm,
+            key: choices.key,
+            engine: 'Suno AI',
+            lyricsSnippet: choices.lyrics,
+            commandSent: choices.command,
+          });
+          setAutoThoughts(prev => [...prev.slice(-15), thought]);
+          setTimeout(() => handleGenerate(true), 1800);
+        }, 1500);
+      }
     }
   };
 
@@ -802,6 +1033,52 @@ function SunoPage() {
               )}
             </button>
 
+            {/* AUTO Button + Status */}
+            <div className="space-y-2.5 mt-1">
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAutoClick}
+                  disabled={!canGenerate && !autoRunning}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all shadow-lg
+                    ${autoRunning
+                      ? 'bg-gradient-to-r from-red-500 via-rose-500 to-orange-500 hover:from-red-400 hover:via-rose-400 hover:to-orange-400 text-white shadow-red-500/30 animate-pulse'
+                      : 'bg-gradient-to-r from-orange-500 via-red-500 to-rose-500 hover:from-orange-400 hover:via-red-400 hover:to-rose-400 text-white shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
+                    }`}
+                >
+                  {autoRunning ? (
+                    <>
+                      <RotateCcw className="w-5 h-5 animate-spin" />
+                      {t('auto.status_running')} · 停止
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-5 h-5" />
+                      {t('auto.btn_label')}
+                    </>
+                  )}
+                </button>
+              </div>
+              {(autoRunning || autoCount > 0) && (
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex w-2 h-2 rounded-full ${autoRunning ? 'bg-red-400 animate-pulse' : 'bg-gray-500'}`} />
+                    <span className="text-xs text-gray-300 font-medium">
+                      {autoRunning ? t('auto.status_running') : t('auto.status_idle')}
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-orange-300">
+                    {t('auto.song_count').replace('{count}', String(autoCount))}
+                  </span>
+                </div>
+              )}
+              {!autoRunning && autoCount === 0 && (
+                <p className="text-[11px] text-center text-amber-400/80 flex items-center justify-center gap-1 px-2">
+                  <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                  <span>AUTO 将持续生成直到积分耗尽，极消耗。请谨慎使用。</span>
+                </p>
+              )}
+            </div>
+
             {!configured && (
               <p className="text-xs text-center text-amber-400 flex items-center justify-center gap-1">
                 <AlertCircle className="w-3 h-3" />
@@ -1139,8 +1416,8 @@ function SunoPage() {
                     <div
                       key={session.id}
                       className={`p-3 rounded-xl border transition-all ${session.status === 'completed' ? 'bg-emerald-500/5 border-emerald-500/20' :
-                          session.status === 'failed' ? 'bg-red-500/5 border-red-500/20' :
-                            'bg-gray-500/5 border-gray-500/20'
+                        session.status === 'failed' ? 'bg-red-500/5 border-red-500/20' :
+                          'bg-gray-500/5 border-gray-500/20'
                         }`}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -1270,6 +1547,115 @@ function SunoPage() {
           )}
         </div>
       </div>
+
+      {/* AUTO Danger Confirmation Modal (3-step) */}
+      {showAutoConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in"
+          onClick={cancelAutoConfirm}>
+          <div
+            className="w-full max-w-md bg-[#0f0f1a] border border-red-500/40 rounded-2xl shadow-2xl shadow-red-900/50 overflow-hidden animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 p-4 flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base font-bold text-white">
+                  {autoConfirmStep === 1 && AUTO_CONFIRM.title1('Suno AI')}
+                  {autoConfirmStep === 2 && AUTO_CONFIRM.title2}
+                  {autoConfirmStep === 3 && AUTO_CONFIRM.title3}
+                </h2>
+                <p className="text-[11px] text-white/80">
+                  {t('auto.step').replace('{curr}', String(autoConfirmStep))}
+                </p>
+              </div>
+              <button
+                onClick={cancelAutoConfirm}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+
+            <div className="px-4 py-2 bg-white/5 flex items-center gap-2">
+              {[1, 2, 3].map(step => (
+                <div key={step} className="flex-1 flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all
+                    ${autoConfirmStep >= step
+                      ? 'bg-gradient-to-br from-red-500 to-orange-500 text-white'
+                      : 'bg-white/10 text-gray-500'}`}>
+                    {autoConfirmStep > step ? <CheckCircle className="w-4 h-4" /> : step}
+                  </div>
+                  {step < 3 && (
+                    <div className={`flex-1 h-1 rounded-full transition-colors
+                      ${autoConfirmStep > step ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white/10'}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="p-5 space-y-3 max-h-[55vh] overflow-y-auto">
+              {autoConfirmStep === 1 && (
+                <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300 font-sans">
+                  {AUTO_CONFIRM.desc1('Suno AI', credit)}
+                </pre>
+              )}
+              {autoConfirmStep === 2 && (
+                <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300 font-sans">
+                  {AUTO_CONFIRM.desc2('Suno AI')}
+                </pre>
+              )}
+              {autoConfirmStep === 3 && (
+                <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300 font-sans">
+                  {AUTO_CONFIRM.desc3('Suno AI', credit)}
+                </pre>
+              )}
+              {autoConfirmStep === 3 && (
+                <div className="mt-2 p-3 rounded-xl border border-red-500/40 bg-red-500/10 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-red-300" />
+                    <p className="text-xs font-bold text-red-200">免责确认</p>
+                  </div>
+                  <p className="text-[11px] text-red-300/80">
+                    我已知晓此操作将消耗 Suno AI 账户的全部积分，后果由本人自行承担。
+                    zMusic 及相关开发者不对由此造成的积分损失、订阅费用或账号异常承担任何责任。
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="px-5 py-4 bg-white/5 border-t border-white/5 flex items-center gap-3">
+              <button
+                onClick={cancelAutoConfirm}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-300 bg-white/5 hover:bg-white/10 transition-colors border border-white/10"
+              >
+                {t('auto.cancel_btn')}
+              </button>
+              <button
+                onClick={proceedAutoConfirmStep}
+                className={`flex-[1.4] px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg
+                  ${autoConfirmStep === 3
+                    ? 'bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 hover:from-red-500 hover:via-rose-500 hover:to-orange-500 shadow-red-500/40 hover:shadow-red-500/60 hover:scale-[1.02] active:scale-[0.99]'
+                    : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 shadow-orange-500/30'
+                  }`}
+              >
+                {autoConfirmStep < 3 ? '下一步，我已了解风险 →' : t('auto.confirm_btn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Creative Thinking Panel — shows AI's reasoning for each AUTO song */}
+      <AutoCreativePanel
+        open={autoRunning || (autoThoughts.length > 0 && showCreativePanel)}
+        thoughts={autoThoughts}
+        autoRunning={autoRunning}
+        autoCount={autoCount}
+        engineName="Suno AI"
+        onClose={() => setShowCreativePanel(false)}
+      />
     </div>
   );
 }
