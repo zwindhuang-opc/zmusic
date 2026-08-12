@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Video, History, AlertCircle, Settings, ChevronDown, Loader, Sparkles, ExternalLink, Copy, Check, Clapperboard, Wand2, Brain, Palette, Music, Users, Sun, Moon, Cloud, Zap, Film, Camera, Clock, RotateCcw, AlertTriangle, ShieldCheck, X, CheckCircle, ListMusic, RefreshCw, Disc3 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
@@ -97,7 +97,7 @@ const ENGINE_THEMES = {
 };
 
 function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
-  const { t, ts } = useTranslation();
+  const { t, ts, currentLang } = useTranslation();
   const { addToHistory, updateHistory, removeFromHistory, copyToClipboard, pendingLyrics, showToast, sessions } = useGeneration();
   const autoProgress = useAutoProgress();
 
@@ -197,14 +197,44 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
     return () => { cancelled = true; };
   }, []);
 
+  const loadConfig = useCallback(async () => {
+    try {
+      const [muse, suno, melo] = await Promise.all([
+        MuseService.checkConfigured(),
+        SunoService.checkConfigured(),
+        MeloService.checkConfigured(),
+      ]);
+      const museOk = typeof muse === 'boolean' ? muse : (muse?.configured ?? false);
+      const sunoOk = typeof suno === 'boolean' ? suno : (suno?.configured ?? false);
+      const meloOk = typeof melo === 'boolean' ? melo : (melo?.configured ?? false);
+      setMuseAvailable(museOk);
+      setSunoAvailable(sunoOk);
+      setMeloAvailable(meloOk);
+
+      if (engine === 'muse' && museOk) {
+        try {
+          const credits = await MuseService.getCredits();
+          if (credits) setMuseCredits(credits);
+        } catch { }
+      }
+      showToast?.(t('mv.history_refresh'), 'success');
+    } catch (e) {
+      console.error('[MVPage] loadConfig failed:', e);
+      showToast?.(t('generation.failed'), 'error');
+    }
+  }, [engine, showToast, t]);
+
   const getGenreLabel = useCallback((key) => {
     const g = contentData.genres.find(x => x.key === key);
-    return g ? g.label_zh : key;
-  }, [contentData.genres]);
+    if (!g) return key;
+    const tKey = ts('mv_genres.' + key);
+    return tKey || (currentLang === 'en' ? g.label_en : g.label_zh);
+  }, [contentData.genres, currentLang]);
 
   const getGenreLabelEn = useCallback((key) => {
     const g = contentData.genres.find(x => x.key === key);
-    return g ? g.label_en : key;
+    if (!g) return key;
+    return g.label_en;
   }, [contentData.genres]);
 
   const getSceneIcon = useCallback((key) => {
@@ -220,7 +250,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
   const sceneTemplates = contentData.sceneTemplates.length > 0
     ? contentData.sceneTemplates.map(s => ({
       id: s.key,
-      label: t('scenes.' + s.key) || s.label_zh,
+      label: ts('scenes.' + s.key) || (currentLang === 'en' ? s.label_en : s.label_zh),
       icon: resolveIcon(s.icon),
       prompt: s.prompt,
     }))
@@ -232,18 +262,21 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
       name: tool.name,
       icon: resolveIcon(tool.icon),
       url: tool.url,
-      description: t('tools.' + tool.key) || tool.description_en,
+      description: ts('tools.' + tool.key) || (currentLang === 'en' ? tool.description_en : tool.description_zh),
       description_zh: tool.description_zh,
+      description_en: tool.description_en,
       features: tool.features || [],
       pricing: tool.pricing,
-      bestFor: tool.best_for_en,
+      bestFor: currentLang === 'en' ? tool.best_for_en : tool.best_for_zh,
     }))
     : [];
 
   const effectList = contentData.effects.length > 0
     ? contentData.effects.map(e => ({
       id: e.key,
-      name: t('effects.' + e.key) || e.label_zh,
+      name: ts('effects.' + e.key) || (currentLang === 'en' ? e.label_en : e.label_zh),
+      zh: e.label_zh,
+      en: e.label_en,
     }))
     : [];
 
@@ -252,9 +285,23 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
       id: p.key,
       zh: p.label_zh,
       en: p.label_en,
+      label: currentLang === 'en' ? p.label_en : p.label_zh,
       colors: p.colors ? JSON.parse(p.colors) : [],
     }))
     : [];
+
+  const genreLabels = useMemo(() => {
+    const map = {};
+    contentData.genres.forEach(g => {
+      map[g.key] = currentLang === 'en' ? g.label_en : g.label_zh;
+    });
+    return map;
+  }, [contentData.genres, currentLang]);
+
+  const translateFeature = useCallback((feature) => {
+    const key = 'tool_features.' + feature.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    return ts(key) || feature;
+  }, [ts]);
 
   // API status checks
   useEffect(() => {
@@ -1135,6 +1182,13 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
               <History className={`w-5 h-5 ${theme.iconColor}`} />
               <span className="text-sm">{t('mv.history')}</span>
             </button>
+            <button
+              onClick={loadConfig}
+              className="p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+              title={t('mv.history_refresh')}
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -1209,6 +1263,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
         mode={mode}
         onModeChange={setMode}
         genres={genres}
+        genreLabels={genreLabels}
         genre={genre}
         onGenreChange={setGenre}
         genreLabel={getGenreLabel(genre)}
@@ -1316,7 +1371,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
                         <div className="flex flex-wrap gap-1 mt-2">
                           {tool.features.slice(0, 3).map((f, i) => (
                             <span key={i} className={`px-2 py-0.5 text-xs rounded ${theme.chipBg} ${theme.chipText} ${theme.chipBorder} border`}>
-                              {f}
+                              {translateFeature(f)}
                             </span>
                           ))}
                         </div>
@@ -1409,10 +1464,10 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
       </div>
 
       <HistoryPanel
-        show={showHistory}
+        isOpen={showHistory}
         onClose={() => setShowHistory(false)}
-        source="mv"
-        onSelect={(item) => {
+        filterType="mv"
+        onSelectItem={(item) => {
           if (item.audioUrl) setAudioUrl(item.audioUrl);
           if (item.videoUrl) setVideoUrl(item.videoUrl);
           if (item.videoBlob) setVideoBlob(item.videoBlob);

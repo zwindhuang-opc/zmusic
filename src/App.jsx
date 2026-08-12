@@ -3,7 +3,7 @@ import { useTranslation } from './i18n/useTranslation.js';
 import {
   LayoutDashboard, Music, Mic, Video, Settings, Sparkles, TrendingUp,
   Activity, Cpu, Zap, BarChart3, Server, Bot, Globe, ArrowLeft, Wand2, Sliders, Image, Headphones, Cloud, Music2,
-  ChevronDown, ChevronRight, BookOpen
+  ChevronDown, ChevronRight, BookOpen, Shuffle, Upload
 } from 'lucide-react';
 import api, { isMobileEnvironment } from './services/api.client.js';
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
@@ -16,6 +16,8 @@ const SunoPage = lazy(() => import('./pages/SunoPage.jsx'));
 const MeloPage = lazy(() => import('./pages/MeloPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 const CreativeNotebook = lazy(() => import('./pages/CreativeNotebook.jsx'));
+const RemixStudio = lazy(() => import('./pages/RemixStudio.jsx'));
+const PublishStudio = lazy(() => import('./pages/PublishStudio.jsx'));
 import FloatingChatBall from './components/FloatingChatBall.jsx';
 import EasyMode from './components/EasyMode.jsx';
 import { AutoProgressProvider } from './contexts/AutoProgressContext.jsx';
@@ -23,7 +25,7 @@ import { GenerationProvider } from './stores/generationStore.jsx';
 import AutoProgressBar from './components/AutoProgressBar.jsx';
 
 const UI_MODE_KEY = 'zmusic-ui-mode';
-const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '1.0.0';
+const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '7.2.0';
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -31,7 +33,6 @@ function App() {
   const [apiStatus, setApiStatus] = useState({ configured: false, version: BUILD_VERSION, uptime: 0 });
   const [agentStatus, setAgentStatus] = useState(null);
   const [uiMode, setUiMode] = useState(() => localStorage.getItem(UI_MODE_KEY) || 'expert');
-  const [musicGroupExpanded, setMusicGroupExpanded] = useState(true);
 
   useEffect(() => {
     // Always load status on app start (desktop and mobile)
@@ -81,8 +82,9 @@ function App() {
     setCurrentPage('lyrics');
   };
 
-  const [aiMusicSubExpanded, setAiMusicSubExpanded] = useState(true);
+  const [musicGroupExpanded, setMusicGroupExpanded] = useState(true);
   const [mvGroupExpanded, setMvGroupExpanded] = useState(true);
+  const [studioGroupExpanded, setStudioGroupExpanded] = useState(true);
 
   const navigationItems = [
     { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
@@ -98,9 +100,6 @@ function App() {
         { id: 'melo', label: t('nav.melo'), icon: Music2, engine: 'melo' },
       ],
     },
-    { id: 'lyrics', label: t('nav.lyrics'), icon: Mic },
-    { id: 'notebook', label: '创作构思记录簿', icon: BookOpen },
-    { id: 'image-lyrics', label: t('nav.image_lyrics'), icon: Image },
     {
       id: 'mv-group',
       label: t('nav.mv'),
@@ -110,6 +109,19 @@ function App() {
         { id: 'mv-muse', label: 'Muse MV', icon: Headphones, engine: 'muse' },
         { id: 'mv-suno', label: 'Suno MV', icon: Cloud, engine: 'suno' },
         { id: 'mv-melo', label: 'Melo MV', icon: Music2, engine: 'melo' },
+      ],
+    },
+    { id: 'lyrics', label: t('nav.lyrics'), icon: Mic },
+    { id: 'notebook', label: t('nav.notebook'), icon: BookOpen },
+    { id: 'image-lyrics', label: t('nav.image_lyrics'), icon: Image },
+    {
+      id: 'studio-group',
+      label: t('nav.studio'),
+      icon: Sparkles,
+      isGroup: true,
+      children: [
+        { id: 'remix', label: t('nav.remix_studio'), icon: Shuffle },
+        { id: 'publish', label: t('nav.publish_studio'), icon: Upload },
       ],
     },
     { id: 'settings', label: t('nav.settings'), icon: Settings },
@@ -142,14 +154,14 @@ function App() {
           </div>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar min-h-0">
           {navigationItems.map((item) => {
             const Icon = item.icon;
 
             if (item.isGroup) {
               const groupActive = item.children.some(c => currentPage === c.id);
-              const expanded = item.id === 'music-group' ? musicGroupExpanded : mvGroupExpanded;
-              const setExpanded = item.id === 'music-group' ? setMusicGroupExpanded : setMvGroupExpanded;
+              const expanded = item.id === 'music-group' ? musicGroupExpanded : item.id === 'mv-group' ? mvGroupExpanded : studioGroupExpanded;
+              const setExpanded = item.id === 'music-group' ? setMusicGroupExpanded : item.id === 'mv-group' ? setMvGroupExpanded : setStudioGroupExpanded;
               return (
                 <div key={item.id}>
                   <button
@@ -334,6 +346,8 @@ function App() {
             {currentPage === 'muse' && <MusePage onNavigate={setCurrentPage} />}
             {currentPage === 'suno' && <SunoPage onNavigate={setCurrentPage} />}
             {currentPage === 'melo' && <MeloPage onNavigate={setCurrentPage} />}
+            {currentPage === 'remix' && <RemixStudio onNavigate={setCurrentPage} />}
+            {currentPage === 'publish' && <PublishStudio onNavigate={setCurrentPage} />}
             {currentPage === 'settings' && <SettingsPage />}
           </Suspense>
         </div>

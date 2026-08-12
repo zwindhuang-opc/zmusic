@@ -70,7 +70,7 @@ function proxyAudioUrl(url) {
 
 function SunoPage({ onNavigate }) {
   const { t } = useTranslation();
-  const { pendingLyrics, clearPendingLyrics, startSession, updateSession, completeSession, addToHistory, updateHistory, removeFromHistory, sessions, copyToClipboard, showToast } = useGeneration();
+  const { pendingLyrics, clearPendingLyrics, pendingData, clearPendingData, startSession, updateSession, completeSession, addToHistory, updateHistory, removeFromHistory, sessions, copyToClipboard, showToast } = useGeneration();
   const autoProgress = useAutoProgress();
 
   const [mode, setMode] = useState('prompt');
@@ -521,12 +521,25 @@ function SunoPage({ onNavigate }) {
   }, []);
 
   useEffect(() => {
-    if (pendingLyrics) {
+    if (pendingData) {
+      if (pendingData.lyrics) {
+        setMode('lyrics');
+        setLyrics(pendingData.lyrics);
+      }
+      if (pendingData.title) setTitle(pendingData.title);
+      if (pendingData.style) setSelectedStyle(pendingData.style);
+      if (pendingData.theme) setTheme?.(pendingData.theme);
+      if (pendingData.bpm) setBpm(String(pendingData.bpm));
+      if (pendingData.duration) setDuration(Number(pendingData.duration));
+      if (pendingData.prompt) setPrompt(pendingData.prompt);
+      if (pendingData.structure) setStructure?.(pendingData.structure);
+      clearPendingData();
+    } else if (pendingLyrics) {
       setMode('lyrics');
       setLyrics(pendingLyrics);
       clearPendingLyrics();
     }
-  }, [pendingLyrics]);
+  }, [pendingData, pendingLyrics]);
 
   const loadConfig = async () => {
     setLoadingUser(true);
@@ -1440,7 +1453,7 @@ function SunoPage({ onNavigate }) {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                 <ListMusic className="w-4 h-4 text-fuchsia-400" />
-                历史音乐
+                {t('song_history.title')}
                 {audioList.length > 0 && (
                   <span className="px-2 py-0.5 rounded-full bg-fuchsia-500/10 text-fuchsia-300 text-[10px] font-medium">
                     {audioList.length}
@@ -1457,25 +1470,25 @@ function SunoPage({ onNavigate }) {
                 ) : (
                   <RefreshCw className="w-3 h-3" />
                 )}
-                刷新
+                {t('song_history.refresh')}
               </button>
             </div>
 
             {loadingList && audioList.length === 0 ? (
               <div className="flex items-center justify-center py-12 text-gray-500 text-xs">
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                加载中...
+                {t('song_history.loading')}
               </div>
             ) : audioList.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-500 text-xs">
                 <Music className="w-10 h-10 mb-3 opacity-30" />
-                <p>暂无历史音乐</p>
-                <p className="mt-1 text-[10px]">生成的歌曲将在此处显示</p>
+                <p>{t('song_history.empty')}</p>
+                <p className="mt-1 text-[10px]">{t('song_history.empty_hint')}</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
                 {audioList.map((item, idx) => {
-                  const title = item.title || item.name || item.filename || `歌曲 ${idx + 1}`;
+                  const title = item.title || item.name || item.filename || t('song_history.untitled');
                   const audioUrl = proxyAudioUrl(item.audioUrl || item.url || item.audio_url);
                   const duration = item.duration || item.length || 0;
                   return (

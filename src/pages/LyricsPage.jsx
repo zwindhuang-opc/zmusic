@@ -70,7 +70,7 @@ function LyricsPage({ onNavigate, defaultMode }) {
     if (!s) return s;
     return ts(`lyrics_themes.${s}`) || ts(`themes.${s}`) || ts(`themes_extra.${s}`) || s;
   };
-  const { addToHistory, copyToClipboard, setPendingLyrics } = useGeneration();
+  const { addToHistory, copyToClipboard, setPendingLyrics, setPendingData } = useGeneration();
 
   const FALLBACK_GENRES = Object.keys(LYRICS_STYLES);
   const FALLBACK_THEMES = Object.keys(LYRICS_THEMES);
@@ -518,10 +518,67 @@ function LyricsPage({ onNavigate, defaultMode }) {
 
   const handleHistorySelect = (item, aiType) => {
     if (aiType && ['muse', 'suno', 'melo'].includes(aiType)) {
-      const text = item.result?.lyricsText || item.result?.fullText || item.lyricsText || item.fullText || '';
+      const text = item.result?.lyricsText || item.result?.fullText || item.lyricsText || item.fullText || item.lyrics || '';
       setPendingLyrics(text);
+
+      const bpm = item.result?.bpm || item.bpm || '';
+      const style = item.result?.style || item.style || '';
+      const theme = item.result?.theme || item.theme || '';
+      const structure = item.result?.structure || item.structure || '';
+      const prompt = item.result?.fullCommand || item.result?.prompt || item.prompt || '';
+      const title = item.title || item.result?.title || '';
+
+      setPendingData({
+        lyrics: text,
+        title,
+        style,
+        theme,
+        bpm: bpm ? Number(bpm) : undefined,
+        structure,
+        prompt,
+        engine: aiType,
+      });
+
       onNavigate?.(aiType);
     }
+  };
+
+  const handleSendToEngine = (engineId) => {
+    if (!result) return;
+    const lyricsText = result.result?.lyricsText || result.result?.fullText || '';
+    const fullCommand = result.result?.fullCommand || result.command || '';
+    const title = result.result?.title || result.title || '';
+
+    setPendingLyrics(lyricsText);
+    setPendingData({
+      lyrics: lyricsText,
+      title,
+      style: genre,
+      theme,
+      bpm,
+      structure: result.result?.structure || '',
+      prompt: fullCommand || script,
+      engine: engineId,
+      language,
+      duration,
+    });
+    onNavigate?.(engineId);
+  };
+
+  const handleSendToMV = (engineId) => {
+    if (!result) return;
+    const lyricsText = result.result?.lyricsText || result.result?.fullText || '';
+    setPendingLyrics(lyricsText);
+    setPendingData({
+      lyrics: lyricsText,
+      title: result.result?.title || result.title || '',
+      style: genre,
+      theme,
+      bpm,
+      engine: engineId,
+      purpose: 'mv',
+    });
+    onNavigate?.(engineId);
   };
 
   return (
@@ -545,6 +602,42 @@ function LyricsPage({ onNavigate, defaultMode }) {
             <History className="w-3.5 h-3.5 md:w-4 md:h-4" />
             {t('lyrics.history')}
           </button>
+        </div>
+      </div>
+
+      {/* ====== Creation Script — ALWAYS VISIBLE, EYE-CATCHING ====== */}
+      <div className="relative overflow-hidden rounded-xl p-4 md:p-5 bg-gradient-to-br from-violet-500/10 via-pink-500/5 to-purple-500/10 border-2 border-violet-500/40 shadow-lg shadow-purple-500/10">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="relative space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
+              <Wand2 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">{t('lyrics.script')}</h2>
+              <p className="text-[11px] text-gray-400">{t('lyrics.script_hint')}</p>
+            </div>
+          </div>
+          <textarea
+            value={script}
+            onChange={(e) => setScript(e.target.value)}
+            placeholder={t('lyrics.script_placeholder')}
+            className="w-full min-h-[160px] bg-black/40 border-2 border-violet-500/30 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-500/30 placeholder-gray-500 resize-none transition-all shadow-inner"
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-gray-500 font-mono">
+              {script.length} {t('common.characters') || '字'}
+            </span>
+            {script && (
+              <button
+                onClick={() => setScript('')}
+                className="text-[10px] text-gray-500 hover:text-pink-400 transition-colors flex items-center gap-1"
+              >
+                <X className="w-3 h-3" />
+                {t('common.clear') || '清空'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -608,6 +701,12 @@ function LyricsPage({ onNavigate, defaultMode }) {
                   <p className="text-white font-medium">{language === 'zh' ? '普通话' : language}</p>
                 </div>
               </div>
+              {script && (
+                <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                  <span className="text-[10px] text-violet-400 uppercase tracking-wider">创作脚本</span>
+                  <p className="text-xs text-gray-300 mt-1 line-clamp-2">{script}</p>
+                </div>
+              )}
               {visionResult?.vocalRecommendation && (
                 <div className="p-3 rounded-lg bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-500/20">
                   <span className="text-xs text-pink-400">🎤 AI人声推荐</span>
@@ -620,9 +719,9 @@ function LyricsPage({ onNavigate, defaultMode }) {
               <button
                 onClick={handleGenerate}
                 disabled={isGenerating}
-                className="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold text-base flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50 shadow-lg shadow-purple-500/20 active:scale-[0.98]"
               >
-                {isGenerating ? (<><Loader className="w-4 h-4 animate-spin" /> 生成中...</>) : (<><Sparkles className="w-4 h-4" /> 开始生成歌词</>)}
+                {isGenerating ? (<><Loader className="w-5 h-5 animate-spin" /> 生成中...</>) : (<><Sparkles className="w-5 h-5" /> {t('lyrics.generate')}</>)}
               </button>
             </div>
 
@@ -1428,18 +1527,6 @@ function LyricsPage({ onNavigate, defaultMode }) {
                     </div>
                   </div>
                 </div>
-
-                <div className="gradient-border p-4 md:p-5">
-                  <label className="text-xs font-medium text-gray-300 mb-3 block flex items-center gap-2">
-                    <Wand2 className="w-3 h-3 text-pink-400" />
-                    {t('lyrics.script')}
-                  </label>
-                  <textarea value={script} onChange={(e) => setScript(e.target.value)}
-                    placeholder={t('lyrics.script_placeholder')} rows={4}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/50 placeholder-gray-600 resize-none"
-                  />
-                  <p className="text-[10px] text-gray-600 mt-2">{t('lyrics.script_hint')}</p>
-                </div>
               </div>
             )}
           </div>
@@ -1562,13 +1649,13 @@ function LyricsPage({ onNavigate, defaultMode }) {
                         <Copy className="w-3.5 h-3.5" />{t('lyrics.copy_all')}
                       </button>
                       <button
-                        onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('music'); }}
+                        onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); setPendingData({ lyrics: result.result.lyricsText || result.result.fullText, title: result.result?.title || '', style: genre, theme, bpm, engine: 'music' }); onNavigate?.('music'); }}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-500/15 border border-pink-500/30 text-xs text-pink-300 hover:bg-pink-500/25 transition-all"
                       >
                         <Music2 className="w-3.5 h-3.5" />{t('lyrics.send_to_music')}
                       </button>
                       <button
-                        onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('mv'); }}
+                        onClick={() => handleSendToMV('mv-muse')}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-xs text-blue-300 hover:bg-blue-500/25 transition-all"
                       >
                         <Video className="w-3.5 h-3.5" />{t('lyrics.send_to_mv')}
@@ -1577,21 +1664,21 @@ function LyricsPage({ onNavigate, defaultMode }) {
                       <div className="flex items-center gap-1.5 ml-auto pl-3 border-l border-white/10">
                         <span className="text-[10px] text-gray-500 uppercase tracking-wider">AI生成：</span>
                         <button
-                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('muse'); }}
+                          onClick={() => handleSendToEngine('muse')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/30 text-xs text-fuchsia-300 hover:bg-fuchsia-500/25 transition-all"
                           title="发送到 Muse AI 生成歌曲"
                         >
                           <Headphones className="w-3.5 h-3.5" /> Muse
                         </button>
                         <button
-                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('suno'); }}
+                          onClick={() => handleSendToEngine('suno')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-xs text-cyan-300 hover:bg-cyan-500/25 transition-all"
                           title="发送到 Suno AI 生成歌曲"
                         >
                           <Cloud className="w-3.5 h-3.5" /> Suno
                         </button>
                         <button
-                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('melo'); }}
+                          onClick={() => handleSendToEngine('melo')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-xs text-amber-300 hover:bg-amber-500/25 transition-all"
                           title="发送到 Melo AI 生成歌曲"
                         >
@@ -1618,19 +1705,19 @@ function LyricsPage({ onNavigate, defaultMode }) {
                           <Copy className="w-3.5 h-3.5" />{t('lyrics.copy_commands')}
                         </button>
                         <button
-                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('muse'); }}
+                          onClick={() => handleSendToEngine('muse')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/30 text-xs text-fuchsia-300 hover:bg-fuchsia-500/25 transition-all"
                         >
                           <Headphones className="w-3.5 h-3.5" /> Muse
                         </button>
                         <button
-                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('suno'); }}
+                          onClick={() => handleSendToEngine('suno')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-xs text-cyan-300 hover:bg-cyan-500/25 transition-all"
                         >
                           <Cloud className="w-3.5 h-3.5" /> Suno
                         </button>
                         <button
-                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('melo'); }}
+                          onClick={() => handleSendToEngine('melo')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-xs text-amber-300 hover:bg-amber-500/25 transition-all"
                         >
                           <Music2 className="w-3.5 h-3.5" /> Melo
@@ -1654,13 +1741,13 @@ function LyricsPage({ onNavigate, defaultMode }) {
                         <Copy className="w-3.5 h-3.5" />{t('lyrics.copy_lyrics')}
                       </button>
                       <button
-                        onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('music'); }}
+                        onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); setPendingData({ lyrics: result.result.lyricsText || result.result.fullText, title: result.result?.title || '', style: genre, theme, bpm, engine: 'music' }); onNavigate?.('music'); }}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-500/15 border border-pink-500/30 text-xs text-pink-300 hover:bg-pink-500/25 transition-all"
                       >
                         <Music2 className="w-3.5 h-3.5" />{t('lyrics.send_to_music')}
                       </button>
                       <button
-                        onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('mv'); }}
+                        onClick={() => handleSendToMV('mv-muse')}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-xs text-blue-300 hover:bg-blue-500/25 transition-all"
                       >
                         <Video className="w-3.5 h-3.5" />{t('lyrics.send_to_mv')}
@@ -1668,19 +1755,19 @@ function LyricsPage({ onNavigate, defaultMode }) {
                       <div className="flex items-center gap-1.5 ml-auto pl-3 border-l border-white/10">
                         <span className="text-[10px] text-gray-500 uppercase tracking-wider">AI生成：</span>
                         <button
-                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('muse'); }}
+                          onClick={() => handleSendToEngine('muse')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/30 text-xs text-fuchsia-300 hover:bg-fuchsia-500/25 transition-all"
                         >
                           <Headphones className="w-3.5 h-3.5" /> Muse
                         </button>
                         <button
-                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('suno'); }}
+                          onClick={() => handleSendToEngine('suno')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-xs text-cyan-300 hover:bg-cyan-500/25 transition-all"
                         >
                           <Cloud className="w-3.5 h-3.5" /> Suno
                         </button>
                         <button
-                          onClick={() => { setPendingLyrics(result.result.lyricsText || result.result.fullText); onNavigate?.('melo'); }}
+                          onClick={() => handleSendToEngine('melo')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-xs text-amber-300 hover:bg-amber-500/25 transition-all"
                         >
                           <Music2 className="w-3.5 h-3.5" /> Melo

@@ -70,8 +70,18 @@ export function t(key, vars, lang) {
  * Use this instead of `t(key) || fallback` to avoid truthy-key bugs.
  */
 export function ts(key, vars, lang) {
-  const v = t(key, vars, lang);
-  return v !== key ? v : null;
+  if (!key) return null;
+  const targetLang = lang || currentLang;
+  const parts = key.split('.');
+  const value = resolveKey(translations[targetLang] || translations.zh, parts);
+  if (value !== undefined && value !== null) {
+    return interpolate(value, vars);
+  }
+  const fallbackValue = resolveKey(translations.zh, parts);
+  if (fallbackValue !== undefined && fallbackValue !== null) {
+    return interpolate(fallbackValue, vars);
+  }
+  return null;
 }
 
 /**

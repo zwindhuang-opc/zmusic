@@ -16,7 +16,9 @@ export function useTranslation() {
         t: (key, vars) => t(key, vars, lang),
         ts: (key, vars) => ts(key, vars, lang),
         tr: (raw, preferredCategories) => tr(raw, preferredCategories, lang),
-        i18n: { language: lang, changeLanguage }
+        i18n: { language: lang, changeLanguage },
+        lang,
+        currentLang: lang,
     };
 }
 

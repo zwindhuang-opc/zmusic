@@ -93,7 +93,7 @@ const QUICK_LYRICS_TEMPLATES = [
 
 function MeloPage({ onNavigate }) {
   const { t } = useTranslation();
-  const { pendingLyrics, clearPendingLyrics, startSession, updateSession, appendLog, cancelSession, completeSession, addToHistory, updateHistory, removeFromHistory, activeSession, sessions, copyToClipboard, showToast } = useGeneration();
+  const { pendingLyrics, clearPendingLyrics, pendingData, clearPendingData, startSession, updateSession, appendLog, cancelSession, completeSession, addToHistory, updateHistory, removeFromHistory, activeSession, sessions, copyToClipboard, showToast } = useGeneration();
   const autoProgress = useAutoProgress();
   const cancelRef = useRef(false);
 
@@ -617,11 +617,21 @@ function MeloPage({ onNavigate }) {
   }, []);
 
   useEffect(() => {
-    if (pendingLyrics) {
+    if (pendingData) {
+      if (pendingData.lyrics) setLyrics(pendingData.lyrics);
+      if (pendingData.title) setTitle(pendingData.title);
+      if (pendingData.style) setSelectedStyle(pendingData.style);
+      if (pendingData.theme) setTheme?.(pendingData.theme);
+      if (pendingData.bpm) setEffectiveBpm(String(pendingData.bpm));
+      if (pendingData.duration) setDuration(Number(pendingData.duration));
+      if (pendingData.prompt) setPrompt(pendingData.prompt);
+      if (pendingData.structure) setStructure?.(pendingData.structure);
+      clearPendingData();
+    } else if (pendingLyrics) {
       setLyrics(pendingLyrics);
       clearPendingLyrics();
     }
-  }, [pendingLyrics]);
+  }, [pendingData, pendingLyrics]);
 
   const loadMeloConfig = async () => {
     setLoadingConfig(true);
@@ -1921,7 +1931,7 @@ function MeloPage({ onNavigate }) {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                 <ListMusic className="w-4 h-4 text-amber-400" />
-                历史音乐
+                {t('song_history.title')}
                 {audioList.length > 0 && (
                   <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 text-[10px] font-medium">
                     {audioList.length}
@@ -1938,25 +1948,25 @@ function MeloPage({ onNavigate }) {
                 ) : (
                   <RefreshCw className="w-3 h-3" />
                 )}
-                刷新
+                {t('song_history.refresh')}
               </button>
             </div>
 
             {loadingList && audioList.length === 0 ? (
               <div className="flex items-center justify-center py-12 text-gray-500 text-xs">
                 <Loader className="w-4 h-4 animate-spin mr-2" />
-                加载中...
+                {t('song_history.loading')}
               </div>
             ) : audioList.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-500 text-xs">
                 <Music className="w-10 h-10 mb-3 opacity-30" />
-                <p>暂无历史音乐</p>
-                <p className="mt-1 text-[10px]">生成的歌曲将在此处显示</p>
+                <p>{t('song_history.empty')}</p>
+                <p className="mt-1 text-[10px]">{t('song_history.empty_hint')}</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
                 {audioList.map((item, idx) => {
-                  const title = item.title || `歌曲 ${idx + 1}`;
+                  const title = item.title || t('song_history.untitled');
                   const audioUrl = proxyAudioUrl(item.audioUrl);
                   const duration = item.duration || 0;
                   return (

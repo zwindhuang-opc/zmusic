@@ -45,7 +45,7 @@ function MVTimelinePreview({ result, onCopy, t }) {
                                         {scene.sceneId || i + 1}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-sm font-medium text-white truncate">{scene.scene || `Scene ${i + 1}`}</div>
+                                        <div className="text-sm font-medium text-white truncate">{scene.scene || `${safeT('mv.scene_label')} ${i + 1}`}</div>
                                         <div className="text-[10px] text-gray-500 font-mono">
                                             {scene.startTime}s - {scene.endTime}s ({scene.duration}s)
                                         </div>

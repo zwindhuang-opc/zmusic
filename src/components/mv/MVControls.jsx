@@ -5,6 +5,7 @@ function MVControls({
   mode,
   onModeChange,
   genres,
+  genreLabels,
   genre,
   onGenreChange,
   style,
@@ -71,7 +72,7 @@ function MVControls({
                     : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 hover:text-white'
                     }`}
                 >
-                  {g}
+                  {genreLabels?.[g] || g}
                 </button>
               ))}
             </div>
@@ -175,7 +176,7 @@ function MVControls({
                         />
                       ))}
                     </div>
-                    <span className="text-[10px] text-gray-400 truncate block">{p.en}</span>
+                    <span className="text-[10px] text-gray-400 truncate block">{p.label}</span>
                   </button>
                 ))}
               </div>

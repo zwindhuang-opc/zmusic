@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
   BookOpen, Lightbulb, Clock, ChevronDown, ChevronUp,
-  Headphones, Mic, Copy, Check, Cpu,
+  Headphones, Mic, Copy, Check, Cpu, Piano, Cloud, Music2,
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
 
 export default function CreativeNotebook() {
   const { t } = useTranslation();
-  const { stats, history } = useGeneration();
+  const { stats, history, setPendingLyrics, setPendingData } = useGeneration();
   const [openIds, setOpenIds] = useState({});
   const [copiedId, setCopiedId] = useState(null);
 
@@ -20,30 +20,30 @@ export default function CreativeNotebook() {
     const snap = proc.snapshot || {};
     const thoughts = Array.isArray(proc.thoughts) ? proc.thoughts : [];
 
-    if (item.title) text += `标题: ${item.title}\n`;
-    if (item.engine) text += `引擎: ${item.engine}\n`;
-    if (item.status) text += `状态: ${item.status}\n`;
-    if (item.createdAt) text += `时间: ${new Date(item.createdAt).toLocaleString()}\n`;
-    if (item.style) text += `风格: ${item.style}\n`;
-    if (item.duration > 0) text += `时长: ${Math.round(item.duration)}秒\n`;
-    if (item.error) text += `错误: ${item.error}\n`;
+    if (item.title) text += `Title: ${item.title}\n`;
+    if (item.engine) text += `Engine: ${item.engine}\n`;
+    if (item.status) text += `Status: ${item.status}\n`;
+    if (item.createdAt) text += `Time: ${new Date(item.createdAt).toLocaleString()}\n`;
+    if (item.style) text += `Style: ${item.style}\n`;
+    if (item.duration > 0) text += `Duration: ${Math.round(item.duration)}s\n`;
+    if (item.error) text += `Error: ${item.error}\n`;
 
     if (thoughts.length > 0) {
-      text += '\n=== 创作构思时间线 ===\n';
+      text += '\n=== Creative Timeline ===\n';
       thoughts.forEach((th, idx) => {
         text += `\n[${idx + 1}] ${th.time || ''} ${th.title || th.step || ''}\n`;
-        if (th.summary) text += `  概要: ${th.summary}\n`;
-        if (th.detail) text += `  详情: ${th.detail}\n`;
+        if (th.summary) text += `  Summary: ${th.summary}\n`;
+        if (th.detail) text += `  Detail: ${th.detail}\n`;
       });
     }
 
     if (Object.keys(snap).length > 0) {
-      text += '\n=== 参数快照 ===\n';
+      text += '\n=== Parameter Snapshot ===\n';
       text += JSON.stringify(snap, null, 2) + '\n';
     }
 
-    if (item.lyrics) text += `\n=== 歌词 ===\n${item.lyrics}\n`;
-    if (item.prompt) text += `\n=== 生成命令 ===\n${item.prompt}\n`;
+    if (item.lyrics) text += `\n=== Lyrics ===\n${item.lyrics}\n`;
+    if (item.prompt) text += `\n=== Commands ===\n${item.prompt}\n`;
 
     return text.trim();
   };
@@ -54,7 +54,28 @@ export default function CreativeNotebook() {
       await navigator.clipboard.writeText(text);
       setCopiedId(item.id);
       setTimeout(() => setCopiedId(null), 1500);
-    } catch {}
+    } catch { }
+  };
+
+  const handleSendToAI = (item, engine, onNavigate) => {
+    const proc = item.creativeProcess || {};
+    const snap = proc.snapshot || {};
+    const thoughts = Array.isArray(proc.thoughts) ? proc.thoughts : [];
+    const lyricsText = item.lyrics || snap.lyrics || '';
+
+    setPendingLyrics(lyricsText);
+    setPendingData({
+      lyrics: lyricsText,
+      title: item.title || snap.title || '',
+      style: snap.style || item.style || '',
+      theme: snap.theme || '',
+      bpm: snap.bpm ? Number(snap.bpm) : undefined,
+      structure: snap.structure || '',
+      prompt: item.prompt || snap.prompt || '',
+      engine,
+    });
+
+    if (onNavigate) onNavigate(engine);
   };
 
   const notebookItems = history
@@ -63,7 +84,6 @@ export default function CreativeNotebook() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      {/* Header */}
       <div className="gradient-border p-4 md:p-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div className="flex items-center gap-3">
@@ -71,37 +91,32 @@ export default function CreativeNotebook() {
               <BookOpen className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-white">创作构思记录簿</h1>
-              <p className="text-xs text-gray-500 mt-0.5">
-                AUTO 模式 60 秒构思全过程 — 即便积分不足未生成歌曲，所有构思细节、创作参数、命令均完整保存于此
-              </p>
+              <h1 className="text-lg font-bold text-white">{t('notebook.title')}</h1>
+              <p className="text-xs text-gray-500 mt-0.5">{t('notebook.subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center gap-1.5 text-amber-400">
               <Lightbulb className="w-3.5 h-3.5" />
-              <span>共 <span className="font-bold font-mono">{notebookItems.length}</span> 份构思记录</span>
+              <span>{t('notebook.total_records', { count: notebookItems.length })}</span>
             </div>
-            <span className="text-emerald-400 font-medium">✅ 成功 {stats.songsGenerated}</span>
-            <span className="text-rose-400 font-medium">❌ 失败 {stats.creationAttempts}</span>
+            <span className="text-emerald-400 font-medium">{t('notebook.success_count', { count: stats.songsGenerated })}</span>
+            <span className="text-rose-400 font-medium">{t('notebook.failure_count', { count: stats.creationAttempts })}</span>
           </div>
         </div>
 
-        {/* Empty state */}
         {notebookItems.length === 0 && (
           <div className="rounded-xl bg-white/5 border border-dashed border-white/10 p-8 md:p-12 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500/10 to-rose-500/10 flex items-center justify-center border border-amber-500/20">
               <Lightbulb className="w-8 h-8 text-amber-400/70" />
             </div>
-            <div className="text-sm font-medium text-white mb-1">还没有创作构思记录</div>
+            <div className="text-sm font-medium text-white mb-1">{t('notebook.no_data')}</div>
             <div className="text-xs text-gray-500 max-w-md mx-auto leading-relaxed">
-              到任一平台页面点击 <span className="px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20 mx-1 font-mono">AUTO</span> 按钮，
-              系统会进入 60 秒构思倒计时 —— 整个灵感思考过程（主题、风格、标题、歌词草稿、生成命令）都会完整记录在此。
+              {t('notebook.no_data_desc')}
             </div>
           </div>
         )}
 
-        {/* Notebook list */}
         {notebookItems.length > 0 && (
           <div className="space-y-2.5 md:space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
             {notebookItems.map(item => {
@@ -119,7 +134,6 @@ export default function CreativeNotebook() {
                     ? 'bg-rose-500/5 border-rose-500/20 hover:border-rose-500/40'
                     : 'bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/40'
                     }`}>
-                  {/* Header */}
                   <div
                     className="flex items-start justify-between gap-3 p-3 md:p-3.5 cursor-pointer"
                     onClick={() => toggleItem(item.id)}
@@ -138,7 +152,7 @@ export default function CreativeNotebook() {
                           </span>
                           <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${failed ? 'bg-rose-500/15 text-rose-300 border border-rose-500/20' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/20'
                             }`}>
-                            {failed ? '构思失败' : '生成成功'}
+                            {failed ? t('notebook.status_failed') : t('notebook.status_success')}
                           </span>
                           {snap.theme && (
                             <span className="text-[11px] px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
@@ -147,17 +161,17 @@ export default function CreativeNotebook() {
                           )}
                           {snap.bpm && (
                             <span className="text-[11px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20 font-mono">
-                              {snap.bpm} BPM · {snap.key || '?'}调
+                              {snap.bpm} BPM · {t('notebook.key_label', { key: snap.key || '?' })}
                             </span>
                           )}
                           {item.duration > 0 && (
                             <span className="text-[11px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-mono">
-                              {Math.round(item.duration)} 秒
+                              {t('notebook.seconds', { count: Math.round(item.duration) })}
                             </span>
                           )}
                         </div>
                         <div className="text-sm font-bold text-white mt-1.5 truncate">
-                          {item.title?.replace('❌ 构思失败 · ', '') || '未命名构思'}
+                          {item.title?.replace('❌ 构思失败 · ', '') || t('notebook.untitled')}
                         </div>
                         <div className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
                           <Clock className="w-3 h-3 inline" />
@@ -165,7 +179,7 @@ export default function CreativeNotebook() {
                           {thoughts.length > 0 && (
                             <>
                               <span className="text-gray-700">·</span>
-                              <span className="text-amber-400/80">💭 {thoughts.length} 个思考步骤</span>
+                              <span className="text-amber-400/80">💭 {t('notebook.thinking_steps', { count: thoughts.length })}</span>
                             </>
                           )}
                           {failed && item.error && (
@@ -177,14 +191,14 @@ export default function CreativeNotebook() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0 pt-1">
+                    <div className="flex items-center gap-1.5 flex-shrink-0 pt-1">
                       <button
                         onClick={(e) => { e.stopPropagation(); handleCopyItem(item); }}
                         className={`p-1.5 rounded-lg transition-colors ${copiedId === item.id
                           ? 'text-emerald-400 bg-emerald-500/10'
                           : 'text-gray-400 hover:text-white hover:bg-white/10'
                           }`}
-                        title="复制全部构思内容"
+                        title={t('notebook.copy_all')}
                       >
                         {copiedId === item.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       </button>
@@ -194,15 +208,13 @@ export default function CreativeNotebook() {
                     </div>
                   </div>
 
-                  {/* Expanded detail */}
                   {isOpen && (
                     <div className="px-3 md:px-3.5 pb-3.5 space-y-3 border-t border-white/5 pt-3">
-                      {/* 创作时间线 */}
                       {thoughts.length > 0 && (
                         <div>
                           <div className="text-[11px] font-bold text-amber-300/90 mb-2 flex items-center gap-1.5">
                             <Lightbulb className="w-3 h-3" />
-                            AUTO 60 秒构思时间线（共 {thoughts.length} 条思考）
+                            {t('notebook.timeline_desc', { count: thoughts.length })}
                           </div>
                           <div className="space-y-2 rounded-lg bg-black/30 p-2.5 max-h-[38vh] overflow-y-auto border border-white/5">
                             {thoughts.map((th, idx) => (
@@ -212,7 +224,7 @@ export default function CreativeNotebook() {
                                   <div className="text-[10px] text-violet-400/80">{th.phase || ''}</div>
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-white font-semibold text-xs">{th.title || th.step || `Step ${idx + 1}`}</div>
+                                  <div className="text-white font-semibold text-xs">{th.title || th.step || t('notebook.step_label', { n: idx + 1 })}</div>
                                   {th.summary && <div className="text-gray-300 mt-0.5">{th.summary}</div>}
                                   {th.detail && (
                                     <pre className="text-[10.5px] md:text-[11px] text-gray-400 mt-1 whitespace-pre-wrap font-sans leading-relaxed bg-black/30 rounded p-2 border border-white/5">
@@ -226,12 +238,11 @@ export default function CreativeNotebook() {
                         </div>
                       )}
 
-                      {/* 参数快照 */}
                       {Object.keys(snap).length > 0 && (
                         <div>
                           <div className="text-[11px] font-bold text-violet-300/90 mb-2 flex items-center gap-1.5">
                             <Cpu className="w-3 h-3" />
-                            最终参数快照
+                            {t('notebook.param_snapshot')}
                           </div>
                           <pre className="text-[10.5px] md:text-[11px] text-gray-300 whitespace-pre-wrap rounded-lg bg-black/30 p-2.5 border border-white/5 font-mono max-h-[30vh] overflow-y-auto">
                             {JSON.stringify(snap, null, 2)}
@@ -239,12 +250,11 @@ export default function CreativeNotebook() {
                         </div>
                       )}
 
-                      {/* 歌词/命令 */}
                       {(item.lyrics || item.prompt) && (
                         <div>
                           <div className="text-[11px] font-bold text-emerald-300/90 mb-2 flex items-center gap-1.5">
                             <Mic className="w-3 h-3" />
-                            歌词 / 生成命令
+                            {t('notebook.lyrics_and_commands')}
                           </div>
                           <pre className="text-[11px] md:text-xs text-gray-200 whitespace-pre-wrap rounded-lg bg-emerald-500/5 p-3 border border-emerald-500/15 leading-relaxed font-sans">
                             {item.lyrics || item.prompt}
@@ -252,27 +262,50 @@ export default function CreativeNotebook() {
                         </div>
                       )}
 
-                      {/* 成功音频 */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] text-gray-400 mr-1">→</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleSendToAI(item, 'muse'); }}
+                          className="flex items-center gap-1 py-1.5 px-2.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors text-[11px] font-medium"
+                          title="Send to Muse AI"
+                        >
+                          <Piano className="w-3 h-3" /> Muse
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleSendToAI(item, 'suno'); }}
+                          className="flex items-center gap-1 py-1.5 px-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors text-[11px] font-medium"
+                          title="Send to Suno AI"
+                        >
+                          <Cloud className="w-3 h-3" /> Suno
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleSendToAI(item, 'melo'); }}
+                          className="flex items-center gap-1 py-1.5 px-2.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors text-[11px] font-medium"
+                          title="Send to Melo AI"
+                        >
+                          <Headphones className="w-3 h-3" /> Melo
+                        </button>
+                      </div>
+
                       {!failed && item.audioUrl && (
                         <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/20 p-3">
                           <div className="text-xs font-bold text-emerald-300 mb-1.5 flex items-center gap-1.5">
                             <Headphones className="w-3.5 h-3.5" />
-                            音频 / 封面
+                            {t('notebook.audio_cover')}
                           </div>
                           <audio controls className="w-full h-8" src={item.audioUrl} />
                           {item.imageUrl && (
                             <a href={item.imageUrl} target="_blank" rel="noopener noreferrer"
                               className="text-[11px] text-blue-300 hover:text-blue-200 underline mt-2 inline-block">
-                              🖼 查看封面图
+                              {t('notebook.view_cover')}
                             </a>
                           )}
                         </div>
                       )}
 
-                      {/* 失败原因 */}
                       {failed && item.error && (
                         <div className="rounded-lg bg-rose-500/5 border border-rose-500/20 p-3">
-                          <div className="text-xs font-bold text-rose-300 mb-1">⚠️ 生成失败原因</div>
+                          <div className="text-xs font-bold text-rose-300 mb-1">{t('notebook.failure_reason')}</div>
                           <div className="text-[11px] text-rose-200/90 font-mono break-all leading-relaxed">
                             {item.error}
                           </div>

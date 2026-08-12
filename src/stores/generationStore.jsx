@@ -103,6 +103,13 @@ export function GenerationProvider({ children }) {
   const [pendingLyrics, setPendingLyrics] = useState('');
 
   /**
+   * Full pending data object for cross-page transfer
+   * Contains lyrics + metadata (style, theme, bpm, structure, etc.)
+   * @type {{lyrics: string, title: string, style: string, theme: string, bpm: number, structure: string, prompt: string, engine: string}|null}
+   */
+  const [pendingData, setPendingData] = useState(null);
+
+  /**
    * Unique session ID for this browser
    * Used for active user counting without authentication
    * @type {string}
@@ -583,6 +590,9 @@ export function GenerationProvider({ children }) {
     pendingLyrics,
     setPendingLyrics,
     clearPendingLyrics: () => setPendingLyrics(''),
+    pendingData,
+    setPendingData,
+    clearPendingData: () => setPendingData(null),
     sessions,
     activeSession,
     startSession,

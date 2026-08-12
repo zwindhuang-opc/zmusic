@@ -15,6 +15,7 @@ import visionController from '../controllers/vision.controller.js';
 import museController from '../controllers/muse.controller.js';
 import meloController from '../controllers/melo.controller.js';
 import contentController from '../controllers/content.controller.js';
+import publishController from '../controllers/publish.controller.js';
 import Logger from '../utils/logger.js';
 
 const logger = new Logger('Routes');
@@ -321,6 +322,30 @@ export async function handleRoute(req, res, url, method, body) {
     } catch (e) {
       return res.status(502).json({ success: false, error: e.message });
     }
+  }
+
+  // === Publish Endpoints (V7.2.0) — Douyin / 汽水音乐 ===
+  if (path === '/api/publish/status' && method === 'GET') {
+    return publishController.status(req, res);
+  }
+
+  if (path === '/api/publish/suggest-hashtags' && method === 'POST') {
+    req.body = body;
+    return publishController.suggestHashtags(req, res);
+  }
+
+  if (path === '/api/publish/douyin/video' && method === 'POST') {
+    req.body = body;
+    return publishController.publishVideo(req, res);
+  }
+
+  if (path === '/api/publish/qishui/track' && method === 'POST') {
+    req.body = body;
+    return publishController.publishQishui(req, res);
+  }
+
+  if (path === '/api/publish/download-url' && method === 'GET') {
+    return publishController.getDownloadUrl(req, res, url);
   }
 
   // 404

@@ -23,6 +23,8 @@ import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
 import { getEngineSongCount } from '../utils/autoConfig.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
+import StrategySelector from '../components/StrategySelector.jsx';
+import { applyStrategyPreset, CREATIVE_STRATEGIES } from '../data/creativePresets.js';
 
 const API_BASE = '/api';
 
@@ -200,7 +202,7 @@ function StyledSelect({ value, onChange, options, placeholder, icon }) {
 
 function MusePage({ onNavigate }) {
   const { t } = useTranslation();
-  const { pendingLyrics, clearPendingLyrics, startSession, updateSession, completeSession, addToHistory, updateHistory, removeFromHistory, sessions, copyToClipboard, showToast } = useGeneration();
+  const { pendingLyrics, clearPendingLyrics, pendingData, clearPendingData, startSession, updateSession, completeSession, addToHistory, updateHistory, removeFromHistory, sessions, copyToClipboard, showToast } = useGeneration();
   const autoProgress = useAutoProgress();
 
   const [mode, setMode] = useState('quick');
@@ -247,6 +249,8 @@ function MusePage({ onNavigate }) {
   const [autoCount, setAutoCount] = useState(0);
   const [showAutoConfirm, setShowAutoConfirm] = useState(false);
   const [autoConfirmStep, setAutoConfirmStep] = useState(1);
+  const [autoStrategy, setAutoStrategy] = useState(null);
+  const [strategyOpen, setStrategyOpen] = useState(false);
   const autoRunningRef = useRef(false);
   const autoStopRequestedRef = useRef(false);
   const autoConsecutiveErrorsRef = useRef(0);
@@ -577,19 +581,24 @@ function MusePage({ onNavigate }) {
         }
       } else if (sec === 40) {
         const themeStyle = pickRandomThemeStyle();
-        const style = pickRandomMuseStyle();
-        const title = generateRandomTitle(themeStyle.theme);
-        // 预保存构思 snapshot，后续再补齐 BPM/key/lyrics
+        // Strategy preset: override style/BPM/duration if chosen
+        const baseSnap = {
+          theme: themeStyle.theme,
+          style: pickRandomMuseStyle(),
+          title: generateRandomTitle(themeStyle.theme),
+        };
+        const withStrategy = autoStrategy ? applyStrategyPreset(autoStrategy, baseSnap) : baseSnap;
         autoCreativeSnapshotRef.current = {
           ...(autoCreativeSnapshotRef.current || {}),
-          theme: themeStyle.theme, style, title,
+          ...withStrategy,
+          strategyId: autoStrategy?.id || null,
           plannedAt: Date.now(), engine: 'Muse AI',
         };
         setAutoThoughts(prev => [...prev, {
           phase: '构思阶段 2/4', time: new Date().toLocaleTimeString(), step: 'STYLE_TITLE',
-          title: '🎨 确定风格、标题、BPM & 调性',
-          summary: `主题：${themeStyle.theme} ｜ 风格：${style} ｜ 标题：${title}`,
-          detail: `主题种子：${themeStyle.theme} (情感方向: ${themeStyle.style})\n选定风格：${style}\n标题：${title}\n下一步：20s 内完成 BPM 抽取 + 歌词创作。`,
+          title: '🎨 确定风格、标题、BPM & 调性' + (autoStrategy ? ` · 预设: ${autoStrategy.name.zh || autoStrategy.name.en}` : ''),
+          summary: `主题：${autoCreativeSnapshotRef.current.theme} ｜ 风格：${autoCreativeSnapshotRef.current.style} ｜ 标题：${autoCreativeSnapshotRef.current.title}` + (autoCreativeSnapshotRef.current.bpm ? ` ｜ 预设BPM: ${autoCreativeSnapshotRef.current.bpm}` : ''),
+          detail: `主题种子：${autoCreativeSnapshotRef.current.theme} (情感方向: ${themeStyle.style})\n选定风格：${autoCreativeSnapshotRef.current.style}\n标题：${autoCreativeSnapshotRef.current.title}` + (autoStrategy ? `\n🎯 创作策略: ${autoStrategy.name.zh || autoStrategy.name.en} — ${autoStrategy.description.zh || autoStrategy.description.en}` : '') + `\n下一步：20s 内完成 BPM 抽取 + 歌词创作。`,
         }]);
         // Incremental save to history
         const draftId2 = autoDraftHistoryIdRef.current;
@@ -731,11 +740,21 @@ function MusePage({ onNavigate }) {
   };
 
   useEffect(() => {
-    if (pendingLyrics) {
+    if (pendingData) {
+      if (pendingData.lyrics) setLyrics(pendingData.lyrics);
+      if (pendingData.title) setTitle(pendingData.title);
+      if (pendingData.style) setSelectedStyle(pendingData.style);
+      if (pendingData.theme) setTheme?.(pendingData.theme);
+      if (pendingData.bpm) setBpm?.(String(pendingData.bpm));
+      if (pendingData.duration) setDuration(Number(pendingData.duration));
+      if (pendingData.prompt) setPrompt(pendingData.prompt);
+      if (pendingData.structure) setStructure?.(pendingData.structure);
+      clearPendingData();
+    } else if (pendingLyrics) {
       setLyrics(pendingLyrics);
       clearPendingLyrics();
     }
-  }, [pendingLyrics]);
+  }, [pendingData, pendingLyrics]);
 
   const loadMuseConfig = async () => {
     setLoadingConfig(true);
@@ -1550,8 +1569,14 @@ function MusePage({ onNavigate }) {
               )}
             </button>
 
-            {/* AUTO Button + Status */}
+            {/* Strategy Selector + AUTO Button */}
             <div className="space-y-2.5 mt-1">
+              <StrategySelector
+                selectedId={autoStrategy?.id || null}
+                onSelect={(id) => setAutoStrategy(id ? CREATIVE_STRATEGIES.find(s => s.id === id) || null : null)}
+                collapsed={!strategyOpen}
+                onToggleCollapsed={() => setStrategyOpen(v => !v)}
+              />
               <div className="flex gap-2">
                 <button
                   onClick={handleAutoClick}
@@ -1854,7 +1879,7 @@ function MusePage({ onNavigate }) {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                 <ListMusic className="w-4 h-4 text-fuchsia-400" />
-                历史音乐
+                {t('song_history.title')}
                 {audioList.length > 0 && (
                   <span className="px-2 py-0.5 rounded-full bg-fuchsia-500/10 text-fuchsia-300 text-[10px] font-medium">
                     {audioList.length}
@@ -1871,25 +1896,25 @@ function MusePage({ onNavigate }) {
                 ) : (
                   <RefreshCw className="w-3 h-3" />
                 )}
-                刷新
+                {t('song_history.refresh')}
               </button>
             </div>
 
             {loadingList && audioList.length === 0 ? (
               <div className="flex items-center justify-center py-12 text-gray-500 text-xs">
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                加载中...
+                {t('song_history.loading')}
               </div>
             ) : audioList.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-500 text-xs">
                 <Music className="w-10 h-10 mb-3 opacity-30" />
-                <p>暂无历史音乐</p>
-                <p className="mt-1 text-[10px]">生成的歌曲将在此处显示</p>
+                <p>{t('song_history.empty')}</p>
+                <p className="mt-1 text-[10px]">{t('song_history.empty_hint')}</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
                 {audioList.map((item, idx) => {
-                  const title = item.title || item.name || item.filename || `歌曲 ${idx + 1}`;
+                  const title = item.title || item.name || item.filename || t('song_history.untitled');
                   const audioUrl = proxyAudioUrl(item.audioUrl || item.url || item.audio_url);
                   const duration = item.duration || item.length || 0;
                   return (
