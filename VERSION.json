@@ -1,14 +1,15 @@
 {
-  "version": "6.8.0",
-  "major": 6,
-  "minor": 8,
+  "version": "7.0.0",
+  "major": 7,
+  "minor": 0,
   "patch": 0,
-  "buildNumber": 4,
+  "buildNumber": 5,
   "releaseDate": "2026-08-12",
-  "notes": "v6.8.0 — AUTO Mode Enhancement Sprint. (1) History persistence fix: removed destructive cleanup save that was overwriting localStorage with empty arrays during React StrictMode double-invocation. Added empty-state guard (don't persist []) and 30s sync interval as safety net. (2) ENGINE-specific color themes: AutoCreativePanel and AutoProgressBar now use distinct colors per engine — Muse AI = blue/cyan, Suno AI = green/emerald, Melo AI = amber/orange. (3) HistoryPanel rewrite: proper rendering for creation_draft/creation_attempt types with status badges, engine-specific icons, and 3 copy buttons per item ('复制概念' for full structured content, '命令' for prompts, '歌词' for lyrics). (4) AUTO song count limit: default 5 songs per AUTO cycle with user-configurable value in Settings page (slider 1-20, per-engine overrides available). (5) Settings page AUTO configuration section: song count slider, countdown slider (10-120s), auto-chain toggle, stop-on-error toggle, per-engine overrides with reset button. (6) Global AUTO chain verified: Dashboard → Muse → Suno → Melo all chain correctly with independent countdowns and progress indicators.",
+  "notes": "v7.0.0 — Major Release: MV Platform Sub-Pages + AUTO Mode. (1) MV page split into three engine-specific sub-pages: Muse MV (blue/cyan), Suno MV (green/emerald), Melo MV (amber/orange) — each with its own AUTO mode. (2) MVPage.jsx refactored to accept engine/engineName props, removed MVEngineSelector in favor of fixed engine per page. (3) MV AUTO mode: 3-step confirmation modal, 60s countdown with creative thoughts at 50s/40s/20s/5s milestones, auto-generation loop with random genre/style/palette/effects, song count limit from autoConfig, incremental history saving (creation_draft → song/creation_attempt), AutoCreativePanel integration with engine-specific colors. (4) Navigation updated: MV is now a collapsible group in sidebar with 3 children (mv-muse, mv-suno, mv-melo), matching the music group pattern. (5) All existing MV functionality preserved: local generation, AI generation, video composition, timeline preview, AI tools grid, history panel, copy/download/share. (6) Engine-specific color theming applied to header, progress bar, tool cards, and AUTO countdown banner.",
   "status": "production-ready",
   "changes": [
-    "v6.8.0: History persistence fix (no longer lost on browser close) + engine-specific color themes (Muse=blue, Suno=green, Melo=amber) + HistoryPanel with 3 copy buttons per item + configurable AUTO song count (default 5) + Settings page AUTO configuration section + cross-tab sync + sync interval safety net",
-    "v6.7.0: AUTO creative thinking panel (shows AI's reasoning for each song) + credit-check-free test mode (stop after 8 consecutive errors) + manual stop button + icon color fixes (Suno=teal, Muse=fuchsia, Melo=amber) + floating ball overlap fix + full-screen desktop screenshots (1920x1080) + Android APK build + iOS project sync (build #3)"
+    "v7.0.0: MV sub-pages (Muse MV / Suno MV / Melo MV) with AUTO mode + engine-specific colors + navigation group + creative thoughts panel + incremental history",
+    "v6.8.0: History persistence fix + engine-specific color themes + HistoryPanel with 3 copy buttons per item + configurable AUTO song count + Settings page AUTO configuration section",
+    "v6.7.0: AUTO creative thinking panel + credit-check-free test mode + manual stop button + icon color fixes + Android APK build + iOS project sync"
   ]
 }

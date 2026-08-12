@@ -81,6 +81,7 @@ function App() {
   };
 
   const [aiMusicSubExpanded, setAiMusicSubExpanded] = useState(true);
+  const [mvGroupExpanded, setMvGroupExpanded] = useState(true);
 
   const navigationItems = [
     { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
@@ -98,7 +99,17 @@ function App() {
     },
     { id: 'lyrics', label: t('nav.lyrics'), icon: Mic },
     { id: 'image-lyrics', label: t('nav.image_lyrics'), icon: Image },
-    { id: 'mv', label: t('nav.mv'), icon: Video },
+    {
+      id: 'mv-group',
+      label: t('nav.mv'),
+      icon: Video,
+      isGroup: true,
+      children: [
+        { id: 'mv-muse', label: 'Muse MV', icon: Headphones, engine: 'muse' },
+        { id: 'mv-suno', label: 'Suno MV', icon: Cloud, engine: 'suno' },
+        { id: 'mv-melo', label: 'Melo MV', icon: Music2, engine: 'melo' },
+      ],
+    },
     { id: 'settings', label: t('nav.settings'), icon: Settings },
   ];
 
@@ -135,11 +146,12 @@ function App() {
 
             if (item.isGroup) {
               const groupActive = item.children.some(c => currentPage === c.id);
-              const expanded = musicGroupExpanded;
+              const expanded = item.id === 'music-group' ? musicGroupExpanded : mvGroupExpanded;
+              const setExpanded = item.id === 'music-group' ? setMusicGroupExpanded : setMvGroupExpanded;
               return (
                 <div key={item.id}>
                   <button
-                    onClick={() => setMusicGroupExpanded(!expanded)}
+                    onClick={() => setExpanded(!expanded)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${groupActive
                       ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 text-white border border-violet-500/30'
                       : 'text-gray-300 hover:text-white hover:bg-white/5'
@@ -313,7 +325,9 @@ function App() {
               <LyricsPage key={uiMode} onNavigate={setCurrentPage} defaultMode={uiMode === 'easy' ? 'guided' : 'expert'} />
             )}
             {currentPage === 'image-lyrics' && <ImageLyricsPage onNavigate={setCurrentPage} />}
-            {currentPage === 'mv' && <MVPage />}
+            {currentPage === 'mv-muse' && <MVPage engine="muse" engineName="Muse AI" />}
+            {currentPage === 'mv-suno' && <MVPage engine="suno" engineName="Suno AI" />}
+            {currentPage === 'mv-melo' && <MVPage engine="melo" engineName="Melo AI" />}
             {currentPage === 'muse' && <MusePage onNavigate={setCurrentPage} />}
             {currentPage === 'suno' && <SunoPage onNavigate={setCurrentPage} />}
             {currentPage === 'melo' && <MeloPage onNavigate={setCurrentPage} />}

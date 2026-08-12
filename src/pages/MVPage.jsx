@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Video, History, AlertCircle, Settings, ChevronDown, Loader, Sparkles, ExternalLink, Copy, Check, Clapperboard, Wand2, Brain, Palette, Music, Users, Sun, Moon, Cloud, Zap, Film, Camera } from 'lucide-react';
+import { Video, History, AlertCircle, Settings, ChevronDown, Loader, Sparkles, ExternalLink, Copy, Check, Clapperboard, Wand2, Brain, Palette, Music, Users, Sun, Moon, Cloud, Zap, Film, Camera, Clock, RotateCcw, AlertTriangle, ShieldCheck, X, CheckCircle } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
 import { useGeneration } from '../stores/generationStore.jsx';
@@ -11,7 +11,11 @@ import MuseService from '../services/muse.service.js';
 import SunoService from '../services/suno.service.js';
 import MeloService from '../services/melo.service.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
-import { MVEngineSelector, MVControls, MVVideoPlayer, MVTimelinePreview } from '../components/mv/index.js';
+import { MVControls, MVVideoPlayer, MVTimelinePreview } from '../components/mv/index.js';
+import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
+import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
+import { getEngineSongCount } from '../utils/autoConfig.js';
+import { AUTO_CONFIRM, openPlatformWebsite, generateCreativeThought, generateRandomTitle, pickRandomThemeStyle, generateAutoLyrics } from '../utils/autoGenUtils.js';
 
 const ICON_MAP = {
   Users, Cloud, Sun, Moon, Sparkles, Film, Brain, Palette, Clapperboard, Camera, Zap, Wand2, Music, Video,
@@ -24,9 +28,81 @@ function resolveIcon(name) {
 
 const FALLBACK_GENRES = ['pop', 'rock', 'electronic', 'hip_hop', 'ballad', 'chinese_traditional', 'jazz', 'classical', 'rnb', 'country', 'love_song', 'chinese_classical', 'concert', 'modern', 'cinematic', 'retro', 'anime', 'gothic_rock'];
 
-function MVPage() {
+// === Engine-specific theming ===
+// Muse=blue, Suno=green, Melo=amber
+const ENGINE_THEMES = {
+  muse: {
+    headerGradient: 'from-blue-600/20 via-sky-600/20 to-cyan-600/20',
+    glow1: 'from-sky-500/20 to-blue-500/0',
+    glow2: 'from-cyan-500/20 to-transparent',
+    iconBg: 'from-sky-500 to-blue-600',
+    iconShadow: 'shadow-sky-500/30',
+    titleText: 'from-white via-sky-100 to-cyan-200',
+    subtitleText: 'text-sky-200/70',
+    accentText: 'text-sky-400',
+    accentText2: 'text-sky-300',
+    border: 'border-sky-500/20',
+    progressFrom: 'from-sky-500',
+    progressTo: 'to-cyan-500',
+    chipBg: 'bg-sky-500/10',
+    chipText: 'text-sky-300',
+    chipBorder: 'border-sky-500/20',
+    toolHoverBorder: 'hover:border-sky-500/30',
+    toolShadow: 'hover:shadow-sky-500/10',
+    toolIconBg: 'bg-sky-500/20',
+    iconColor: 'text-sky-400',
+  },
+  suno: {
+    headerGradient: 'from-emerald-600/20 via-green-600/20 to-teal-600/20',
+    glow1: 'from-emerald-500/20 to-green-500/0',
+    glow2: 'from-teal-500/20 to-transparent',
+    iconBg: 'from-emerald-500 to-teal-600',
+    iconShadow: 'shadow-emerald-500/30',
+    titleText: 'from-white via-emerald-100 to-teal-200',
+    subtitleText: 'text-emerald-200/70',
+    accentText: 'text-emerald-400',
+    accentText2: 'text-emerald-300',
+    border: 'border-emerald-500/20',
+    progressFrom: 'from-emerald-500',
+    progressTo: 'to-teal-500',
+    chipBg: 'bg-emerald-500/10',
+    chipText: 'text-emerald-300',
+    chipBorder: 'border-emerald-500/20',
+    toolHoverBorder: 'hover:border-emerald-500/30',
+    toolShadow: 'hover:shadow-emerald-500/10',
+    toolIconBg: 'bg-emerald-500/20',
+    iconColor: 'text-emerald-400',
+  },
+  melo: {
+    headerGradient: 'from-amber-600/20 via-orange-600/20 to-yellow-600/20',
+    glow1: 'from-amber-500/20 to-orange-500/0',
+    glow2: 'from-yellow-500/20 to-transparent',
+    iconBg: 'from-amber-500 to-orange-600',
+    iconShadow: 'shadow-amber-500/30',
+    titleText: 'from-white via-amber-100 to-orange-200',
+    subtitleText: 'text-amber-200/70',
+    accentText: 'text-amber-400',
+    accentText2: 'text-amber-300',
+    border: 'border-amber-500/20',
+    progressFrom: 'from-amber-500',
+    progressTo: 'to-orange-500',
+    chipBg: 'bg-amber-500/10',
+    chipText: 'text-amber-300',
+    chipBorder: 'border-amber-500/20',
+    toolHoverBorder: 'hover:border-amber-500/30',
+    toolShadow: 'hover:shadow-amber-500/10',
+    toolIconBg: 'bg-amber-500/20',
+    iconColor: 'text-amber-400',
+  },
+};
+
+function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
   const { t, ts } = useTranslation();
-  const { addToHistory, copyToClipboard, pendingLyrics, showToast } = useGeneration();
+  const { addToHistory, updateHistory, removeFromHistory, copyToClipboard, pendingLyrics, showToast } = useGeneration();
+  const autoProgress = useAutoProgress();
+
+  const theme = ENGINE_THEMES[engine] || ENGINE_THEMES.muse;
+  const displayName = engineName || theme.name || 'AI';
 
   const [mode, setMode] = useState('basic');
   const [genres, setGenres] = useState(FALLBACK_GENRES);
@@ -38,7 +114,6 @@ function MVPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const [engine, setEngine] = useState('muse');
   const [museCredits, setMuseCredits] = useState(null);
   const [museTaskId, setMuseTaskId] = useState(null);
   const [museAvailable, setMuseAvailable] = useState(false);
@@ -63,6 +138,33 @@ function MVPage() {
   const resultRef = useRef(null);
 
   useEffect(() => { resultRef.current = result; }, [result]);
+
+  // === AUTO generation mode state ===
+  const [autoRunning, setAutoRunning] = useState(false);
+  const [autoStopRequested, setAutoStopRequested] = useState(false);
+  const [autoCount, setAutoCount] = useState(0);
+  const [showAutoConfirm, setShowAutoConfirm] = useState(false);
+  const [autoConfirmStep, setAutoConfirmStep] = useState(1);
+  const [autoThoughts, setAutoThoughts] = useState([]);
+  const [showCreativePanel, setShowCreativePanel] = useState(true);
+  const [autoCountdownSec, setAutoCountdownSec] = useState(0);
+  const [autoCountdownActive, setAutoCountdownActive] = useState(false);
+  const autoRunningRef = useRef(false);
+  const autoStopRequestedRef = useRef(false);
+  const autoConsecutiveErrorsRef = useRef(0);
+  const autoCountRef = useRef(0);
+  const autoCountdownIntervalRef = useRef(null);
+  const autoDraftHistoryIdRef = useRef(null);
+  const autoCreativeSnapshotRef = useRef(null);
+  const handleGenerateRef = useRef(null);
+
+  // Sync AUTO refs with React state (so async finally block sees latest values)
+  useEffect(() => {
+    autoRunningRef.current = autoRunning;
+  }, [autoRunning]);
+  useEffect(() => {
+    autoStopRequestedRef.current = autoStopRequested;
+  }, [autoStopRequested]);
 
   // Database-driven content loading
   useEffect(() => {
@@ -308,7 +410,77 @@ function MVPage() {
     return { blob, url: audioUrl, videoBlob, videoUrl, lyrics: params.lyrics };
   };
 
-  const handleGenerate = async () => {
+  // === AUTO: Randomize MV inputs (genre, style, duration, palette, effects) ===
+  // Sets state AND writes a snapshot into autoCreativeSnapshotRef so handleGenerate
+  // (called via setTimeout) reads fresh values instead of stale React state.
+  const randomizeMVInputs = useCallback(() => {
+    const { theme: pickedTheme, style: pickedStyleTheme } = pickRandomThemeStyle();
+
+    const genreList = genres.length > 0 ? genres : FALLBACK_GENRES;
+    const randGenre = genreList[Math.floor(Math.random() * genreList.length)];
+
+    const styleOptions = ['modern', 'cinematic', 'retro', 'anime', 'minimalist', 'abstract', 'dreamy', 'neon'];
+    const randStyle = styleOptions[Math.floor(Math.random() * styleOptions.length)];
+
+    const durations = [15, 30, 45, 60];
+    const randDuration = durations[Math.floor(Math.random() * durations.length)];
+
+    const randPalette = paletteList.length > 0
+      ? paletteList[Math.floor(Math.random() * paletteList.length)].id
+      : 'purple_pink_gradient';
+
+    // Pick 0-2 random effects
+    const effSource = effectList.length > 0 ? effectList : [];
+    const shuffled = [...effSource].sort(() => Math.random() - 0.5);
+    const randEffects = shuffled.slice(0, Math.floor(Math.random() * 3)).map(e => e.id);
+
+    setGenre(randGenre);
+    setStyle(randStyle);
+    setDuration(randDuration);
+    setColorPalette(randPalette);
+    setSelectedEffects(randEffects);
+
+    const chosenTitle = generateRandomTitle();
+    const lyricsText = generateAutoLyrics(pickedTheme);
+    const bpm = 90 + Math.floor(Math.random() * 70); // 90–159
+    const keys = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'Cm', 'Dm', 'Em', 'Fm', 'Gm', 'Am', 'Bm'];
+    const key = keys[Math.floor(Math.random() * keys.length)];
+    const command = `引擎: ${displayName}\n流派: ${randGenre}\n视觉风格: ${randStyle}\n时长: ${randDuration}s\n调色板: ${randPalette}\n特效: ${randEffects.join(', ') || '无'}\nBPM: ${bpm} · 调性: ${key}\n标题: ${chosenTitle}`;
+
+    // Write snapshot (merged with any partial milestone data) for handleGenerate
+    autoCreativeSnapshotRef.current = {
+      ...(autoCreativeSnapshotRef.current || {}),
+      theme: pickedTheme,
+      styleTheme: pickedStyleTheme,
+      genre: randGenre,
+      style: randStyle,
+      duration: randDuration,
+      colorPalette: randPalette,
+      effects: randEffects,
+      title: chosenTitle,
+      prompt: lyricsText,
+      lyrics: lyricsText,
+      bpm,
+      key,
+      command,
+      finalizedAt: Date.now(),
+      engine: displayName,
+    };
+
+    return {
+      theme: pickedTheme,
+      style: pickedStyleTheme,
+      title: chosenTitle,
+      lyrics: lyricsText,
+      bpm,
+      key,
+      command,
+    };
+  }, [genres, paletteList, effectList, displayName]);
+
+  const handleGenerate = async (isAuto = false) => {
+    // Normalize: when wired directly to onClick, the first arg is a DOM event.
+    if (typeof isAuto !== 'boolean') isAuto = false;
     if (isGenerating) return;
     setError(null);
     setResult(null);
@@ -316,47 +488,48 @@ function MVPage() {
     setVideoUrl(null);
     setVideoBlob(null);
 
-    const prompt = pendingLyrics?.text || '';
-    const title = pendingLyrics?.title || `${genre} MV`;
+    // === AUTO path: read from snapshot ref (setState is async, would be stale) ===
+    const snap = autoCreativeSnapshotRef.current;
+    const useSnap = isAuto && snap && snap.genre;
+    const effGenre = useSnap ? snap.genre : genre;
+    const effStyle = useSnap ? snap.style : style;
+    const effDuration = useSnap ? snap.duration : duration;
+    const effColorPalette = useSnap ? snap.colorPalette : colorPalette;
+    const effEffects = useSnap ? snap.effects : selectedEffects;
 
-    const styleMap = contentData.musicStyles.find(s => s.genre_key === genre);
+    const prompt = useSnap ? snap.prompt : (pendingLyrics?.text || '');
+    const title = useSnap ? snap.title : (pendingLyrics?.title || `${effGenre} MV`);
+
+    const styleMap = contentData.musicStyles.find(s => s.genre_key === effGenre);
     const sunoStyle = styleMap ? styleMap.style_suno : '';
     const museStyle = styleMap ? styleMap.style_muse : '';
 
     const params = {
       prompt,
       title,
-      genre,
-      style: sunoStyle || museStyle || style,
+      genre: effGenre,
+      style: sunoStyle || museStyle || effStyle,
       museStyle,
-      duration,
+      duration: effDuration,
       lyrics: prompt,
-      scene: style,
-      colorPalette,
-      effects: selectedEffects,
+      scene: effStyle,
+      colorPalette: effColorPalette,
+      effects: effEffects,
     };
-
-    if (engine === 'muse' && !museAvailable) {
-      setError(t('muse.notConfigured'));
-      return;
-    }
-    if (engine === 'suno' && !sunoAvailable) {
-      setError(t('suno.notConfigured'));
-      return;
-    }
-    if (engine === 'melo' && !meloAvailable) {
-      setError(t('melo.notConfigured'));
-      return;
-    }
 
     setIsGenerating(true);
     setGenProgress(5);
     setGenStage('Starting...');
 
     try {
+      // Engine availability checks (thrown so AUTO loop can count failures)
+      if (engine === 'muse' && !museAvailable) throw new Error(t('muse.notConfigured'));
+      if (engine === 'suno' && !sunoAvailable) throw new Error(t('suno.notConfigured'));
+      if (engine === 'melo' && !meloAvailable) throw new Error(t('melo.notConfigured'));
+
       let musicResult;
 
-      console.log('[MVPage] Starting generation:', { engine, genre, duration, hasPrompt: !!prompt });
+      console.log('[MVPage] Starting generation:', { engine, genre: effGenre, duration: effDuration, hasPrompt: !!prompt, isAuto });
 
       if (engine === 'muse') {
         console.log('[MVPage] Calling Muse AI generateMusic...');
@@ -383,15 +556,15 @@ function MVPage() {
 
       if (!finalVideoBlob && engine !== 'local') {
         console.log('[MVPage] Composing video from AI audio:', { engine, audioUrl: musicResult.url });
-        const mvData = generateMV({ genre, duration });
+        const mvData = generateMV({ genre: effGenre, duration: effDuration });
         setTimelineResult(mvData);
         const videoBlob = await generateMVVideo({
           audioUrl: musicResult.url,
           timeline: mvData.timeline,
-          colorPalette: colorPalette || mvData.colorPalette,
-          effects: selectedEffects,
+          colorPalette: effColorPalette || mvData.colorPalette,
+          effects: effEffects,
           lyrics: params.prompt,
-          duration,
+          duration: effDuration,
         });
         finalVideoBlob = videoBlob;
         finalVideoUrl = URL.createObjectURL(videoBlob);
@@ -407,8 +580,8 @@ function MVPage() {
         videoBlob: finalVideoBlob,
         lyrics: musicResult.lyrics,
         engine,
-        genre,
-        style,
+        genre: effGenre,
+        style: effStyle,
         timestamp: Date.now(),
       };
 
@@ -417,31 +590,436 @@ function MVPage() {
       setVideoUrl(finalVideoUrl);
       setVideoBlob(finalVideoBlob);
 
-      try {
-        await addToHistory({
-          id: finalResult.id,
-          title,
-          text: prompt,
-          translation: null,
-          audioUrl: musicResult.url,
-          videoUrl: finalVideoUrl,
-          videoBlob: finalVideoBlob,
-          lyrics: musicResult.lyrics,
-          engine,
-          genre,
-          style,
-          timestamp: Date.now(),
-          source: 'mv',
-        });
-      } catch { }
+      // === History: AUTO path removes draft & records song; manual path records directly ===
+      if (isAuto || autoRunningRef.current) {
+        const draftId = autoDraftHistoryIdRef.current;
+        if (draftId) {
+          removeFromHistory(draftId);
+          autoDraftHistoryIdRef.current = null;
+        }
+        try {
+          await addToHistory({
+            type: 'song',
+            status: 'success',
+            method: engine + '_ai',
+            engine,
+            title,
+            text: prompt,
+            translation: null,
+            audioUrl: musicResult.url,
+            videoUrl: finalVideoUrl,
+            videoBlob: finalVideoBlob,
+            lyrics: musicResult.lyrics,
+            genre: effGenre,
+            style: effStyle,
+            timestamp: Date.now(),
+            source: 'mv',
+            creativeProcess: {
+              thoughts: autoThoughts,
+              snapshot: autoCreativeSnapshotRef.current,
+              engine: displayName,
+            },
+          });
+        } catch { }
+        autoProgress.setComplete({ title, error: null });
+        autoProgress.incrementCount();
+        autoConsecutiveErrorsRef.current = 0;
+      } else {
+        try {
+          await addToHistory({
+            id: finalResult.id,
+            title,
+            text: prompt,
+            translation: null,
+            audioUrl: musicResult.url,
+            videoUrl: finalVideoUrl,
+            videoBlob: finalVideoBlob,
+            lyrics: musicResult.lyrics,
+            engine,
+            genre: effGenre,
+            style: effStyle,
+            timestamp: Date.now(),
+            source: 'mv',
+          });
+        } catch { }
+      }
 
       setGenProgress(100);
       setGenStage('Complete!');
     } catch (e) {
       setError(e.message || t('generation.failed'));
+      // === AUTO: record failure as creation_attempt, even when no song produced ===
+      if (isAuto || autoRunningRef.current) {
+        autoProgress.setComplete({ title, error: e.message });
+        autoConsecutiveErrorsRef.current += 1;
+        try {
+          const cpSnap = autoCreativeSnapshotRef.current || {};
+          const fallbackTitle = cpSnap.title || title || '未命名构思';
+          const draftId = autoDraftHistoryIdRef.current;
+          if (draftId) {
+            removeFromHistory(draftId);
+            autoDraftHistoryIdRef.current = null;
+          }
+          await addToHistory({
+            type: 'creation_attempt',
+            status: 'failed',
+            method: engine + '_ai',
+            engine,
+            title: `❌ 构思失败 · ${fallbackTitle}`,
+            text: prompt,
+            translation: null,
+            lyrics: prompt,
+            prompt,
+            audioUrl: '',
+            videoUrl: '',
+            videoBlob: null,
+            genre: effGenre,
+            style: effStyle,
+            error: e.message,
+            source: 'mv',
+            creativeProcess: {
+              thoughts: autoThoughts,
+              snapshot: cpSnap,
+              engine: displayName,
+              error: e.message,
+              failedAt: new Date().toISOString(),
+            },
+            result: { error: e.message, params, failed: true },
+          });
+        } catch (hErr) {
+          console.warn('[AUTO] [MVPage] 失败记录写入 history 时出现异常（不影响主流程）:', hErr.message);
+        }
+      }
     } finally {
       setIsGenerating(false);
+
+      // === AUTO mode: schedule next iteration ===
+      if (isAuto || autoRunningRef.current) {
+        setTimeout(() => {
+          const maxSongs = getEngineSongCount(engine);
+          const shouldStop =
+            autoStopRequestedRef.current ||
+            !autoRunningRef.current ||
+            autoConsecutiveErrorsRef.current >= 8 ||
+            autoCountRef.current >= maxSongs;
+
+          if (shouldStop) {
+            setAutoRunning(false);
+            setAutoStopRequested(false);
+            autoProgress.stopProgress();
+            const draftId = autoDraftHistoryIdRef.current;
+            if (draftId) {
+              const snap = autoCreativeSnapshotRef.current || {};
+              updateHistory(draftId, {
+                status: autoConsecutiveErrorsRef.current >= 8 ? 'failed' : 'stopped',
+                title: autoConsecutiveErrorsRef.current >= 8
+                  ? `❌ ${snap.title || '未命名'} - 连续失败已停止`
+                  : `⏹️ ${snap.title || '未命名'} - AUTO 已停止`,
+                lyrics: snap.lyrics || snap.command || '',
+                prompt: snap.command || '',
+                style: snap.style || '',
+                creativeProcess: {
+                  snapshot: snap,
+                  phase: autoConsecutiveErrorsRef.current >= 8 ? '失败停止' : '已停止',
+                  stoppedAt: new Date().toISOString(),
+                  engine: displayName,
+                  error: autoConsecutiveErrorsRef.current >= 8 ? '连续生成失败（可能积分不足或 API 异常）' : undefined,
+                },
+              });
+              autoDraftHistoryIdRef.current = null;
+            }
+            showToast?.(
+              autoStopRequestedRef.current
+                ? 'AUTO 已停止 — 已按您的请求停止自动生成。'
+                : autoConsecutiveErrorsRef.current >= 8
+                  ? 'AUTO 已停止 — 连续 8 次生成失败，可能是积分不足或 API 异常。'
+                  : 'AUTO 模式结束。',
+              autoStopRequestedRef.current ? 'info' : 'warning'
+            );
+            return;
+          }
+
+          const nextIteration = autoCountRef.current + 1;
+          setAutoCount(nextIteration);
+          autoCountRef.current = nextIteration;
+          // Randomize inputs for NEXT generation + capture choices
+          const choices = randomizeMVInputs();
+          const thought = generateCreativeThought({
+            iteration: nextIteration,
+            theme: choices.theme,
+            style: choices.style,
+            title: choices.title,
+            bpm: choices.bpm,
+            key: choices.key,
+            engine: displayName,
+            lyricsSnippet: choices.lyrics,
+            commandSent: choices.command,
+          });
+          setAutoThoughts(prev => [...prev.slice(-15), thought]);
+          autoProgress.addThought(thought);
+          // Schedule next song with a small delay so user sees the result briefly
+          setTimeout(() => handleGenerateRef.current(true), 1800);
+        }, 1500);
+      }
     }
+  };
+
+  // Keep ref in sync so AUTO's setTimeout always calls the latest handleGenerate
+  handleGenerateRef.current = handleGenerate;
+
+  // === AUTO: 60s countdown + creative thoughts at 50s/40s/20s/5s milestones ===
+  const startAutoGeneration = useCallback(() => {
+    console.log('%c[AUTO] [MVPage] startAutoGeneration() 入口',
+      'background:#16a085;color:#fff;padding:2px 6px;border-radius:3px;font-weight:bold;');
+    // Report to global progress bar
+    autoProgress.startProgress({ engine, engineName: displayName, totalCountdown: 60 });
+
+    // 1. Open platform website tab (deduplicated by sessionStorage)
+    const tabOpened = openPlatformWebsite(engine);
+    console.log('[AUTO] [MVPage] openPlatformWebsite(' + engine + ') result:', tabOpened ? '✅ 新标签已打开' : '⏭ 已存在（去重跳过）');
+
+    // 2. Reset state
+    setAutoCount(0);
+    autoCountRef.current = 0;
+    setAutoStopRequested(false);
+    setAutoRunning(true);
+    autoRunningRef.current = true;
+    setAutoThoughts([]);
+    autoConsecutiveErrorsRef.current = 0;
+    autoCreativeSnapshotRef.current = null;
+    autoDraftHistoryIdRef.current = null;
+    setShowCreativePanel(true);
+
+    // Create initial draft history entry — updated at each milestone, replaced on completion
+    try {
+      const draft = addToHistory({
+        type: 'creation_draft',
+        status: 'in_progress',
+        method: engine + '_ai',
+        engine,
+        title: `🎨 ${displayName} AUTO 创作中...`,
+        text: '',
+        translation: null,
+        lyrics: '',
+        prompt: '',
+        audioUrl: '',
+        videoUrl: '',
+        videoBlob: null,
+        duration: 0,
+        style: '',
+        source: 'mv',
+        creativeProcess: {
+          thoughts: [],
+          snapshot: {},
+          phase: '启动',
+          startedAt: new Date().toISOString(),
+          engine: displayName,
+        },
+      });
+      autoDraftHistoryIdRef.current = draft.id;
+    } catch (e) {
+      console.warn('[AUTO] [MVPage] 创建草稿历史记录失败:', e.message);
+    }
+
+    // Clear previous countdown interval if any
+    if (autoCountdownIntervalRef.current) {
+      clearInterval(autoCountdownIntervalRef.current);
+      autoCountdownIntervalRef.current = null;
+    }
+
+    // 3. Initial welcome thought
+    const startThought = {
+      phase: '启动阶段', time: new Date().toLocaleTimeString(),
+      step: 'AUTO_INIT',
+      title: `▶️ ${displayName} AUTO 模式启动`,
+      summary: `打开 ${displayName} 官网标签页 → 60 秒构思倒计时 → 生成 MV`,
+      detail: `此阶段：\n  • 已自动为你在新标签打开 ${displayName} 官网（无需登录，仅用于查看官网状态）\n  • 接下来 60 秒用于"深度构思"：\n     - 50s：确定主题与情感基调\n     - 40s：确定流派、视觉风格、调色板、标题\n     - 20s：确定 BPM、调性、歌词草稿\n     - 5s：最终检查 + 启动生成\n  • 即便积分不足导致生成失败，整个构思过程都会被记录到「创作构思记录簿」。`,
+    };
+    setAutoThoughts(prev => [...prev, startThought]);
+    autoProgress.addThought(startThought);
+    showToast?.(`AUTO 启动 — ${displayName} 构思中（60 秒倒计时，期间会打开官网标签查看状态）`, 'info');
+
+    // 4. Start 60s countdown — publish planning thoughts at milestones
+    setAutoCountdownSec(60);
+    setAutoCountdownActive(true);
+    let sec = 60;
+    autoCountdownIntervalRef.current = setInterval(() => {
+      sec -= 1;
+      setAutoCountdownSec(sec);
+      autoProgress.updateCountdown(sec);
+
+      if (sec === 50) {
+        const thought = {
+          phase: '构思阶段 1/4', time: new Date().toLocaleTimeString(), step: 'THEME_PICK',
+          title: '🎯 确定主题与情感基调',
+          summary: '正在主题词库中抽取灵感种子…',
+          detail: '遍历主题词库（love, loneliness, dreams, nostalgia…）+ 风格词库，组合候选情感搭配。\n当前倒计时：50s → 40s 完成主题。',
+        };
+        setAutoThoughts(prev => [...prev, thought]);
+        autoProgress.addThought(thought);
+        const draftId = autoDraftHistoryIdRef.current;
+        if (draftId) {
+          updateHistory(draftId, {
+            creativeProcess: { thoughts: [thought], snapshot: autoCreativeSnapshotRef.current, phase: '主题抽取', updatedAt: new Date().toISOString(), engine: displayName },
+            title: `🎨 ${displayName} AUTO 创作中 - 主题确定中...`,
+          });
+        }
+      } else if (sec === 40) {
+        const themeStyle = pickRandomThemeStyle();
+        const mvStyle = ['modern', 'cinematic', 'retro', 'anime', 'minimalist', 'abstract'][Math.floor(Math.random() * 6)];
+        const mvGenre = (genres.length > 0 ? genres : FALLBACK_GENRES)[Math.floor(Math.random() * (genres.length > 0 ? genres.length : FALLBACK_GENRES.length))];
+        const mvPalette = paletteList.length > 0
+          ? paletteList[Math.floor(Math.random() * paletteList.length)].id
+          : 'purple_pink_gradient';
+        const ttl = generateRandomTitle(themeStyle.theme);
+        autoCreativeSnapshotRef.current = {
+          ...(autoCreativeSnapshotRef.current || {}),
+          theme: themeStyle.theme, style: mvStyle, genre: mvGenre, colorPalette: mvPalette, title: ttl,
+          plannedAt: Date.now(), engine: displayName,
+        };
+        const thought = {
+          phase: '构思阶段 2/4', time: new Date().toLocaleTimeString(), step: 'STYLE_TITLE',
+          title: '🎨 确定流派、视觉风格、调色板 & 标题',
+          summary: `主题：${themeStyle.theme} ｜ 流派：${mvGenre} ｜ 视觉风格：${mvStyle} ｜ 标题：${ttl}`,
+          detail: `主题种子：${themeStyle.theme} (情感方向: ${themeStyle.style})\nMV 流派：${mvGenre}\n视觉风格：${mvStyle}\n调色板：${mvPalette}\n标题：${ttl}\n下一步：20s 内完成 BPM 抽取 + 歌词创作。`,
+        };
+        setAutoThoughts(prev => [...prev, thought]);
+        autoProgress.addThought(thought);
+        const draftId2 = autoDraftHistoryIdRef.current;
+        if (draftId2) {
+          updateHistory(draftId2, {
+            title: `🎨 ${ttl} - ${displayName} AUTO 创作中`,
+            style: mvStyle,
+            genre: mvGenre,
+            creativeProcess: { snapshot: autoCreativeSnapshotRef.current, phase: '风格与标题', updatedAt: new Date().toISOString(), engine: displayName },
+          });
+        }
+      } else if (sec === 20) {
+        const snap = autoCreativeSnapshotRef.current || {};
+        const bpm = 90 + Math.floor(Math.random() * 70);
+        const keys = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'Cm', 'Dm', 'Em', 'Fm', 'Gm', 'Am', 'Bm'];
+        const key = keys[Math.floor(Math.random() * keys.length)];
+        const lyricsPreview = generateAutoLyrics(snap.theme || 'love');
+        autoCreativeSnapshotRef.current = {
+          ...snap, bpm, key, lyrics: lyricsPreview, command: lyricsPreview,
+        };
+        const thought = {
+          phase: '构思阶段 3/4', time: new Date().toLocaleTimeString(), step: 'LYRICS_DRAFT',
+          title: '✍️ 歌词草稿 + 生成命令',
+          summary: `BPM=${bpm} ｜ Key=${key} ｜ 歌词共 ${lyricsPreview.length} 字`,
+          detail: `BPM：${bpm}\n调性：${key}\n歌词预览：\n${lyricsPreview.substring(0, 240)}${lyricsPreview.length > 240 ? '…' : ''}`,
+        };
+        setAutoThoughts(prev => [...prev, thought]);
+        autoProgress.addThought(thought);
+        const draftId3 = autoDraftHistoryIdRef.current;
+        if (draftId3) {
+          updateHistory(draftId3, {
+            lyrics: lyricsPreview,
+            prompt: lyricsPreview,
+            creativeProcess: { snapshot: autoCreativeSnapshotRef.current, phase: '歌词与命令', updatedAt: new Date().toISOString(), engine: displayName },
+          });
+        }
+      } else if (sec === 5) {
+        const thought = {
+          phase: '构思阶段 4/4', time: new Date().toLocaleTimeString(), step: 'FINAL_CHECK',
+          title: '✅ 最终检查 — 5 秒后提交生成',
+          summary: '参数快照已锁定，5 秒后调用 API 开始生成',
+          detail: `当前快照：${JSON.stringify(autoCreativeSnapshotRef.current || {}, null, 2).substring(0, 500)}\n即使积分不足导致 API 失败，以上完整构思记录也会一并写入「创作构思记录簿」与生成历史。`,
+        };
+        setAutoThoughts(prev => [...prev, thought]);
+        autoProgress.addThought(thought);
+        const draftId4 = autoDraftHistoryIdRef.current;
+        if (draftId4) {
+          const snap = autoCreativeSnapshotRef.current || {};
+          updateHistory(draftId4, {
+            title: `🎨 ${snap.title || '未命名'} - ${displayName} AUTO 准备生成`,
+            lyrics: snap.lyrics || snap.command || '',
+            prompt: snap.command || '',
+            style: snap.style || '',
+            creativeProcess: { snapshot: snap, phase: '最终检查', updatedAt: new Date().toISOString(), engine: displayName },
+          });
+        }
+      } else if (sec <= 0) {
+        // 5. T=0: stop countdown, randomize final inputs, trigger generation
+        clearInterval(autoCountdownIntervalRef.current);
+        autoCountdownIntervalRef.current = null;
+        setAutoCountdownActive(false);
+        setAutoCountdownSec(0);
+        const triggerThought = {
+          phase: '生成阶段', time: new Date().toLocaleTimeString(), step: 'TRIGGER',
+          title: `🚀 倒计时结束 — 正式触发 ${displayName} 生成`,
+          summary: '提交随机化参数 + 创作命令 → API',
+          detail: '调用链：randomizeMVInputs() → generateCreativeThought() → handleGenerateRef.current(true)',
+        };
+        setAutoThoughts(prev => [...prev, triggerThought]);
+        autoProgress.addThought(triggerThought);
+        autoProgress.setGenerating({ title: '🚀 生成中...' });
+        console.log('[AUTO] [MVPage] ⏱ 60s 倒计时归零 → 执行 randomizeMVInputs()');
+        const choices = randomizeMVInputs();
+        console.log('[AUTO] [MVPage] 🎲 随机参数: theme=' + choices.theme + ', genre=' + autoCreativeSnapshotRef.current?.genre
+          + ', title=' + choices.title + ', BPM=' + choices.bpm + ', key=' + choices.key);
+        console.log('[AUTO] [MVPage] 📋 生成命令:\n' + choices.command);
+        const thought = generateCreativeThought({
+          iteration: 1,
+          theme: choices.theme, style: choices.style, title: choices.title,
+          bpm: choices.bpm, key: choices.key, engine: displayName,
+          lyricsSnippet: choices.lyrics, commandSent: choices.command,
+        });
+        setAutoThoughts(prev => [...prev, thought]);
+        autoProgress.addThought(thought);
+        setTimeout(() => {
+          console.log('[AUTO] [MVPage] 触发 handleGenerateRef.current(true) — 类型:', typeof handleGenerateRef.current);
+          handleGenerateRef.current(true);
+        }, 300);
+      }
+    }, 1000);
+  }, [engine, displayName, genres, paletteList, randomizeMVInputs]);
+
+  // Click AUTO button → request stop if running; otherwise open 3-step confirm modal
+  const handleAutoClick = () => {
+    if (autoRunning) {
+      setAutoStopRequested(true);
+      setAutoRunning(false);
+      autoRunningRef.current = false;
+      autoProgress.stopProgress();
+      if (autoCountdownIntervalRef.current) {
+        clearInterval(autoCountdownIntervalRef.current);
+        autoCountdownIntervalRef.current = null;
+        setAutoCountdownActive(false);
+      }
+      const draftId = autoDraftHistoryIdRef.current;
+      if (draftId) {
+        const snap = autoCreativeSnapshotRef.current || {};
+        updateHistory(draftId, {
+          status: 'stopped',
+          title: `⏹️ ${snap.title || '未命名'} - AUTO 已停止`,
+          lyrics: snap.lyrics || snap.command || '',
+          prompt: snap.command || '',
+          style: snap.style || '',
+          creativeProcess: { snapshot: snap, phase: '已停止', stoppedAt: new Date().toISOString(), engine: displayName },
+        });
+        autoDraftHistoryIdRef.current = null;
+      }
+      showToast?.('AUTO 停止中 — 完成当前歌曲后将不再生成下一首', 'info');
+      return;
+    }
+    setAutoConfirmStep(1);
+    setShowAutoConfirm(true);
+  };
+
+  const proceedAutoConfirmStep = () => {
+    if (autoConfirmStep < 3) {
+      setAutoConfirmStep(prev => prev + 1);
+      return;
+    }
+    setShowAutoConfirm(false);
+    setAutoConfirmStep(1);
+    startAutoGeneration();
+  };
+
+  const cancelAutoConfirm = () => {
+    setShowAutoConfirm(false);
+    setAutoConfirmStep(1);
   };
 
   const handleDownload = () => {
@@ -476,48 +1054,127 @@ function MVPage() {
 
   const shareUrl = result ? `${window.location.origin}/share/${result.id}` : '';
 
+  // Best-effort credit for the confirm dialog (only Muse exposes credits here)
+  const credit = museCredits ?? 0;
+  const maxSongs = getEngineSongCount(engine);
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Hero Header — matches Muse/Suno/Melo dark theme + pale blue accents */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600/20 via-sky-600/20 to-cyan-600/20 border border-white/10 p-6">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-sky-500/20 to-blue-500/0 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-cyan-500/20 to-transparent rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
-        <div className="relative flex items-center justify-between">
+      {/* Hero Header — engine-specific gradient (Muse=blue, Suno=green, Melo=amber) */}
+      <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${theme.headerGradient} border border-white/10 p-6`}>
+        <div className={`absolute top-0 right-0 w-64 h-64 bg-gradient-to-br ${theme.glow1} rounded-full blur-3xl -translate-y-1/2 translate-x-1/4`} />
+        <div className={`absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr ${theme.glow2} rounded-full blur-3xl translate-y-1/2 -translate-x-1/4`} />
+        <div className="relative flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/30">
+            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${theme.iconBg} flex items-center justify-center shadow-lg ${theme.iconShadow}`}>
               <Video className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white bg-gradient-to-r from-white via-sky-100 to-cyan-200 bg-clip-text text-transparent">
-                {t('mv.title')}
+              <h1 className={`text-2xl font-bold text-white bg-gradient-to-r ${theme.titleText} bg-clip-text text-transparent`}>
+                {t('mv.title')} · {displayName}
               </h1>
-              <p className="text-sky-200/70 text-sm mt-0.5">{t('mv.subtitle')}</p>
+              <p className={`${theme.subtitleText} text-sm mt-0.5`}>{t('mv.subtitle')}</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowHistory(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <History className="w-5 h-5 text-sky-400" />
-            <span className="text-sm">{t('mv.history')}</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* AUTO Button */}
+            <button
+              onClick={handleAutoClick}
+              disabled={autoRunning}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all shadow-lg
+                ${autoRunning
+                  ? 'bg-gradient-to-r from-red-500 via-rose-500 to-orange-500 text-white shadow-red-500/30 animate-pulse'
+                  : 'bg-gradient-to-r from-orange-500 via-red-500 to-rose-500 hover:from-orange-400 hover:via-red-400 hover:to-rose-400 text-white shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.02] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
+                }`}
+            >
+              {autoRunning ? (
+                <>
+                  <RotateCcw className="w-4 h-4 animate-spin" />
+                  {t('auto.status_running')} · 停止
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4" />
+                  {t('auto.btn_label')}
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => setShowHistory(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <History className={`w-5 h-5 ${theme.iconColor}`} />
+              <span className="text-sm">{t('mv.history')}</span>
+            </button>
+          </div>
         </div>
+
+        {/* AUTO status row */}
+        {(autoRunning || autoCount > 0) && (
+          <div className="relative mt-4 flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+            <div className="flex items-center gap-2">
+              <span className={`inline-flex w-2 h-2 rounded-full ${autoRunning ? 'bg-red-400 animate-pulse' : 'bg-gray-500'}`} />
+              <span className="text-xs text-gray-300 font-medium">
+                {autoRunning ? t('auto.status_running') : t('auto.status_idle')}
+              </span>
+            </div>
+            <span className="text-xs font-bold text-orange-300">
+              {t('auto.song_count').replace('{count}', String(autoCount))} / {maxSongs}
+            </span>
+          </div>
+        )}
+        {!autoRunning && autoCount === 0 && (
+          <p className="relative mt-3 text-[11px] text-amber-400/80 flex items-center gap-1 px-1">
+            <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+            <span>AUTO 将持续生成直到完成 {maxSongs} 首（或连续失败 8 次），极消耗积分。请谨慎使用。</span>
+          </p>
+        )}
       </div>
 
-      <div className="mb-6 p-4 rounded-xl bg-white/5 border border-sky-500/20 backdrop-blur-sm flex items-center gap-3">
-        <Sparkles className="w-5 h-5 text-sky-400 flex-shrink-0" />
+      {/* AUTO countdown / status banner */}
+      {(autoRunning || autoCountdownActive) && (
+        <div className={`p-4 rounded-xl bg-white/5 border ${theme.border} backdrop-blur-sm`}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${theme.iconBg} flex items-center justify-center ${autoCountdownActive ? 'animate-pulse' : ''} ${theme.iconShadow}`}>
+                {autoCountdownActive
+                  ? <Clock className="w-5 h-5 text-white" />
+                  : <Loader className="w-5 h-5 text-white animate-spin" />}
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-white truncate">
+                  {autoCountdownActive
+                    ? `${displayName} AUTO 构思中 · 剩余 ${autoCountdownSec}s`
+                    : `${displayName} AUTO 生成中 · 已完成 ${autoCount} 首`}
+                </div>
+                <div className="text-xs text-gray-400 truncate">
+                  {autoThoughts.length > 0 ? autoThoughts[autoThoughts.length - 1].title : '准备启动...'}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handleAutoClick}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-300 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-colors flex-shrink-0"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              停止
+            </button>
+          </div>
+          {autoCountdownActive && (
+            <div className="mt-3 w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className={`h-full bg-gradient-to-r ${theme.progressFrom} ${theme.progressTo} transition-all duration-1000`}
+                style={{ width: `${((60 - autoCountdownSec) / 60) * 100}%` }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className={`mb-6 p-4 rounded-xl bg-white/5 border ${theme.border} backdrop-blur-sm flex items-center gap-3`}>
+        <Sparkles className={`w-5 h-5 ${theme.accentText} flex-shrink-0`} />
         <span className="text-sm text-gray-300">{t('mv.aide_text')}</span>
       </div>
-
-      <MVEngineSelector
-        engine={engine}
-        onEngineChange={setEngine}
-        museAvailable={museAvailable}
-        sunoAvailable={sunoAvailable}
-        meloAvailable={meloAvailable}
-        museCredits={museCredits}
-        t={t}
-      />
 
       <MVControls
         mode={mode}
@@ -547,14 +1204,14 @@ function MVPage() {
       />
 
       {isGenerating && (
-        <div className="mt-6 p-6 glass rounded-xl border border-sky-500/20">
+        <div className={`mt-6 p-6 glass rounded-xl border ${theme.border}`}>
           <div className="flex items-center gap-3 mb-4">
-            <Loader className="w-5 h-5 text-sky-400 animate-spin" />
+            <Loader className={`w-5 h-5 ${theme.accentText} animate-spin`} />
             <span className="font-semibold text-white">{genStage}</span>
           </div>
           <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-sky-500 to-cyan-500 transition-all duration-300"
+              className={`h-full bg-gradient-to-r ${theme.progressFrom} ${theme.progressTo} transition-all duration-300`}
               style={{ width: `${genProgress}%` }}
             />
           </div>
@@ -602,7 +1259,7 @@ function MVPage() {
       {aiVideoTools.length > 0 && (
         <div className="mt-10">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-white">
-            <Wand2 className="w-5 h-5 text-sky-400" />
+            <Wand2 className={`w-5 h-5 ${theme.accentText}`} />
             {t('mv.ai_tools_title')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -614,11 +1271,11 @@ function MVPage() {
                   href={tool.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="glass p-4 rounded-xl border border-white/10 hover:border-sky-500/30 hover:shadow-lg hover:shadow-sky-500/10 transition-all group"
+                  className={`glass p-4 rounded-xl border border-white/10 ${theme.toolHoverBorder} ${theme.toolShadow} transition-all group`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-sky-500/20 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-5 h-5 text-sky-400" />
+                    <div className={`w-10 h-10 rounded-lg ${theme.toolIconBg} flex items-center justify-center flex-shrink-0`}>
+                      <Icon className={`w-5 h-5 ${theme.accentText}`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -629,7 +1286,7 @@ function MVPage() {
                       {tool.features?.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {tool.features.slice(0, 3).map((f, i) => (
-                            <span key={i} className="px-2 py-0.5 text-xs rounded bg-sky-500/10 text-sky-300 border border-sky-500/20">
+                            <span key={i} className={`px-2 py-0.5 text-xs rounded ${theme.chipBg} ${theme.chipText} ${theme.chipBorder} border`}>
                               {f}
                             </span>
                           ))}
@@ -655,6 +1312,120 @@ function MVPage() {
           if (item.videoBlob) setVideoBlob(item.videoBlob);
           setResult(item);
         }}
+      />
+
+      {/* AUTO Danger Confirmation Modal (3-step) */}
+      {showAutoConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in"
+          onClick={cancelAutoConfirm}>
+          <div
+            className="w-full max-w-md max-h-[90vh] flex flex-col bg-[#0f0f1a] border border-red-500/40 rounded-2xl shadow-2xl shadow-red-900/50 overflow-hidden animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 p-4 flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base font-bold text-white">
+                  {autoConfirmStep === 1 && AUTO_CONFIRM.title1(displayName)}
+                  {autoConfirmStep === 2 && AUTO_CONFIRM.title2}
+                  {autoConfirmStep === 3 && AUTO_CONFIRM.title3}
+                </h2>
+                <p className="text-[11px] text-white/80">
+                  {t('auto.step').replace('{curr}', String(autoConfirmStep))}
+                </p>
+              </div>
+              <button
+                onClick={cancelAutoConfirm}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+
+            {/* Step Indicators */}
+            <div className="px-4 py-2 bg-white/5 flex items-center gap-2">
+              {[1, 2, 3].map(step => (
+                <div key={step} className="flex-1 flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all
+                    ${autoConfirmStep >= step
+                      ? 'bg-gradient-to-br from-red-500 to-orange-500 text-white'
+                      : 'bg-white/10 text-gray-500'}`}>
+                    {autoConfirmStep > step ? <CheckCircle className="w-4 h-4" /> : step}
+                  </div>
+                  {step < 3 && (
+                    <div className={`flex-1 h-1 rounded-full transition-colors
+                      ${autoConfirmStep > step ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white/10'}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-3 flex-1 min-h-0 overflow-y-auto">
+              {autoConfirmStep === 1 && (
+                <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300 font-sans">
+                  {AUTO_CONFIRM.desc1(displayName, credit)}
+                </pre>
+              )}
+              {autoConfirmStep === 2 && (
+                <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300 font-sans">
+                  {AUTO_CONFIRM.desc2(displayName)}
+                </pre>
+              )}
+              {autoConfirmStep === 3 && (
+                <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300 font-sans">
+                  {AUTO_CONFIRM.desc3(displayName, credit)}
+                </pre>
+              )}
+
+              {autoConfirmStep === 3 && (
+                <div className="mt-2 p-3 rounded-xl border border-red-500/40 bg-red-500/10 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-red-300" />
+                    <p className="text-xs font-bold text-red-200">免责确认</p>
+                  </div>
+                  <p className="text-[11px] text-red-300/80">
+                    我已知晓此操作将消耗 {displayName} 账户的积分，后果由本人自行承担。
+                    zMusic 及相关开发者不对由此造成的积分损失、订阅费用或账号异常承担任何责任。
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-4 bg-white/5 border-t border-white/5 flex items-center gap-3">
+              <button
+                onClick={cancelAutoConfirm}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-300 bg-white/5 hover:bg-white/10 transition-colors border border-white/10"
+              >
+                {t('auto.cancel_btn')}
+              </button>
+              <button
+                onClick={proceedAutoConfirmStep}
+                className={`flex-[1.4] px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg
+                  ${autoConfirmStep === 3
+                    ? 'bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 hover:from-red-500 hover:via-rose-500 hover:to-orange-500 shadow-red-500/40 hover:shadow-red-500/60 hover:scale-[1.02] active:scale-[0.99]'
+                    : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 shadow-orange-500/30'
+                  }`}
+              >
+                {autoConfirmStep < 3 ? '下一步，我已了解风险 →' : t('auto.confirm_btn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Creative Thinking Panel — shows AI's reasoning for each AUTO song */}
+      <AutoCreativePanel
+        open={autoRunning || (autoThoughts.length > 0 && showCreativePanel)}
+        thoughts={autoThoughts}
+        autoRunning={autoRunning}
+        autoCount={autoCount}
+        engineName={displayName}
+        onClose={() => setShowCreativePanel(false)}
       />
     </div>
   );
