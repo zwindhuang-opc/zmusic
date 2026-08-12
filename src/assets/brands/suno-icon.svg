@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Suno AI">
+  <defs>
+    <linearGradient id="sunoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6B35"/>
+      <stop offset="100%" stop-color="#F7931E"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#sunoGrad)">
+    <circle cx="64" cy="46" r="22"/>
+  </g>
+  <g stroke="url(#sunoGrad)" stroke-width="8" stroke-linecap="round">
+    <line x1="64" y1="10" x2="64" y2="22"/>
+    <line x1="30" y1="20" x2="38" y2="30"/>
+    <line x1="98" y1="20" x2="90" y2="30"/>
+    <line x1="18" y1="46" x2="30" y2="46"/>
+    <line x1="110" y1="46" x2="98" y2="46"/>
+    <line x1="30" y1="72" x2="38" y2="62"/>
+    <line x1="98" y1="72" x2="90" y2="62"/>
+  </g>
+  <g fill="url(#sunoGrad)">
+    <rect x="34" y="96" width="9" height="22" rx="4"/>
+    <rect x="51" y="86" width="9" height="32" rx="4"/>
+    <rect x="68" y="92" width="9" height="26" rx="4"/>
+    <rect x="85" y="100" width="9" height="18" rx="4"/>
+  </g>
+</svg>

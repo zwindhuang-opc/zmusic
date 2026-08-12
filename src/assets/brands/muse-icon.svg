@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Muse AI">
+  <defs>
+    <linearGradient id="museGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2196F3"/>
+      <stop offset="100%" stop-color="#00BCD4"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#museGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 24 74 Q 24 24 64 24 Q 104 24 104 74"/>
+  </g>
+  <g fill="url(#museGrad)">
+    <rect x="15" y="68" width="22" height="34" rx="11"/>
+    <rect x="91" y="68" width="22" height="34" rx="11"/>
+    <rect x="60" y="44" width="7" height="42" rx="3"/>
+    <ellipse cx="52" cy="88" rx="12" ry="10"/>
+    <path d="M 67 44 Q 88 50 84 72 Q 82 60 67 60 Z"/>
+  </g>
+</svg>

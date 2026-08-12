@@ -18,6 +18,7 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 const CreativeNotebook = lazy(() => import('./pages/CreativeNotebook.jsx'));
 const RemixStudio = lazy(() => import('./pages/RemixStudio.jsx'));
 const PublishStudio = lazy(() => import('./pages/PublishStudio.jsx'));
+import { MuseIcon, SunoIcon, MeloIcon } from './components/BrandIcons.jsx';
 import FloatingChatBall from './components/FloatingChatBall.jsx';
 import EasyMode from './components/EasyMode.jsx';
 import { AutoProgressProvider } from './contexts/AutoProgressContext.jsx';
@@ -95,9 +96,9 @@ function App() {
       isGroup: true,
       children: [
         { id: 'music', label: t('nav.music_create'), icon: Music },
-        { id: 'muse', label: t('nav.muse'), icon: Headphones, engine: 'muse' },
-        { id: 'suno', label: t('nav.suno'), icon: Cloud, engine: 'suno' },
-        { id: 'melo', label: t('nav.melo'), icon: Music2, engine: 'melo' },
+        { id: 'muse', label: t('nav.muse'), icon: MuseIcon, engine: 'muse' },
+        { id: 'suno', label: t('nav.suno'), icon: SunoIcon, engine: 'suno' },
+        { id: 'melo', label: t('nav.melo'), icon: MeloIcon, engine: 'melo' },
       ],
     },
     {
@@ -106,9 +107,9 @@ function App() {
       icon: Video,
       isGroup: true,
       children: [
-        { id: 'mv-muse', label: 'Muse MV', icon: Headphones, engine: 'muse' },
-        { id: 'mv-suno', label: 'Suno MV', icon: Cloud, engine: 'suno' },
-        { id: 'mv-melo', label: 'Melo MV', icon: Music2, engine: 'melo' },
+        { id: 'mv-muse', label: 'Muse MV', icon: MuseIcon, engine: 'muse' },
+        { id: 'mv-suno', label: 'Suno MV', icon: SunoIcon, engine: 'suno' },
+        { id: 'mv-melo', label: 'Melo MV', icon: MeloIcon, engine: 'melo' },
       ],
     },
     { id: 'lyrics', label: t('nav.lyrics'), icon: Mic },

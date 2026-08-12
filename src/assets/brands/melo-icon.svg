@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Melo AI">
+  <defs>
+    <linearGradient id="meloGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#A855F7"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#meloGrad)">
+    <rect x="54" y="28" width="7" height="52" rx="3"/>
+    <ellipse cx="44" cy="82" rx="13" ry="11"/>
+    <path d="M 61 28 Q 86 34 82 58 Q 80 44 61 44 Z"/>
+  </g>
+  <g fill="url(#meloGrad)">
+    <rect x="20" y="74" width="7" height="24" rx="3"/>
+    <rect x="33" y="64" width="7" height="44" rx="3"/>
+    <rect x="72" y="58" width="7" height="50" rx="3"/>
+    <rect x="85" y="70" width="7" height="38" rx="3"/>
+    <rect x="98" y="82" width="7" height="26" rx="3"/>
+  </g>
+</svg>
