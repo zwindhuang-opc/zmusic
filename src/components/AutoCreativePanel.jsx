@@ -10,9 +10,86 @@
  *
  * This makes the AI's "creative process" transparent to the user,
  * not just a black box that spits out songs.
+ *
+ * Engine color schemes:
+ *   - Muse AI:   Blue/cyan (ocean/creativity)
+ *   - Suno AI:   Green/teal (nature/growth)
+ *   - Melo AI:   Amber/orange (sunset/warmth)
  */
 import React, { useEffect, useRef } from 'react';
 import { Brain, X, Sparkles, Music2 } from 'lucide-react';
+
+const ENGINE_THEMES = {
+  'Muse AI': {
+    key: 'muse',
+    accent: 'blue',
+    border: 'border-blue-500/30',
+    borderActive: 'border-blue-500/60',
+    bg: 'bg-blue-500/5',
+    bgActive: 'bg-blue-500/10',
+    bgHeader: 'from-blue-500/10 to-cyan-500/10',
+    text: 'text-blue-300',
+    textSoft: 'text-blue-400/70',
+    shadow: 'shadow-blue-900/40',
+    dot: 'bg-blue-400',
+    iconBg: 'from-blue-500 to-cyan-500',
+    iconShadow: 'shadow-blue-500/40',
+    thoughtText: 'text-blue-400',
+    pulse: 'bg-blue-400',
+  },
+  'Suno AI': {
+    key: 'suno',
+    accent: 'green',
+    border: 'border-emerald-500/30',
+    borderActive: 'border-emerald-500/60',
+    bg: 'bg-emerald-500/5',
+    bgActive: 'bg-emerald-500/10',
+    bgHeader: 'from-emerald-500/10 to-teal-500/10',
+    text: 'text-emerald-300',
+    textSoft: 'text-emerald-400/70',
+    shadow: 'shadow-emerald-900/40',
+    dot: 'bg-emerald-400',
+    iconBg: 'from-emerald-500 to-teal-500',
+    iconShadow: 'shadow-emerald-500/40',
+    thoughtText: 'text-emerald-400',
+    pulse: 'bg-emerald-400',
+  },
+  'Melo AI': {
+    key: 'melo',
+    accent: 'amber',
+    border: 'border-amber-500/30',
+    borderActive: 'border-amber-500/60',
+    bg: 'bg-amber-500/5',
+    bgActive: 'bg-amber-500/10',
+    bgHeader: 'from-amber-500/10 to-orange-500/10',
+    text: 'text-amber-300',
+    textSoft: 'text-amber-400/70',
+    shadow: 'shadow-amber-900/40',
+    dot: 'bg-amber-400',
+    iconBg: 'from-amber-500 to-orange-500',
+    iconShadow: 'shadow-amber-500/40',
+    thoughtText: 'text-amber-400',
+    pulse: 'bg-amber-400',
+  },
+};
+
+const DEFAULT_THEME = {
+  key: 'default',
+  accent: 'violet',
+  border: 'border-violet-500/30',
+  borderActive: 'border-violet-500/60',
+  bg: 'bg-violet-500/5',
+  bgActive: 'bg-violet-500/10',
+  bgHeader: 'from-violet-500/10 to-fuchsia-500/10',
+  text: 'text-violet-300',
+  textSoft: 'text-violet-400/70',
+  shadow: 'shadow-violet-900/40',
+  dot: 'bg-violet-400',
+  iconBg: 'from-violet-500 to-fuchsia-500',
+  iconShadow: 'shadow-violet-500/40',
+  thoughtText: 'text-violet-400',
+  pulse: 'bg-violet-400',
+};
 
 export default function AutoCreativePanel({
   open,
@@ -23,6 +100,7 @@ export default function AutoCreativePanel({
   onClose,
 }) {
   const scrollRef = useRef(null);
+  const theme = ENGINE_THEMES[engineName] || DEFAULT_THEME;
 
   // Auto-scroll to bottom when new thoughts arrive
   useEffect(() => {
@@ -36,11 +114,11 @@ export default function AutoCreativePanel({
   const latest = thoughts[thoughts.length - 1];
 
   return (
-    <div className="fixed left-6 top-20 bottom-24 w-[420px] max-w-[calc(100vw-3rem)] z-40 flex flex-col bg-[#0a0a14]/95 backdrop-blur-md border border-violet-500/30 rounded-2xl shadow-2xl shadow-violet-900/40 overflow-hidden">
+    <div className={`fixed left-6 top-20 bottom-24 w-[420px] max-w-[calc(100vw-3rem)] z-40 flex flex-col bg-[#0a0a14]/95 backdrop-blur-md border ${theme.border} rounded-2xl shadow-2xl ${theme.shadow} overflow-hidden`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-violet-500/20 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10">
+      <div className={`flex items-center justify-between px-4 py-3 border-b ${theme.border} bg-gradient-to-r ${theme.bgHeader}`}>
         <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center ${autoRunning ? 'animate-pulse' : ''}`}>
+          <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${theme.iconBg} flex items-center justify-center ${autoRunning ? 'animate-pulse' : ''} ${theme.iconShadow} shadow-lg`}>
             <Brain className="w-4 h-4 text-white" />
           </div>
           <div>
@@ -70,7 +148,7 @@ export default function AutoCreativePanel({
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-3">
         {thoughts.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <Sparkles className="w-8 h-8 text-violet-400/50 mb-2" />
+            <Sparkles className={`w-8 h-8 ${theme.thoughtText}/50 mb-2`} />
             <p className="text-xs text-gray-500">
               {autoRunning
                 ? '正在构思第一首歌的创作思路...'
@@ -82,26 +160,25 @@ export default function AutoCreativePanel({
         {thoughts.map((thought, idx) => (
           <div
             key={idx}
-            className={`rounded-xl border p-3 transition-all ${
-              idx === thoughts.length - 1
-                ? 'border-violet-500/40 bg-violet-500/5 shadow-lg shadow-violet-500/10'
+            className={`rounded-xl border p-3 transition-all ${idx === thoughts.length - 1
+                ? `${theme.borderActive} ${theme.bgActive} shadow-lg ${theme.iconShadow}`
                 : 'border-white/5 bg-white/[0.02]'
-            }`}
+              }`}
           >
             {/* Iteration header */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <Music2 className="w-3.5 h-3.5 text-violet-400" />
-                <span className="text-xs font-bold text-violet-300">
-                  第 {thought.iteration} 首 · {thought.title}
+                <Music2 className={`w-3.5 h-3.5 ${theme.thoughtText}`} />
+                <span className={`text-xs font-bold ${theme.text}`}>
+                  {thought.iteration ? `第 ${thought.iteration} 首 · ${thought.title}` : thought.title}
                 </span>
               </div>
-              <span className="text-[10px] text-gray-500 font-mono">{thought.timestamp}</span>
+              <span className="text-[10px] text-gray-500 font-mono">{thought.timestamp || thought.time}</span>
             </div>
 
-            {/* Thought sections */}
+            {/* Thought sections - handle both formats */}
             <div className="space-y-2">
-              {thought.sections.map((section, sIdx) => (
+              {thought.sections && thought.sections.map((section, sIdx) => (
                 <div key={sIdx} className="text-[11px]">
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-sm">{section.icon}</span>
@@ -110,7 +187,7 @@ export default function AutoCreativePanel({
                       <span className="text-gray-400">· {section.title}</span>
                     )}
                   </div>
-                  {section.lines.map((line, lIdx) => (
+                  {section.lines && section.lines.map((line, lIdx) => (
                     <div
                       key={lIdx}
                       className="ml-5 text-gray-400 leading-relaxed whitespace-pre-wrap"
@@ -120,6 +197,16 @@ export default function AutoCreativePanel({
                   ))}
                 </div>
               ))}
+              {!thought.sections && thought.summary && (
+                <div className="text-[11px] text-gray-300">
+                  {thought.summary}
+                </div>
+              )}
+              {!thought.sections && thought.detail && (
+                <div className="text-[11px] text-gray-400 leading-relaxed whitespace-pre-wrap mt-1">
+                  {thought.detail}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -127,10 +214,10 @@ export default function AutoCreativePanel({
 
       {/* Footer hint */}
       {autoRunning && latest && (
-        <div className="px-4 py-2 border-t border-violet-500/20 bg-violet-500/5">
-          <div className="flex items-center gap-2 text-[10px] text-violet-300/70">
-            <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-            正在将「{latest.title}」发送给 {engineName} 生成...
+        <div className={`px-4 py-2 border-t ${theme.border} ${theme.bg}`}>
+          <div className={`flex items-center gap-2 text-[10px] ${theme.textSoft}`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${theme.pulse} animate-pulse`} />
+            正在发送「{latest.title}」给 {engineName} 生成...
           </div>
         </div>
       )}

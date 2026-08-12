@@ -17,6 +17,9 @@ const MeloPage = lazy(() => import('./pages/MeloPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 import FloatingChatBall from './components/FloatingChatBall.jsx';
 import EasyMode from './components/EasyMode.jsx';
+import { AutoProgressProvider } from './contexts/AutoProgressContext.jsx';
+import { GenerationProvider } from './stores/generationStore.jsx';
+import AutoProgressBar from './components/AutoProgressBar.jsx';
 
 const UI_MODE_KEY = 'zmusic-ui-mode';
 const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '1.0.0';
@@ -311,9 +314,9 @@ function App() {
             )}
             {currentPage === 'image-lyrics' && <ImageLyricsPage onNavigate={setCurrentPage} />}
             {currentPage === 'mv' && <MVPage />}
-            {currentPage === 'muse' && <MusePage />}
-            {currentPage === 'suno' && <SunoPage />}
-            {currentPage === 'melo' && <MeloPage />}
+            {currentPage === 'muse' && <MusePage onNavigate={setCurrentPage} />}
+            {currentPage === 'suno' && <SunoPage onNavigate={setCurrentPage} />}
+            {currentPage === 'melo' && <MeloPage onNavigate={setCurrentPage} />}
             {currentPage === 'settings' && <SettingsPage />}
           </Suspense>
         </div>
@@ -389,8 +392,17 @@ function App() {
       </main>
 
       <FloatingChatBall />
+      <AutoProgressBar />
     </div>
   );
 }
 
-export default App;
+export default function AppWithProviders(props) {
+  return (
+    <GenerationProvider>
+      <AutoProgressProvider>
+        <App {...props} />
+      </AutoProgressProvider>
+    </GenerationProvider>
+  );
+}

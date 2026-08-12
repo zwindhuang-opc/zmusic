@@ -18,7 +18,7 @@
  * @author ZMusic Team
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { isMobileEnvironment } from '../services/api.client.js';
 
 /**
@@ -85,6 +85,8 @@ export function GenerationProvider({ children }) {
    * @type {Array<Object>}
    */
   const [history, setHistory] = useState([]);
+  const historyRef = useRef([]);
+  const sessionsRef = useRef([]);
 
   /**
    * ID of the currently selected history item
@@ -111,42 +113,113 @@ export function GenerationProvider({ children }) {
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('zmusic_generation_sessions');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setSessions(parsed);
-        const active = parsed.find(s => s.status === 'submitting' || s.status === 'processing' || s.status === 'polling');
-        if (active) setActiveSessionId(active.id);
-      } catch (e) {
-        console.error('Failed to parse generation sessions:', e);
-      }
+  // Keep refs in sync with state for beforeunload handler
+  useEffect(() => { historyRef.current = history; }, [history]);
+  useEffect(() => { sessionsRef.current = sessions; }, [sessions]);
+
+  /**
+   * Force-save all data to localStorage (used on page unload)
+   * This is synchronous to ensure data survives browser close
+   */
+  const forceSaveAll = useCallback(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(historyRef.current));
+      localStorage.setItem('zmusic_generation_sessions', JSON.stringify(sessionsRef.current));
+    } catch (e) {
+      console.error('Failed to force-save generation data:', e);
     }
   }, []);
 
+  /**
+   * Register beforeunload and pagehide handlers to guarantee persistence
+   * This ensures data is saved even if the useEffect hasn't flushed yet
+   * IMPORTANT: We do NOT save on cleanup because React StrictMode double-invokes
+   * effects during development, which would overwrite persisted data with empty arrays.
+   */
   useEffect(() => {
-    localStorage.setItem('zmusic_generation_sessions', JSON.stringify(sessions));
-  }, [sessions]);
+    const handleBeforeUnload = () => forceSaveAll();
+    const handlePageHide = () => forceSaveAll();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        forceSaveAll();
+      }
+    };
 
-  const activeSession = useMemo(
-    () => sessions.find(s => s.id === activeSessionId) || null,
-    [sessions, activeSessionId]
-  );
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cross-tab sync: when localStorage changes in another tab, reload
+    const handleStorage = (e) => {
+      if (e.key === STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed) && parsed.length >= 0) {
+            setHistory(parsed);
+          }
+        } catch (err) { /* ignore parse errors */ }
+      }
+      if (e.key === 'zmusic_generation_sessions' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setSessions(parsed);
+          }
+        } catch (err) { /* ignore parse errors */ }
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('storage', handleStorage);
+      // NOTE: Intentionally NOT calling forceSaveAll() in cleanup.
+      // StrictMode double-invokes effects in development, which would overwrite
+      // persisted data with empty arrays during the first mount's cleanup.
+    };
+  }, [forceSaveAll]);
 
   /**
    * Load history from localStorage on mount
    * Restores previously saved generation history
+   * Also sets up a sync interval to persist data more frequently
    */
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setHistory(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse generation history:', e);
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setHistory(parsed);
+        }
       }
+    } catch (e) {
+      console.error('Failed to parse generation history:', e);
     }
+
+    // Also load sessions
+    try {
+      const savedSessions = localStorage.getItem('zmusic_generation_sessions');
+      if (savedSessions) {
+        const parsed = JSON.parse(savedSessions);
+        if (Array.isArray(parsed)) {
+          setSessions(parsed);
+          const active = parsed.find(s => s.status === 'submitting' || s.status === 'processing' || s.status === 'polling');
+          if (active) setActiveSessionId(active.id);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse sessions:', e);
+    }
+
+    // Sync every 30 seconds as a safety net
+    const syncInterval = setInterval(() => {
+      forceSaveAll();
+    }, 30000);
+
+    return () => clearInterval(syncInterval);
   }, []);
 
   /**
@@ -154,8 +227,26 @@ export function GenerationProvider({ children }) {
    * Ensures data survives page reloads
    */
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    if (history.length === 0) return; // Don't persist empty arrays (initial state)
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    } catch (e) {
+      console.error('Failed to persist history:', e);
+    }
   }, [history]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('zmusic_generation_sessions', JSON.stringify(sessions));
+    } catch (e) {
+      console.error('Failed to persist sessions:', e);
+    }
+  }, [sessions]);
+
+  const activeSession = useMemo(
+    () => sessions.find(s => s.id === activeSessionId) || null,
+    [sessions, activeSessionId]
+  );
 
   /**
    * Add a new item to generation history
@@ -190,6 +281,13 @@ export function GenerationProvider({ children }) {
       setSelectedId(null);
     }
   }, [selectedId]);
+
+  const updateHistory = useCallback((id, updates) => {
+    setHistory(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      return { ...item, ...updates, updatedAt: new Date().toISOString() };
+    }));
+  }, []);
 
   /**
    * Clear all history items and remove from localStorage
@@ -439,10 +537,12 @@ export function GenerationProvider({ children }) {
     const songs = history.filter(item => item.type === 'song').length;
     const lyrics = history.filter(item => item.type === 'lyrics').length;
     const mvs = history.filter(item => item.type === 'mv').length;
+    const creationAttempts = history.filter(item => item.type === 'creation_attempt').length;
     return {
       songsGenerated: songs,
       lyricsGenerated: lyrics,
       mvGenerated: mvs,
+      creationAttempts,
       activeUsers: 1, // Local app - single user. In cloud deployment, this would fetch from API
       total: history.length
     };
@@ -473,6 +573,7 @@ export function GenerationProvider({ children }) {
     setSelectedId,
     addToHistory,
     removeFromHistory,
+    updateHistory,
     clearHistory,
     getSelected,
     copyToClipboard,

@@ -424,6 +424,75 @@ export const AUTO_CONFIRM = {
   buttonCancel: '取消 (我再想想)',
 };
 
+// === AUTO: Platform website URLs + auto-open (with dedupe) ===
+/**
+ * Official website URLs for each platform (opened in new tabs when AUTO starts).
+ * NOTE: User does NOT need to log in — just open the sites so user can verify
+ * that the real AI platforms exist and see their dashboard/credit status.
+ */
+export const PLATFORM_WEBSITES = {
+  muse: 'https://muse.top',
+  suno: 'https://suno.cn',
+  melo: 'https://h.51melo.com/pages/mine/index',
+};
+const PLATFORM_OPEN_FLAG_PREFIX = 'zmusic_tab_opened_'; // sessionStorage key prefix
+
+/**
+ * Open a platform's official website in a new browser tab.
+ * Uses sessionStorage to deduplicate — only opens once per browser session.
+ * @param {'muse'|'suno'|'melo'} platform  - Platform key
+ * @returns {boolean} true = tab was opened now; false = already open (skipped)
+ */
+export function openPlatformWebsite(platform) {
+  try {
+    const url = PLATFORM_WEBSITES[platform];
+    if (!url) return false;
+    const flag = PLATFORM_OPEN_FLAG_PREFIX + platform;
+    if (typeof sessionStorage !== 'undefined') {
+      if (sessionStorage.getItem(flag) === '1') {
+        // eslint-disable-next-line no-console
+        console.log('[AUTO][openPlatformWebsite] Already opened in this session, skipping:', platform);
+        return false;
+      }
+      sessionStorage.setItem(flag, '1');
+    }
+    const w = typeof window !== 'undefined'
+      ? window.open(url, `zmusic_${platform}`, 'noopener,noreferrer,width=1200,height=800')
+      : null;
+    if (w) {
+      try { w.blur(); } catch (_e) { /* some browsers block */ }
+      try { window.focus(); } catch (_e) { /* bring focus back to zmusic */ }
+    }
+    console.log('[AUTO][openPlatformWebsite] ✅ Opened tab for:', platform, '→', url);
+    return true;
+  } catch (e) {
+    console.warn('[AUTO][openPlatformWebsite] Failed to open tab for', platform, ':', e.message);
+    return false;
+  }
+}
+
+/**
+ * Open ALL platform website tabs. Returns {opened: [...], skipped: [...]}
+ */
+export function openAllPlatformWebsites(platforms = ['muse', 'suno', 'melo']) {
+  const opened = [];
+  const skipped = [];
+  platforms.forEach(p => {
+    openPlatformWebsite(p) ? opened.push(p) : skipped.push(p);
+  });
+  console.log('[AUTO][openAllPlatformWebsites] opened:', opened, '  skipped (session dedupe):', skipped);
+  return { opened, skipped };
+}
+
+/**
+ * Reset the session dedupe flags. Useful in dev/testing.
+ */
+export function resetPlatformOpenFlags() {
+  for (const p of Object.keys(PLATFORM_WEBSITES)) {
+    try { sessionStorage.removeItem(PLATFORM_OPEN_FLAG_PREFIX + p); } catch (_e) {}
+  }
+}
+
 export const GLOBAL_AUTO_CONFIRM = {
   title1: '⚠️ 超级危险：启动三平台 AUTO 同步生成？',
   title2: '⚠️ 二次确认：将同时消耗 Muse/Suno/Melo 三方积分',

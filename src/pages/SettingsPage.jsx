@@ -1,7 +1,8 @@
-﻿import React, { useState, useEffect } from 'react';
-import { Settings, Key, Save, RefreshCw, Server, Bot, Cpu, CheckCircle, AlertCircle, Sparkles, Wand2, Sliders } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Settings, Key, Save, RefreshCw, Server, Bot, Cpu, CheckCircle, AlertCircle, Sparkles, Wand2, Sliders, Music, RotateCcw, Gauge, Clock } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
+import { getAutoConfig, setAutoConfig, AUTO_DEFAULTS } from '../utils/autoConfig.js';
 
 const UI_MODE_KEY = 'zmusic-ui-mode';
 
@@ -10,6 +11,19 @@ function SettingsPage() {
   const [config, setConfig] = useState(null);
   const [agentStatus, setAgentStatus] = useState(null);
   const [saved, setSaved] = useState(false);
+  const [autoConfig, setAutoConfigState] = useState(getAutoConfig());
+
+  const updateAutoConfig = (partial) => {
+    const updated = setAutoConfig(partial);
+    setAutoConfigState(updated);
+  };
+
+  const resetAutoConfig = () => {
+    setAutoConfigState(AUTO_DEFAULTS);
+    localStorage.removeItem('zmusic_auto_config');
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   useEffect(() => {
     if (!isMobileEnvironment()) {
@@ -203,6 +217,147 @@ function SettingsPage() {
             <div className="text-[10px] text-gray-400">
               {t('settings.agent_mode_description')}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* AUTO Settings */}
+      <div className="gradient-border p-4 md:p-5">
+        <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
+          <Music className="w-4 h-4 text-violet-400" />
+          AUTO 自动生成设置
+          {saved && <span className="text-[10px] text-emerald-400 ml-2">✓ 已保存</span>}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Song count */}
+          <div className="p-3 rounded-lg bg-white/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-400 flex items-center gap-1.5">
+                <Gauge className="w-3.5 h-3.5" />
+                每次 AUTO 生成歌曲数量
+              </span>
+              <span className="text-sm font-bold text-violet-300">{autoConfig.songsPerAuto}</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="20"
+              value={autoConfig.songsPerAuto}
+              onChange={(e) => updateAutoConfig({ songsPerAuto: parseInt(e.target.value) })}
+              className="w-full accent-violet-500"
+            />
+            <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+              <span>1</span>
+              <span>5</span>
+              <span>10</span>
+              <span>20</span>
+            </div>
+          </div>
+
+          {/* Countdown */}
+          <div className="p-3 rounded-lg bg-white/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-400 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                每首构思倒计时（秒）
+              </span>
+              <span className="text-sm font-bold text-violet-300">{autoConfig.countdownSeconds}s</span>
+            </div>
+            <input
+              type="range"
+              min="10"
+              max="120"
+              step="5"
+              value={autoConfig.countdownSeconds}
+              onChange={(e) => updateAutoConfig({ countdownSeconds: parseInt(e.target.value) })}
+              className="w-full accent-violet-500"
+            />
+            <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+              <span>10s</span>
+              <span>30s</span>
+              <span>60s</span>
+              <span>120s</span>
+            </div>
+          </div>
+
+          {/* Auto chaining */}
+          <div className="p-3 rounded-lg bg-white/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-400">自动跨平台链式生成</span>
+              <button
+                onClick={() => updateAutoConfig({ autoChaining: !autoConfig.autoChaining })}
+                className={`relative w-10 h-5 rounded-full transition-colors ${autoConfig.autoChaining ? 'bg-emerald-500' : 'bg-gray-600'}`}
+              >
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${autoConfig.autoChaining ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-500">Muse → Suno → Melo 自动链式执行</p>
+          </div>
+
+          {/* Stop on error */}
+          <div className="p-3 rounded-lg bg-white/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-400">出错时自动停止</span>
+              <button
+                onClick={() => updateAutoConfig({ stopOnError: !autoConfig.stopOnError })}
+                className={`relative w-10 h-5 rounded-full transition-colors ${autoConfig.stopOnError ? 'bg-emerald-500' : 'bg-gray-600'}`}
+              >
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${autoConfig.stopOnError ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-500">连续 {autoConfig.maxErrors} 次失败后自动停止</p>
+          </div>
+        </div>
+
+        {/* Engine overrides */}
+        <div className="mt-4 p-3 rounded-lg bg-gradient-to-r from-violet-500/5 to-fuchsia-500/5 border border-violet-500/20">
+          <div className="text-xs text-violet-300 font-semibold mb-2 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5" />
+            各平台单独配置（可选覆盖默认值）
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { key: 'muse', label: 'Muse AI', color: 'blue' },
+              { key: 'suno', label: 'Suno AI', color: 'emerald' },
+              { key: 'melo', label: 'Melo AI', color: 'amber' },
+            ].map(({ key, label, color }) => (
+              <div key={key} className="p-2 rounded bg-white/5">
+                <div className={`text-[10px] font-medium text-${color}-300 mb-1`}>{label}</div>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    placeholder={autoConfig.songsPerAuto}
+                    value={autoConfig.perEngineOverrides?.[key] ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value === '' ? null : parseInt(e.target.value);
+                      updateAutoConfig({
+                        perEngineOverrides: {
+                          ...autoConfig.perEngineOverrides,
+                          [key]: v,
+                        }
+                      });
+                    }}
+                    className="w-full bg-black/30 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                  />
+                </div>
+                <div className="text-[9px] text-gray-500 mt-0.5">留空使用默认</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between">
+          <button
+            onClick={resetAutoConfig}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 transition-colors text-xs"
+          >
+            <RotateCcw className="w-3 h-3" />
+            恢复默认
+          </button>
+          <div className="text-[10px] text-gray-500">
+            配置自动保存到本地存储
           </div>
         </div>
       </div>

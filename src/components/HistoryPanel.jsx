@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
-import { History, Copy, Music, Trash2, X, ChevronRight, Sparkles, Zap, Piano, ExternalLink, Headphones, Cloud, Music2 } from 'lucide-react';
+import { History, Copy, Music, Trash2, X, Sparkles, Zap, Piano, ExternalLink, Headphones, Cloud, Music2, FileText, AlertCircle, Loader2 } from 'lucide-react';
 
 function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
   const { t, ts } = useTranslation();
@@ -9,60 +9,84 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
 
   const displayHistory = filterType ? getHistoryByType(filterType) : history;
 
-  const getTypeIcon = (type, method) => {
-    const typeIcons = {
-      song: Music,
-      lyrics: null,
-      mv: ExternalLink
+  const getEngineName = (item) => {
+    const engine = item.engine || item.method?.replace('_ai', '') || '';
+    const names = {
+      muse: 'Muse AI',
+      suno: 'Suno AI',
+      melo: 'Melo AI',
+      muse_ai: 'Muse AI',
+      suno_ai: 'Suno AI',
+      melo_ai: 'Melo AI',
     };
+    return names[engine] || engine || '';
+  };
+
+  const getTypeIcon = (type, method) => {
+    if (type === 'creation_draft') return Loader2;
+    if (type === 'creation_attempt') return AlertCircle;
     if (type === 'song') return Music;
+    if (type === 'lyrics') return FileText;
     if (type === 'mv') return ExternalLink;
+    if (type === 'generation_milestone') return Sparkles;
     const methodIcons = {
       fsm: Sparkles,
       network_layer: Zap,
       muse: Piano,
-      suno: Music,
-      melo: Music
+      suno: Cloud,
+      melo: Headphones,
+      muse_ai: Piano,
+      suno_ai: Cloud,
+      melo_ai: Headphones,
     };
     return methodIcons[method] || Sparkles;
   };
 
   const getTypeColor = (type, method) => {
-    const typeColors = {
-      song: 'from-violet-500 to-purple-500',
-      mv: 'from-blue-500 to-cyan-500'
-    };
-    if (typeColors[type]) return typeColors[type];
+    if (type === 'creation_draft') return 'from-amber-500 to-yellow-500';
+    if (type === 'creation_attempt') return 'from-red-500 to-rose-500';
+    if (type === 'song') return 'from-violet-500 to-purple-500';
+    if (type === 'lyrics') return 'from-cyan-500 to-blue-500';
+    if (type === 'mv') return 'from-blue-500 to-cyan-500';
+    if (type === 'generation_milestone') return 'from-violet-500 to-fuchsia-500';
+
     const methodColors = {
       fsm: 'from-violet-500 to-purple-500',
       network_layer: 'from-blue-500 to-cyan-500',
-      muse: 'from-pink-500 to-rose-500',
+      muse: 'from-blue-500 to-cyan-500',
       suno: 'from-green-500 to-emerald-500',
-      melo: 'from-orange-500 to-amber-500'
+      melo: 'from-orange-500 to-amber-500',
+      muse_ai: 'from-blue-500 to-cyan-500',
+      suno_ai: 'from-green-500 to-emerald-500',
+      melo_ai: 'from-orange-500 to-amber-500',
     };
     return methodColors[method] || 'from-gray-500 to-gray-600';
-  };
-
-  const getMethodColor = (method) => {
-    const colors = {
-      fsm: 'from-violet-500 to-purple-500',
-      network_layer: 'from-blue-500 to-cyan-500',
-      muse: 'from-pink-500 to-rose-500',
-      suno: 'from-green-500 to-emerald-500',
-      melo: 'from-orange-500 to-amber-500'
-    };
-    return colors[method] || 'from-gray-500 to-gray-600';
   };
 
   const getMethodName = (method) => {
     const names = {
       fsm: t('lyrics.fsm_name'),
       network_layer: t('lyrics.network_name'),
-      muse: t('lyrics.muse_name'),
-      suno: t('lyrics.suno_name'),
-      melo: t('lyrics.melo_name')
+      muse: 'Muse AI',
+      suno: 'Suno AI',
+      melo: 'Melo AI',
+      muse_ai: 'Muse AI',
+      suno_ai: 'Suno AI',
+      melo_ai: 'Melo AI',
     };
     return names[method] || method;
+  };
+
+  const getTypeName = (type) => {
+    const names = {
+      song: t('nav.music'),
+      lyrics: t('nav.lyrics'),
+      mv: t('nav.mv'),
+      creation_draft: '创作草稿',
+      creation_attempt: '创作记录',
+      generation_milestone: '生成里程碑',
+    };
+    return names[type] || type;
   };
 
   const getStyleName = (style) => {
@@ -74,35 +98,54 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
   };
 
   const formatDate = (isoString) => {
+    if (!isoString) return '';
     const date = new Date(isoString);
     return date.toLocaleString('zh-CN', {
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
   const getPreviewText = (item) => {
-    const fullText = item.result?.result?.fullText || item.result?.fullText || '';
+    const fullText = item.result?.result?.fullText || item.result?.fullText || item.lyrics || item.result?.lyricsText || '';
     if (!fullText) return '';
     const lines = fullText.split('\n').filter(line => line.trim() && !line.includes('[') && !line.includes('【'));
     return lines.slice(0, 3).join('\n') + (lines.length > 3 ? '...' : '');
   };
 
   const getLyricsText = (item) => {
-    return item.result?.result?.lyricsText || item.result?.lyricsText || item.result?.result?.fullText || item.result?.fullText || '';
+    return item.result?.result?.lyricsText || item.result?.lyricsText || item.lyrics || item.result?.result?.fullText || item.result?.fullText || '';
   };
 
   const getCommandText = (item) => {
-    return item.result?.result?.fullCommand || item.result?.fullCommand || item.result?.command || '';
+    return item.result?.result?.fullCommand || item.result?.fullCommand || item.prompt || item.result?.command || '';
   };
 
   const getFullText = (item) => {
     const r = item.result?.result || item.result;
-    if (r?.fullCommand && r?.lyricsText) {
-      return `${r.fullCommand}\n\n【歌词内容】\n\n${r.lyricsText}`;
+    const lyrics = getLyricsText(item);
+    const commands = getCommandText(item);
+    const title = item.title || r?.title || '';
+    const engine = getEngineName(item);
+    const style = item.style || item.result?.style || r?.style || '';
+    const theme = item.result?.theme || item.theme || r?.theme || '';
+    const bpm = item.result?.bpm || item.bpm || r?.bpm || '';
+
+    const sections = [];
+    if (title) sections.push(`【标题】${title}`);
+    if (engine) sections.push(`【引擎】${engine}`);
+    if (theme) sections.push(`【主题】${getThemeName(theme)}`);
+    if (style) sections.push(`【风格】${getStyleName(style)}`);
+    if (bpm) sections.push(`【BPM】${bpm}`);
+    if (commands) sections.push(`\n【命令/提示词】\n${commands}`);
+    if (lyrics) sections.push(`\n【歌词】\n${lyrics}`);
+
+    if (sections.length > 0) {
+      return sections.join('\n');
     }
+
     return r?.fullText || '';
   };
 
@@ -116,7 +159,7 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
       text = getFullText(item);
     }
     if (!text) {
-      text = getLyricsText(item);
+      text = getFullText(item);
     }
     const success = await copyToClipboard(text);
     if (success) {
@@ -171,11 +214,13 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
           ) : (
             displayHistory.map(item => {
               const Icon = getTypeIcon(item.type, item.method);
-              const itemTitle = item.type === 'song'
-                ? t('nav.music')
-                : item.type === 'mv'
-                  ? t('nav.mv')
-                  : getMethodName(item.method);
+              const itemTitle = item.title || getTypeName(item.type);
+              const statusBadge = item.type === 'creation_draft'
+                ? <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[10px] font-medium">构思中</span>
+                : item.type === 'creation_attempt'
+                  ? <span className="px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 text-[10px] font-medium">已记录</span>
+                  : null;
+
               return (
                 <div
                   key={item.id}
@@ -188,11 +233,20 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${getTypeColor(item.type, item.method)} flex items-center justify-center`}>
-                        <Icon className="w-4 h-4 text-white" />
+                        <Icon className={`w-4 h-4 text-white ${item.type === 'creation_draft' ? 'animate-pulse' : ''}`} />
                       </div>
                       <div>
-                        <div className="text-xs font-medium text-white">{itemTitle}</div>
-                        <div className="text-[10px] text-gray-500">{formatDate(item.createdAt)}</div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-white truncate max-w-[140px]">{itemTitle}</span>
+                          {statusBadge}
+                        </div>
+                        <div className="text-[10px] text-gray-500 flex items-center gap-1">
+                          {getEngineName(item) && (
+                            <span className="text-gray-600">{getEngineName(item)}</span>
+                          )}
+                          <span>·</span>
+                          <span>{formatDate(item.createdAt)}</span>
+                        </div>
                       </div>
                     </div>
                     <button
@@ -207,82 +261,91 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
                   </div>
 
                   <div className="flex flex-wrap gap-1.5 mb-3">
-                    <span className="px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-400 text-[10px] font-medium">
-                      {getStyleName(item.result?.style || item.style)}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[10px] font-medium">
-                      {getThemeName(item.result?.theme || item.theme)}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[10px] font-medium">
-                      {item.result?.language || 'zh'}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-gray-500/10 text-gray-400 text-[10px] font-medium">
-                      {item.result?.bpm || 120} BPM
-                    </span>
+                    {(item.style || item.result?.style) && (
+                      <span className="px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-400 text-[10px] font-medium">
+                        {getStyleName(item.result?.style || item.style)}
+                      </span>
+                    )}
+                    {(item.theme || item.result?.theme) && (
+                      <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[10px] font-medium">
+                        {getThemeName(item.result?.theme || item.theme)}
+                      </span>
+                    )}
+                    {(item.result?.language || item.language) && (
+                      <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[10px] font-medium">
+                        {item.result?.language || item.language}
+                      </span>
+                    )}
+                    {(item.result?.bpm || item.bpm) && (
+                      <span className="px-2 py-0.5 rounded-full bg-gray-500/10 text-gray-400 text-[10px] font-medium">
+                        {item.result?.bpm || item.bpm} BPM
+                      </span>
+                    )}
+                    {item.creativeProcess?.phase && (
+                      <span className="px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 text-[10px] font-medium">
+                        {item.creativeProcess.phase}
+                      </span>
+                    )}
                   </div>
 
-                  {item.result?.fullText || item.result?.result?.fullText ? (
+                  {(item.result?.fullText || item.result?.result?.fullText || item.lyrics) && (
                     <div className="text-xs text-gray-400 mb-3 line-clamp-3">
                       {getPreviewText(item)}
                     </div>
-                  ) : null}
+                  )}
 
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {item.type === 'lyrics' ? (
-                      <>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCopy(item, 'full');
-                          }}
-                          className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition-colors text-xs"
-                          title={t('lyrics.copy_all')}
-                        >
-                          <Copy className="w-3 h-3" />
-                          {t('lyrics.copy_all')}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCopy(item, 'commands');
-                          }}
-                          className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 py-2 rounded-lg bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 transition-colors text-xs"
-                          title={t('lyrics.copy_commands')}
-                        >
-                          <Copy className="w-3 h-3" />
-                          {t('lyrics.commands_only')}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCopy(item, 'lyrics');
-                          }}
-                          className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 py-2 rounded-lg bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 transition-colors text-xs"
-                          title={t('lyrics.copy_lyrics')}
-                        >
-                          <Copy className="w-3 h-3" />
-                          {t('lyrics.view_lyrics_only')}
-                        </button>
-                      </>
-                    ) : (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {/* Primary copy button - prominent for all types */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopy(item, 'full');
+                      }}
+                      className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 py-2 rounded-lg bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-300 hover:from-violet-500/30 hover:to-purple-500/30 transition-colors text-xs font-medium border border-violet-500/20"
+                      title="复制完整内容（标题+引擎+主题+风格+命令+歌词）"
+                    >
+                      <Copy className="w-3 h-3" />
+                      复制概念
+                    </button>
+
+                    {/* Copy commands only */}
+                    {(item.prompt || item.result?.fullCommand) && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleCopy(item, 'full');
+                          handleCopy(item, 'commands');
                         }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 transition-colors text-xs"
+                        className="flex items-center justify-center gap-1 py-2 px-2.5 rounded-lg bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 transition-colors text-xs"
+                        title="复制命令/提示词"
                       >
                         <Copy className="w-3 h-3" />
-                        {t('common.copy')}
+                        命令
                       </button>
                     )}
+
+                    {/* Copy lyrics only */}
+                    {(item.lyrics || item.result?.lyricsText || item.result?.result?.lyricsText) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopy(item, 'lyrics');
+                        }}
+                        className="flex items-center justify-center gap-1 py-2 px-2.5 rounded-lg bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition-colors text-xs"
+                        title="仅复制歌词"
+                      >
+                        <Copy className="w-3 h-3" />
+                        歌词
+                      </button>
+                    )}
+
+                    {/* Send to engines */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleSendToAI(item, 'muse');
                       }}
-                      className="flex items-center justify-center gap-1 py-2 px-3 rounded-lg bg-pink-500/10 text-pink-400 hover:bg-pink-500/20 transition-colors text-xs"
-                      title={t('common.send_to_muse')}
+                      className="flex items-center justify-center gap-1 py-2 px-2.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors text-xs"
+                      title="发送到 Muse AI"
                     >
                       <Piano className="w-3 h-3" />
                     </button>
@@ -291,8 +354,8 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
                         e.stopPropagation();
                         handleSendToAI(item, 'suno');
                       }}
-                      className="flex items-center justify-center gap-1 py-2 px-3 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors text-xs"
-                      title={t('common.send_to_suno')}
+                      className="flex items-center justify-center gap-1 py-2 px-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors text-xs"
+                      title="发送到 Suno AI"
                     >
                       <Cloud className="w-3 h-3" />
                     </button>
@@ -301,10 +364,10 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
                         e.stopPropagation();
                         handleSendToAI(item, 'melo');
                       }}
-                      className="flex items-center justify-center gap-1 py-2 px-3 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors text-xs"
-                      title={t('common.send_to_melo')}
+                      className="flex items-center justify-center gap-1 py-2 px-2.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors text-xs"
+                      title="发送到 Melo AI"
                     >
-                      <Music2 className="w-3 h-3" />
+                      <Headphones className="w-3 h-3" />
                     </button>
                   </div>
                 </div>

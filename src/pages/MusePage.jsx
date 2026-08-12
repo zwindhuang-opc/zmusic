@@ -17,8 +17,11 @@ import {
   generateRandomTitle,
   generateCreativeThought,
   AUTO_CONFIRM,
+  openPlatformWebsite,
 } from '../utils/autoGenUtils.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
+import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
+import { getEngineSongCount } from '../utils/autoConfig.js';
 
 const API_BASE = '/api';
 
@@ -194,9 +197,10 @@ function StyledSelect({ value, onChange, options, placeholder, icon }) {
   );
 }
 
-function MusePage() {
+function MusePage({ onNavigate }) {
   const { t } = useTranslation();
-  const { pendingLyrics, clearPendingLyrics, startSession, updateSession, completeSession, sessions, copyToClipboard, showToast } = useGeneration();
+  const { pendingLyrics, clearPendingLyrics, startSession, updateSession, completeSession, addToHistory, updateHistory, removeFromHistory, sessions, copyToClipboard, showToast } = useGeneration();
+  const autoProgress = useAutoProgress();
 
   const [mode, setMode] = useState('quick');
   const [prompt, setPrompt] = useState('');
@@ -230,6 +234,7 @@ function MusePage() {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.8);
   const audioRef = useRef(null);
+  const handleGenerateRef = useRef(() => { });
 
   const [activeSteps, setActiveSteps] = useState({
     submit: false, analyze: false, compose: false, master: false
@@ -244,9 +249,19 @@ function MusePage() {
   const autoRunningRef = useRef(false);
   const autoStopRequestedRef = useRef(false);
   const autoConsecutiveErrorsRef = useRef(0);
+  const autoCountRef = useRef(0);
+  // 同步输入快照（setState 异步，AUTO 路径下必须用 ref 避免闭包读到空值）
+  const autoInputSnapshotRef = useRef(null);
   const [autoThoughts, setAutoThoughts] = useState([]);
   const [showCreativePanel, setShowCreativePanel] = useState(true);
   const lastAutoCreditRef = useRef(0);
+  // 60s countdown wait before real generation
+  const [autoCountdownSec, setAutoCountdownSec] = useState(0);
+  const [autoCountdownActive, setAutoCountdownActive] = useState(false);
+  const autoCountdownIntervalRef = useRef(null);
+  // Snapshot of creative process choices/params so failure paths can still record them
+  const autoCreativeSnapshotRef = useRef(null);
+  const autoDraftHistoryIdRef = useRef(null);
 
   useEffect(() => {
     loadMuseConfig();
@@ -276,9 +291,10 @@ function MusePage() {
     return () => clearInterval(iv);
   }, [autoRunning]);
 
-  // === GLOBAL AUTO handshake: trigger AUTO modal when arriving from Dashboard ===
-  // Uses localStorage (cross-tab) + URL ?globalauto=1
-  // After AUTO starts, chains to next platform in the GLOBAL AUTO sequence
+  // === GLOBAL AUTO handshake: trigger AUTO when arriving from Dashboard ===
+  // Chain navigation is scheduled HERE (at handshake time) with a fixed 5s delay,
+  // decoupled from autoRunning state — this ensures we NEVER skip the next
+  // platform even if AUTO fails immediately (e.g. credit=0, session expired).
   const globalAutoHandledRef = useRef(false);
   useEffect(() => {
     if (globalAutoHandledRef.current) return;
@@ -286,51 +302,82 @@ function MusePage() {
     try {
       const hasQueryParam = new URLSearchParams(window.location.search).get('globalauto') === '1';
       let hasHandshake = false;
+      let handshakeData = null;
       try {
         const raw = localStorage.getItem('zmusic_globalauto');
         if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed?.platforms?.includes('muse')) hasHandshake = true;
+          handshakeData = JSON.parse(raw);
+          if (handshakeData?.platforms?.includes('muse')) hasHandshake = true;
         }
-      } catch (_e) { /* ignore */ }
+      } catch (e) { /* ignore */ }
+
+      console.log('%c[GLOBAL AUTO] [MusePage] 握手检测',
+        'background:#3498db;color:#fff;padding:2px 6px;border-radius:3px;font-weight:bold;',
+        { hasQueryParam, hasHandshake, handshakeData });
+
       if (hasQueryParam || hasHandshake) {
+        console.log('[GLOBAL AUTO] [MusePage] ✅ 握手成功，400ms 后启动 AUTO，65400ms 后链式导航/清理（60s 构思倒计时 + 5.4s 观察期）');
+        // Step 1: 启动 AUTO (400ms)
         setTimeout(() => {
-          setAutoConfirmStep(1);
-          setShowAutoConfirm(true);
+          console.log('[GLOBAL AUTO] [MusePage] ⏱ 400ms 触发 startAutoGeneration()');
+          startAutoGeneration();
         }, 400);
+        // Step 2: 链式导航或清理 (65400ms = 60s 倒计时 + 5.4s 观察期) — 与 AUTO 成败完全解耦
+        setTimeout(() => {
+          console.log('[GLOBAL AUTO] [MusePage] ⏱ 65400ms 链式导航定时器触发（60s 倒计时结束）');
+          try {
+            const raw = localStorage.getItem('zmusic_globalauto');
+            if (!raw) {
+              console.warn('[GLOBAL AUTO] [MusePage] localStorage 无 zmusic_globalauto，跳过链式导航');
+              return;
+            }
+            const parsed = JSON.parse(raw);
+            console.log('[GLOBAL AUTO] [MusePage] 读取 localStorage:', JSON.stringify(parsed));
+            if (!parsed?.platforms || !parsed.platforms.includes('muse')) {
+              console.warn('[GLOBAL AUTO] [MusePage] platforms 不含 muse，跳过（可能已被其他逻辑移除）');
+              return;
+            }
+            const remaining = parsed.platforms.filter(p => p !== 'muse');
+            console.log('[GLOBAL AUTO] [MusePage] 从队列中移除 muse，剩余平台:', remaining);
+            if (remaining.length > 0) {
+              parsed.platforms = remaining;
+              parsed.currentIndex = (parsed.currentIndex || 0) + 1;
+              parsed.history = (parsed.history || []).concat([{
+                platform: 'muse',
+                at: Date.now(),
+                status: (autoRunningRef.current ? 'running' : 'stopped'),
+                note: (autoRunningRef.current ? 'AUTO仍在运行中' : 'AUTO已停止（可能积分不足）')
+              }]);
+              localStorage.setItem('zmusic_globalauto', JSON.stringify(parsed));
+              const next = remaining[0];
+              console.log('[GLOBAL AUTO] [MusePage] 🚀 即将导航到下一平台:', next, '   onNavigate 存在:', Boolean(onNavigate));
+              if (onNavigate) {
+                onNavigate(next);
+              } else {
+                const routes = { suno: '/suno', muse: '/muse', melo: '/melo' };
+                window.location.href = routes[next] + '?globalauto=1';
+              }
+            } else {
+              console.log('[GLOBAL AUTO] [MusePage] ✅ 最后一个平台，清理 localStorage');
+              localStorage.removeItem('zmusic_globalauto');
+            }
+          } catch (e) {
+            console.error('[GLOBAL AUTO] [MusePage] 链式导航异常:', e);
+          }
+        }, 65400);
         try {
           const url = new URL(window.location.href);
           url.searchParams.delete('globalauto');
           window.history.replaceState({}, '', url.toString());
-        } catch (_e) { /* ignore */ }
+        } catch (e) { /* ignore */ }
+      } else {
+        console.log('[GLOBAL AUTO] [MusePage] ❌ 未检测到握手（非 GLOBAL AUTO 模式），正常页面加载');
       }
-    } catch (_e) { /* ignore */ }
+    } catch (e) {
+      console.error('[GLOBAL AUTO] [MusePage] 握手阶段异常:', e);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // === GLOBAL AUTO chain: after AUTO starts here, navigate to next platform ===
-  useEffect(() => {
-    if (!autoRunning) return;
-    try {
-      const raw = localStorage.getItem('zmusic_globalauto');
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (!parsed?.platforms || !parsed.platforms.includes('muse')) return;
-      const remaining = parsed.platforms.filter(p => p !== 'muse');
-      if (remaining.length > 0) {
-        parsed.platforms = remaining;
-        parsed.currentIndex = (parsed.currentIndex || 0) + 1;
-        localStorage.setItem('zmusic_globalauto', JSON.stringify(parsed));
-        const next = remaining[0];
-        setTimeout(() => {
-          const routes = { suno: '/suno', muse: '/muse', melo: '/melo' };
-          window.location.href = routes[next] + '?globalauto=1';
-        }, 8000);
-      } else {
-        localStorage.removeItem('zmusic_globalauto');
-      }
-    } catch (_e) { /* ignore */ }
-  }, [autoRunning]);
 
   // Before each auto-gen iteration: randomize all inputs so songs vary
   const randomizeMuseInputs = useCallback(() => {
@@ -345,7 +392,10 @@ function MusePage() {
       setPrompt(promptText);
       setLyrics('');
     } else {
-      const museResult = (global.__unicorn_cache || {});
+      // 浏览器环境下不存在 global 变量，必须用 typeof 安全访问
+      const museResult = typeof globalThis !== 'undefined' && (globalThis.__unicorn_cache || {})
+        ? globalThis.__unicorn_cache
+        : {};
       const quickPrompt = generateAutoMusePrompt(theme);
       promptText = quickPrompt;
       setPrompt(quickPrompt);
@@ -364,17 +414,37 @@ function MusePage() {
     setInstrumental(Math.random() < 0.15);
     // Random language: bias towards Chinese (most common) then mix
     const roll = Math.random();
+    let chosenLangId = '';
     let chosenLang = '';
-    if (roll < 0.55) { setSelectedLanguage('1001'); chosenLang = '中文'; }
-    else if (roll < 0.7) { setSelectedLanguage('1004'); chosenLang = '英文'; }
-    else if (roll < 0.8) { setSelectedLanguage('1002'); chosenLang = '日文'; }
-    else if (roll < 0.88) { setSelectedLanguage('1005'); chosenLang = '韩文'; }
-    else { setSelectedLanguage(''); chosenLang = '自动'; }
+    if (roll < 0.55) { chosenLangId = '1001'; chosenLang = '中文'; }
+    else if (roll < 0.7) { chosenLangId = '1004'; chosenLang = '英文'; }
+    else if (roll < 0.8) { chosenLangId = '1002'; chosenLang = '日文'; }
+    else if (roll < 0.88) { chosenLangId = '1005'; chosenLang = '韩文'; }
+    else { chosenLangId = ''; chosenLang = '自动'; }
+    setSelectedLanguage(chosenLangId);
     const vocalRoll = Math.random();
     const chosenVocal = vocalRoll < 0.4 ? '女声' : vocalRoll < 0.75 ? '男声' : '随机';
-    setSelectedVocal(vocalRoll < 0.4 ? 'f' : vocalRoll < 0.75 ? 'm' : '');
+    const chosenVocalId = vocalRoll < 0.4 ? 'f' : vocalRoll < 0.75 ? 'm' : '';
+    setSelectedVocal(chosenVocalId);
     // Random template occasionally
-    setSelectedTemplate(Math.random() < 0.35 ? (['original', 'rap', 'love', 'epic'][Math.floor(Math.random() * 4)]) : '');
+    const chosenTemplate = Math.random() < 0.35 ? (['original', 'rap', 'love', 'epic'][Math.floor(Math.random() * 4)]) : '';
+    setSelectedTemplate(chosenTemplate);
+    const chosenInstrumental = Math.random() < 0.15;
+    setInstrumental(chosenInstrumental);
+
+    // === 同步写入 AUTO 输入快照（关键！handleGenerate 在 setTimeout 后执行，
+    //  setState 异步刷新会导致闭包里读到旧的空 prompt/lyrics） ===
+    autoInputSnapshotRef.current = {
+      mode: randMode,
+      prompt: promptText,
+      lyrics: lyricsText,
+      style: chosenStyle,
+      title: chosenTitle,
+      vocal: chosenVocalId,
+      languageId: chosenLangId,
+      structureId: chosenTemplate,
+      instrumental: chosenInstrumental,
+    };
 
     return {
       theme,
@@ -387,60 +457,244 @@ function MusePage() {
     };
   }, []);
 
-  // Handle AUTO button click: open 3-step danger confirmation
+  // === Direct AUTO start — no confirmation modal, just go ===
+  const startAutoGeneration = useCallback(() => {
+    console.log('%c[AUTO] [MusePage] startAutoGeneration() 入口',
+      'background:#16a085;color:#fff;padding:2px 6px;border-radius:3px;font-weight:bold;');
+    // Report to global progress bar
+    autoProgress.startProgress({ engine: 'muse', engineName: 'Muse AI', totalCountdown: 60 });
+    // 1. Open Muse AI website tab (deduplicated by sessionStorage)
+    const tabOpened = openPlatformWebsite('muse');
+    console.log('[AUTO] [MusePage] openPlatformWebsite(muse) result:', tabOpened ? '✅ 新标签已打开' : '⏭ 已存在（去重跳过）');
+
+    // 2. Reset state
+    setAutoCount(0);
+    autoCountRef.current = 0;
+    setAutoStopRequested(false);
+    setAutoRunning(true);
+    autoRunningRef.current = true;
+    setAutoThoughts([]);
+    autoConsecutiveErrorsRef.current = 0;
+    autoCreativeSnapshotRef.current = null;
+    autoDraftHistoryIdRef.current = null;
+    setShowCreativePanel(true);
+    // Create initial draft history entry — will be updated at each milestone
+    try {
+      const draft = addToHistory({
+        type: 'creation_draft',
+        status: 'in_progress',
+        method: 'muse_ai',
+        engine: 'muse',
+        title: '🎨 Muse AI AUTO 创作中...',
+        lyrics: '',
+        prompt: '',
+        audioUrl: '',
+        imageUrl: '',
+        duration: 0,
+        style: '',
+        creativeProcess: {
+          thoughts: [],
+          snapshot: {},
+          phase: '启动',
+          startedAt: new Date().toISOString(),
+          engine: 'Muse AI',
+        },
+      });
+      autoDraftHistoryIdRef.current = draft.id;
+    } catch (e) {
+      console.warn('[AUTO] [MusePage] 创建草稿历史记录失败:', e.message);
+    }
+    // Clear previous countdown interval if any
+    if (autoCountdownIntervalRef.current) {
+      clearInterval(autoCountdownIntervalRef.current);
+      autoCountdownIntervalRef.current = null;
+    }
+
+    // 3. Initial welcome + phase thinking
+    const startThought = {
+      phase: '启动阶段', time: new Date().toLocaleTimeString(),
+      step: 'AUTO_INIT',
+      title: '▶️ Muse AI AUTO 模式启动',
+      summary: '打开 Muse AI 官网标签页 → 60 秒构思倒计时 → 生成歌曲',
+      detail: '此阶段：\n  • 已自动为你在新标签打开 https://muse.top（无需登录，仅用于查看官网状态）\n  • 接下来 60 秒用于"深度构思"：\n     - 0–10s：确定主题与情感基调\n     - 10–30s：确定曲风、BPM、调性、标题\n     - 30–55s：写歌词 + 发送命令准备\n     - 55–60s：最终检查 + 启动生成\n  • 即便积分不足导致生成失败，整个构思过程都会被记录到「创作构思记录簿」。',
+    };
+    setAutoThoughts(prev => [...prev, startThought]);
+    showToast?.('AUTO 启动 — Muse AI 构思中（60 秒倒计时，期间会打开官网标签查看状态）', 'info');
+
+    // 4. Start 60s countdown — every 10 seconds we publish a planning thought
+    setAutoCountdownSec(60);
+    setAutoCountdownActive(true);
+    let sec = 60;
+    autoCountdownIntervalRef.current = setInterval(() => {
+      sec -= 1;
+      setAutoCountdownSec(sec);
+      autoProgress.updateCountdown(sec);
+
+      if (sec === 50) {
+        const thought = {
+          phase: '构思阶段 1/4', time: new Date().toLocaleTimeString(), step: 'THEME_PICK',
+          title: '🎯 确定主题与情感基调',
+          summary: '正在 UnicornAgent 主题词库中抽取灵感种子…',
+          detail: '遍历主题词库（love, loneliness, dreams, nostalgia…）+ 风格词库，组合候选情感搭配。\n当前倒计时：50s → 40s 完成主题。',
+        };
+        setAutoThoughts(prev => [...prev, thought]);
+        autoProgress.addThought(thought);
+        // Incremental save to history
+        const draftId = autoDraftHistoryIdRef.current;
+        if (draftId) {
+          updateHistory(draftId, {
+            creativeProcess: { thoughts: [thought], snapshot: autoCreativeSnapshotRef.current, phase: '主题抽取', updatedAt: new Date().toISOString(), engine: 'Muse AI' },
+            title: '🎨 Muse AI AUTO 创作中 - 主题确定中...',
+          });
+        }
+      } else if (sec === 40) {
+        const themeStyle = pickRandomThemeStyle();
+        const style = pickRandomMuseStyle();
+        const title = generateRandomTitle(themeStyle.theme);
+        // 预保存构思 snapshot，后续再补齐 BPM/key/lyrics
+        autoCreativeSnapshotRef.current = {
+          ...(autoCreativeSnapshotRef.current || {}),
+          theme: themeStyle.theme, style, title,
+          plannedAt: Date.now(), engine: 'Muse AI',
+        };
+        setAutoThoughts(prev => [...prev, {
+          phase: '构思阶段 2/4', time: new Date().toLocaleTimeString(), step: 'STYLE_TITLE',
+          title: '🎨 确定风格、标题、BPM & 调性',
+          summary: `主题：${themeStyle.theme} ｜ 风格：${style} ｜ 标题：${title}`,
+          detail: `主题种子：${themeStyle.theme} (情感方向: ${themeStyle.style})\n选定风格：${style}\n标题：${title}\n下一步：20s 内完成 BPM 抽取 + 歌词创作。`,
+        }]);
+        // Incremental save to history
+        const draftId2 = autoDraftHistoryIdRef.current;
+        if (draftId2) {
+          updateHistory(draftId2, {
+            title: `🎨 ${title} - Muse AI AUTO 创作中`,
+            style,
+            creativeProcess: { snapshot: autoCreativeSnapshotRef.current, phase: '风格与标题', updatedAt: new Date().toISOString(), engine: 'Muse AI' },
+          });
+        }
+      } else if (sec === 20) {
+        const snap = autoCreativeSnapshotRef.current || {};
+        const bpm = 90 + Math.floor(Math.random() * 70); // 90–159
+        const keys = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'Cm', 'Dm', 'Em', 'Fm', 'Gm', 'Am', 'Bm'];
+        const key = keys[Math.floor(Math.random() * keys.length)];
+        // build early auto-muse-prompt snippet (full will be created at t=0)
+        const promptPreview = generateAutoMusePrompt(snap.theme || 'love', snap.style || '流行音乐');
+        autoCreativeSnapshotRef.current = {
+          ...snap, bpm, key, command: promptPreview,
+          lyrics: promptPreview,
+        };
+        setAutoThoughts(prev => [...prev, {
+          phase: '构思阶段 3/4', time: new Date().toLocaleTimeString(), step: 'LYRICS_DRAFT',
+          title: '✍️ 歌词草稿 + 生成命令',
+          summary: `BPM=${bpm} ｜ Key=${key} ｜ 生成命令共 ${promptPreview.length} 字`,
+          detail: `BPM：${bpm}\n调性：${key}\n生成命令/歌词预览：\n${promptPreview.substring(0, 240)}${promptPreview.length > 240 ? '…' : ''}`,
+        }]);
+        // Incremental save to history with lyrics
+        const draftId3 = autoDraftHistoryIdRef.current;
+        if (draftId3) {
+          updateHistory(draftId3, {
+            lyrics: promptPreview,
+            prompt: promptPreview,
+            creativeProcess: { snapshot: autoCreativeSnapshotRef.current, phase: '歌词与命令', updatedAt: new Date().toISOString(), engine: 'Muse AI' },
+          });
+        }
+      } else if (sec === 5) {
+        setAutoThoughts(prev => [...prev, {
+          phase: '构思阶段 4/4', time: new Date().toLocaleTimeString(), step: 'FINAL_CHECK',
+          title: '✅ 最终检查 — 5 秒后提交生成',
+          summary: '参数快照已锁定，5 秒后调用 API 开始生成',
+          detail: `当前快照：${JSON.stringify(autoCreativeSnapshotRef.current || {}, null, 2).substring(0, 500)}\n即使积分不足导致 API 失败，以上完整构思记录也会一并写入「创作构思记录簿」与生成历史。`,
+        }]);
+        // Final pre-generation save
+        const draftId4 = autoDraftHistoryIdRef.current;
+        if (draftId4) {
+          const snap = autoCreativeSnapshotRef.current || {};
+          updateHistory(draftId4, {
+            title: `🎨 ${snap.title || '未命名'} - Muse AI AUTO 准备生成`,
+            lyrics: snap.lyrics || snap.command || '',
+            prompt: snap.command || '',
+            style: snap.style || '',
+            creativeProcess: { snapshot: snap, phase: '最终检查', updatedAt: new Date().toISOString(), engine: 'Muse AI' },
+          });
+        }
+      } else if (sec <= 0) {
+        // 5. T=0: Stop countdown, then trigger actual randomize + handleGenerate
+        clearInterval(autoCountdownIntervalRef.current);
+        autoCountdownIntervalRef.current = null;
+        setAutoCountdownActive(false);
+        setAutoCountdownSec(0);
+        setAutoThoughts(prev => [...prev, {
+          phase: '生成阶段', time: new Date().toLocaleTimeString(), step: 'TRIGGER',
+          title: '🚀 倒计时结束 — 正式触发 Muse AI 生成',
+          summary: '提交随机化参数 + 创作命令 → API',
+          detail: '调用链：randomizeMuseInputs() → generateCreativeThought() → handleGenerateRef.current(true)',
+        }]);
+        autoProgress.setGenerating({ title: '🚀 生成中...' });
+        console.log('[AUTO] [MusePage] ⏱ 60s 倒计时归零 → 执行 randomizeMuseInputs()');
+        const choices = randomizeMuseInputs();
+        autoCreativeSnapshotRef.current = {
+          ...(autoCreativeSnapshotRef.current || {}), ...choices,
+          finalizedAt: Date.now(),
+        };
+        console.log('[AUTO] [MusePage] 🎲 随机参数: theme=' + choices.theme + ', style=' + choices.style
+          + ', title=' + choices.title + ', BPM=' + choices.bpm + ', key=' + choices.key
+          + ', lyrics前60字=' + (choices.lyrics || '').substring(0, 60));
+        console.log('[AUTO] [MusePage] 📋 生成命令:\n' + choices.command);
+        const thought = generateCreativeThought({
+          iteration: 1,
+          theme: choices.theme, style: choices.style, title: choices.title,
+          bpm: choices.bpm, key: choices.key, engine: 'Muse AI',
+          lyricsSnippet: choices.lyrics, commandSent: choices.command,
+        });
+        setAutoThoughts(prev => [...prev, thought]);
+        setTimeout(() => {
+          console.log('[AUTO] [MusePage] 触发 handleGenerateRef.current(true) — 当前值类型:', typeof handleGenerateRef.current);
+          handleGenerateRef.current(true);
+        }, 300);
+      }
+    }, 1000);
+  }, [randomizeMuseInputs, pickRandomThemeStyle, pickRandomMuseStyle, generateRandomTitle, generateAutoMusePrompt]);
+
+  // 点击 AUTO 按钮 → 若正在运行则请求停止；否则打开 3 步危险确认弹窗
   const handleAutoClick = () => {
     if (autoRunning) {
-      // Already running → treat as stop request
       setAutoStopRequested(true);
       setAutoRunning(false);
-      showToast?.({ title: 'AUTO 停止中', description: '完成当前歌曲后将不再生成下一首', type: 'info' });
+      autoProgress.stopProgress();
+      // Save draft as stopped
+      const draftId = autoDraftHistoryIdRef.current;
+      if (draftId) {
+        const snap = autoCreativeSnapshotRef.current || {};
+        updateHistory(draftId, {
+          status: 'stopped',
+          title: `⏹️ ${snap.title || '未命名'} - AUTO 已停止`,
+          lyrics: snap.lyrics || snap.command || '',
+          prompt: snap.command || '',
+          style: snap.style || '',
+          creativeProcess: { snapshot: snap, phase: '已停止', stoppedAt: new Date().toISOString(), engine: 'Muse AI' },
+        });
+        autoDraftHistoryIdRef.current = null;
+      }
+      showToast?.('AUTO 停止中 — 完成当前歌曲后将不再生成下一首', 'info');
       return;
     }
-    if (credit <= 0) {
-      showToast?.({
-        title: '⚠️ 当前积分为 0',
-        description: 'AUTO 模式仍可启动用于真实测试（与 v6.6.6 credit bypass 一致），但 API 大概率会返回错误。继续请确认。',
-        type: 'warning',
-        duration: 6000,
-      });
-    }
+    // eslint-disable-next-line no-console
+    console.log('%c[AUTO] [MusePage] 打开 3 步确认弹窗',
+      'background:#e67e22;color:#fff;padding:2px 6px;border-radius:3px;font-weight:bold;');
     setAutoConfirmStep(1);
     setShowAutoConfirm(true);
   };
 
+  // 3 步确认弹窗的"下一步/确认启动"按钮
   const proceedAutoConfirmStep = () => {
     if (autoConfirmStep < 3) {
       setAutoConfirmStep(prev => prev + 1);
-    } else {
-      // Step 3 confirmed → start AUTO
-      setShowAutoConfirm(false);
-      setAutoConfirmStep(1);
-      setAutoCount(0);
-      setAutoStopRequested(false);
-      setAutoRunning(true);
-      setAutoThoughts([]);
-      autoConsecutiveErrorsRef.current = 0;
-      setShowCreativePanel(true);
-      lastAutoCreditRef.current = credit;
-      showToast?.({ title: 'AUTO 启动', description: 'Muse AI 自动生成已开始。点击 AUTO 按钮可随时停止。', type: 'warning' });
-      // Kick off first generation (small delay to ensure state commits)
-      setTimeout(() => {
-        const choices = randomizeMuseInputs();
-        const thought = generateCreativeThought({
-          iteration: 1,
-          theme: choices.theme,
-          style: choices.style,
-          title: choices.title,
-          bpm: choices.bpm,
-          key: choices.key,
-          engine: 'Muse AI',
-          lyricsSnippet: choices.lyrics,
-          commandSent: choices.command,
-        });
-        setAutoThoughts([thought]);
-        setTimeout(() => handleGenerate(true), 300);
-      }, 200);
+      return;
     }
+    // Step 3 确认 → 关闭弹窗并启动 AUTO
+    setShowAutoConfirm(false);
+    setAutoConfirmStep(1);
+    startAutoGeneration();
   };
 
   const cancelAutoConfirm = () => {
@@ -515,16 +769,37 @@ function MusePage() {
     setProgress(5);
     setActiveSteps({ submit: true, analyze: false, compose: false, master: false });
 
+    // === AUTO 路径下，使用同步快照 ref 而不是 state（setState 异步，会读到空） ===
+    const snap = autoInputSnapshotRef.current;
+    const useSnap = isAuto && snap && Object.keys(snap).length > 0;
+    const effectiveMode = useSnap ? snap.mode : mode;
+    const effectivePrompt = useSnap ? snap.prompt : prompt;
+    const effectiveLyrics = useSnap ? snap.lyrics : lyrics;
+    const effectiveStyle = useSnap ? snap.style : selectedStyle;
+    const effectiveTitle = useSnap ? snap.title : title;
+    const effectiveVocal = useSnap ? snap.vocal : selectedVocal;
+    const effectiveLanguage = useSnap ? snap.languageId : selectedLanguage;
+    const effectiveStructure = useSnap ? snap.structureId : selectedTemplate;
+    const effectiveInstrumental = useSnap ? snap.instrumental : instrumental;
+
+    if (useSnap) {
+      console.log('[MusePage] handleGenerate AUTO → 使用 autoInputSnapshotRef:', {
+        mode: effectiveMode,
+        promptLen: (effectivePrompt || '').length,
+        lyricsLen: (effectiveLyrics || '').length,
+      });
+    }
+
     const params = {
-      mode,
-      prompt: mode === 'quick' ? prompt : undefined,
-      lyrics: mode === 'master' ? lyrics : undefined,
-      style: selectedStyle,
-      title: title || undefined,
-      vocal: selectedVocal || undefined,
-      languageId: selectedLanguage || undefined,
-      structureId: selectedTemplate || undefined,
-      instrumental,
+      mode: effectiveMode,
+      prompt: effectiveMode === 'quick' ? effectivePrompt : undefined,
+      lyrics: effectiveMode === 'master' ? effectiveLyrics : undefined,
+      style: effectiveStyle,
+      title: effectiveTitle || undefined,
+      vocal: effectiveVocal || undefined,
+      languageId: effectiveLanguage || undefined,
+      structureId: effectiveStructure || undefined,
+      instrumental: effectiveInstrumental,
       songModel: fastConfig?.songModel || 'general',
     };
 
@@ -532,7 +807,7 @@ function MusePage() {
     // eslint-disable-next-line no-console
     console.log('[MusePage] handleGenerate clicked:', {
       timestamp: new Date().toISOString(),
-      mode,
+      mode: effectiveMode,
       prompt: params.prompt,
       lyrics: params.lyrics,
       style: params.style,
@@ -548,8 +823,8 @@ function MusePage() {
     const session = startSession({
       type: 'song',
       engine: 'muse',
-      title: title || (mode === 'quick' ? prompt?.slice(0, 40) : lyrics?.slice(0, 40)) || 'Untitled',
-      lyrics: mode === 'master' ? lyrics : prompt,
+      title: effectiveTitle || (effectiveMode === 'quick' ? effectivePrompt?.slice(0, 40) : effectiveLyrics?.slice(0, 40)) || 'Untitled',
+      lyrics: effectiveMode === 'master' ? effectiveLyrics : effectivePrompt,
       params,
     });
 
@@ -563,9 +838,9 @@ function MusePage() {
       setPollMessage(t('muse.fillInput') || '正在将歌词同步到 muse.top...');
       try {
         await MuseService.fillInput({
-          mode,
-          prompt: mode === 'quick' ? prompt : undefined,
-          lyrics: mode === 'master' ? lyrics : undefined,
+          mode: effectiveMode,
+          prompt: effectiveMode === 'quick' ? effectivePrompt : undefined,
+          lyrics: effectiveMode === 'master' ? effectiveLyrics : undefined,
         });
       } catch (fillErr) {
         // Non-fatal — log and continue with generation
@@ -609,7 +884,7 @@ function MusePage() {
       setActiveSteps({ submit: true, analyze: true, compose: true, master: true });
 
       const songData = {
-        title: final?.title || title || 'Untitled',
+        title: final?.title || effectiveTitle || 'Untitled',
         audioUrl: proxyAudioUrl(final?.audioUrl || final?.url),
         imageUrl: final?.imageUrl || final?.coverUrl,
         duration: final?.duration || 0,
@@ -618,11 +893,42 @@ function MusePage() {
       };
       setGeneratedSong(songData);
       setPollMessage(t('muse.complete'));
+      autoProgress.setComplete({ title: songData.title, error: null });
+      autoProgress.incrementCount();
 
       completeSession(session.id, {
         audioUrl: songData.audioUrl,
         imageUrl: songData.imageUrl,
         result: songData,
+      });
+
+      // Remove the draft entry and create the final success entry
+      const draftId = autoDraftHistoryIdRef.current;
+      if (draftId) {
+        removeFromHistory(draftId);
+        autoDraftHistoryIdRef.current = null;
+      }
+
+      addToHistory({
+        type: 'song',
+        status: 'success',
+        method: 'muse_ai',
+        engine: 'muse',
+        title: songData.title,
+        lyrics: effectiveMode === 'master' ? effectiveLyrics : effectivePrompt,
+        prompt: effectiveMode === 'master' ? effectiveLyrics : effectivePrompt,
+        audioUrl: songData.audioUrl,
+        imageUrl: songData.imageUrl,
+        duration: songData.duration,
+        taskId: tid,
+        style: effectiveStyle,
+        result: songData,
+        creativeProcess: {
+          thoughts: autoThoughts,
+          snapshot: autoCreativeSnapshotRef.current,
+          sessionId: session.id,
+          engine: 'Muse AI',
+        },
       });
 
       // Reset consecutive error counter on success
@@ -641,6 +947,55 @@ function MusePage() {
       setPollMessage(t('muse.failed'));
       setActiveSteps({ submit: false, analyze: false, compose: false, master: false });
       completeSession(session.id, { error: e.message });
+      autoProgress.setComplete({ title: effectiveTitle || '未命名构思', error: e.message });
+      // === Even when NO song is generated, record the creative process to history ===
+      try {
+        const cpSnap = autoCreativeSnapshotRef.current || {};
+        const fallbackTitle = cpSnap.title || effectiveTitle || (effectiveMode === 'master' ? (effectiveLyrics || '').substring(0, 20) : (effectivePrompt || '').substring(0, 20)) || '未命名构思';
+        // Remove draft and create proper failure entry
+        const draftId = autoDraftHistoryIdRef.current;
+        if (draftId) {
+          removeFromHistory(draftId);
+          autoDraftHistoryIdRef.current = null;
+        }
+        addToHistory({
+          type: 'creation_attempt',
+          status: 'failed',
+          method: 'muse_ai',
+          engine: 'muse',
+          title: `❌ 构思失败 · ${fallbackTitle}`,
+          lyrics: effectiveMode === 'master' ? effectiveLyrics : effectivePrompt,
+          prompt: effectiveMode === 'master' ? effectiveLyrics : effectivePrompt,
+          audioUrl: '',
+          imageUrl: '',
+          duration: 0,
+          style: effectiveStyle,
+          error: e.message,
+          creativeProcess: {
+            thoughts: autoThoughts,
+            snapshot: cpSnap,
+            sessionId: session.id,
+            engine: 'Muse AI',
+            error: e.message,
+            failedAt: new Date().toISOString(),
+          },
+          result: { error: e.message, params, failed: true },
+        });
+      } catch (hErr) {
+        console.warn('[AUTO] [MusePage] 失败记录写入 history 时出现异常（不影响主流程）:', hErr.message);
+      }
+      // Also persist the creative process snapshot into the session object itself
+      // so session history (MusePage history panel) always shows the thinking.
+      try {
+        updateSession(session.id, {
+          creativeProcess: {
+            thoughts: autoThoughts,
+            snapshot: autoCreativeSnapshotRef.current,
+            error: e.message,
+            engine: 'Muse AI',
+          },
+        });
+      } catch (_u) { /* ignore */ }
       // Increment consecutive error counter (safety: stop after 8 failures)
       if (isAuto || autoRunningRef.current) {
         autoConsecutiveErrorsRef.current += 1;
@@ -658,30 +1013,52 @@ function MusePage() {
 
         // Decide whether to continue
         setTimeout(() => {
-          // Safety: stop after 8 consecutive errors (credit check intentionally
-          //  DISABLED for real testing — user will enable it for production)
+          const maxSongs = getEngineSongCount('muse');
           const shouldStop =
             autoStopRequestedRef.current ||
             !autoRunningRef.current ||
-            autoConsecutiveErrorsRef.current >= 8;
+            autoConsecutiveErrorsRef.current >= 8 ||
+            autoCountRef.current >= maxSongs;
 
           if (shouldStop) {
             setAutoRunning(false);
             setAutoStopRequested(false);
-            showToast?.({
-              title: 'AUTO 已停止',
-              description: autoStopRequestedRef.current
-                ? '已按您的请求停止自动生成。'
+            // Save draft as stopped/ended
+            const draftId = autoDraftHistoryIdRef.current;
+            if (draftId) {
+              const snap = autoCreativeSnapshotRef.current || {};
+              updateHistory(draftId, {
+                status: autoConsecutiveErrorsRef.current >= 8 ? 'failed' : 'stopped',
+                title: autoConsecutiveErrorsRef.current >= 8
+                  ? `❌ ${snap.title || '未命名'} - 连续失败已停止`
+                  : `⏹️ ${snap.title || '未命名'} - AUTO 已停止`,
+                lyrics: snap.lyrics || snap.command || '',
+                prompt: snap.command || '',
+                style: snap.style || '',
+                creativeProcess: {
+                  snapshot: snap,
+                  phase: autoConsecutiveErrorsRef.current >= 8 ? '失败停止' : '已停止',
+                  stoppedAt: new Date().toISOString(),
+                  engine: 'Muse AI',
+                  error: autoConsecutiveErrorsRef.current >= 8 ? '连续生成失败（可能积分不足或 API 异常）' : undefined,
+                },
+              });
+              autoDraftHistoryIdRef.current = null;
+            }
+            showToast?.(
+              autoStopRequestedRef.current
+                ? 'AUTO 已停止 — 已按您的请求停止自动生成。'
                 : autoConsecutiveErrorsRef.current >= 8
-                  ? '连续 8 次生成失败，AUTO 已自动停止（可能是积分不足或 API 异常）。'
+                  ? 'AUTO 已停止 — 连续 8 次生成失败，可能是积分不足或 API 异常。'
                   : 'AUTO 模式结束。',
-              type: autoStopRequestedRef.current ? 'info' : 'warning',
-            });
+              autoStopRequestedRef.current ? 'info' : 'warning'
+            );
             return;
           }
 
           const nextIteration = autoCount + 1;
           setAutoCount(c => c + 1);
+          autoCountRef.current = nextIteration;
           // Randomize inputs for NEXT generation + capture choices
           const choices = randomizeMuseInputs();
           // Log creative thinking process
@@ -698,7 +1075,7 @@ function MusePage() {
           });
           setAutoThoughts(prev => [...prev.slice(-15), thought]);
           // Schedule next song with small delay (so user sees the result briefly)
-          setTimeout(() => handleGenerate(true), 1800);
+          setTimeout(() => handleGenerateRef.current(true), 1800);
         }, 1500);
       }
     }
@@ -796,6 +1173,9 @@ function MusePage() {
   // user can see what lyrics/commands were submitted. Any API errors will
   // be displayed as normal.
   const canGenerate = museStatus?.configured && !generating;
+
+  // Keep ref in sync so AUTO's useCallback always calls the latest handleGenerate
+  handleGenerateRef.current = handleGenerate;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -1439,7 +1819,7 @@ function MusePage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in"
           onClick={cancelAutoConfirm}>
           <div
-            className="w-full max-w-md bg-[#0f0f1a] border border-red-500/40 rounded-2xl shadow-2xl shadow-red-900/50 overflow-hidden animate-scale-in"
+            className="w-full max-w-md max-h-[90vh] flex flex-col bg-[#0f0f1a] border border-red-500/40 rounded-2xl shadow-2xl shadow-red-900/50 overflow-hidden animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -1484,7 +1864,7 @@ function MusePage() {
             </div>
 
             {/* Body */}
-            <div className="p-5 space-y-3 max-h-[55vh] overflow-y-auto">
+            <div className="p-5 space-y-3 flex-1 min-h-0 overflow-y-auto">
               {autoConfirmStep === 1 && (
                 <pre className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300 font-sans">
                   {AUTO_CONFIRM.desc1('Muse AI', credit)}
