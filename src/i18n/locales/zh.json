@@ -135,7 +135,15 @@
     "cancel_btn": "取消（我再想想）",
     "global_title": "三平台 AUTO 同步生成",
     "global_btn": "GLOBAL AUTO",
-    "global_desc": "同时启动 Muse / Suno / Melo 三个平台自动生成，直到各自积分耗尽。极度消耗积分，请谨慎操作。"
+    "global_desc": "同时启动 Muse / Suno / Melo 三个平台自动生成，直到各自积分耗尽。极度消耗积分，请谨慎操作。",
+    "stopped_by_request": "AUTO 已停止 — 已按您的请求停止自动生成。",
+    "stopped_consecutive_failures": "AUTO 已停止 — 连续 8 次生成失败，可能是积分不足或 API 异常。",
+    "finished": "AUTO 模式结束。",
+    "starting": "AUTO 启动 — {engine} 构思中（60 秒倒计时，期间会打开官网标签查看状态）",
+    "stopping": "AUTO 停止中 — 完成当前歌曲后将不再生成下一首",
+    "draft_failed_title": "❌ 构思失败 · {title}",
+    "draft_unfinished_title": "⏹️ {title} - AUTO 已停止",
+    "draft_stopped_title": "⏹️ {title} - AUTO 已停止"
   },
   "common": {
     "cancel": "取消",
@@ -977,6 +985,7 @@
     "no_styles": "无法获取风格列表",
     "none": "无",
     "not_configured": "Muse AI 未配置，请联系管理员",
+    "notConfigured": "Muse AI 未配置，请联系管理员",
     "not_stored_notice": "⚠ 此歌曲由 Muse AI 生成，仅在本平台临时展示，不会保存到 ZMusic 系统。如需保存或下载，请前往 Muse.top 操作。",
     "open_in_muse": "在 Muse.top 打开",
     "processing": "Muse AI 正在创作...",
@@ -1681,5 +1690,53 @@
     "urban_night": "都市夜景",
     "wedding_ceremony": "婚礼仪式",
     "workspace_creative": "创意工作"
+  },
+  "clipboard": {
+    "copied": "已复制到剪贴板",
+    "timeline_copied": "时间轴已复制到剪贴板"
+  },
+  "generation": {
+    "failed": "生成失败"
+  },
+  "suno": {
+    "notConfigured": "Suno AI 未配置，请联系管理员"
+  },
+  "melo": {
+    "notConfigured": "Melo AI 未配置，请联系管理员"
+  },
+  "mv": {
+    "history_title": "历史音乐",
+    "history_refresh": "刷新",
+    "history_empty": "暂无历史音乐",
+    "history_empty_hint": "生成的歌曲将在此处显示",
+    "history_loading": "加载中...",
+    "history_count": "{count} 条记录",
+    "history_play": "播放",
+    "history_no_title": "未命名",
+    "history_duration_s": "{s}秒",
+    "auto_warning": "AUTO 将持续生成直到完成 {max} 首（或连续失败 8 次），极消耗积分。请谨慎使用。",
+    "auto_preparing": "准备启动...",
+    "auto_stop": "停止",
+    "auto_refresh": "刷新",
+    "auto_countdown": "{engine} AUTO 构思中 · 剩余 {sec}s",
+    "auto_generating": "{engine} AUTO 生成中 · 已完成 {count} 首",
+    "auto_stop_btn": "停止",
+    "gen_stage_starting": "启动中...",
+    "gen_stage_complete": "完成！",
+    "gen_stage_composing_audio": "正在渲染音频...",
+    "gen_stage_composing_video": "正在合成视频...",
+    "gen_stage_initializing_muse": "正在初始化 Muse AI...",
+    "gen_stage_waiting_muse": "正在等待 Muse AI...",
+    "gen_stage_initializing_suno": "正在初始化 Suno AI...",
+    "gen_stage_waiting_suno": "正在等待 Suno AI...",
+    "gen_stage_initializing_melo": "正在初始化 Melo AI...",
+    "gen_stage_waiting_melo": "正在等待 Melo AI...",
+    "gen_stage_composing_local": "正在本地作曲...",
+    "gen_error_muse_no_audio": "Muse AI 未返回音频",
+    "gen_error_suno_no_task": "Suno AI 未返回任务ID",
+    "gen_error_melo_no_audio": "Melo AI 未返回音频",
+    "gen_error_failed": "生成音乐失败",
+    "timeline_copied": "时间轴已复制到剪贴板",
+    "history_section_title": "生成历史"
   }
 }

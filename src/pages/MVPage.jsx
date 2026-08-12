@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Video, History, AlertCircle, Settings, ChevronDown, Loader, Sparkles, ExternalLink, Copy, Check, Clapperboard, Wand2, Brain, Palette, Music, Users, Sun, Moon, Cloud, Zap, Film, Camera, Clock, RotateCcw, AlertTriangle, ShieldCheck, X, CheckCircle } from 'lucide-react';
+import { Video, History, AlertCircle, Settings, ChevronDown, Loader, Sparkles, ExternalLink, Copy, Check, Clapperboard, Wand2, Brain, Palette, Music, Users, Sun, Moon, Cloud, Zap, Film, Camera, Clock, RotateCcw, AlertTriangle, ShieldCheck, X, CheckCircle, ListMusic, RefreshCw, Disc3 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
 import { useGeneration } from '../stores/generationStore.jsx';
@@ -98,7 +98,7 @@ const ENGINE_THEMES = {
 
 function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
   const { t, ts } = useTranslation();
-  const { addToHistory, updateHistory, removeFromHistory, copyToClipboard, pendingLyrics, showToast } = useGeneration();
+  const { addToHistory, updateHistory, removeFromHistory, copyToClipboard, pendingLyrics, showToast, sessions } = useGeneration();
   const autoProgress = useAutoProgress();
 
   const theme = ENGINE_THEMES[engine] || ENGINE_THEMES.muse;
@@ -113,6 +113,9 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
   const [selectedEffects, setSelectedEffects] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const [audioList, setAudioList] = useState([]);
+  const [loadingList, setLoadingList] = useState(false);
 
   const [museCredits, setMuseCredits] = useState(null);
   const [museTaskId, setMuseTaskId] = useState(null);
@@ -293,17 +296,17 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
   const handleCopyTimeline = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
-      showToast('Timeline copied to clipboard');
+      showToast(t('clipboard.timeline_copied'));
     } catch { }
   };
 
   const generateWithMuse = async (params) => {
     try {
-      setGenStage('Initializing Muse AI...');
+      setGenStage(t('mv.gen_stage_initializing_muse'));
       const taskId = await MuseService.generateMusic(params);
       setMuseTaskId(taskId);
 
-      setGenStage('Waiting for Muse AI...');
+      setGenStage(t('mv.gen_stage_waiting_muse'));
       const result = await MuseService.waitForResult(taskId, (p, s) => {
         setGenProgress(p);
         setGenStage(s);
@@ -319,7 +322,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
         const audioBlob = await audioResp.blob();
         return { blob: audioBlob, url: URL.createObjectURL(audioBlob), lyrics: result.lyrics || params.prompt };
       }
-      throw new Error('Muse AI returned no audio');
+      throw new Error(t('mv.gen_error_muse_no_audio'));
     } catch (e) {
       throw e;
     }
@@ -329,14 +332,12 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
     const prompt = params.prompt || '';
     const style = params.style || '';
 
-    setGenStage('Initializing Suno AI...');
-    // SunoService.generateMusic returns the full response {success, serialNos};
-    // extract the first serial number as the task id for polling.
+    setGenStage(t('mv.gen_stage_initializing_suno'));
     const res = await SunoService.generateMusic({ prompt, style, title: params.title });
     const taskId = res?.serialNos?.[0];
-    if (!taskId) throw new Error('Suno AI returned no task id');
+    if (!taskId) throw new Error(t('mv.gen_error_suno_no_task'));
 
-    setGenStage('Waiting for Suno AI...');
+    setGenStage(t('mv.gen_stage_waiting_suno'));
     const finalResult = await SunoService.waitForResult(taskId, (p, s) => {
       setGenProgress(p);
       setGenStage(s);
@@ -350,13 +351,13 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
         result: finalResult,
       };
     }
-    throw new Error('Failed to generate music');
+    throw new Error(t('mv.gen_error_failed'));
   };
 
   const generateWithMelo = async (params) => {
-    setGenStage('Initializing Melo AI...');
+    setGenStage(t('mv.gen_stage_initializing_melo'));
     const taskId = await MeloService.generateMusic(params);
-    setGenStage('Waiting for Melo AI...');
+    setGenStage(t('mv.gen_stage_waiting_melo'));
     const finalResult = await MeloService.waitForResult(taskId, (p, s) => {
       setGenProgress(p);
       setGenStage(s);
@@ -369,12 +370,12 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
         result: finalResult,
       };
     }
-    throw new Error('Melo AI returned no audio');
+    throw new Error(t('mv.gen_error_melo_no_audio'));
   };
 
   const generateLocally = async (params) => {
     console.log('[MVPage] generateLocally start:', { genre: params.genre, duration: params.duration, style: params.style });
-    setGenStage('Composing music locally...');
+    setGenStage(t('mv.gen_stage_composing_local'));
     const composition = composeMusic({
       genre: params.genre,
       style: params.style,
@@ -383,13 +384,13 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
       scene: params.scene,
     });
 
-    setGenStage('Rendering audio...');
+    setGenStage(t('mv.gen_stage_composing_audio'));
     const blob = await compositionToWavBlob(composition);
     const audioUrl = URL.createObjectURL(blob);
     console.log('[MVPage] Audio rendered:', { size: blob.size, url: audioUrl });
 
     setGenProgress(55);
-    setGenStage('Composing video...');
+    setGenStage(t('mv.gen_stage_composing_video'));
 
     const mvData = generateMV({ genre: params.genre, duration: params.duration });
     console.log('[MVPage] MV timeline generated:', { scenes: mvData.timeline.length, palette: mvData.colorPalette });
@@ -519,7 +520,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
 
     setIsGenerating(true);
     setGenProgress(5);
-    setGenStage('Starting...');
+    setGenStage(t('mv.gen_stage_starting'));
 
     try {
       // Engine availability checks (thrown so AUTO loop can count failures)
@@ -549,7 +550,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
       }
 
       setGenProgress(65);
-      setGenStage('Composing video...');
+      setGenStage(t('mv.gen_stage_composing_video'));
 
       let finalVideoBlob = musicResult.videoBlob;
       let finalVideoUrl = musicResult.videoUrl;
@@ -645,7 +646,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
       }
 
       setGenProgress(100);
-      setGenStage('Complete!');
+      setGenStage(t('mv.gen_stage_complete'));
     } catch (e) {
       setError(e.message || t('generation.failed'));
       // === AUTO: record failure as creation_attempt, even when no song produced ===
@@ -730,10 +731,10 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
             }
             showToast?.(
               autoStopRequestedRef.current
-                ? 'AUTO 已停止 — 已按您的请求停止自动生成。'
+                ? t('auto.stopped_by_request')
                 : autoConsecutiveErrorsRef.current >= 8
-                  ? 'AUTO 已停止 — 连续 8 次生成失败，可能是积分不足或 API 异常。'
-                  : 'AUTO 模式结束。',
+                  ? t('auto.stopped_consecutive_failures')
+                  : t('auto.finished'),
               autoStopRequestedRef.current ? 'info' : 'warning'
             );
             return;
@@ -837,7 +838,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
     };
     setAutoThoughts(prev => [...prev, startThought]);
     autoProgress.addThought(startThought);
-    showToast?.(`AUTO 启动 — ${displayName} 构思中（60 秒倒计时，期间会打开官网标签查看状态）`, 'info');
+    showToast?.(t('auto.starting', { engine: displayName }), 'info');
 
     // 4. Start 60s countdown — publish planning thoughts at milestones
     setAutoCountdownSec(60);
@@ -1000,7 +1001,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
         });
         autoDraftHistoryIdRef.current = null;
       }
-      showToast?.('AUTO 停止中 — 完成当前歌曲后将不再生成下一首', 'info');
+      showToast?.(t('auto.stopping'), 'info');
       return;
     }
     setAutoConfirmStep(1);
@@ -1052,6 +1053,34 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
     a.click();
   };
 
+  const formatTime = (s) => {
+    if (!s || s <= 0) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  const loadMoreHistory = () => {
+    setLoadingList(true);
+    try {
+      const sessionList = sessions || [];
+      const list = sessionList
+        .filter(s => s.engine === engine && s.result)
+        .map(s => ({
+          id: s.id,
+          title: s.params?.title || s.prompt?.substring(0, 30) || t('mv.history_no_title'),
+          audioUrl: s.result?.audio_url || s.result?.url || s.result?.audioUrl || '',
+          duration: s.params?.duration || 0,
+          createdAt: s.createdAt,
+        }));
+      setAudioList(list);
+    } catch (e) {
+      console.error('Failed to load list:', e);
+    } finally {
+      setLoadingList(false);
+    }
+  };
+
   const shareUrl = result ? `${window.location.origin}/share/${result.id}` : '';
 
   // Best-effort credit for the confirm dialog (only Muse exposes credits here)
@@ -1090,7 +1119,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
               {autoRunning ? (
                 <>
                   <RotateCcw className="w-4 h-4 animate-spin" />
-                  {t('auto.status_running')} · 停止
+                  {t('auto.status_running')} · {t('mv.auto_stop')}
                 </>
               ) : (
                 <>
@@ -1119,14 +1148,14 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
               </span>
             </div>
             <span className="text-xs font-bold text-orange-300">
-              {t('auto.song_count').replace('{count}', String(autoCount))} / {maxSongs}
+              {t('auto.song_count', { count: String(autoCount) })} / {maxSongs}
             </span>
           </div>
         )}
         {!autoRunning && autoCount === 0 && (
           <p className="relative mt-3 text-[11px] text-amber-400/80 flex items-center gap-1 px-1">
             <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-            <span>AUTO 将持续生成直到完成 {maxSongs} 首（或连续失败 8 次），极消耗积分。请谨慎使用。</span>
+            <span>{t('mv.auto_warning', { max: String(maxSongs) })}</span>
           </p>
         )}
       </div>
@@ -1144,11 +1173,11 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-white truncate">
                   {autoCountdownActive
-                    ? `${displayName} AUTO 构思中 · 剩余 ${autoCountdownSec}s`
-                    : `${displayName} AUTO 生成中 · 已完成 ${autoCount} 首`}
+                    ? t('mv.auto_countdown', { engine: displayName, sec: String(autoCountdownSec) })
+                    : t('mv.auto_generating', { engine: displayName, count: String(autoCount) })}
                 </div>
                 <div className="text-xs text-gray-400 truncate">
-                  {autoThoughts.length > 0 ? autoThoughts[autoThoughts.length - 1].title : '准备启动...'}
+                  {autoThoughts.length > 0 ? autoThoughts[autoThoughts.length - 1].title : t('mv.auto_preparing')}
                 </div>
               </div>
             </div>
@@ -1157,7 +1186,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-300 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-colors flex-shrink-0"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              停止
+              {t('mv.auto_stop_btn')}
             </button>
           </div>
           {autoCountdownActive && (
@@ -1301,6 +1330,83 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
           </div>
         </div>
       )}
+
+      {/* Music History */}
+      <div className={`glass p-5 rounded-2xl border ${theme.border}`}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <ListMusic className={`w-4 h-4 ${theme.accentText}`} />
+            {t('mv.history_title')}
+            {audioList.length > 0 && (
+              <span className={`px-2 py-0.5 rounded-full ${theme.chipBg} ${theme.chipText} text-[10px] font-medium`}>
+                {audioList.length}
+              </span>
+            )}
+          </h3>
+          <button
+            onClick={loadMoreHistory}
+            disabled={loadingList}
+            className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+          >
+            {loadingList ? (
+              <Loader className="w-3 h-3 animate-spin" />
+            ) : (
+              <RefreshCw className="w-3 h-3" />
+            )}
+            {t('mv.history_refresh')}
+          </button>
+        </div>
+
+        {loadingList && audioList.length === 0 ? (
+          <div className="flex items-center justify-center py-12 text-gray-500 text-xs">
+            <Loader className="w-4 h-4 animate-spin mr-2" />
+            {t('mv.history_loading')}
+          </div>
+        ) : audioList.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-gray-500 text-xs">
+            <Music className={`w-10 h-10 mb-3 opacity-30 ${theme.iconColor}`} />
+            <p>{t('mv.history_empty')}</p>
+            <p className="mt-1 text-[10px]">{t('mv.history_empty_hint')}</p>
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+            {audioList.map((item, idx) => {
+              const title = item.title || t('mv.history_no_title');
+              return (
+                <div
+                  key={item.id || idx}
+                  className={`flex items-center gap-3 p-2.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 ${theme.toolHoverBorder} transition-all group cursor-pointer`}
+                  onClick={() => {
+                    if (item.audioUrl) {
+                      setAudioUrl(item.audioUrl);
+                      setResult(prev => prev ? { ...prev, audioUrl: item.audioUrl, title } : { id: item.id, title, audioUrl: item.audioUrl });
+                    }
+                  }}
+                >
+                  <div className={`w-10 h-10 rounded-lg ${theme.chipBg} flex items-center justify-center flex-shrink-0`}>
+                    <Disc3 className={`w-4 h-4 ${theme.accentText}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-white truncate">{title}</p>
+                    <p className="text-[10px] text-gray-500 flex items-center gap-1">
+                      <Clock className="w-2.5 h-2.5" />
+                      {formatTime(item.duration)}
+                    </p>
+                  </div>
+                  <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity`}>
+                    <button
+                      className={`p-1.5 rounded-lg ${theme.chipBg} ${theme.chipText} hover:bg-white/20 transition-colors`}
+                      title={t('mv.history_play')}
+                    >
+                      <Video className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       <HistoryPanel
         show={showHistory}

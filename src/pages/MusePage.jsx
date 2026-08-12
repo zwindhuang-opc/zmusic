@@ -5,7 +5,7 @@ import {
   Disc3, Volume2, Copy, ExternalLink, Music, Download,
   Image, Wand2, Mic, BarChart3, RefreshCw, X, ChevronRight,
   Globe, Type, Sliders, Languages, History, CheckCircle, XCircle,
-  AlertTriangle, ShieldCheck, RotateCcw
+  AlertTriangle, ShieldCheck, RotateCcw, ListMusic, Loader2
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import MuseService from '../services/muse.service.js';
@@ -263,9 +263,20 @@ function MusePage({ onNavigate }) {
   const autoCreativeSnapshotRef = useRef(null);
   const autoDraftHistoryIdRef = useRef(null);
 
+  const [audioList, setAudioList] = useState([]);
+  const [loadingList, setLoadingList] = useState(false);
+
   useEffect(() => {
     loadMuseConfig();
   }, []);
+
+  useEffect(() => {
+    loadMoreHistory();
+  }, []);
+
+  useEffect(() => {
+    loadMoreHistory();
+  }, [sessions]);
 
   // Sync AUTO refs with React state (so async finally block sees latest values)
   useEffect(() => {
@@ -934,6 +945,8 @@ function MusePage({ onNavigate }) {
       // Reset consecutive error counter on success
       autoConsecutiveErrorsRef.current = 0;
 
+      loadMoreHistory();
+
       if (songData.audioUrl) {
         setTimeout(() => {
           if (audioRef.current) {
@@ -1138,6 +1151,27 @@ function MusePage({ onNavigate }) {
     ].filter(Boolean).join('\n');
     const ok = await copyToClipboard(text);
     if (ok) showToast('已复制到剪贴板', 'success');
+  };
+
+  const loadMoreHistory = () => {
+    setLoadingList(true);
+    try {
+      const sessionsList = sessions || [];
+      const list = sessionsList
+        .filter(s => s.engine === 'muse' && s.result)
+        .map(s => ({
+          id: s.id,
+          title: s.params?.title || s.prompt?.substring(0, 30) || '未命名',
+          audioUrl: s.result?.audio_url || s.result?.url || s.result?.audioUrl || '',
+          duration: s.params?.duration || 0,
+          createdAt: s.createdAt,
+        }));
+      setAudioList(list);
+    } catch (e) {
+      console.error('Failed to load music list:', e);
+    } finally {
+      setLoadingList(false);
+    }
   };
 
   const downloadAudio = () => {
@@ -1783,6 +1817,107 @@ function MusePage({ onNavigate }) {
               </div>
             </div>
           )}
+
+          {/* Music History */}
+          <div className="glass p-5 rounded-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                <ListMusic className="w-4 h-4 text-fuchsia-400" />
+                历史音乐
+                {audioList.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-fuchsia-500/10 text-fuchsia-300 text-[10px] font-medium">
+                    {audioList.length}
+                  </span>
+                )}
+              </h3>
+              <button
+                onClick={loadMoreHistory}
+                disabled={loadingList}
+                className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-fuchsia-300 transition-colors disabled:opacity-50"
+              >
+                {loadingList ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-3 h-3" />
+                )}
+                刷新
+              </button>
+            </div>
+
+            {loadingList && audioList.length === 0 ? (
+              <div className="flex items-center justify-center py-12 text-gray-500 text-xs">
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                加载中...
+              </div>
+            ) : audioList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-500 text-xs">
+                <Music className="w-10 h-10 mb-3 opacity-30" />
+                <p>暂无历史音乐</p>
+                <p className="mt-1 text-[10px]">生成的歌曲将在此处显示</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+                {audioList.map((item, idx) => {
+                  const title = item.title || item.name || item.filename || `歌曲 ${idx + 1}`;
+                  const audioUrl = proxyAudioUrl(item.audioUrl || item.url || item.audio_url);
+                  const duration = item.duration || item.length || 0;
+                  return (
+                    <div
+                      key={item.id || item._id || idx}
+                      className="flex items-center gap-3 p-2.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-fuchsia-500/20 transition-all group"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-fuchsia-500/30 to-purple-500/30 flex items-center justify-center flex-shrink-0">
+                        <Disc3 className="w-4 h-4 text-fuchsia-300" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-white truncate">{title}</p>
+                        <p className="text-[10px] text-gray-500 flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5" />
+                          {formatTime(duration)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => {
+                            if (audioUrl) {
+                              setGeneratedSong({
+                                title,
+                                audioUrl,
+                                duration,
+                                taskId: item.id,
+                              });
+                              setTimeout(() => {
+                                if (audioRef.current) audioRef.current.load();
+                              }, 100);
+                            }
+                          }}
+                          className="p-1.5 rounded-lg bg-fuchsia-500/20 text-fuchsia-300 hover:bg-fuchsia-500/30 transition-colors"
+                          title="播放"
+                        >
+                          <Play className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (audioUrl) {
+                              const a = document.createElement('a');
+                              a.href = audioUrl;
+                              a.download = `${title || 'muse-song'}.mp3`;
+                              a.target = '_blank';
+                              a.click();
+                            }
+                          }}
+                          className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                          title="下载"
+                        >
+                          <Download className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Default Tips */}
           {!generatedSong && !generating && (

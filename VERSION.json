@@ -1,15 +1,15 @@
 {
-  "version": "7.0.0",
+  "version": "7.0.1",
   "major": 7,
   "minor": 0,
-  "patch": 0,
-  "buildNumber": 5,
+  "patch": 1,
+  "buildNumber": 6,
   "releaseDate": "2026-08-12",
-  "notes": "v7.0.0 — Major Release: MV Platform Sub-Pages + AUTO Mode. (1) MV page split into three engine-specific sub-pages: Muse MV (blue/cyan), Suno MV (green/emerald), Melo MV (amber/orange) — each with its own AUTO mode. (2) MVPage.jsx refactored to accept engine/engineName props, removed MVEngineSelector in favor of fixed engine per page. (3) MV AUTO mode: 3-step confirmation modal, 60s countdown with creative thoughts at 50s/40s/20s/5s milestones, auto-generation loop with random genre/style/palette/effects, song count limit from autoConfig, incremental history saving (creation_draft → song/creation_attempt), AutoCreativePanel integration with engine-specific colors. (4) Navigation updated: MV is now a collapsible group in sidebar with 3 children (mv-muse, mv-suno, mv-melo), matching the music group pattern. (5) All existing MV functionality preserved: local generation, AI generation, video composition, timeline preview, AI tools grid, history panel, copy/download/share. (6) Engine-specific color theming applied to header, progress bar, tool cards, and AUTO countdown banner.",
+  "notes": "v7.0.1 — Layout & Polish Sprint. (1) Added '历史音乐' (Music History) section with refresh button to Muse AI page, Melo AI page, and all 3 MV pages (Muse MV, Suno MV, Melo MV) — matching the Suno AI page pattern. Each section shows a ListMusic icon header, count badge, RefreshCw refresh button, and a scrollable list of generated items with Disc3 icons, titles, and durations. (2) Added History icon to '生成历史' section headers on Muse AI and Melo AI pages. (3) Fixed MeloPage TDZ bug: variable shadowing caused ReferenceError 'Cannot access sessions before initialization' — renamed to allSessions. (4) MV page translation fix: added missing translation keys to both zh.json and en.json for clipboard, generation, suno, melo, and mv sections. Hardcoded strings replaced with proper t() calls throughout MVPage.jsx. (5) All pages verified in browser with zero console errors.",
   "status": "production-ready",
   "changes": [
+    "v7.0.1: Added '历史音乐' section with refresh button to Muse/Melo/MV pages + fixed MV translations + fixed MeloPage TDZ bug + History icons on all 生成历史 headers",
     "v7.0.0: MV sub-pages (Muse MV / Suno MV / Melo MV) with AUTO mode + engine-specific colors + navigation group + creative thoughts panel + incremental history",
-    "v6.8.0: History persistence fix + engine-specific color themes + HistoryPanel with 3 copy buttons per item + configurable AUTO song count + Settings page AUTO configuration section",
-    "v6.7.0: AUTO creative thinking panel + credit-check-free test mode + manual stop button + icon color fixes + Android APK build + iOS project sync"
+    "v6.8.0: History persistence fix + engine-specific color themes + HistoryPanel with 3 copy buttons per item + configurable AUTO song count + Settings page AUTO configuration section"
   ]
 }
