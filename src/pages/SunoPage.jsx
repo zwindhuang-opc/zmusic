@@ -155,6 +155,21 @@ function SunoPage({ onNavigate }) {
     return () => clearInterval(iv);
   }, [autoRunning]);
 
+  // Auto-close creative panel: after 8 tries OR 15s idle when stopped
+  const autoCloseTimerRef = useRef(null);
+  useEffect(() => {
+    if (autoCount >= 8 && !autoRunning) {
+      setShowCreativePanel(false);
+      return;
+    }
+    if (!autoRunning && autoCount > 0 && autoThoughts.length > 0) {
+      if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = setTimeout(() => {
+        setShowCreativePanel(false);
+      }, 15000);
+    }
+  }, [autoRunning, autoCount, autoThoughts.length]);
+
   // === GLOBAL AUTO handshake: trigger AUTO when arriving from Dashboard ===
   // Chain navigation is scheduled HERE (at handshake time) with a fixed 5s delay,
   // decoupled from autoRunning state — this ensures we NEVER skip the next

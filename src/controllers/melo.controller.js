@@ -457,6 +457,7 @@ export class MeloController {
       audioWeight,
       layers = {},
       instrumental = false,
+      duration = 240,
     } = req.body || {};
 
     // --- Validate input ---------------------------------------------------
@@ -522,6 +523,7 @@ export class MeloController {
       client_type: 'web',
       os: 'web',
       version: '1.0.0',
+      song_length: duration,
     };
 
     // --- Submit to Melo ---------------------------------------------------

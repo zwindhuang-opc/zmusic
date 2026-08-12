@@ -3,7 +3,7 @@ import { useTranslation } from './i18n/useTranslation.js';
 import {
   LayoutDashboard, Music, Mic, Video, Settings, Sparkles, TrendingUp,
   Activity, Cpu, Zap, BarChart3, Server, Bot, Globe, ArrowLeft, Wand2, Sliders, Image, Headphones, Cloud, Music2,
-  ChevronDown, ChevronRight
+  ChevronDown, ChevronRight, BookOpen
 } from 'lucide-react';
 import api, { isMobileEnvironment } from './services/api.client.js';
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
@@ -15,6 +15,7 @@ const MusePage = lazy(() => import('./pages/MusePage.jsx'));
 const SunoPage = lazy(() => import('./pages/SunoPage.jsx'));
 const MeloPage = lazy(() => import('./pages/MeloPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
+const CreativeNotebook = lazy(() => import('./pages/CreativeNotebook.jsx'));
 import FloatingChatBall from './components/FloatingChatBall.jsx';
 import EasyMode from './components/EasyMode.jsx';
 import { AutoProgressProvider } from './contexts/AutoProgressContext.jsx';
@@ -98,6 +99,7 @@ function App() {
       ],
     },
     { id: 'lyrics', label: t('nav.lyrics'), icon: Mic },
+    { id: 'notebook', label: '创作构思记录簿', icon: BookOpen },
     { id: 'image-lyrics', label: t('nav.image_lyrics'), icon: Image },
     {
       id: 'mv-group',
@@ -325,6 +327,7 @@ function App() {
               <LyricsPage key={uiMode} onNavigate={setCurrentPage} defaultMode={uiMode === 'easy' ? 'guided' : 'expert'} />
             )}
             {currentPage === 'image-lyrics' && <ImageLyricsPage onNavigate={setCurrentPage} />}
+            {currentPage === 'notebook' && <CreativeNotebook />}
             {currentPage === 'mv-muse' && <MVPage engine="muse" engineName="Muse AI" />}
             {currentPage === 'mv-suno' && <MVPage engine="suno" engineName="Suno AI" />}
             {currentPage === 'mv-melo' && <MVPage engine="melo" engineName="Melo AI" />}

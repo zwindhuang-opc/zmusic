@@ -16,8 +16,8 @@
  *   - Suno AI:   Green/teal (nature/growth)
  *   - Melo AI:   Amber/orange (sunset/warmth)
  */
-import React, { useEffect, useRef } from 'react';
-import { Brain, X, Sparkles, Music2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Brain, X, Sparkles, Music2, Copy, Check } from 'lucide-react';
 
 const ENGINE_THEMES = {
   'Muse AI': {
@@ -100,7 +100,33 @@ export default function AutoCreativePanel({
   onClose,
 }) {
   const scrollRef = useRef(null);
+  const [copiedIdx, setCopiedIdx] = useState(-1);
   const theme = ENGINE_THEMES[engineName] || DEFAULT_THEME;
+
+  const extractThoughtText = (thought) => {
+    let text = '';
+    if (thought.title) text += `标题: ${thought.title}\n`;
+    if (thought.iteration) text += `第 ${thought.iteration} 首 · `;
+    if (thought.summary) text += `${thought.summary}\n`;
+    if (thought.detail) text += `${thought.detail}\n`;
+    if (thought.sections) {
+      thought.sections.forEach(section => {
+        if (section.label) text += `\n${section.label}: `;
+        if (section.title) text += `${section.title} `;
+        if (section.lines) text += `\n${section.lines.join('\n')}`;
+      });
+    }
+    return text.trim();
+  };
+
+  const handleCopyThought = async (thought, idx) => {
+    const text = extractThoughtText(thought);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(-1), 1500);
+    } catch { }
+  };
 
   // Auto-scroll to bottom when new thoughts arrive
   useEffect(() => {
@@ -161,19 +187,31 @@ export default function AutoCreativePanel({
           <div
             key={idx}
             className={`rounded-xl border p-3 transition-all ${idx === thoughts.length - 1
-                ? `${theme.borderActive} ${theme.bgActive} shadow-lg ${theme.iconShadow}`
-                : 'border-white/5 bg-white/[0.02]'
+              ? `${theme.borderActive} ${theme.bgActive} shadow-lg ${theme.iconShadow}`
+              : 'border-white/5 bg-white/[0.02]'
               }`}
           >
             {/* Iteration header */}
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Music2 className={`w-3.5 h-3.5 ${theme.thoughtText}`} />
-                <span className={`text-xs font-bold ${theme.text}`}>
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <Music2 className={`w-3.5 h-3.5 ${theme.thoughtText} flex-shrink-0`} />
+                <span className={`text-xs font-bold ${theme.text} truncate`}>
                   {thought.iteration ? `第 ${thought.iteration} 首 · ${thought.title}` : thought.title}
                 </span>
               </div>
-              <span className="text-[10px] text-gray-500 font-mono">{thought.timestamp || thought.time}</span>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className="text-[10px] text-gray-500 font-mono">{thought.timestamp || thought.time}</span>
+                <button
+                  onClick={() => handleCopyThought(thought, idx)}
+                  className={`p-1 rounded transition-colors ${copiedIdx === idx
+                    ? 'text-emerald-400 bg-emerald-500/10'
+                    : 'text-gray-500 hover:text-white hover:bg-white/10'
+                    }`}
+                  title="复制构思内容"
+                >
+                  {copiedIdx === idx ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                </button>
+              </div>
             </div>
 
             {/* Thought sections - handle both formats */}

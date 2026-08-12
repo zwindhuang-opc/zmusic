@@ -22,6 +22,7 @@ import {
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
 import { getEngineSongCount } from '../utils/autoConfig.js';
+import HistoryPanel from '../components/HistoryPanel.jsx';
 
 const API_BASE = '/api';
 
@@ -254,6 +255,7 @@ function MusePage({ onNavigate }) {
   const autoInputSnapshotRef = useRef(null);
   const [autoThoughts, setAutoThoughts] = useState([]);
   const [showCreativePanel, setShowCreativePanel] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
   const lastAutoCreditRef = useRef(0);
   // 60s countdown wait before real generation
   const [autoCountdownSec, setAutoCountdownSec] = useState(0);
@@ -301,6 +303,21 @@ function MusePage({ onNavigate }) {
     }, 8000);
     return () => clearInterval(iv);
   }, [autoRunning]);
+
+  // Auto-close creative panel: after 8 tries OR 15s idle when stopped
+  const autoCloseTimerRef = useRef(null);
+  useEffect(() => {
+    if (autoCount >= 8 && !autoRunning) {
+      setShowCreativePanel(false);
+      return;
+    }
+    if (!autoRunning && autoCount > 0 && autoThoughts.length > 0) {
+      if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = setTimeout(() => {
+        setShowCreativePanel(false);
+      }, 15000);
+    }
+  }, [autoRunning, autoCount, autoThoughts.length]);
 
   // === GLOBAL AUTO handshake: trigger AUTO when arriving from Dashboard ===
   // Chain navigation is scheduled HERE (at handshake time) with a fixed 5s delay,
@@ -1243,6 +1260,20 @@ function MusePage({ onNavigate }) {
                 <span className="px-1.5 py-0.5 text-[9px] rounded bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-300 border border-yellow-500/30 font-medium">VIP</span>
               )}
             </div>
+            <button
+              onClick={loadMuseConfig}
+              className="p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+              title="刷新"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+              title="历史"
+            >
+              <History className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -2062,6 +2093,8 @@ function MusePage({ onNavigate }) {
         engineName="Muse AI"
         onClose={() => setShowCreativePanel(false)}
       />
+
+      <HistoryPanel isOpen={showHistory} onClose={() => setShowHistory(false)} />
     </div>
   );
 }
