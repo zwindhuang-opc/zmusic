@@ -143,7 +143,30 @@
     "stopping": "AUTO stopping — no more songs will be generated after the current one completes",
     "draft_failed_title": "❌ Creation failed · {title}",
     "draft_unfinished_title": "⏹️ {title} - AUTO stopped",
-    "draft_stopped_title": "⏹️ {title} - AUTO stopped"
+    "draft_stopped_title": "⏹️ {title} - AUTO stopped",
+    "creative_thinking_title": "{engine} Creative Thinking",
+    "creative_panel_subtitle": "Created {count} songs · {thoughts} thoughts",
+    "collapse_panel": "Collapse panel",
+    "copy_thought": "Copy thought",
+    "close_indicator": "Close indicator",
+    "clipboard_title": "Title: ",
+    "clipboard_iteration": "Song #{n} · ",
+    "iteration_label": "Song #{n}",
+    "panel_idle_hint": "Once AUTO mode starts, this panel shows in real time how the AI thinks through each song's theme, lyrics, style and parameters.",
+    "sending_to_engine": "Sending \"{title}\" to {engine} for generation...",
+    "thinking_first_song": "Thinking about the first song...",
+    "phase_idle": "Idle",
+    "phase_countdown": "Thinking countdown",
+    "phase_generating": "Generating",
+    "phase_complete": "Complete",
+    "phase_failed": "Failed",
+    "phase_stopped": "Stopped",
+    "song_count_short": "{count} songs",
+    "status_generating": "⏳ Generating...",
+    "status_complete": "✅ Complete",
+    "status_failed": "❌ Failed",
+    "status_stopped": "⏹ Stopped",
+    "recent_history": "Recent history"
   },
   "common": {
     "cancel": "Cancel",
@@ -162,7 +185,8 @@
     "send_to_melo": "Send to Melo AI",
     "send_to_muse": "Send to Muse AI",
     "send_to_suno": "Send to Suno AI",
-    "success": "Success"
+    "success": "Success",
+    "untitled": "Untitled"
   },
   "history": {
     "creation_draft": "Draft",
@@ -830,6 +854,19 @@
     "seconds": "{count}s",
     "key_label": "{key} key",
     "step_label": "Step {n}"
+  },
+  "remix": {
+    "engine_muse_desc": "Natural language commands, strong at creative lyrics & atmosphere",
+    "engine_suno_desc": "Strong vocal performance, clear stem separation",
+    "engine_melo_desc": "ByteDance melody, multi-layer arrangement, great Chinese vocals"
+  },
+  "publish": {
+    "toast_success": "Published successfully! Submitted for platform review",
+    "toast_manual": "Direct upload not configured, please follow the steps below to upload manually",
+    "toast_failed_prefix": "Publish failed: ",
+    "toast_exception_prefix": "Publish exception: ",
+    "selected_prefix": "Selected: ",
+    "platforms_prefix": "Platforms: "
   },
   "lyrics_meta": {
     "emotionalArc": "Emotional Arc",

@@ -18,6 +18,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { Brain, X, Sparkles, Music2, Copy, Check } from 'lucide-react';
+import { useTranslation } from '../i18n/useTranslation.js';
 
 const ENGINE_THEMES = {
   'Muse AI': {
@@ -102,11 +103,12 @@ export default function AutoCreativePanel({
   const scrollRef = useRef(null);
   const [copiedIdx, setCopiedIdx] = useState(-1);
   const theme = ENGINE_THEMES[engineName] || DEFAULT_THEME;
+  const { t } = useTranslation();
 
   const extractThoughtText = (thought) => {
     let text = '';
-    if (thought.title) text += `标题: ${thought.title}\n`;
-    if (thought.iteration) text += `第 ${thought.iteration} 首 · `;
+    if (thought.title) text += `${t('auto.clipboard_title')}${thought.title}\n`;
+    if (thought.iteration) text += t('auto.clipboard_iteration', { n: thought.iteration });
     if (thought.summary) text += `${thought.summary}\n`;
     if (thought.detail) text += `${thought.detail}\n`;
     if (thought.sections) {
@@ -149,7 +151,7 @@ export default function AutoCreativePanel({
           </div>
           <div>
             <div className="text-sm font-bold text-white flex items-center gap-2">
-              {engineName} 创作思维
+              {t('auto.creative_thinking_title', { engine: engineName })}
               {autoRunning && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   ● LIVE
@@ -157,14 +159,14 @@ export default function AutoCreativePanel({
               )}
             </div>
             <div className="text-[10px] text-gray-400">
-              已创作 {autoCount} 首 · {thoughts.length} 条思考记录
+              {t('auto.creative_panel_subtitle', { count: autoCount, thoughts: thoughts.length })}
             </div>
           </div>
         </div>
         <button
           onClick={onClose}
           className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
-          title="收起面板"
+          title={t('auto.collapse_panel')}
         >
           <X className="w-4 h-4 text-gray-400" />
         </button>
@@ -177,8 +179,8 @@ export default function AutoCreativePanel({
             <Sparkles className={`w-8 h-8 ${theme.thoughtText}/50 mb-2`} />
             <p className="text-xs text-gray-500">
               {autoRunning
-                ? '正在构思第一首歌的创作思路...'
-                : 'AUTO 模式启动后，这里会实时显示 AI 如何思考每一首歌的主题、歌词、风格与参数选择。'}
+                ? t('auto.thinking_first_song')
+                : t('auto.panel_idle_hint')}
             </p>
           </div>
         )}
@@ -196,7 +198,7 @@ export default function AutoCreativePanel({
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <Music2 className={`w-3.5 h-3.5 ${theme.thoughtText} flex-shrink-0`} />
                 <span className={`text-xs font-bold ${theme.text} truncate`}>
-                  {thought.iteration ? `第 ${thought.iteration} 首 · ${thought.title}` : thought.title}
+                  {thought.iteration ? `${t('auto.iteration_label', { n: thought.iteration })} · ${thought.title}` : thought.title}
                 </span>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -207,7 +209,7 @@ export default function AutoCreativePanel({
                     ? 'text-emerald-400 bg-emerald-500/10'
                     : 'text-gray-500 hover:text-white hover:bg-white/10'
                     }`}
-                  title="复制构思内容"
+                  title={t('auto.copy_thought')}
                 >
                   {copiedIdx === idx ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                 </button>
@@ -255,7 +257,7 @@ export default function AutoCreativePanel({
         <div className={`px-4 py-2 border-t ${theme.border} ${theme.bg}`}>
           <div className={`flex items-center gap-2 text-[10px] ${theme.textSoft}`}>
             <div className={`w-1.5 h-1.5 rounded-full ${theme.pulse} animate-pulse`} />
-            正在发送「{latest.title}」给 {engineName} 生成...
+            {t('auto.sending_to_engine', { title: latest.title, engine: engineName })}
           </div>
         </div>
       )}

@@ -22,7 +22,7 @@ const ENGINES = [
     icon: <Sparkles className="w-5 h-5" />,
     color: 'from-blue-500 to-cyan-600',
     accent: 'blue',
-    desc: '自然语言命令驱动，擅长创意词与氛围感',
+    descKey: 'remix.engine_muse_desc',
   },
   {
     id: 'suno',
@@ -30,7 +30,7 @@ const ENGINES = [
     icon: <Cloud className="w-5 h-5" />,
     color: 'from-emerald-500 to-teal-600',
     accent: 'emerald',
-    desc: '人声表现力强，合唱+乐器分离清晰',
+    descKey: 'remix.engine_suno_desc',
   },
   {
     id: 'melo',
@@ -38,7 +38,7 @@ const ENGINES = [
     icon: <Headphones className="w-5 h-5" />,
     color: 'from-amber-500 to-orange-600',
     accent: 'amber',
-    desc: '字节旋律，多层编曲 + 中文人声表现好',
+    descKey: 'remix.engine_melo_desc',
   },
 ];
 
@@ -201,7 +201,7 @@ export default function RemixStudio({ onNavigate }) {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-semibold text-white truncate">
-                        {(s.title || ssnap.title || '未命名').replace(/❌.*·\s*/, '')}
+                        {(s.title || ssnap.title || t('common.untitled')).replace(/❌.*·\s*/, '')}
                       </div>
                       <div className="text-[10.5px] text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
                         <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/5 font-medium">{eObj?.name || sEngine}</span>
@@ -356,7 +356,7 @@ export default function RemixStudio({ onNavigate }) {
                             <span className={`text-sm font-bold ${selected ? 'text-white' : 'text-white/90'}`}>{e.name}</span>
                             {isSource && <span className="text-[9px] px-1 py-0.5 rounded bg-white/10 text-gray-300">{isZh ? '原作引擎' : 'SOURCE'}</span>}
                           </div>
-                          <div className={`text-[10.5px] ${selected ? 'text-white/80' : 'text-gray-500'}`}>{e.desc}</div>
+                          <div className={`text-[10.5px] ${selected ? 'text-white/80' : 'text-gray-500'}`}>{t(e.descKey)}</div>
                         </div>
                       </div>
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selected ? 'border-white bg-white/20' : 'border-white/20'}`}>

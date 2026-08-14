@@ -2,6 +2,7 @@ import React from 'react';
 import { Brain, X, Play, Pause, Music2, Clock, AlertTriangle, CheckCircle, Loader2, ChevronDown, ChevronUp, History } from 'lucide-react';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
 import { useGeneration } from '../stores/generationStore.jsx';
+import { useTranslation } from '../i18n/useTranslation.js';
 
 const ENGINE_THEMES = {
   muse: {
@@ -36,6 +37,7 @@ const ENGINE_THEMES = {
 export default function AutoProgressBar() {
   const ctx = useAutoProgress();
   const { history } = useGeneration();
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = React.useState(false);
 
   if (!ctx.active) return null;
@@ -59,12 +61,12 @@ export default function AutoProgressBar() {
   };
 
   const phaseConfig = {
-    idle: { icon: Pause, color: 'text-gray-400', bg: 'from-gray-500/20 to-gray-600/20', bar: 'bg-gray-500', label: '待机' },
-    countdown: { icon: Clock, color: engineTheme.text, bg: engineTheme.bg, bar: engineTheme.bar, label: '构思倒计时' },
-    generating: { icon: Loader2, color: 'text-amber-300', bg: 'from-amber-500/20 to-orange-500/20', bar: 'bg-amber-400 animate-pulse', label: '生成中' },
-    complete: { icon: CheckCircle, color: 'text-emerald-300', bg: 'from-emerald-500/20 to-green-500/20', bar: 'bg-emerald-400', label: '完成' },
-    failed: { icon: AlertTriangle, color: 'text-red-300', bg: 'from-red-500/20 to-rose-500/20', bar: 'bg-red-400', label: '失败' },
-    stopped: { icon: Pause, color: 'text-gray-300', bg: 'from-gray-500/20 to-gray-600/20', bar: 'bg-gray-400', label: '已停止' },
+    idle: { icon: Pause, color: 'text-gray-400', bg: 'from-gray-500/20 to-gray-600/20', bar: 'bg-gray-500', label: t('auto.phase_idle') },
+    countdown: { icon: Clock, color: engineTheme.text, bg: engineTheme.bg, bar: engineTheme.bar, label: t('auto.phase_countdown') },
+    generating: { icon: Loader2, color: 'text-amber-300', bg: 'from-amber-500/20 to-orange-500/20', bar: 'bg-amber-400 animate-pulse', label: t('auto.phase_generating') },
+    complete: { icon: CheckCircle, color: 'text-emerald-300', bg: 'from-emerald-500/20 to-green-500/20', bar: 'bg-emerald-400', label: t('auto.phase_complete') },
+    failed: { icon: AlertTriangle, color: 'text-red-300', bg: 'from-red-500/20 to-rose-500/20', bar: 'bg-red-400', label: t('auto.phase_failed') },
+    stopped: { icon: Pause, color: 'text-gray-300', bg: 'from-gray-500/20 to-gray-600/20', bar: 'bg-gray-400', label: t('auto.phase_stopped') },
   };
 
   const cfg = phaseConfig[phase] || phaseConfig.idle;
@@ -98,7 +100,7 @@ export default function AutoProgressBar() {
               </span>
               {autoCount > 0 && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  {autoCount} 首
+                  {t('auto.song_count_short', { count: autoCount })}
                 </span>
               )}
             </div>
@@ -118,7 +120,7 @@ export default function AutoProgressBar() {
           <button
             onClick={() => { ctx.stopProgress(); setTimeout(() => ctx.resetProgress(), 3000); }}
             className="p-1 rounded-lg hover:bg-red-500/20 transition-colors"
-            title="关闭指示器"
+            title={t('auto.close_indicator')}
           >
             <X className="w-4 h-4 text-gray-400" />
           </button>
@@ -135,10 +137,10 @@ export default function AutoProgressBar() {
           <div className="flex items-center justify-between mt-1.5 text-[10px] text-gray-400">
             <span>
               {phase === 'countdown' && `⏱ ${countdownSec}s`}
-              {phase === 'generating' && '⏳ 生成中...'}
-              {phase === 'complete' && '✅ 已完成'}
-              {phase === 'failed' && '❌ 失败'}
-              {phase === 'stopped' && '⏹ 已停止'}
+              {phase === 'generating' && t('auto.status_generating')}
+              {phase === 'complete' && t('auto.status_complete')}
+              {phase === 'failed' && t('auto.status_failed')}
+              {phase === 'stopped' && t('auto.status_stopped')}
             </span>
             <span>{elapsed}s</span>
           </div>
@@ -172,13 +174,13 @@ export default function AutoProgressBar() {
               <div className="px-4 pb-3 border-t border-white/10 pt-2">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <History className="w-3 h-3 text-gray-500" />
-                  <span className="text-[10px] text-gray-500 font-medium">最近历史</span>
+                  <span className="text-[10px] text-gray-500 font-medium">{t('auto.recent_history')}</span>
                 </div>
                 <div className="space-y-1">
                   {latestHistory.map((h) => (
                     <div key={h.id} className="flex items-center gap-2 text-[10px]">
                       <span className={`w-1.5 h-1.5 rounded-full ${h.status === 'success' ? 'bg-emerald-400' :
-                          h.status === 'failed' ? 'bg-red-400' : 'bg-gray-400'
+                        h.status === 'failed' ? 'bg-red-400' : 'bg-gray-400'
                         }`} />
                       <span className={`truncate ${h.status === 'failed' ? 'text-red-300' : 'text-gray-300'}`}>
                         {h.title}

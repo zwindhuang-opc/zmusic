@@ -171,20 +171,20 @@ export default function PublishStudio({ onNavigate }) {
       setProgress(1.0);
 
       if (anySuccess) {
-        showToast?.('发布成功！作品已提交平台审核', 'success');
+        showToast?.(t('publish.toast_success'), 'success');
       } else if (anyManual) {
-        showToast?.('平台直传未配置，请按下方步骤手动上传', 'info');
+        showToast?.(t('publish.toast_manual'), 'info');
       } else {
         const errs = results.map(r => r.error).filter(Boolean).join('; ');
         setErrorMsg(errs);
-        showToast?.('发布失败：' + errs, 'error');
+        showToast?.(t('publish.toast_failed_prefix') + errs, 'error');
       }
 
       setShareLinks(results);
     } catch (e) {
       setStatus('failed');
       setErrorMsg(e.message);
-      showToast?.('发布异常：' + e.message, 'error');
+      showToast?.(t('publish.toast_exception_prefix') + e.message, 'error');
     }
   };
 
@@ -288,7 +288,7 @@ export default function PublishStudio({ onNavigate }) {
                       {s.type === 'mv' ? <FileVideo className="w-5 h-5 text-white" /> : <FileAudio className="w-5 h-5 text-white" />}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-white truncate">{s.title || '未命名'}</div>
+                      <div className="text-sm font-semibold text-white truncate">{s.title || t('common.untitled')}</div>
                       <div className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-2 flex-wrap">
                         <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/5">{s.engine || s.type}</span>
                         {s.style && <span className="px-1.5 py-0.5 rounded bg-pink-500/10 text-pink-300">{s.style}</span>}
@@ -385,7 +385,7 @@ export default function PublishStudio({ onNavigate }) {
             <div className="rounded-xl bg-white/5 border border-white/10 p-3 flex items-center gap-3">
               <FileAudio className="w-6 h-6 text-rose-400 flex-shrink-0" />
               <div className="min-w-0 flex-1 text-xs text-gray-400 truncate">
-                已选：<span className="text-white font-medium">{selectedSong?.title || '?'}</span> · 平台：{Object.entries(platforms).filter(([, v]) => v).map(([k]) => PLATFORMS.find(p => p.id === k)?.name?.zh || k).join(' / ')}
+                {t('publish.selected_prefix')}<span className="text-white font-medium">{selectedSong?.title || '?'}</span> · {t('publish.platforms_prefix')}{Object.entries(platforms).filter(([, v]) => v).map(([k]) => pick(PLATFORMS.find(p => p.id === k)?.name) || k).join(' / ')}
               </div>
             </div>
 

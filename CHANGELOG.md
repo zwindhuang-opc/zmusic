@@ -1,5 +1,11 @@
 # ZMusic Changelog
 
+## v7.3.0 (2026-08-14)
+
+- v7.3.0: i18n overhaul — fixed 582 broken zh.json key-path values (e.g. `actions.下潜` → `下潜`) across actions/emotions/imagery/locations/subjects sections. Migrated hardcoded Chinese strings in RemixStudio.jsx, PublishStudio.jsx, AutoCreativePanel.jsx, AutoProgressBar.jsx to use `t()` i18n calls. Added new i18n sections: `remix` (3 engine description keys), `publish` (6 toast/label keys), `common.untitled`, and 24 new keys in the `auto` section for phase labels, status strings, and panel texts. Verified zero Chinese/English mixing in user-facing UI strings. Synchronized version numbers across VERSION.json, package.json, and android/app/build.gradle.
+- Build #9
+
+
 ## v6.7.0 (2026-08-11)
 
 - v6.7.0: AUTO creative thinking panel (shows AI's reasoning for each song) + credit-check-free test mode (stop after 8 consecutive errors) + manual stop button + icon color fixes (Suno=teal, Muse=fuchsia, Melo=amber) + floating ball overlap fix + full-screen desktop screenshots (1920x1080) + Android APK build + iOS project sync
