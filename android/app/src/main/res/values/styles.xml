@@ -12,11 +12,19 @@
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <item name="android:background">@null</item>
+        <!-- Never use @null background — causes transient black render flashes
+             on some Android GPU drivers when the SurfaceView initializes. -->
+        <item name="android:windowBackground">@color/colorWindowBackground</item>
+        <item name="android:colorBackground">@color/colorWindowBackground</item>
+        <item name="android:background">@color/colorWindowBackground</item>
     </style>
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <!-- Ensure the window behind the splash drawable also matches the app's
+             dark palette so any transient window reveal is on-brand dark. -->
+        <item name="android:windowBackground">@drawable/splash</item>
+        <item name="android:colorBackground">@color/colorWindowBackground</item>
     </style>
 </resources>

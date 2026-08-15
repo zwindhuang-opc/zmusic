@@ -16,6 +16,7 @@ import museController from '../controllers/muse.controller.js';
 import meloController from '../controllers/melo.controller.js';
 import contentController from '../controllers/content.controller.js';
 import publishController from '../controllers/publish.controller.js';
+import libraryController from '../controllers/library.controller.js';
 import Logger from '../utils/logger.js';
 
 const logger = new Logger('Routes');
@@ -324,7 +325,7 @@ export async function handleRoute(req, res, url, method, body) {
     }
   }
 
-  // === Publish Endpoints (V7.2.0) — Douyin / 汽水音乐 ===
+  // === Publish Endpoints (V7.2.0) — Multi-platform Social Publishing ===
   if (path === '/api/publish/status' && method === 'GET') {
     return publishController.status(req, res);
   }
@@ -346,6 +347,67 @@ export async function handleRoute(req, res, url, method, body) {
 
   if (path === '/api/publish/download-url' && method === 'GET') {
     return publishController.getDownloadUrl(req, res, url);
+  }
+
+  // Unified publish submit endpoint
+  if (path === '/api/publish/submit' && method === 'POST') {
+    req.body = body;
+    return publishController.submit(req, res);
+  }
+
+  // Platform-specific endpoints (thin wrappers around submit)
+  if (path === '/api/publish/rednote/note' && method === 'POST') {
+    req.body = body;
+    return publishController.publishRedNote(req, res);
+  }
+
+  if (path === '/api/publish/tiktok/video' && method === 'POST') {
+    req.body = body;
+    return publishController.publishTikTok(req, res);
+  }
+
+  if (path === '/api/publish/youtube/video' && method === 'POST') {
+    req.body = body;
+    return publishController.publishYouTube(req, res);
+  }
+
+  // Credentials management (GET loads, POST saves)
+  if (path === '/api/publish/credentials' && (method === 'GET' || method === 'POST')) {
+    req.body = body;
+    return publishController.credentials(req, res, url, method, body);
+  }
+
+  // === Auth + Library Endpoints (Phase 1 MVP - thin echo endpoints) ===
+  if (path === '/api/auth/register' && method === 'POST') {
+    req.body = body;
+    return libraryController.register(req, res);
+  }
+
+  if (path === '/api/auth/login' && method === 'POST') {
+    req.body = body;
+    return libraryController.login(req, res);
+  }
+
+  if (path === '/api/auth/me' && method === 'GET') {
+    return libraryController.me(req, res);
+  }
+
+  if (path === '/api/albums' && method === 'GET') {
+    return libraryController.listAlbums(req, res);
+  }
+
+  if (path === '/api/albums' && method === 'POST') {
+    req.body = body;
+    return libraryController.createAlbum(req, res);
+  }
+
+  if (path === '/api/songs' && method === 'GET') {
+    return libraryController.listSongs(req, res);
+  }
+
+  if (path === '/api/songs' && method === 'POST') {
+    req.body = body;
+    return libraryController.createSong(req, res);
   }
 
   // 404

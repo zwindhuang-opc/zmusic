@@ -21,7 +21,8 @@ import {
 } from '../utils/autoGenUtils.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
-import { getEngineSongCount } from '../utils/autoConfig.js';
+import { getEngineSongCount, getAutoConfig } from '../utils/autoConfig.js';
+import { applyStrategyPreset, getStrategy } from '../data/creativePresets.js';
 
 const PROMPT_INSPIRATIONS = [
   '追逐梦想的励志之歌，充满力量与希望',
@@ -315,6 +316,22 @@ function SunoPage({ onNavigate }) {
   const startAutoGeneration = useCallback(() => {
     console.log('%c[AUTO] [SunoPage] startAutoGeneration() 入口',
       'background:#16a085;color:#fff;padding:2px 6px;border-radius:3px;font-weight:bold;');
+    // Apply strategy preset from autoConfig BEFORE starting
+    try {
+      const cfg = getAutoConfig();
+      if (cfg?.selectedStrategyId) {
+        const strat = getStrategy(cfg.selectedStrategyId);
+        if (strat) {
+          autoInputSnapshotRef.current = {
+            ...applyStrategyPreset(strat, {}),
+            ...(autoInputSnapshotRef.current || {}),
+            strategyId: strat.id,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('[AUTO] strategy preset apply failed:', e);
+    }
     autoProgress.startProgress({ engine: 'suno', engineName: 'Suno AI', totalCountdown: 60 });
     // 1. Open Suno AI website tab (deduplicated by sessionStorage)
     const tabOpened = openPlatformWebsite('suno');
@@ -387,24 +404,37 @@ function SunoPage({ onNavigate }) {
         if (d1) updateHistory(d1, { creativeProcess: { snapshot: autoCreativeSnapshotRef.current, phase: '主题抽取', updatedAt: new Date().toISOString(), engine: 'Suno AI' } });
       } else if (sec === 40) {
         const themeStyle = pickRandomThemeStyle();
+        // Apply strategy preset: defaults first, then override with explicit random picks
+        let strat = null;
+        try {
+          const cfg = getAutoConfig();
+          if (cfg?.selectedStrategyId) strat = getStrategy(cfg.selectedStrategyId);
+        } catch { }
         // pickRandomSunoStyleTags() 返回 { styleKey, tags, chips } 对象，不能直接 .join()
         const sunoStyle = pickRandomSunoStyleTags();
-        const style = sunoStyle.tags; // 完整风格描述字符串
+        const rawStyle = sunoStyle.tags; // 完整风格描述字符串
         const title = generateRandomTitle(themeStyle.theme);
-        autoCreativeSnapshotRef.current = {
-          theme: themeStyle.theme, style, title,
+        const baseSnap = {
+          theme: themeStyle.theme,
+          style: rawStyle,
+          title,
           styleKey: sunoStyle.styleKey,
           styleChips: sunoStyle.chips,
           plannedAt: Date.now(), engine: 'Suno AI',
         };
+        const withStrategy = strat
+          ? { ...applyStrategyPreset(strat, {}), ...baseSnap, strategyId: strat.id }
+          : baseSnap;
+        autoCreativeSnapshotRef.current = withStrategy;
+        const stratLabel = strat ? (isZh ? strat.name?.zh : strat.name?.en || strat.id) : '';
         setAutoThoughts(prev => [...prev, {
           phase: '构思阶段 2/4', time: new Date().toLocaleTimeString(), step: 'STYLE_TITLE',
-          title: '🎨 确定风格、标题、BPM & 调性',
-          summary: `主题：${themeStyle.theme} ｜ 风格：${style} ｜ 标题：${title}`,
-          detail: `主题种子：${themeStyle.theme} (情感方向: ${themeStyle.style})\n风格标签：${style}\n标题：${title}\n下一步：20s 内完成 BPM/调性 抽取 + 歌词创作。`,
+          title: '🎨 确定风格、标题、BPM & 调性' + (strat ? ` · 预设: ${stratLabel}` : ''),
+          summary: `主题：${themeStyle.theme} ｜ 风格：${withStrategy.style} ｜ 标题：${withStrategy.title}` + (withStrategy.bpm ? ` ｜ 预设BPM: ${withStrategy.bpm}` : ''),
+          detail: `主题种子：${themeStyle.theme} (情感方向: ${themeStyle.style})\n风格标签：${withStrategy.style}\n标题：${withStrategy.title}` + (strat ? `\n🎯 创作策略: ${stratLabel} — ${isZh ? strat.description?.zh : strat.description?.en || ''}` : '') + `\n下一步：20s 内完成 BPM/调性 抽取 + 歌词创作。`,
         }]);
         const d2 = autoDraftHistoryIdRef.current;
-        if (d2) updateHistory(d2, { title: `🎵 ${title} - Suno AI AUTO 创作中`, style, creativeProcess: { snapshot: autoCreativeSnapshotRef.current, phase: '风格与标题', updatedAt: new Date().toISOString(), engine: 'Suno AI' } });
+        if (d2) updateHistory(d2, { title: `🎵 ${withStrategy.title} - Suno AI AUTO 创作中`, style: withStrategy.style, creativeProcess: { snapshot: autoCreativeSnapshotRef.current, phase: '风格与标题', updatedAt: new Date().toISOString(), engine: 'Suno AI' } });
       } else if (sec === 20) {
         const snap = autoCreativeSnapshotRef.current || {};
         const bpm = 90 + Math.floor(Math.random() * 70);

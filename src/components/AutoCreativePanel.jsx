@@ -17,8 +17,11 @@
  *   - Melo AI:   Amber/orange (sunset/warmth)
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Brain, X, Sparkles, Music2, Copy, Check } from 'lucide-react';
+import { Brain, X, Sparkles, Music2, Copy, Check, Target } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
+import StrategySelector from './StrategySelector.jsx';
+import { getAutoConfig, setAutoConfig } from '../utils/autoConfig.js';
+import { getStrategy } from '../data/creativePresets.js';
 
 const ENGINE_THEMES = {
   'Muse AI': {
@@ -102,8 +105,18 @@ export default function AutoCreativePanel({
 }) {
   const scrollRef = useRef(null);
   const [copiedIdx, setCopiedIdx] = useState(-1);
+  const [selectedStrategyId, setSelectedStrategyId] = useState(() => {
+    try { return getAutoConfig()?.selectedStrategyId || null; } catch { return null; }
+  });
+  const [strategyOpen, setStrategyOpen] = useState(false);
   const theme = ENGINE_THEMES[engineName] || DEFAULT_THEME;
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
+  const isZh = lang === 'zh';
+
+  const handleSelectStrategy = (id) => {
+    setSelectedStrategyId(id || null);
+    try { setAutoConfig({ selectedStrategyId: id || null }); } catch { }
+  };
 
   const extractThoughtText = (thought) => {
     let text = '';
@@ -170,6 +183,34 @@ export default function AutoCreativePanel({
         >
           <X className="w-4 h-4 text-gray-400" />
         </button>
+      </div>
+
+      {/* Strategy preset + settings bar */}
+      <div className={`px-3 pt-3 pb-2 border-b ${theme.border} bg-gradient-to-r ${theme.bgHeader}`}>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5 mb-0.5 px-1">
+            <Target className={`w-3.5 h-3.5 ${theme.thoughtText}`} />
+            <span className="text-[10.5px] font-bold text-gray-300">
+              {isZh ? '创作策略预设 · 应用到 AUTO 模式' : 'Strategy Preset · Applied to AUTO Mode'}
+            </span>
+            {selectedStrategyId && (() => {
+              const s = getStrategy(selectedStrategyId);
+              return s ? (
+                <span className="ml-auto inline-flex items-center gap-1 text-[9.5px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">
+                  <Check className="w-2.5 h-2.5" />
+                  {isZh ? '已应用' : 'Applied'} · {isZh ? s.name?.zh : s.name?.en || s.id}
+                </span>
+              ) : null;
+            })()}
+          </div>
+          <StrategySelector
+            selectedId={selectedStrategyId}
+            onSelect={handleSelectStrategy}
+            collapsed={!strategyOpen}
+            onToggleCollapsed={() => setStrategyOpen(v => !v)}
+            compact
+          />
+        </div>
       </div>
 
       {/* Thought stream */}

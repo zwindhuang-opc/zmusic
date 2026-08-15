@@ -1,17 +1,73 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Key, Save, RefreshCw, Server, Bot, Cpu, CheckCircle, AlertCircle, Sparkles, Wand2, Sliders, Music, RotateCcw, Gauge, Clock } from 'lucide-react';
+import { Settings, Key, Save, RefreshCw, Server, Bot, Cpu, CheckCircle, AlertCircle, Sparkles, Wand2, Sliders, Music, RotateCcw, Gauge, Clock, Video, BookOpen, Youtube, Trash2 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
 import { getAutoConfig, setAutoConfig, AUTO_DEFAULTS } from '../utils/autoConfig.js';
 
 const UI_MODE_KEY = 'zmusic-ui-mode';
+const PUBLISH_ACCOUNTS_KEY = 'zmusic_publish_accounts';
+
+const PUBLISH_PLATFORMS = [
+  {
+    id: 'douyin',
+    name: { zh: '抖音', en: 'Douyin' },
+    color: 'from-rose-500 to-pink-600',
+    icon: <Video className="w-4 h-4 text-white" />,
+    portal: 'https://creator.douyin.com',
+  },
+  {
+    id: 'qishui',
+    name: { zh: '汽水音乐', en: 'Qishui' },
+    color: 'from-cyan-500 to-blue-600',
+    icon: <Music className="w-4 h-4 text-white" />,
+    portal: 'https://musician.douyin.com',
+  },
+  {
+    id: 'rednote',
+    name: { zh: '小红书', en: 'RedNote' },
+    color: 'from-red-500 to-rose-600',
+    icon: <BookOpen className="w-4 h-4 text-white" />,
+    portal: 'https://creator.xiaohongshu.com',
+  },
+  {
+    id: 'tiktok',
+    name: { zh: 'TikTok', en: 'TikTok' },
+    color: 'from-slate-700 to-black',
+    icon: <Video className="w-4 h-4 text-white" />,
+    portal: 'https://www.tiktok.com/creator',
+  },
+  {
+    id: 'youtube',
+    name: { zh: 'YouTube', en: 'YouTube' },
+    color: 'from-red-600 to-red-700',
+    icon: <Youtube className="w-4 h-4 text-white" />,
+    portal: 'https://studio.youtube.com',
+  },
+];
+
+function loadPublishAccounts() {
+  try {
+    const raw = localStorage.getItem(PUBLISH_ACCOUNTS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePublishAccounts(accounts) {
+  localStorage.setItem(PUBLISH_ACCOUNTS_KEY, JSON.stringify(accounts));
+}
 
 function SettingsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isZh = i18n.language === 'zh';
   const [config, setConfig] = useState(null);
   const [agentStatus, setAgentStatus] = useState(null);
   const [saved, setSaved] = useState(false);
   const [autoConfig, setAutoConfigState] = useState(getAutoConfig());
+  const [publishAccounts, setPublishAccounts] = useState(loadPublishAccounts());
+  const [publishFormState, setPublishFormState] = useState({});
+  const [publishSavedStates, setPublishSavedStates] = useState({});
 
   const updateAutoConfig = (partial) => {
     const updated = setAutoConfig(partial);
@@ -359,6 +415,158 @@ function SettingsPage() {
           <div className="text-[10px] text-gray-500">
             配置自动保存到本地存储
           </div>
+        </div>
+      </div>
+
+      <div className="gradient-border p-4 md:p-5">
+        <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
+          <Key className="w-4 h-4 text-pink-400" />
+          {isZh ? '发布平台账号管理' : 'Publish Platform Accounts'}
+        </h3>
+        <div className="space-y-4">
+          {PUBLISH_PLATFORMS.map((p) => {
+            const existing = publishAccounts[p.id] || {};
+            const formData = publishFormState[p.id] || {
+              id: existing.id || '',
+              name: existing.name || '',
+              password: existing.password || '',
+              token: existing.token || '',
+            };
+            const isSaved = publishSavedStates[p.id] || (!!existing.name || !!existing.id);
+
+            const updateField = (field, value) => {
+              setPublishFormState({
+                ...publishFormState,
+                [p.id]: { ...formData, [field]: value },
+              });
+            };
+
+            const handleSave = () => {
+              const merged = {
+                id: formData.id?.trim() || '',
+                name: formData.name?.trim() || '',
+                password: formData.password || '',
+                token: formData.token || '',
+              };
+              const next = { ...publishAccounts, [p.id]: merged };
+              setPublishAccounts(next);
+              savePublishAccounts(next);
+              setPublishSavedStates({ ...publishSavedStates, [p.id]: true });
+              setTimeout(() => {
+                setPublishSavedStates((s) => ({ ...s, [p.id]: false }));
+              }, 2000);
+            };
+
+            const handleClear = () => {
+              const next = { ...publishAccounts };
+              delete next[p.id];
+              setPublishAccounts(next);
+              savePublishAccounts(next);
+              setPublishFormState({
+                ...publishFormState,
+                [p.id]: { id: '', name: '', password: '', token: '' },
+              });
+            };
+
+            return (
+              <div key={p.id} className="p-3 rounded-lg bg-white/5 border border-white/10">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${p.color} flex items-center justify-center shadow-lg`}>
+                      {p.icon}
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-white">
+                        {isZh ? p.name.zh : p.name.en}
+                      </div>
+                      <a
+                        href={p.portal}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-blue-400 hover:text-blue-300 underline"
+                      >
+                        {isZh ? '创作者平台' : 'Creator Portal'} →
+                      </a>
+                    </div>
+                  </div>
+                  {isSaved && (
+                    <span className="text-[10px] text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                      <CheckCircle className="w-3 h-3" />
+                      {isZh ? '已保存' : t('publish.account_saved')}
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                  <div>
+                    <div className="text-[10px] text-gray-500 mb-1">
+                      {isZh ? '账号 ID' : 'Account ID'}
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.id}
+                      onChange={(e) => updateField('id', e.target.value)}
+                      placeholder={isZh ? '如：抖音号 / 用户ID' : 'e.g. User ID'}
+                      className="w-full bg-black/30 border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-white placeholder-gray-600 focus:border-pink-500/50 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-gray-500 mb-1">
+                      {isZh ? '账号名称' : 'Account Name'}
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => updateField('name', e.target.value)}
+                      placeholder={isZh ? '昵称 / 用户名' : 'Nickname / Username'}
+                      className="w-full bg-black/30 border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-white placeholder-gray-600 focus:border-pink-500/50 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-gray-500 mb-1">
+                      {isZh ? '密码' : 'Password'}
+                    </div>
+                    <input
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => updateField('password', e.target.value)}
+                      placeholder={isZh ? '登录密码' : 'Login password'}
+                      className="w-full bg-black/30 border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-white placeholder-gray-600 focus:border-pink-500/50 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-gray-500 mb-1">
+                      {isZh ? '令牌 / Token' : 'Token / API Key'}
+                    </div>
+                    <input
+                      type="password"
+                      value={formData.token}
+                      onChange={(e) => updateField('token', e.target.value)}
+                      placeholder={isZh ? 'API Token / Cookie / RefreshToken' : 'API Token / Cookie / RefreshToken'}
+                      className="w-full bg-black/30 border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-white placeholder-gray-600 focus:border-pink-500/50 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSave}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-medium hover:from-pink-600 hover:to-rose-600 transition-all shadow-lg shadow-pink-500/20"
+                  >
+                    <Save className="w-3 h-3" />
+                    {t('common.save')}
+                  </button>
+                  <button
+                    onClick={handleClear}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/5 text-gray-300 text-xs hover:bg-white/10 transition-all border border-white/10"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    {t('common.clear')}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

@@ -3,7 +3,8 @@ import {
   Music, Mic, Video, Activity, TrendingUp, Cpu, Bot, Sparkles,
   BarChart3, Server, Zap, ChevronRight, AlertTriangle, X,
   CheckCircle, ShieldCheck, RotateCcw, Headphones, Globe2,
-  Lightbulb, Clock, BookOpen, ChevronDown, ChevronUp
+  Lightbulb, Clock, BookOpen, ChevronDown, ChevronUp,
+  Library, Target, ListChecks, FolderHeart, LogIn
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
@@ -30,6 +31,13 @@ function Dashboard({ apiStatus, agentStatus, onNavigate }) {
     { title: t('dashboard.active_users'), value: stats.activeUsers, icon: Activity, color: 'from-emerald-500 to-teal-500', page: null },
     // 5th card: 创作构思记录簿（包含成功 + 失败的全部构思过程）
     { title: '创作构思记录簿', value: stats.creationAttempts + stats.songsGenerated, icon: Lightbulb, color: 'from-amber-500 via-orange-500 to-rose-500', page: null, extraHint: '成功+失败的全部创作思考' },
+  ];
+
+  const workbenchCards = [
+    { title: t('nav.library'), subtitle: 'Songs · Albums · Favorites', icon: FolderHeart, color: 'from-fuchsia-500 via-purple-500 to-indigo-500', page: 'library' },
+    { title: t('nav.quality'), subtitle: 'Score · Metrics · Regen Gate', icon: Target, color: 'from-rose-500 via-red-500 to-orange-500', page: 'quality' },
+    { title: t('nav.batch'), subtitle: 'CSV upload · Queue ETA · ZIP', icon: ListChecks, color: 'from-cyan-500 via-sky-500 to-blue-500', page: 'batch' },
+    { title: t('nav.analytics'), subtitle: 'Engines · Habits · Credit', icon: BarChart3, color: 'from-emerald-500 via-teal-500 to-cyan-500', page: 'analytics' },
   ];
 
   const agentMethods = [
@@ -192,6 +200,30 @@ function Dashboard({ apiStatus, agentStatus, onNavigate }) {
               </div>
               <div className="text-2xl md:text-2xl font-bold text-white mb-1">{stat.value}</div>
               <div className="text-xs text-gray-400">{stat.title}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Workbench: Library / Quality / Batch / Analytics quick access cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        {workbenchCards.map((card, i) => {
+          const Icon = card.icon;
+          const isClickable = card.page && onNavigate;
+          return (
+            <div
+              key={i}
+              className={`gradient-border p-4 md:p-5 ${isClickable ? 'cursor-pointer hover:scale-[1.02] transition-transform' : ''}`}
+              onClick={() => isClickable && onNavigate(card.page)}
+            >
+              <div className="flex items-start justify-between mb-2 md:mb-3">
+                <div className={`w-10 h-10 md:w-9 md:h-9 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center shadow-lg shadow-white/5`}>
+                  <Icon className="w-5 h-5 md:w-4 md:h-4 text-white" />
+                </div>
+                {isClickable && <ChevronRight className="w-4 h-4 md:w-3.5 md:h-3.5 text-gray-400" />}
+              </div>
+              <div className="text-sm md:text-base font-bold text-white mb-0.5">{card.title}</div>
+              <div className="text-[10px] md:text-xs text-gray-500 leading-relaxed">{card.subtitle}</div>
             </div>
           );
         })}

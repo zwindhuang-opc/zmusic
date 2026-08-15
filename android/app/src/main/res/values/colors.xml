@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ZMusic dark UI palette — matches the web app's dark gradient theme (#0a0a0f → #0f0a1a). -->
+
+    <!-- Window / screen background — the MOST IMPORTANT colour for preventing
+         "black screen" flashes. Every window surface, including the brief moment
+         between splash-screen hide and the first WebView paint, uses this. -->
+    <color name="colorWindowBackground">#0a0a0f</color>
+
+    <!-- AppCompat theme primaries (referenced from styles.xml). -->
+    <color name="colorPrimary">#7c3aed</color>      <!-- violet-600 -->
+    <color name="colorPrimaryDark">#5b21b6</color>  <!-- violet-800 (status bar) -->
+    <color name="colorAccent">#ec4899</color>       <!-- pink-500 -->
+
+    <!-- Legacy Capacitor / compat aliases — referenced by some support lib versions. -->
+    <color name="splashBackground">#0a0a0f</color>
+</resources>

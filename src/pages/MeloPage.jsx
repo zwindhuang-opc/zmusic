@@ -21,8 +21,9 @@ import {
 } from '../utils/autoGenUtils.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
-import { getEngineSongCount } from '../utils/autoConfig.js';
+import { getEngineSongCount, getAutoConfig } from '../utils/autoConfig.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
+import { applyStrategyPreset, getStrategy } from '../data/creativePresets.js';
 
 const API_BASE = '/api';
 
@@ -412,6 +413,22 @@ function MeloPage({ onNavigate }) {
   const startAutoGeneration = useCallback(() => {
     console.log('%c[AUTO] [MeloPage] startAutoGeneration() 入口',
       'background:#16a085;color:#fff;padding:2px 6px;border-radius:3px;font-weight:bold;');
+    // Apply strategy preset from autoConfig BEFORE starting
+    try {
+      const cfg = getAutoConfig();
+      if (cfg?.selectedStrategyId) {
+        const strat = getStrategy(cfg.selectedStrategyId);
+        if (strat) {
+          autoInputSnapshotRef.current = {
+            ...applyStrategyPreset(strat, {}),
+            ...(autoInputSnapshotRef.current || {}),
+            strategyId: strat.id,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('[AUTO] strategy preset apply failed:', e);
+    }
     autoProgress.startProgress({ engine: 'melo', engineName: 'Melo AI', totalCountdown: 60 });
     // 1. Open Melo AI website tab (deduplicated by sessionStorage)
     const tabOpened = openPlatformWebsite('melo');
@@ -484,13 +501,19 @@ function MeloPage({ onNavigate }) {
         if (d1) updateHistory(d1, { creativeProcess: { snapshot: autoCreativeSnapshotRef.current, phase: '主题抽取', updatedAt: new Date().toISOString(), engine: 'Melo AI' } });
       } else if (sec === 40) {
         const themeStyle = pickRandomThemeStyle();
+        // Apply strategy preset: defaults first, then override with explicit picks
+        let strat = null;
+        try {
+          const cfg = getAutoConfig();
+          if (cfg?.selectedStrategyId) strat = getStrategy(cfg.selectedStrategyId);
+        } catch { }
         // pickRandomMeloTags() 返回 { genres: [], moods: [] } 对象，不能直接当数组用
         const meloTags = pickRandomMeloTags();
         const genreList = meloTags.genres || [];
         const moodList = meloTags.moods || [];
         const styleStr = [...genreList, ...moodList].join(',');
         const title = generateRandomTitle(themeStyle.theme);
-        autoCreativeSnapshotRef.current = {
+        const baseSnap = {
           theme: themeStyle.theme,
           style: styleStr,
           genres: genreList,
@@ -499,14 +522,21 @@ function MeloPage({ onNavigate }) {
           plannedAt: Date.now(),
           engine: 'Melo AI',
         };
+        const withStrategy = strat
+          ? { ...applyStrategyPreset(strat, {}), ...baseSnap, strategyId: strat.id }
+          : baseSnap;
+        autoCreativeSnapshotRef.current = withStrategy;
+        const stratLabel = strat ? (isZh ? strat.name?.zh : strat.name?.en || strat.id) : '';
+        const finalGenres = withStrategy.genres || genreList;
+        const finalMoods = withStrategy.moods || moodList;
         setAutoThoughts(prev => [...prev, {
           phase: '构思阶段 2/4', time: new Date().toLocaleTimeString(), step: 'STYLE_TITLE',
-          title: '🎨 确定曲风、标题、BPM & 调性',
-          summary: `主题：${themeStyle.theme} ｜ 曲风：${genreList.join(' / ')} ｜ 情绪：${moodList.join(' / ')} ｜ 标题：${title}`,
-          detail: `主题种子：${themeStyle.theme} (情感方向: ${themeStyle.style})\n曲风标签：${genreList.join(' , ')}\n情绪标签：${moodList.join(' , ')}\n标题：${title}\n下一步：20s 内完成 BPM/调性 + 全曲歌词创作。`,
+          title: '🎨 确定曲风、标题、BPM & 调性' + (strat ? ` · 预设: ${stratLabel}` : ''),
+          summary: `主题：${withStrategy.theme} ｜ 曲风：${finalGenres.join(' / ')} ｜ 情绪：${finalMoods.join(' / ')} ｜ 标题：${withStrategy.title}` + (withStrategy.bpm ? ` ｜ 预设BPM: ${withStrategy.bpm}` : ''),
+          detail: `主题种子：${withStrategy.theme} (情感方向: ${themeStyle.style})\n曲风标签：${finalGenres.join(' , ')}\n情绪标签：${finalMoods.join(' , ')}\n标题：${withStrategy.title}` + (strat ? `\n🎯 创作策略: ${stratLabel} — ${isZh ? strat.description?.zh : strat.description?.en || ''}` : '') + `\n下一步：20s 内完成 BPM/调性 + 全曲歌词创作。`,
         }]);
         const d2 = autoDraftHistoryIdRef.current;
-        if (d2) updateHistory(d2, { title: `🎧 ${title} - Melo AI AUTO 创作中`, style: styleStr, creativeProcess: { snapshot: autoCreativeSnapshotRef.current, phase: '风格与标题', updatedAt: new Date().toISOString(), engine: 'Melo AI' } });
+        if (d2) updateHistory(d2, { title: `🎧 ${withStrategy.title} - Melo AI AUTO 创作中`, style: withStrategy.style, creativeProcess: { snapshot: autoCreativeSnapshotRef.current, phase: '风格与标题', updatedAt: new Date().toISOString(), engine: 'Melo AI' } });
       } else if (sec === 20) {
         const snap = autoCreativeSnapshotRef.current || {};
         const bpm = 90 + Math.floor(Math.random() * 70);

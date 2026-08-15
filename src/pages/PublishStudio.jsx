@@ -3,11 +3,13 @@ import {
   Upload, Download, Send, Youtube, Music2, Lightbulb,
   CheckCircle, AlertCircle, RefreshCw, Link, FileAudio, FileVideo,
   Zap, Copy, Check, User, Clock, StepForward, XCircle, Eye,
-  BookOpen, Tag, Video,
+  BookOpen, Tag, Video, Settings, X, ExternalLink, BookMarked,
+  ChevronDown, ChevronUp, Package,
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
 import DouyinService from '../services/douyin.service.js';
+import SocialPublishService from '../services/socialPublish.service.js';
 
 const PLATFORMS = [
   {
@@ -19,7 +21,6 @@ const PLATFORMS = [
       zh: '短视频平台，适合 15-60 秒配乐短视频 + 音乐人单曲上传',
       en: 'Short-video platform, ideal for 15-60s clips + musician uploads',
     },
-    account: { id: 'z.music.z', name: 'ZMUSIC', password: 'vgbzg92x' },
   },
   {
     id: 'qishui',
@@ -30,7 +31,36 @@ const PLATFORMS = [
       zh: 'TME 旗下长音频流媒体 — 正式单曲发布，同步至抖音 BGM 曲库',
       en: 'Tencent Music long-audio — official single release, synced to Douyin BGM lib',
     },
-    account: { id: 'z.music.z', name: 'ZMUSIC' },
+  },
+  {
+    id: 'rednote',
+    name: { zh: '小红书', en: 'RedNote' },
+    icon: <BookOpen className="w-5 h-5" />,
+    color: 'from-red-500 to-rose-600',
+    desc: {
+      zh: '图文 + 短视频种草社区，适合配乐 Vlog、生活记录、音乐分享笔记',
+      en: 'Image + short-video lifestyle community, great for Vlogs and music sharing notes',
+    },
+  },
+  {
+    id: 'tiktok',
+    name: { zh: 'TikTok', en: 'TikTok' },
+    icon: <Zap className="w-5 h-5" />,
+    color: 'from-slate-900 via-fuchsia-500 to-cyan-400',
+    desc: {
+      zh: '国际版抖音，连接 VPN 后可直传，面向全球用户的短视频创作平台',
+      en: 'International TikTok, direct upload when VPN connected, global short-video platform',
+    },
+  },
+  {
+    id: 'youtube',
+    name: { zh: 'YouTube', en: 'YouTube' },
+    icon: <Youtube className="w-5 h-5" />,
+    color: 'from-red-600 to-red-700',
+    desc: {
+      zh: 'Google 账号登录，YouTube Studio 发布长视频 / Shorts，全球最大视频平台',
+      en: 'Google account login, YouTube Studio for long video / Shorts, world\'s largest video platform',
+    },
   },
 ];
 
@@ -44,31 +74,44 @@ const STATUS_LABEL = {
   manual: { zh: '请手动发布', en: 'Manual upload required' },
 };
 
+function loadAccounts() {
+  try {
+    const raw = localStorage.getItem('zmusic_publish_accounts');
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
 export default function PublishStudio({ onNavigate }) {
   const { t, lang } = useTranslation();
   const isZh = lang === 'zh';
   const { history, copyToClipboard, showToast } = useGeneration();
 
-  // Step state (wizard)
   const [step, setStep] = useState(1);
-  // Publish config
   const [selectedSongId, setSelectedSongId] = useState(null);
-  const [platforms, setPlatforms] = useState({ douyin: true, qishui: false });
+  const [platforms, setPlatforms] = useState({ douyin: false, qishui: false, rednote: false, tiktok: false, youtube: false });
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [hashtags, setHashtags] = useState([]);
   const [customTag, setCustomTag] = useState('');
   const [coverDataUrl, setCoverDataUrl] = useState(null);
-  // Job status
   const [status, setStatus] = useState('idle');
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState(null);
   const [shareLinks, setShareLinks] = useState([]);
   const [copiedTag, setCopiedTag] = useState(null);
+  const [accounts, setAccounts] = useState(loadAccounts());
+  const [configurePlatform, setConfigurePlatform] = useState(null);
+  const [cfgForm, setCfgForm] = useState({ id: '', name: '', password: '' });
+
+  const [verticalVideo, setVerticalVideo] = useState(false);
+  const [advOpen, setAdvOpen] = useState(false);
+  const [bitrate, setBitrate] = useState('320');
+  const [loadingZip, setLoadingZip] = useState(false);
 
   const pick = (n) => (isZh ? n?.zh : n?.en);
 
-  // Song library - songs with audio
   const songList = history.filter(h => (h.type === 'song' || h.type === 'mv') && h.audioUrl).slice(0, 50);
   const selectedSong = songList.find(s => s.id === selectedSongId);
 
@@ -104,12 +147,50 @@ export default function PublishStudio({ onNavigate }) {
   };
 
   const canProceedStep1 = !!selectedSongId;
-  const canProceedStep2 = platforms.douyin || platforms.qishui;
+  const canProceedStep2 = Object.values(platforms).some(Boolean);
   const canPublish = title.trim() && canProceedStep1 && canProceedStep2;
 
   const fullCaption = () => {
     const tags = hashtags.map(h => `#${h}`).join(' ');
     return [title, description, tags].filter(Boolean).join('\n');
+  };
+
+  const openConfigure = (p) => {
+    const stored = accounts[p.id] || {};
+    setCfgForm({
+      id: stored.id || '',
+      name: stored.name || '',
+      password: stored.password || '',
+    });
+    setConfigurePlatform(p);
+  };
+
+  const saveConfigure = () => {
+    if (!configurePlatform) return;
+    const updated = { ...accounts };
+    if (cfgForm.id || cfgForm.name || cfgForm.password) {
+      updated[configurePlatform.id] = { ...cfgForm };
+    } else {
+      delete updated[configurePlatform.id];
+    }
+    localStorage.setItem('zmusic_publish_accounts', JSON.stringify(updated));
+    setAccounts(updated);
+    setConfigurePlatform(null);
+    showToast?.(t('publish.account_saved'), 'success');
+  };
+
+  const clearConfigure = () => {
+    if (!configurePlatform) return;
+    const updated = { ...accounts };
+    delete updated[configurePlatform.id];
+    localStorage.setItem('zmusic_publish_accounts', JSON.stringify(updated));
+    setAccounts(updated);
+    setCfgForm({ id: '', name: '', password: '' });
+    showToast?.(t('publish.account_cleared'), 'info');
+  };
+
+  const getPlatformAccount = (platId) => {
+    return accounts[platId] || null;
   };
 
   const doPublish = async () => {
@@ -121,45 +202,111 @@ export default function PublishStudio({ onNavigate }) {
 
     try {
       const song = selectedSong;
-      const fileSize = song.duration ? Math.floor(song.duration * 256 * 128) : 0; // rough estimate
+      showToast?.(t('publish.fetching_file'), 'info');
 
-      const tasks = [];
-      if (platforms.douyin) tasks.push('douyin');
-      if (platforms.qishui) tasks.push('qishui');
+      let audioBlob = null;
+      let videoBlob = null;
+      let coverBlob = null;
 
+      try {
+        if (song.audioUrl) {
+          audioBlob = await fetch(song.audioUrl).then(r => r.blob());
+        }
+      } catch (e) { console.warn('audio fetch failed:', e); }
+
+      try {
+        if (song.videoUrl) {
+          videoBlob = await fetch(song.videoUrl).then(r => r.blob());
+        }
+      } catch (e) { console.warn('video fetch failed:', e); }
+
+      try {
+        if (song.imageUrl) {
+          coverBlob = await fetch(song.imageUrl).then(r => r.blob());
+        }
+      } catch (e) { console.warn('cover fetch failed:', e); }
+
+      setProgress(0.08);
+
+      const tasks = Object.entries(platforms).filter(([, v]) => v).map(([k]) => k);
       const results = [];
 
       for (let i = 0; i < tasks.length; i++) {
         const plat = tasks[i];
-        setStatus(plat === 'douyin' ? 'uploading' : 'submitting');
-        setProgress(0.1 + (0.8 * (i + 0.5) / tasks.length));
+        const platMeta = PLATFORMS.find(p => p.id === plat);
+        setStatus('uploading');
+        const baseProgress = 0.1 + (0.85 * i) / tasks.length;
+        setProgress(baseProgress);
+
+        const uploadingMsg = t('publish.uploading_to_platform').replace('{platform}', pick(platMeta?.name) || plat);
+        if (i === 0) showToast?.(uploadingMsg, 'info');
 
         try {
-          if (plat === 'douyin') {
-            const res = await fetch('/api/publish/douyin/video', {
+          const file = videoBlob || audioBlob;
+          const fileSize = file?.size || 0;
+          const mimeType = song.type === 'mv' ? (videoBlob?.type || 'video/mp4') : (audioBlob?.type || 'audio/mpeg');
+
+          let res = null;
+          let backendReached = false;
+
+          try {
+            const payload = {
+              platform: plat,
+              title,
+              description,
+              hashtags,
+              audioUrl: song.audioUrl,
+              videoUrl: song.videoUrl,
+              coverUrl: song.imageUrl,
+              fileSize,
+              mimeType,
+              account: getPlatformAccount(plat),
+              orientation: verticalVideo ? 'vertical' : undefined,
+            };
+            const httpRes = await fetch('/api/publish/submit', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                title,
-                description,
-                hashtags,
-                audioUrl: song.audioUrl,
-                videoUrl: song.videoUrl,
-                fileSize,
-                mimeType: song.type === 'mv' ? 'video/mp4' : 'audio/mpeg',
-              }),
-            }).then(r => r.json());
-            results.push({ platform: plat, ...res });
-          } else {
-            const res = await fetch('/api/publish/qishui/track', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ title, author: 'ZMUSIC', style: song.style || '' }),
-            }).then(r => r.json());
-            results.push({ platform: plat, ...res });
+              body: JSON.stringify(payload),
+            });
+            if (httpRes.ok) {
+              res = await httpRes.json();
+              backendReached = true;
+            }
+          } catch (e) {
+            console.warn(`Backend /api/publish/submit unavailable for ${plat}, fallback to frontend helper`, e);
           }
+
+          if (!backendReached || !res) {
+            const onProgressLocal = (p) => {
+              setProgress(baseProgress + 0.85 * p / tasks.length);
+            };
+            res = await SocialPublishService.publish(plat, {
+              file,
+              title,
+              description,
+              hashtags,
+              coverFile: coverBlob,
+              videoFile: videoBlob,
+              style: song.style || '',
+              theme: song.creativeProcess?.snapshot?.theme || '',
+              engine: song.engine || '',
+            }, onProgressLocal);
+          }
+
+          setProgress(baseProgress + 0.85 / tasks.length);
+          results.push({ platform: plat, ...res });
+
         } catch (e) {
-          results.push({ platform: plat, success: false, error: e.message, fallback: true });
+          const meta = SocialPublishService.PLATFORM_META?.[plat];
+          results.push({
+            platform: plat,
+            success: false,
+            fallback: true,
+            error: e.message,
+            manualSteps: meta?.manualSteps,
+            creatorPortalUrl: meta?.creatorPortalUrl,
+            account: getPlatformAccount(plat) || meta?.defaultAccount,
+          });
         }
       }
 
@@ -197,7 +344,6 @@ export default function PublishStudio({ onNavigate }) {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header */}
       <div className="gradient-border p-4 md:p-6">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
           <div className="flex items-center gap-3">
@@ -210,15 +356,15 @@ export default function PublishStudio({ onNavigate }) {
               </h1>
               <p className="text-xs text-gray-500 mt-0.5">
                 {isZh
-                  ? '一键分发您的 AI 作品到 抖音 / 汽水音乐，支持生成发布内容、打包文件'
-                  : 'One-click distribute your AI songs to Douyin and Qishui Music'}
+                  ? '一键分发您的 AI 作品到 5 大平台，支持生成发布内容、打包文件'
+                  : 'One-click distribute your AI songs to 5 major platforms'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 text-xs text-gray-400">
               <User className="w-3.5 h-3.5" />
-              <span className="font-medium">ZMUSIC (z.music.z)</span>
+              <span className="font-medium">{accounts.douyin?.name || 'ZMUSIC'}</span>
             </div>
             <button
               onClick={resetPublish}
@@ -230,7 +376,6 @@ export default function PublishStudio({ onNavigate }) {
           </div>
         </div>
 
-        {/* Step progress bar */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2 text-[11px] md:text-xs">
             {[
@@ -255,7 +400,6 @@ export default function PublishStudio({ onNavigate }) {
           </div>
         </div>
 
-        {/* STEP 1: Song picker */}
         {step === 1 && (
           <div className="space-y-4 animate-fade-in">
             <div className="text-sm font-bold text-white">{isZh ? '① 选择要发布的歌曲或 MV' : '① Pick a song or MV to publish'}</div>
@@ -317,47 +461,100 @@ export default function PublishStudio({ onNavigate }) {
           </div>
         )}
 
-        {/* STEP 2: Platforms */}
         {step === 2 && (
           <div className="space-y-4 animate-fade-in">
             <div className="text-sm font-bold text-white">{isZh ? '② 选择发布平台' : '② Choose platforms'}</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {PLATFORMS.map(p => {
                 const active = !!platforms[p.id];
+                const account = getPlatformAccount(p.id);
                 return (
-                  <button
+                  <div
                     key={p.id}
-                    onClick={() => setPlatforms(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
-                    className={`text-left p-4 rounded-xl border-2 transition-all ${active
+                    className={`rounded-xl border-2 transition-all ${active
                       ? `bg-gradient-to-br ${p.color} bg-opacity-10 border-transparent shadow-lg`
                       : 'bg-white/[0.03] border-white/10 hover:bg-white/[0.06] hover:border-white/20'
                       }`}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className={`w-11 h-11 rounded-lg bg-gradient-to-br ${p.color} flex items-center justify-center text-white shadow-lg`}>
-                        {p.icon}
+                    <button
+                      onClick={() => setPlatforms(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
+                      className="text-left w-full p-4"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className={`w-11 h-11 rounded-lg bg-gradient-to-br ${p.color} flex items-center justify-center text-white shadow-lg`}>
+                          {p.icon}
+                        </div>
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${active ? 'border-white bg-white/20' : 'border-white/20'}`}>
+                          {active && <Check className="w-4 h-4 text-white" />}
+                        </div>
                       </div>
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${active ? 'border-white bg-white/20' : 'border-white/20'}`}>
-                        {active && <Check className="w-4 h-4 text-white" />}
+                      <div className={`text-base font-bold mb-1 ${active ? 'text-white' : 'text-white/90'}`}>
+                        {pick(p.name)}
+                      </div>
+                      <div className={`text-[11px] leading-relaxed ${active ? 'text-white/80' : 'text-gray-500'}`}>
+                        {pick(p.desc)}
+                      </div>
+                      {p.id === 'tiktok' && (
+                        <div className={`mt-2 text-[10px] flex items-center gap-1 ${active ? 'text-amber-200/90' : 'text-amber-500/80'}`}>
+                          <AlertCircle className="w-3 h-3" />
+                          {t('publish.vpn_required_hint')}
+                        </div>
+                      )}
+                    </button>
+                    <div className="px-4 pb-3 pt-0 border-t border-white/5">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[10.5px] text-gray-500/90 bg-black/20 rounded-lg p-2 border border-white/5 flex-1 mr-2 min-w-0">
+                          {account ? (
+                            <>
+                              <div className="flex items-center gap-1.5 mb-0.5"><User className="w-3 h-3 inline" /> <b className="truncate">{account.name || '(no name)'}</b></div>
+                              {account.id && <div className="font-mono truncate">ID: {account.id}</div>}
+                              {account.password && <div className="font-mono truncate">PW: {'•'.repeat(Math.min(account.password.length, 6))}</div>}
+                            </>
+                          ) : (
+                            <div className="text-gray-500 italic">({isZh ? '设置中配置账号' : 'configure in settings'})</div>
+                          )}
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); openConfigure(p); }}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-[10.5px] text-gray-300 transition-colors flex-shrink-0"
+                        >
+                          <Settings className="w-3 h-3" />
+                          <span className="hidden sm:inline">{t('publish.configure_account')}</span>
+                        </button>
                       </div>
                     </div>
-                    <div className={`text-base font-bold mb-1 ${active ? 'text-white' : 'text-white/90'}`}>
-                      {pick(p.name)}
-                    </div>
-                    <div className={`text-[11px] leading-relaxed ${active ? 'text-white/80' : 'text-gray-500'}`}>
-                      {pick(p.desc)}
-                    </div>
-                    {p.account && (
-                      <div className="mt-3 text-[10.5px] text-gray-500/90 bg-black/20 rounded-lg p-2 border border-white/5">
-                        <div className="flex items-center gap-1.5 mb-0.5"><User className="w-3 h-3 inline" /> <b>{p.account.name}</b></div>
-                        <div className="font-mono">ID: {p.account.id}</div>
-                        {p.account.password && <div className="font-mono">PW: {p.account.password}</div>}
-                      </div>
-                    )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
+            {(platforms.tiktok || platforms.douyin || platforms.rednote) && (
+              <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-3 flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="verticalVid"
+                  checked={verticalVideo}
+                  onChange={(e) => setVerticalVideo(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded accent-amber-500"
+                />
+                <label htmlFor="verticalVid" className="flex-1 cursor-pointer">
+                  <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                    <Video className="w-3.5 h-3.5" />
+                    {isZh ? '生成竖屏版本 1080×1920 (短视频平台专用)' : 'Vertical 1080x1920 for short video'}
+                  </div>
+                  <div className="text-[10.5px] text-amber-200/70 mt-0.5 leading-relaxed">
+                    {isZh
+                      ? '发布时启用竖屏比例，适配抖音/TikTok/小红书 Feed 流推荐。会将 orientation=vertical 传递到引擎端。'
+                      : 'Portrait orientation for Douyin/TikTok/RedNote feeds. Passes orientation=vertical to engine submit.'}
+                  </div>
+                </label>
+              </div>
+            )}
+            {!canProceedStep2 && (
+              <div className="rounded-lg bg-amber-500/5 border border-amber-500/20 p-3 flex items-center gap-2 text-[11px] text-amber-300">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {t('publish.no_platform_selected')}
+              </div>
+            )}
             <div className="flex justify-between pt-2 border-t border-white/5 mt-4">
               <button
                 onClick={() => setStep(1)}
@@ -376,12 +573,10 @@ export default function PublishStudio({ onNavigate }) {
           </div>
         )}
 
-        {/* STEP 3: Content */}
         {step === 3 && (
           <div className="space-y-4 animate-fade-in">
             <div className="text-sm font-bold text-white">{isZh ? '③ 填写标题、描述、标签' : '③ Title, description & tags'}</div>
 
-            {/* Selected song preview */}
             <div className="rounded-xl bg-white/5 border border-white/10 p-3 flex items-center gap-3">
               <FileAudio className="w-6 h-6 text-rose-400 flex-shrink-0" />
               <div className="min-w-0 flex-1 text-xs text-gray-400 truncate">
@@ -448,7 +643,6 @@ export default function PublishStudio({ onNavigate }) {
                   </button>
                 </div>
               </div>
-              {/* Copy-all-caption preview */}
               <div className="rounded-xl bg-black/30 border border-white/5 p-3">
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="text-[11px] text-gray-400 font-bold flex items-center gap-1.5"><Eye className="w-3 h-3" /> {isZh ? '最终发布文案预览' : 'Caption preview'}</div>
@@ -484,7 +678,6 @@ export default function PublishStudio({ onNavigate }) {
           </div>
         )}
 
-        {/* STEP 4: Publish Progress + Result */}
         {step === 4 && (
           <div className="space-y-4 animate-fade-in">
             <div className="text-sm font-bold text-white flex items-center gap-2">
@@ -492,7 +685,6 @@ export default function PublishStudio({ onNavigate }) {
               {isZh ? '④ 发布进程' : '④ Publishing progress'}
             </div>
 
-            {/* Progress bar */}
             <div className="rounded-xl bg-white/5 border border-white/10 p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className={`text-sm font-bold flex items-center gap-2 ${status === 'success' ? 'text-emerald-400' : status === 'failed' ? 'text-rose-400' : status === 'manual' ? 'text-amber-400' : 'text-white'
@@ -523,11 +715,11 @@ export default function PublishStudio({ onNavigate }) {
               </div>
             </div>
 
-            {/* Results per platform */}
             {shareLinks.length > 0 && (
               <div className="space-y-2.5">
                 {shareLinks.map((r, i) => {
                   const plat = PLATFORMS.find(p => p.id === r.platform);
+                  const steps = isZh ? r.manualSteps?.zh : r.manualSteps?.en;
                   return (
                     <div key={i} className={`rounded-xl p-3.5 border ${r.success && !r.fallback
                       ? 'bg-emerald-500/5 border-emerald-500/30'
@@ -540,7 +732,7 @@ export default function PublishStudio({ onNavigate }) {
                           {plat?.icon || <Upload className="w-4 h-4" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-0.5">
+                          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                             <span className="text-sm font-bold text-white">{pick(plat?.name) || r.platform}</span>
                             {r.success && !r.fallback ? (
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">✓ {isZh ? '已提交' : 'Submitted'}</span>
@@ -549,8 +741,21 @@ export default function PublishStudio({ onNavigate }) {
                             ) : (
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/20">✕ {isZh ? '失败' : 'Failed'}</span>
                             )}
+                            {r.creatorPortalUrl && (
+                              <a href={r.creatorPortalUrl} target="_blank" rel="noreferrer" className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 inline-flex items-center gap-1">
+                                <ExternalLink className="w-2.5 h-2.5" />
+                                {t('publish.creator_portal')}
+                              </a>
+                            )}
                           </div>
                           {r.error && <div className="text-[11px] text-rose-400/90">{r.error}</div>}
+                          {r.account?.name && (
+                            <div className="text-[10px] text-gray-500 mt-0.5">
+                              <User className="w-2.5 h-2.5 inline mr-1" />
+                              {r.account.name}
+                              {r.account.id && <span className="font-mono ml-2">ID: {r.account.id}</span>}
+                            </div>
+                          )}
                           {r.shareUrl && (
                             <a href={r.shareUrl} target="_blank" rel="noreferrer" className="text-[11px] text-blue-300 hover:text-blue-200 underline inline-flex items-center gap-1 mt-1">
                               <Link className="w-3 h-3" /> {isZh ? '查看作品链接' : 'Open share URL'}
@@ -558,7 +763,7 @@ export default function PublishStudio({ onNavigate }) {
                           )}
                         </div>
                         <button
-                          onClick={() => copyText(r.shareUrl || fullCaption(), i)}
+                          onClick={() => copyText(r.shareUrl || r.preparedBundle?.caption || fullCaption(), i)}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                           title={isZh ? '复制链接/文案' : 'Copy link/caption'}
                         >
@@ -566,23 +771,27 @@ export default function PublishStudio({ onNavigate }) {
                         </button>
                       </div>
 
-                      {/* Manual upload steps */}
-                      {r.fallback && r.manualSteps && (
-                        <ol className="space-y-1.5 text-[11px] text-gray-300 bg-black/20 rounded-lg p-3 border border-white/5 list-decimal list-inside">
-                          {r.manualSteps.map((s, k) => (
-                            <li key={k}>{s}</li>
-                          ))}
-                        </ol>
+                      {r.fallback && steps && steps.length > 0 && (
+                        <div className="bg-black/20 rounded-lg p-3 border border-white/5">
+                          <div className="text-[10.5px] text-amber-300 font-semibold mb-1.5 flex items-center gap-1">
+                            <BookMarked className="w-3 h-3" />
+                            {t('publish.manual_step_prefix')}
+                          </div>
+                          <ol className="space-y-1.5 text-[11px] text-gray-300 list-decimal list-inside">
+                            {steps.map((s, k) => (
+                              <li key={k}>{s}</li>
+                            ))}
+                          </ol>
+                        </div>
                       )}
 
-                      {/* Download buttons */}
                       <div className="flex flex-wrap gap-2 mt-3">
                         {selectedSong?.audioUrl && (
                           <a
-                            href={`/api/publish/download-url?audioUrl=${encodeURIComponent(selectedSong.audioUrl)}&songId=${selectedSong.id}&filename=${encodeURIComponent(title + '.mp3')}`}
+                            href={`/api/publish/download-url?audioUrl=${encodeURIComponent(selectedSong.audioUrl)}&songId=${selectedSong.id}&filename=${encodeURIComponent(title + (bitrate !== 'wav' && bitrate !== 'flac' ? `.bit${bitrate}.mp3` : bitrate === 'wav' ? '.wav' : '.flac'))}&bitrate=${bitrate}`}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500/15 to-teal-500/15 text-emerald-300 border border-emerald-500/30 hover:border-emerald-400 transition-colors text-[11px] font-medium"
                           >
-                            <Download className="w-3.5 h-3.5" /> {isZh ? '下载 MP3' : 'Download MP3'}
+                            <Download className="w-3.5 h-3.5" /> {isZh ? `下载 MP3 (${bitrate === 'wav' ? 'WAV' : bitrate === 'flac' ? 'FLAC' : bitrate + ' kbps'})` : `Download MP3 (${bitrate === 'wav' ? 'WAV' : bitrate === 'flac' ? 'FLAC' : bitrate + ' kbps'})`}
                           </a>
                         )}
                         {selectedSong?.videoUrl && (
@@ -610,7 +819,244 @@ export default function PublishStudio({ onNavigate }) {
               </div>
             )}
 
-            {/* Initiate publish if not started */}
+            {/* Advanced Export Options */}
+            {selectedSong && (
+              <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+                <button
+                  onClick={() => setAdvOpen(!advOpen)}
+                  className="w-full p-3 flex items-center justify-between text-left hover:bg-white/[0.03] transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Settings className="w-4 h-4 text-cyan-400" />
+                    <span className="text-sm font-bold text-white">
+                      {isZh ? '高级导出选项' : 'Advanced Export Options'}
+                    </span>
+                  </div>
+                  {advOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                </button>
+
+                {advOpen && (
+                  <div className="p-4 pt-0 space-y-4 border-t border-white/5">
+                    {/* Bitrate selector */}
+                    <div>
+                      <div className="text-xs font-bold text-gray-300 mb-2 flex items-center gap-1.5">
+                        <FileAudio className="w-3.5 h-3.5 text-emerald-400" />
+                        {isZh ? '比特率选择 / Bitrate' : 'Bitrate'}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { v: '192', label: '192 kbps', desc: isZh ? '标准质量' : 'Standard' },
+                          { v: '256', label: '256 kbps', desc: isZh ? '高质量' : 'High' },
+                          { v: '320', label: '320 kbps', desc: isZh ? '极致 MP3' : 'Best MP3' },
+                          { v: 'wav', label: 'Lossless WAV', desc: isZh ? '无损 PCM' : 'Uncompressed' },
+                          { v: 'flac', label: 'Lossless FLAC', desc: isZh ? '无损压缩' : 'Lossless' },
+                        ].map(b => {
+                          const active = bitrate === b.v;
+                          return (
+                            <label
+                              key={b.v}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${active
+                                ? 'bg-emerald-500/10 border-emerald-500/40'
+                                : 'bg-black/20 border-white/10 hover:bg-white/[0.05]'
+                                }`}
+                            >
+                              <input
+                                type="radio"
+                                checked={active}
+                                onChange={() => setBitrate(b.v)}
+                                className="accent-emerald-500"
+                              />
+                              <div>
+                                <div className={`text-[11.5px] font-semibold ${active ? 'text-emerald-300' : 'text-white/90'}`}>
+                                  {b.label}
+                                </div>
+                                <div className="text-[9.5px] text-gray-500">{b.desc}</div>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* ZIP bundle */}
+                    <div>
+                      <div className="text-xs font-bold text-gray-300 mb-2 flex items-center gap-1.5">
+                        <Package className="w-3.5 h-3.5 text-violet-400" />
+                        {isZh ? '发布素材包 ZIP / Publish Bundle' : 'Publish Bundle ZIP'}
+                      </div>
+                      <button
+                        onClick={async () => {
+                          setLoadingZip(true);
+                          try {
+                            let JSZip;
+                            try {
+                              const mod = await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
+                              JSZip = mod.default;
+                            } catch (e) {
+                              throw new Error(isZh ? 'JSZip 加载失败，请检查网络或稍后重试' : 'JSZip failed to load, check network');
+                            }
+                            const zip = new JSZip();
+                            const safeName = (title || 'zmusic').replace(/[^\w\u4e00-\u9fa5-]/g, '_');
+                            const snap = selectedSong.creativeProcess?.snapshot || {};
+
+                            if (selectedSong.audioUrl) {
+                              try {
+                                const ab = await fetch(selectedSong.audioUrl).then(r => r.arrayBuffer());
+                                zip.file(`audio.${bitrate === 'wav' ? 'wav' : bitrate === 'flac' ? 'flac' : 'mp3'}`, ab);
+                              } catch (e) { console.warn('audio zip fetch failed', e); }
+                            }
+                            if (selectedSong.imageUrl) {
+                              try {
+                                const ab = await fetch(selectedSong.imageUrl).then(r => r.arrayBuffer());
+                                zip.file('cover.jpg', ab);
+                              } catch (e) { console.warn('cover zip fetch failed', e); }
+                            }
+                            const metadata = {
+                              title,
+                              description,
+                              hashtags,
+                              engine: selectedSong.engine || '',
+                              duration: selectedSong.duration || 0,
+                              style: selectedSong.style || snap.style || '',
+                              theme: snap.theme || '',
+                              bpm: snap.bpm || selectedSong.result?.bpm || '',
+                              structure: snap.structure || '',
+                              generated_at: selectedSong.timestamp || '',
+                              orientation: verticalVideo ? 'vertical' : 'landscape',
+                              bitrate,
+                            };
+                            zip.file('metadata.json', JSON.stringify(metadata, null, 2));
+                            const lyricsTxt = (selectedSong.lyrics || snap.lyrics || selectedSong.result?.lyricsText || '').toString();
+                            zip.file('lyrics.txt', lyricsTxt);
+                            zip.file('caption.txt', fullCaption());
+
+                            const selPlats = Object.entries(platforms).filter(([, v]) => v).map(([k]) => k);
+                            const manualSteps = [];
+                            manualSteps.push(isZh ? '# 手动上传步骤 · MANUAL_UPLOAD_STEPS' : '# Manual Upload Steps');
+                            selPlats.forEach(pid => {
+                              const pm = SocialPublishService.PLATFORM_META?.[pid];
+                              const pname = PLATFORMS.find(p => p.id === pid);
+                              manualSteps.push('', `## ${pick(pname?.name) || pid}`, '');
+                              const st = isZh ? pm?.manualSteps?.zh : pm?.manualSteps?.en;
+                              if (st && st.length) {
+                                st.forEach((s, i) => manualSteps.push(`${i + 1}. ${s}`));
+                              } else {
+                                manualSteps.push(isZh ? '1. 访问创作者中心' : '1. Visit creator portal');
+                                manualSteps.push(isZh ? '2. 点击「上传」按钮并选择 audio.mp3/cover.jpg' : '2. Click Upload and select audio file + cover');
+                                manualSteps.push(isZh ? '3. 粘贴 caption.txt 中的标题/描述/标签' : '3. Paste title/description/hashtags from caption.txt');
+                                manualSteps.push(isZh ? '4. 提交发布' : '4. Submit');
+                              }
+                              if (pm?.creatorPortalUrl) {
+                                manualSteps.push('', `   🔗 ${pm.creatorPortalUrl}`);
+                              }
+                            });
+                            manualSteps.push('');
+                            zip.file('MANUAL_UPLOAD_STEPS.md', manualSteps.join('\n'));
+
+                            const blob = await zip.generateAsync({ type: 'blob' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${safeName}_publish_bundle.zip`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            setTimeout(() => URL.revokeObjectURL(url), 5000);
+                            showToast?.(isZh ? 'ZIP 发布包已生成并下载' : 'Publish bundle ZIP downloaded', 'success');
+                          } catch (e) {
+                            showToast?.(isZh ? 'ZIP 生成失败: ' + e.message : 'ZIP failed: ' + e.message, 'error');
+                          } finally {
+                            setLoadingZip(false);
+                          }
+                        }}
+                        disabled={loadingZip}
+                        className="w-full md:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 hover:from-violet-400 hover:via-fuchsia-400 hover:to-pink-400 disabled:opacity-50 shadow-lg shadow-fuchsia-500/20 transition-all"
+                      >
+                        {loadingZip ? (
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Package className="w-4 h-4" />
+                        )}
+                        {loadingZip
+                          ? (isZh ? '打包中…' : 'Packaging…')
+                          : (isZh ? '📦 下载发布素材包 ZIP' : '📦 Download Publish Bundle ZIP')}
+                      </button>
+                      <div className="text-[10.5px] text-gray-500 mt-1.5 leading-relaxed">
+                        {isZh
+                          ? '包含：音频 + 封面 + metadata.json + 歌词 + 发布文案 + 各平台手动上传步骤'
+                          : 'Includes: audio + cover + metadata.json + lyrics + caption + per-platform manual steps'}
+                      </div>
+                    </div>
+
+                    {/* LRC lyrics export */}
+                    <div>
+                      <div className="text-xs font-bold text-gray-300 mb-2 flex items-center gap-1.5">
+                        <BookMarked className="w-3.5 h-3.5 text-amber-400" />
+                        {isZh ? 'LRC 歌词文件 / LRC Lyrics' : 'LRC Lyrics Export'}
+                      </div>
+                      <button
+                        onClick={() => {
+                          const lyricsRaw = (selectedSong.lyrics || selectedSong.creativeProcess?.snapshot?.lyrics || selectedSong.result?.lyricsText || '').toString();
+                          const lines = lyricsRaw.split('\n').map(l => l.trim()).filter(Boolean);
+                          if (lines.length === 0) {
+                            showToast?.(isZh ? '此作品没有歌词' : 'No lyrics available for this work', 'error');
+                            return;
+                          }
+                          const dur = selectedSong.duration && selectedSong.duration > 0 ? selectedSong.duration : lines.length * 6;
+                          const secPerLine = dur / lines.length;
+                          const fmt = (n) => {
+                            const mm = Math.floor(n / 60);
+                            const ss = Math.floor(n % 60);
+                            const cc = Math.floor((n - Math.floor(n)) * 100);
+                            return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}.${String(cc).padStart(2, '0')}`;
+                          };
+                          const lrcLines = [`[ti:${title || 'ZMusic Song'}]`, `[ar:ZMusic]`, `[al:ZMusic Publish]`, ''];
+                          lines.forEach((ln, i) => {
+                            lrcLines.push(`[${fmt(i * secPerLine)}]${ln}`);
+                          });
+                          const blob = new Blob([lrcLines.join('\n')], { type: 'text/plain;charset=utf-8' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          const safe = (title || 'zmusic_lyrics').replace(/[^\w\u4e00-\u9fa5-]/g, '_');
+                          a.download = `${safe}.lrc`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          setTimeout(() => URL.revokeObjectURL(url), 3000);
+                          showToast?.(isZh ? 'LRC 文件已下载' : 'LRC file downloaded', 'success');
+                        }}
+                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-amber-500/80 to-orange-500/80 hover:from-amber-500 hover:to-orange-500 border border-amber-500/30 transition-all"
+                      >
+                        <BookMarked className="w-4 h-4" />
+                        {isZh ? '🎵 下载 .lrc 歌词文件' : '🎵 Download .lrc lyrics'}
+                      </button>
+                      <div className="text-[10.5px] text-gray-500 mt-1.5 leading-relaxed">
+                        {isZh
+                          ? '按歌曲时长平均分配每行时间戳（若真实时间戳未知）'
+                          : 'Evenly distributed per-line timestamps across duration when actual stamps unknown'}
+                      </div>
+                    </div>
+
+                    {/* ID3 tag help */}
+                    <div className="rounded-xl bg-cyan-500/5 border border-cyan-500/20 p-3 flex items-start gap-2.5">
+                      <AlertCircle className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <div className="text-xs font-bold text-cyan-300 mb-0.5">
+                          {isZh ? 'ID3 标签 + 封面嵌入说明' : 'ID3 Tags & Cover Art Info'}
+                        </div>
+                        <div className="text-[10.5px] text-cyan-200/70 leading-relaxed">
+                          {isZh
+                            ? '标题/艺术家 ID3 标签与封面图的嵌入需要通过服务端 ffmpeg 在正式构建版本中完成；浏览器端打包提供独立的封面 JPG 文件供手动使用。若需要带 ID3 的 MP3，请使用后端构建或本地 ffmpeg 处理。'
+                            : 'Title/Artist ID3 tags + Cover Art are embedded into MP3 via server-side ffmpeg only on production server builds. The browser bundle provides a separate cover JPG for manual use. For tagged MP3 use the server build or local ffmpeg.'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {status === 'idle' && (
               <button
                 onClick={doPublish}
@@ -621,7 +1067,6 @@ export default function PublishStudio({ onNavigate }) {
               </button>
             )}
 
-            {/* Post-publish actions */}
             {status !== 'idle' && (
               <div className="flex gap-2 pt-2">
                 <button
@@ -643,6 +1088,93 @@ export default function PublishStudio({ onNavigate }) {
           </div>
         )}
       </div>
+
+      {configurePlatform && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl gradient-border p-5 animate-fade-in">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${configurePlatform.color} flex items-center justify-center text-white`}>
+                  {configurePlatform.icon}
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    {t('publish.configure_account')} · {pick(configurePlatform.name)}
+                  </h3>
+                  <p className="text-[11px] text-gray-500">{t('publish.creator_portal')}: {configurePlatform.id}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setConfigurePlatform(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-300 mb-1">
+                  {isZh ? '账号 ID' : 'Account ID'}
+                </label>
+                <input
+                  value={cfgForm.id}
+                  onChange={e => setCfgForm({ ...cfgForm, id: e.target.value })}
+                  placeholder={isZh ? '输入平台账号 ID / 手机号' : 'Enter platform account ID / phone'}
+                  className="w-full bg-black/30 border border-white/10 focus:border-rose-500/50 focus:bg-rose-500/5 focus:outline-none rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-300 mb-1">
+                  {isZh ? '账号名称 / 昵称' : 'Account Name'}
+                </label>
+                <input
+                  value={cfgForm.name}
+                  onChange={e => setCfgForm({ ...cfgForm, name: e.target.value })}
+                  placeholder={isZh ? '输入账号显示名称' : 'Enter account display name'}
+                  className="w-full bg-black/30 border border-white/10 focus:border-rose-500/50 focus:bg-rose-500/5 focus:outline-none rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-300 mb-1">
+                  {isZh ? '密码 / API Token' : 'Password / API Token'}
+                </label>
+                <input
+                  type="password"
+                  value={cfgForm.password}
+                  onChange={e => setCfgForm({ ...cfgForm, password: e.target.value })}
+                  placeholder={isZh ? '登录密码或访问令牌' : 'Login password or access token'}
+                  className="w-full bg-black/30 border border-white/10 focus:border-rose-500/50 focus:bg-rose-500/5 focus:outline-none rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 mt-5">
+              <button
+                onClick={clearConfigure}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-xs text-gray-300"
+              >
+                {t('common.clear')}
+              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfigurePlatform(null)}
+                  className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-sm text-gray-300"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  onClick={saveConfigure}
+                  className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 shadow-lg shadow-rose-500/30 flex items-center gap-1.5"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  {t('common.save')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

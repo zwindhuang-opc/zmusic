@@ -3,7 +3,8 @@ import { useTranslation } from './i18n/useTranslation.js';
 import {
   LayoutDashboard, Music, Mic, Video, Settings, Sparkles, TrendingUp,
   Activity, Cpu, Zap, BarChart3, Server, Bot, Globe, ArrowLeft, Wand2, Sliders, Image, Headphones, Cloud, Music2,
-  ChevronDown, ChevronRight, BookOpen, Shuffle, Upload
+  ChevronDown, ChevronRight, BookOpen, Shuffle, Upload,
+  Library, ListChecks, Target, LogIn, LogOut, User, FolderHeart
 } from 'lucide-react';
 import api, { isMobileEnvironment } from './services/api.client.js';
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
@@ -26,10 +27,11 @@ import { GenerationProvider } from './stores/generationStore.jsx';
 import AutoProgressBar from './components/AutoProgressBar.jsx';
 
 const UI_MODE_KEY = 'zmusic-ui-mode';
-const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '7.2.0';
+const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '7.3.0';
 
 function App() {
   const { t, i18n } = useTranslation();
+  const { user, logout } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [apiStatus, setApiStatus] = useState({ configured: false, version: BUILD_VERSION, uptime: 0 });
   const [agentStatus, setAgentStatus] = useState(null);
@@ -86,6 +88,12 @@ function App() {
   const [musicGroupExpanded, setMusicGroupExpanded] = useState(true);
   const [mvGroupExpanded, setMvGroupExpanded] = useState(true);
   const [studioGroupExpanded, setStudioGroupExpanded] = useState(true);
+  const [workbenchGroupExpanded, setWorkbenchGroupExpanded] = useState(true);
+
+  const handleLogoutClick = () => {
+    if (logout) logout();
+    setCurrentPage('dashboard');
+  };
 
   const navigationItems = [
     { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
@@ -125,6 +133,21 @@ function App() {
         { id: 'publish', label: t('nav.publish_studio'), icon: Upload },
       ],
     },
+    {
+      id: 'workbench-group',
+      label: t('nav.workbench'),
+      icon: Library,
+      isGroup: true,
+      children: [
+        { id: 'library', label: t('nav.library'), icon: FolderHeart },
+        { id: 'quality', label: t('nav.quality'), icon: Target },
+        { id: 'batch', label: t('nav.batch'), icon: ListChecks },
+        { id: 'analytics', label: t('nav.analytics'), icon: BarChart3 },
+      ],
+    },
+    user
+      ? { id: 'auth-logout', label: `${t('nav.logout')} · ${user.username || user.email || t('nav.profile')}`, icon: LogOut, isAction: true, onClick: handleLogoutClick }
+      : { id: 'login', label: t('nav.login'), icon: LogIn },
     { id: 'settings', label: t('nav.settings'), icon: Settings },
   ];
 
@@ -161,8 +184,16 @@ function App() {
 
             if (item.isGroup) {
               const groupActive = item.children.some(c => currentPage === c.id);
-              const expanded = item.id === 'music-group' ? musicGroupExpanded : item.id === 'mv-group' ? mvGroupExpanded : studioGroupExpanded;
-              const setExpanded = item.id === 'music-group' ? setMusicGroupExpanded : item.id === 'mv-group' ? setMvGroupExpanded : setStudioGroupExpanded;
+              const expanded =
+                item.id === 'music-group' ? musicGroupExpanded
+                  : item.id === 'mv-group' ? mvGroupExpanded
+                    : item.id === 'studio-group' ? studioGroupExpanded
+                      : workbenchGroupExpanded;
+              const setExpanded =
+                item.id === 'music-group' ? setMusicGroupExpanded
+                  : item.id === 'mv-group' ? setMvGroupExpanded
+                    : item.id === 'studio-group' ? setStudioGroupExpanded
+                      : setWorkbenchGroupExpanded;
               return (
                 <div key={item.id}>
                   <button
@@ -425,16 +456,23 @@ function App() {
 
       <FloatingChatBall />
       <AutoProgressBar />
+      <PersistentAudioPlayer />
     </div>
   );
 }
 
 export default function AppWithProviders(props) {
   return (
-    <GenerationProvider>
-      <AutoProgressProvider>
-        <App {...props} />
-      </AutoProgressProvider>
-    </GenerationProvider>
+    <AuthProvider>
+      <SongLibraryProvider>
+        <PlayerProvider>
+          <GenerationProvider>
+            <AutoProgressProvider>
+              <App {...props} />
+            </AutoProgressProvider>
+          </GenerationProvider>
+        </PlayerProvider>
+      </SongLibraryProvider>
+    </AuthProvider>
   );
 }

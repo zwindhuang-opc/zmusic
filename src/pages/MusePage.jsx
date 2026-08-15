@@ -21,10 +21,10 @@ import {
 } from '../utils/autoGenUtils.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
-import { getEngineSongCount } from '../utils/autoConfig.js';
+import { getEngineSongCount, getAutoConfig } from '../utils/autoConfig.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 import StrategySelector from '../components/StrategySelector.jsx';
-import { applyStrategyPreset, CREATIVE_STRATEGIES } from '../data/creativePresets.js';
+import { applyStrategyPreset, CREATIVE_STRATEGIES, getStrategy } from '../data/creativePresets.js';
 
 const API_BASE = '/api';
 
@@ -493,6 +493,23 @@ function MusePage({ onNavigate }) {
   const startAutoGeneration = useCallback(() => {
     console.log('%c[AUTO] [MusePage] startAutoGeneration() 入口',
       'background:#16a085;color:#fff;padding:2px 6px;border-radius:3px;font-weight:bold;');
+    // Apply strategy preset from autoConfig (or local) to input snapshot BEFORE starting
+    try {
+      const cfg = getAutoConfig();
+      if (cfg?.selectedStrategyId) {
+        const strat = getStrategy(cfg.selectedStrategyId);
+        if (strat) {
+          // Merge into current autoInputSnapshot as defaults
+          autoInputSnapshotRef.current = {
+            ...applyStrategyPreset(strat, {}),
+            ...(autoInputSnapshotRef.current || {}),
+            strategyId: strat.id,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('[AUTO] strategy preset apply failed:', e);
+    }
     // Report to global progress bar
     autoProgress.startProgress({ engine: 'muse', engineName: 'Muse AI', totalCountdown: 60 });
     // 1. Open Muse AI website tab (deduplicated by sessionStorage)
@@ -582,23 +599,39 @@ function MusePage({ onNavigate }) {
       } else if (sec === 40) {
         const themeStyle = pickRandomThemeStyle();
         // Strategy preset: override style/BPM/duration if chosen
+        // 1. Gather strategy candidates: local autoStrategy first, then autoConfig fallback
+        let effStrategy = autoStrategy;
+        if (!effStrategy) {
+          try {
+            const cfg = getAutoConfig();
+            if (cfg?.selectedStrategyId) {
+              effStrategy = getStrategy(cfg.selectedStrategyId);
+            }
+          } catch { }
+        }
+        // 2. Base random snapshot (explicit user values / random picks)
         const baseSnap = {
           theme: themeStyle.theme,
           style: pickRandomMuseStyle(),
           title: generateRandomTitle(themeStyle.theme),
         };
-        const withStrategy = autoStrategy ? applyStrategyPreset(autoStrategy, baseSnap) : baseSnap;
+        // 3. Apply strategy as DEFAULTS — then override baseSnap explicitly-set values
+        //    so any explicit random/user pick wins
+        const withStrategy = effStrategy
+          ? { ...applyStrategyPreset(effStrategy, {}), ...baseSnap }
+          : baseSnap;
         autoCreativeSnapshotRef.current = {
           ...(autoCreativeSnapshotRef.current || {}),
           ...withStrategy,
-          strategyId: autoStrategy?.id || null,
+          strategyId: effStrategy?.id || null,
           plannedAt: Date.now(), engine: 'Muse AI',
         };
+        const strategyLabel = effStrategy ? (isZh ? effStrategy.name?.zh : effStrategy.name?.en || effStrategy.id) : '';
         setAutoThoughts(prev => [...prev, {
           phase: '构思阶段 2/4', time: new Date().toLocaleTimeString(), step: 'STYLE_TITLE',
-          title: '🎨 确定风格、标题、BPM & 调性' + (autoStrategy ? ` · 预设: ${autoStrategy.name.zh || autoStrategy.name.en}` : ''),
+          title: '🎨 确定风格、标题、BPM & 调性' + (effStrategy ? ` · 预设: ${strategyLabel}` : ''),
           summary: `主题：${autoCreativeSnapshotRef.current.theme} ｜ 风格：${autoCreativeSnapshotRef.current.style} ｜ 标题：${autoCreativeSnapshotRef.current.title}` + (autoCreativeSnapshotRef.current.bpm ? ` ｜ 预设BPM: ${autoCreativeSnapshotRef.current.bpm}` : ''),
-          detail: `主题种子：${autoCreativeSnapshotRef.current.theme} (情感方向: ${themeStyle.style})\n选定风格：${autoCreativeSnapshotRef.current.style}\n标题：${autoCreativeSnapshotRef.current.title}` + (autoStrategy ? `\n🎯 创作策略: ${autoStrategy.name.zh || autoStrategy.name.en} — ${autoStrategy.description.zh || autoStrategy.description.en}` : '') + `\n下一步：20s 内完成 BPM 抽取 + 歌词创作。`,
+          detail: `主题种子：${autoCreativeSnapshotRef.current.theme} (情感方向: ${themeStyle.style})\n选定风格：${autoCreativeSnapshotRef.current.style}\n标题：${autoCreativeSnapshotRef.current.title}` + (effStrategy ? `\n🎯 创作策略: ${strategyLabel} — ${isZh ? effStrategy.description?.zh : effStrategy.description?.en || ''}` : '') + `\n下一步：20s 内完成 BPM 抽取 + 歌词创作。`,
         }]);
         // Incremental save to history
         const draftId2 = autoDraftHistoryIdRef.current;
