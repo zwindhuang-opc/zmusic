@@ -12,7 +12,10 @@ const DEFAULTS = {
   countdownSeconds: 60,  // Seconds to spend "thinking" before generation
   autoChaining: true,    // Auto-chain to next platform after current finishes
   stopOnError: true,     // Stop AUTO when errors occur
-  maxErrors: 8,          // Max consecutive errors before auto-stop
+  maxErrors: 8,          // Max consecutive errors before auto-stop (soft safety net)
+  autoCloseOnStop: true, // Auto-close all dialogs/panels when AUTO is stopped
+  autoCloseOnDone: true, // Auto-close all dialogs/panels when AUTO finishes all songs
+  autoCloseDelay: 3000,  // Delay in ms before auto-closing (grace period to see results)
   // Per-engine song count overrides (null = use songsPerAuto default)
   perEngineOverrides: {
     muse: null,
@@ -58,12 +61,23 @@ export function getEngineSongCount(engine) {
   return override || config.songsPerAuto;
 }
 
+/**
+ * Get the max consecutive errors before auto-stop, dynamically computed
+ * from the engine's song count + a small buffer (never less than 3).
+ * This replaces the old hardcoded `8` everywhere.
+ */
+export function getMaxErrors(engine) {
+  const count = getEngineSongCount(engine);
+  return Math.max(count + 2, 3);
+}
+
 export function useAutoConfig() {
   const config = loadConfig();
   return {
     config,
     setConfig: (partial) => setAutoConfig(partial),
     getEngineSongCount,
+    getMaxErrors,
   };
 }
 

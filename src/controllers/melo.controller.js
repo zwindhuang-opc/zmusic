@@ -310,7 +310,20 @@ export class MeloController {
         method: 'GET',
         headers: await meloHeaders(token),
       });
-      const raw = await response.json();
+      const rawText = await response.text();
+
+      // Detect HTML responses
+      if (rawText.trim().startsWith('<') || rawText.includes('<html')) {
+        logger.error(`[getUser] API returned HTML instead of JSON (HTTP ${response.status})`);
+        return res.status(502).json({
+          success: false,
+          error: 'Melo AI 用户信息接口返回 HTML 页面（Token 可能已过期）',
+          errorKey: 'HTML_RESPONSE',
+          httpStatus: response.status,
+        });
+      }
+
+      const raw = JSON.parse(rawText);
       if (raw?.status !== 20000) {
         return res.status(502).json({
           success: false,
@@ -538,6 +551,20 @@ export class MeloController {
       });
 
       const rawText = await response.text();
+
+      // Detect HTML responses (API returning login/error page instead of JSON)
+      if (rawText.trim().startsWith('<') || rawText.includes('<html')) {
+        logger.error(`[melo/generate] API returned HTML instead of JSON (HTTP ${response.status}) — auth token may be expired or API endpoint changed`);
+        return res.status(502).json({
+          success: false,
+          error: 'Melo AI API 返回了 HTML 页面而非 JSON（可能是登录页或错误页）。请检查：1) MELO_API_KEY 是否仍然有效 2) 浏览器中 h.51melo.com 是否已登录 3) Melo AI 服务是否正常',
+          errorKey: 'HTML_RESPONSE',
+          authSource: _meloTokenInfo.source || 'none',
+          authError: _meloTokenInfo.lastError || null,
+          httpStatus: response.status,
+        });
+      }
+
       let data;
       try { data = JSON.parse(rawText); } catch { data = { raw: rawText }; }
 
@@ -624,6 +651,18 @@ export class MeloController {
       });
 
       const rawText = await response.text();
+
+      // Detect HTML responses in task polling too
+      if (rawText.trim().startsWith('<') || rawText.includes('<html')) {
+        logger.error(`[melo/task/${taskId}] API returned HTML instead of JSON (HTTP ${response.status})`);
+        return res.status(502).json({
+          success: false,
+          error: 'Melo AI 任务查询返回了 HTML 页面（API 可能已变更或 Token 已过期）',
+          errorKey: 'HTML_RESPONSE',
+          taskId,
+        });
+      }
+
       let data;
       try { data = JSON.parse(rawText); } catch { data = { raw: rawText }; }
 

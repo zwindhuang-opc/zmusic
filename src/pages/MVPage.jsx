@@ -14,7 +14,7 @@ import HistoryPanel from '../components/HistoryPanel.jsx';
 import { MVControls, MVVideoPlayer, MVTimelinePreview } from '../components/mv/index.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
-import { getEngineSongCount } from '../utils/autoConfig.js';
+import { getEngineSongCount, getAutoConfig, getMaxErrors } from '../utils/autoConfig.js';
 import { AUTO_CONFIRM, openPlatformWebsite, generateCreativeThought, generateRandomTitle, pickRandomThemeStyle, generateAutoLyrics } from '../utils/autoGenUtils.js';
 
 const ICON_MAP = {
@@ -745,22 +745,32 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
       if (isAuto || autoRunningRef.current) {
         setTimeout(() => {
           const maxSongs = getEngineSongCount(engine);
+          const maxErrors = getMaxErrors(engine);
           const shouldStop =
             autoStopRequestedRef.current ||
             !autoRunningRef.current ||
-            autoConsecutiveErrorsRef.current >= 8 ||
+            autoConsecutiveErrorsRef.current >= maxErrors ||
             autoCountRef.current >= maxSongs;
 
           if (shouldStop) {
             setAutoRunning(false);
             setAutoStopRequested(false);
             autoProgress.stopProgress();
+            // Auto-close panels if configured
+            const autoCfg = getAutoConfig();
+            const closeDelay = autoCfg.autoCloseDelay || 3000;
+            if (autoCfg.autoCloseOnStop || autoCfg.autoCloseOnDone) {
+              setTimeout(() => {
+                setShowCreativePanel(false);
+                setError(null);
+              }, closeDelay);
+            }
             const draftId = autoDraftHistoryIdRef.current;
             if (draftId) {
               const snap = autoCreativeSnapshotRef.current || {};
               updateHistory(draftId, {
-                status: autoConsecutiveErrorsRef.current >= 8 ? 'failed' : 'stopped',
-                title: autoConsecutiveErrorsRef.current >= 8
+                status: autoConsecutiveErrorsRef.current >= maxErrors ? 'failed' : 'stopped',
+                title: autoConsecutiveErrorsRef.current >= maxErrors
                   ? `❌ ${snap.title || '未命名'} - 连续失败已停止`
                   : `⏹️ ${snap.title || '未命名'} - AUTO 已停止`,
                 lyrics: snap.lyrics || snap.command || '',
@@ -768,10 +778,10 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
                 style: snap.style || '',
                 creativeProcess: {
                   snapshot: snap,
-                  phase: autoConsecutiveErrorsRef.current >= 8 ? '失败停止' : '已停止',
+                  phase: autoConsecutiveErrorsRef.current >= maxErrors ? '失败停止' : '已停止',
                   stoppedAt: new Date().toISOString(),
                   engine: displayName,
-                  error: autoConsecutiveErrorsRef.current >= 8 ? '连续生成失败（可能积分不足或 API 异常）' : undefined,
+                  error: autoConsecutiveErrorsRef.current >= maxErrors ? '连续生成失败（可能积分不足或 API 异常）' : undefined,
                 },
               });
               autoDraftHistoryIdRef.current = null;
@@ -779,7 +789,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
             showToast?.(
               autoStopRequestedRef.current
                 ? t('auto.stopped_by_request')
-                : autoConsecutiveErrorsRef.current >= 8
+                : autoConsecutiveErrorsRef.current >= maxErrors
                   ? t('auto.stopped_consecutive_failures')
                   : t('auto.finished'),
               autoStopRequestedRef.current ? 'info' : 'warning'

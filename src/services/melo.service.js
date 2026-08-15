@@ -57,8 +57,16 @@ export async function generateSong(params) {
     body: JSON.stringify(params),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `Melo generate error: ${res.status}`);
+    let errMsg = `Melo generate error: ${res.status}`;
+    try {
+      const err = await res.json();
+      if (err?.errorKey === 'HTML_RESPONSE') {
+        errMsg = 'Melo AI API 返回了 HTML 页面 — 可能是 API Token 已过期或接口已变更。请在浏览器中登录 h.51melo.com 并刷新页面。';
+      } else {
+        errMsg = err.error || errMsg;
+      }
+    } catch { /* fallback to status code message */ }
+    throw new Error(errMsg);
   }
   return res.json();
 }

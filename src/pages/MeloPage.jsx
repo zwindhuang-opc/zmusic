@@ -21,7 +21,7 @@ import {
 } from '../utils/autoGenUtils.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
-import { getEngineSongCount, getAutoConfig } from '../utils/autoConfig.js';
+import { getEngineSongCount, getAutoConfig, getMaxErrors } from '../utils/autoConfig.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 import { applyStrategyPreset, getStrategy } from '../data/creativePresets.js';
 
@@ -194,10 +194,14 @@ function MeloPage({ onNavigate }) {
     return () => clearInterval(iv);
   }, [autoRunning]);
 
-  // Auto-close creative panel: after 8 tries OR 15s idle when stopped
+  // Auto-close creative panel: after N tries OR 15s idle when stopped
   const autoCloseTimerRef = useRef(null);
+  const autoCloseThreshold = getEngineSongCount('melo');
   useEffect(() => {
-    if (autoCount >= 8 && !autoRunning) {
+    const autoCfg = getAutoConfig();
+    const shouldAutoClose = autoRunning ? (autoCfg.autoCloseOnStop || autoCfg.autoCloseOnDone) : (autoCfg.autoCloseOnDone);
+    if (!shouldAutoClose) return;
+    if (autoCount >= autoCloseThreshold && !autoRunning) {
       setShowCreativePanel(false);
       return;
     }
@@ -1059,20 +1063,31 @@ function MeloPage({ onNavigate }) {
 
         setTimeout(() => {
           const maxSongs = getEngineSongCount('melo');
+          const maxErrors = getMaxErrors('melo');
           const shouldStop =
             autoStopRequestedRef.current ||
             !autoRunningRef.current ||
-            autoConsecutiveErrorsRef.current >= 8 ||
+            autoConsecutiveErrorsRef.current >= maxErrors ||
             autoCountRef.current >= maxSongs;
 
           if (shouldStop) {
             setAutoRunning(false);
             setAutoStopRequested(false);
+            // Auto-close panels if configured
+            const autoCfg = getAutoConfig();
+            const closeDelay = autoCfg.autoCloseDelay || 3000;
+            if (autoCfg.autoCloseOnStop || autoCfg.autoCloseOnDone) {
+              setTimeout(() => {
+                setShowCreativePanel(false);
+                setError(null);
+                setPollStatus('idle');
+              }, closeDelay);
+            }
             showToast?.(
               autoStopRequestedRef.current
                 ? 'AUTO 已停止 — 已按您的请求停止自动生成。'
-                : autoConsecutiveErrorsRef.current >= 8
-                  ? 'AUTO 已停止 — 连续 8 次生成失败，可能是积分不足或 API 异常。'
+                : autoConsecutiveErrorsRef.current >= maxErrors
+                  ? `AUTO 已停止 — 连续 ${maxErrors} 次生成失败，可能是积分不足或 API 异常。`
                   : 'AUTO 模式结束。',
               autoStopRequestedRef.current ? 'info' : 'warning'
             );

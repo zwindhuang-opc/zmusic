@@ -21,7 +21,7 @@ import {
 } from '../utils/autoGenUtils.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
-import { getEngineSongCount, getAutoConfig } from '../utils/autoConfig.js';
+import { getEngineSongCount, getAutoConfig, getMaxErrors } from '../utils/autoConfig.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 import StrategySelector from '../components/StrategySelector.jsx';
 import { applyStrategyPreset, CREATIVE_STRATEGIES, getStrategy } from '../data/creativePresets.js';
@@ -308,10 +308,14 @@ function MusePage({ onNavigate }) {
     return () => clearInterval(iv);
   }, [autoRunning]);
 
-  // Auto-close creative panel: after 8 tries OR 15s idle when stopped
+  // Auto-close creative panel: after N tries OR 15s idle when stopped
   const autoCloseTimerRef = useRef(null);
+  const autoCloseThreshold = getEngineSongCount('muse');
   useEffect(() => {
-    if (autoCount >= 8 && !autoRunning) {
+    const autoCfg = getAutoConfig();
+    const shouldAutoClose = autoRunning ? (autoCfg.autoCloseOnStop || autoCfg.autoCloseOnDone) : (autoCfg.autoCloseOnDone);
+    if (!shouldAutoClose) return;
+    if (autoCount >= autoCloseThreshold && !autoRunning) {
       setShowCreativePanel(false);
       return;
     }
@@ -1096,22 +1100,33 @@ function MusePage({ onNavigate }) {
         // Decide whether to continue
         setTimeout(() => {
           const maxSongs = getEngineSongCount('muse');
+          const maxErrors = getMaxErrors('muse');
           const shouldStop =
             autoStopRequestedRef.current ||
             !autoRunningRef.current ||
-            autoConsecutiveErrorsRef.current >= 8 ||
+            autoConsecutiveErrorsRef.current >= maxErrors ||
             autoCountRef.current >= maxSongs;
 
           if (shouldStop) {
             setAutoRunning(false);
             setAutoStopRequested(false);
+            // Auto-close panels if configured
+            const autoCfg = getAutoConfig();
+            const closeDelay = autoCfg.autoCloseDelay || 3000;
+            if (autoCfg.autoCloseOnStop || autoCfg.autoCloseOnDone) {
+              setTimeout(() => {
+                setShowCreativePanel(false);
+                setError(null);
+                setPollStatus('idle');
+              }, closeDelay);
+            }
             // Save draft as stopped/ended
             const draftId = autoDraftHistoryIdRef.current;
             if (draftId) {
               const snap = autoCreativeSnapshotRef.current || {};
               updateHistory(draftId, {
-                status: autoConsecutiveErrorsRef.current >= 8 ? 'failed' : 'stopped',
-                title: autoConsecutiveErrorsRef.current >= 8
+                status: autoConsecutiveErrorsRef.current >= maxErrors ? 'failed' : 'stopped',
+                title: autoConsecutiveErrorsRef.current >= maxErrors
                   ? `❌ ${snap.title || '未命名'} - 连续失败已停止`
                   : `⏹️ ${snap.title || '未命名'} - AUTO 已停止`,
                 lyrics: snap.lyrics || snap.command || '',
@@ -1119,10 +1134,10 @@ function MusePage({ onNavigate }) {
                 style: snap.style || '',
                 creativeProcess: {
                   snapshot: snap,
-                  phase: autoConsecutiveErrorsRef.current >= 8 ? '失败停止' : '已停止',
+                  phase: autoConsecutiveErrorsRef.current >= maxErrors ? '失败停止' : '已停止',
                   stoppedAt: new Date().toISOString(),
                   engine: 'Muse AI',
-                  error: autoConsecutiveErrorsRef.current >= 8 ? '连续生成失败（可能积分不足或 API 异常）' : undefined,
+                  error: autoConsecutiveErrorsRef.current >= maxErrors ? '连续生成失败（可能积分不足或 API 异常）' : undefined,
                 },
               });
               autoDraftHistoryIdRef.current = null;
@@ -1130,8 +1145,8 @@ function MusePage({ onNavigate }) {
             showToast?.(
               autoStopRequestedRef.current
                 ? 'AUTO 已停止 — 已按您的请求停止自动生成。'
-                : autoConsecutiveErrorsRef.current >= 8
-                  ? 'AUTO 已停止 — 连续 8 次生成失败，可能是积分不足或 API 异常。'
+                : autoConsecutiveErrorsRef.current >= maxErrors
+                  ? `AUTO 已停止 — 连续 ${maxErrors} 次生成失败，可能是积分不足或 API 异常。`
                   : 'AUTO 模式结束。',
               autoStopRequestedRef.current ? 'info' : 'warning'
             );
