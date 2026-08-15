@@ -975,7 +975,13 @@
     "all_platforms": "All Platforms",
     "no_platform_selected": "Please select at least one publish platform",
     "fetching_file": "Fetching publish file...",
-    "uploading_to_platform": "Uploading to {platform}..."
+    "uploading_to_platform": "Uploading to {platform}...",
+    "assist_open_portal": "Open Portal + Copy",
+    "assist_caption_copied": "Caption copied! Opening portal...",
+    "assist_checklist_title": "Publish Checklist",
+    "assist_all_done": "All steps done!",
+    "assist_account_info": "Account Info",
+    "assist_copy_account": "Copy Account"
   },
   "lyrics_meta": {
     "emotionalArc": "Emotional Arc",
@@ -1372,7 +1378,17 @@
     "title": "System Settings",
     "ui_mode": "Interface Mode",
     "uptime": "Uptime",
-    "version": "Version"
+    "version": "Version",
+    "notifications_title": "Notifications",
+    "notifications_desc": "Get notified when AUTO generation, publishing, or batch tasks complete",
+    "notifications_enable": "Enable Notifications",
+    "notifications_auto": "AUTO completion",
+    "notifications_publish": "Publish completion",
+    "notifications_batch": "Batch completion",
+    "notifications_permission_request": "Request Permission",
+    "notifications_permission_granted": "Permission granted",
+    "notifications_permission_denied": "Permission denied",
+    "notifications_permission_default": "Not requested"
   },
   "styles": {
     "acoustic": "acoustic",

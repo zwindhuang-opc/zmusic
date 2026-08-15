@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { useGeneration } from './generationStore.jsx';
 
 const SongLibraryContext = createContext(null);
 
@@ -72,7 +74,26 @@ function historyItemToSong(item, ownerId) {
   };
 }
 
-export function SongLibraryProvider({ children, user, authLoading, generationHistory, historyLoaded }) {
+export function SongLibraryProvider({ children, user: userProp, authLoading: authLoadingProp, generationHistory: historyProp, historyLoaded: loadedProp }) {
+  let authUser = userProp;
+  let loading = authLoadingProp;
+  let genHistory = historyProp;
+  let genLoaded = loadedProp;
+
+  try {
+    const auth = useAuth();
+    if (!userProp) authUser = auth.user;
+    if (!authLoadingProp) loading = auth.loading;
+  } catch (_) {
+    if (!loading) loading = false;
+  }
+
+  try {
+    const gen = useGeneration();
+    if (!historyProp) genHistory = gen.history;
+  } catch (_) {
+  }
+
   const [songs, setSongs] = useState([]);
   const [albums, setAlbums] = useState([]);
   const [migrated, setMigrated] = useState(false);
@@ -82,8 +103,8 @@ export function SongLibraryProvider({ children, user, authLoading, generationHis
   const migrationDoneRef = useRef(new Set());
 
   useEffect(() => {
-    if (authLoading) return;
-    const uid = user?.id || 'guest';
+    if (loading) return;
+    const uid = authUser?.id || 'guest';
     setUserId(uid);
     if (prevUserIdRef.current !== uid) {
       const data = readLibrary(uid);
@@ -92,12 +113,17 @@ export function SongLibraryProvider({ children, user, authLoading, generationHis
       setMigrated(data.migratedFromHistory);
       prevUserIdRef.current = uid;
     }
-  }, [user, authLoading]);
+  }, [authUser, loading]);
 
   useEffect(() => {
     if (!userId) return;
     writeLibrary(userId, { songs, albums, migratedFromHistory: migrated });
   }, [songs, albums, migrated, userId]);
+
+  useEffect(() => {
+    if (!userId || migrated || !genHistory || genHistory.length === 0) return;
+    migrateFromHistory(genHistory);
+  }, [userId, genHistory, migrated]);
 
   const showToast = useCallback((message, type = 'info') => {
     setToast({ message, type, id: Date.now() });

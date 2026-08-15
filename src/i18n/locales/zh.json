@@ -975,7 +975,13 @@
     "all_platforms": "全部平台",
     "no_platform_selected": "请至少选择一个发布平台",
     "fetching_file": "获取发布文件...",
-    "uploading_to_platform": "上传到 {platform}..."
+    "uploading_to_platform": "上传到 {platform}...",
+    "assist_open_portal": "打开创作者中心 + 复制文案",
+    "assist_caption_copied": "文案已复制！正在打开创作者中心...",
+    "assist_checklist_title": "发布清单",
+    "assist_all_done": "全部完成！",
+    "assist_account_info": "账号信息",
+    "assist_copy_account": "复制账号"
   },
   "lyrics_meta": {
     "emotionalArc": "情感弧线",
@@ -1372,7 +1378,17 @@
     "title": "系统设置",
     "ui_mode": "界面模式",
     "uptime": "运行时间",
-    "version": "版本"
+    "version": "版本",
+    "notifications_title": "通知推送",
+    "notifications_desc": "AUTO 生成、发布、批量任务完成时推送通知",
+    "notifications_enable": "开启通知",
+    "notifications_auto": "AUTO 生成完成",
+    "notifications_publish": "发布完成",
+    "notifications_batch": "批量生成完成",
+    "notifications_permission_request": "请求通知权限",
+    "notifications_permission_granted": "已授权",
+    "notifications_permission_denied": "已拒绝",
+    "notifications_permission_default": "未请求"
   },
   "styles": {
     "acoustic": "原声",

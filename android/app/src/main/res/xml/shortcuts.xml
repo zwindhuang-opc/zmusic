@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="new_song"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_new_song"
+        android:shortcutLongLabel="@string/shortcut_new_song_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.zmusic.app"
+            android:targetClass="com.zmusic.app.MainActivity"
+            android:data="zmusic://page/music" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="open_library"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_library"
+        android:shortcutLongLabel="@string/shortcut_library_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.zmusic.app"
+            android:targetClass="com.zmusic.app.MainActivity"
+            android:data="zmusic://page/library" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="start_auto"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_auto"
+        android:shortcutLongLabel="@string/shortcut_auto_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.zmusic.app"
+            android:targetClass="com.zmusic.app.MainActivity"
+            android:data="zmusic://page/muse" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="publish"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_publish"
+        android:shortcutLongLabel="@string/shortcut_publish_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.zmusic.app"
+            android:targetClass="com.zmusic.app.MainActivity"
+            android:data="zmusic://page/publish" />
+    </shortcut>
+</shortcuts>

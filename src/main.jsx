@@ -140,3 +140,16 @@ root.render(
 
 // Kick off the "React is on screen" handshake after first commit.
 signalUiReady();
+
+// Register Service Worker for PWA offline support (production only)
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then((reg) => {
+                console.log('[SW] Registered with scope:', reg.scope);
+            })
+            .catch((err) => {
+                console.warn('[SW] Registration failed:', err);
+            });
+    });
+}

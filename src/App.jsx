@@ -19,15 +19,25 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 const CreativeNotebook = lazy(() => import('./pages/CreativeNotebook.jsx'));
 const RemixStudio = lazy(() => import('./pages/RemixStudio.jsx'));
 const PublishStudio = lazy(() => import('./pages/PublishStudio.jsx'));
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
+const SongLibrary = lazy(() => import('./pages/SongLibrary.jsx'));
+const AlbumDetail = lazy(() => import('./pages/AlbumDetail.jsx'));
+const QualityAnalyzerPage = lazy(() => import('./pages/QualityAnalyzerPage.jsx'));
+const BatchGenerationPage = lazy(() => import('./pages/BatchGenerationPage.jsx'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage.jsx'));
 import { MuseIcon, SunoIcon, MeloIcon } from './components/BrandIcons.jsx';
 import FloatingChatBall from './components/FloatingChatBall.jsx';
 import EasyMode from './components/EasyMode.jsx';
 import { AutoProgressProvider } from './contexts/AutoProgressContext.jsx';
 import { GenerationProvider } from './stores/generationStore.jsx';
+import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
+import { SongLibraryProvider } from './stores/songLibraryStore.jsx';
+import { PlayerProvider } from './contexts/PlayerContext.jsx';
 import AutoProgressBar from './components/AutoProgressBar.jsx';
+import PersistentAudioPlayer from './components/PersistentAudioPlayer.jsx';
 
 const UI_MODE_KEY = 'zmusic-ui-mode';
-const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '7.3.0';
+const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '7.4.1';
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -233,6 +243,18 @@ function App() {
             }
 
             const isActive = currentPage === item.id;
+            if (item.isAction && item.onClick) {
+              return (
+                <button
+                  key={item.id}
+                  onClick={item.onClick}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all text-rose-300 hover:text-white hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20"
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="font-medium flex-1 truncate">{item.label}</span>
+                </button>
+              );
+            }
             return (
               <button
                 key={item.id}
@@ -380,6 +402,12 @@ function App() {
             {currentPage === 'melo' && <MeloPage onNavigate={setCurrentPage} />}
             {currentPage === 'remix' && <RemixStudio onNavigate={setCurrentPage} />}
             {currentPage === 'publish' && <PublishStudio onNavigate={setCurrentPage} />}
+            {currentPage === 'login' && <LoginPage onNavigate={setCurrentPage} />}
+            {currentPage === 'library' && <SongLibrary onNavigate={setCurrentPage} />}
+            {currentPage === 'album' && <AlbumDetail onNavigate={setCurrentPage} />}
+            {currentPage === 'quality' && <QualityAnalyzerPage onNavigate={setCurrentPage} />}
+            {currentPage === 'batch' && <BatchGenerationPage onNavigate={setCurrentPage} />}
+            {currentPage === 'analytics' && <AnalyticsPage />}
             {currentPage === 'settings' && <SettingsPage />}
           </Suspense>
         </div>

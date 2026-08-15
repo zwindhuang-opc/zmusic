@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Upload, Download, Send, Youtube, Music2, Lightbulb,
   CheckCircle, AlertCircle, RefreshCw, Link, FileAudio, FileVideo,
-  Zap, Copy, Check, User, Clock, StepForward, XCircle, Eye,
+  Zap, Copy, Check, User, Clock, StepForward, XCircle, Eye, EyeOff,
   BookOpen, Tag, Video, Settings, X, ExternalLink, BookMarked,
   ChevronDown, ChevronUp, Package,
 } from 'lucide-react';
@@ -110,6 +110,26 @@ export default function PublishStudio({ onNavigate }) {
   const [bitrate, setBitrate] = useState('320');
   const [loadingZip, setLoadingZip] = useState(false);
 
+  const [checklistProgress, setChecklistProgress] = useState(() => {
+    const result = {};
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('zmusic_publish_checklist_')) {
+          const platformId = k.replace('zmusic_publish_checklist_', '');
+          try {
+            const stored = JSON.parse(localStorage.getItem(k) || '{}');
+            Object.entries(stored).forEach(([stepIdx, val]) => {
+              result[`${platformId}-${stepIdx}`] = val;
+            });
+          } catch (e) { /* ignore */ }
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return result;
+  });
+  const [showPw, setShowPw] = useState({});
+
   const pick = (n) => (isZh ? n?.zh : n?.en);
 
   const songList = history.filter(h => (h.type === 'song' || h.type === 'mv') && h.audioUrl).slice(0, 50);
@@ -144,6 +164,32 @@ export default function PublishStudio({ onNavigate }) {
       setCopiedTag(tag);
       setTimeout(() => setCopiedTag(null), 1500);
     }
+  };
+
+  const toggleChecklistItem = (platIdx, stepIdx) => {
+    const key = `${platIdx}-${stepIdx}`;
+    setChecklistProgress(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      try {
+        const platformSteps = {};
+        Object.keys(next).forEach(k => {
+          if (k.startsWith(`${platIdx}-`)) {
+            const sIdx = k.replace(`${platIdx}-`, '');
+            platformSteps[sIdx] = next[k];
+          }
+        });
+        localStorage.setItem(`zmusic_publish_checklist_${platIdx}`, JSON.stringify(platformSteps));
+      } catch (e) { /* ignore */ }
+      return next;
+    });
+  };
+
+  const allChecked = (platformId, stepsCount) => {
+    if (!stepsCount || stepsCount === 0) return false;
+    for (let s = 0; s < stepsCount; s++) {
+      if (!checklistProgress[`${platformId}-${s}`]) return false;
+    }
+    return true;
   };
 
   const canProceedStep1 = !!selectedSongId;
@@ -782,6 +828,108 @@ export default function PublishStudio({ onNavigate }) {
                               <li key={k}>{s}</li>
                             ))}
                           </ol>
+                        </div>
+                      )}
+
+                      {r.fallback && (
+                        <div className="mt-3 rounded-xl bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 border border-violet-500/20 p-3 space-y-3">
+                          {r.creatorPortalUrl && (
+                            <button
+                              onClick={async () => {
+                                await copyText(fullCaption(), 'assist-' + i);
+                                showToast?.(t('publish.assist_caption_copied'), 'success');
+                                window.open(r.creatorPortalUrl, '_blank');
+                              }}
+                              className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r ${plat?.color || 'from-violet-500 to-fuchsia-500'} hover:opacity-90 shadow-lg transition-all`}
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                              🚀 {t('publish.assist_open_portal')}
+                            </button>
+                          )}
+
+                          {steps && steps.length > 0 && (
+                            <div className="rounded-lg bg-black/20 border border-white/5 p-2.5">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="text-[10.5px] font-semibold text-violet-300 flex items-center gap-1">
+                                  <CheckCircle className="w-3 h-3" />
+                                  {t('publish.assist_checklist_title')}
+                                </div>
+                                {allChecked(r.platform, steps.length) && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/20 font-bold">
+                                    ✓ {t('publish.assist_all_done')}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="space-y-1">
+                                {steps.map((s, k) => {
+                                  const checked = !!checklistProgress[`${r.platform}-${k}`];
+                                  return (
+                                    <button
+                                      key={k}
+                                      onClick={() => toggleChecklistItem(r.platform, k)}
+                                      className={`w-full flex items-start gap-2 px-2 py-1.5 rounded-md text-left text-[11px] transition-colors ${checked ? 'bg-emerald-500/10 text-emerald-300' : 'text-gray-300 hover:bg-white/5'}`}
+                                    >
+                                      <span className={`mt-0.5 w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 ${checked ? 'bg-emerald-500 border-emerald-500' : 'border-white/30'}`}>
+                                        {checked && <Check className="w-2.5 h-2.5 text-white" />}
+                                      </span>
+                                      <span className="leading-relaxed">{s}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {r.platform === 'douyin' && accounts.douyin && (accounts.douyin.id || accounts.douyin.name) && (
+                            <div className="rounded-lg bg-black/30 border border-white/5 p-2.5">
+                              <div className="text-[10.5px] font-semibold text-amber-300 flex items-center gap-1 mb-2">
+                                <User className="w-3 h-3" />
+                                {t('publish.assist_account_info')}
+                              </div>
+                              <div className="space-y-1.5 text-[11px]">
+                                {accounts.douyin.name && (
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-gray-400">{isZh ? '名称' : 'Name'}</span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-white font-medium">{accounts.douyin.name}</span>
+                                      <button onClick={() => copyText(accounts.douyin.name, 'dy-name')} className="p-0.5 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+                                        {copiedTag === 'dy-name' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                                {accounts.douyin.id && (
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-gray-400">{isZh ? 'ID' : 'ID'}</span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-white font-mono">{accounts.douyin.id}</span>
+                                      <button onClick={() => copyText(accounts.douyin.id, 'dy-id')} className="p-0.5 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+                                        {copiedTag === 'dy-id' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                                {accounts.douyin.password && (
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-gray-400">{isZh ? '密码' : 'Password'}</span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-white font-mono">{showPw[r.platform] ? accounts.douyin.password : '•'.repeat(Math.min(accounts.douyin.password.length, 8))}</span>
+                                      <button onClick={() => setShowPw(prev => ({ ...prev, [r.platform]: !prev[r.platform] }))} className="p-0.5 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+                                        {showPw[r.platform] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => copyText(`name: ${accounts.douyin.name || ''}\nID: ${accounts.douyin.id || ''}\nPW: ${accounts.douyin.password || ''}`, 'dy-copy')}
+                                className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-rose-500 to-pink-600 text-white text-[11px] font-medium hover:opacity-90 transition-opacity"
+                              >
+                                {copiedTag === 'dy-copy' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                {t('publish.assist_copy_account')}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )}
 

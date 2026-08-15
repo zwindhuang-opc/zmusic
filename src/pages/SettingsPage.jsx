@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Key, Save, RefreshCw, Server, Bot, Cpu, CheckCircle, AlertCircle, Sparkles, Wand2, Sliders, Music, RotateCcw, Gauge, Clock, Video, BookOpen, Youtube, Trash2 } from 'lucide-react';
+import { Settings, Key, Save, RefreshCw, Server, Bot, Cpu, CheckCircle, AlertCircle, Sparkles, Wand2, Sliders, Music, RotateCcw, Gauge, Clock, Video, BookOpen, Youtube, Trash2, Bell } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
 import { getAutoConfig, setAutoConfig, AUTO_DEFAULTS } from '../utils/autoConfig.js';
+import NotificationService from '../services/notification.service.js';
 
 const UI_MODE_KEY = 'zmusic-ui-mode';
 const PUBLISH_ACCOUNTS_KEY = 'zmusic_publish_accounts';
@@ -68,6 +69,21 @@ function SettingsPage() {
   const [publishAccounts, setPublishAccounts] = useState(loadPublishAccounts());
   const [publishFormState, setPublishFormState] = useState({});
   const [publishSavedStates, setPublishSavedStates] = useState({});
+  const [notifPermission, setNotifPermission] = useState('default');
+  const [notifEnabled, setNotifEnabled] = useState(() => localStorage.getItem('zmusic_notifications_enabled') === 'true');
+  const [notifAuto, setNotifAuto] = useState(() => localStorage.getItem('zmusic_notifications_auto') !== 'false');
+  const [notifPublish, setNotifPublish] = useState(() => localStorage.getItem('zmusic_notifications_publish') !== 'false');
+  const [notifBatch, setNotifBatch] = useState(() => localStorage.getItem('zmusic_notifications_batch') !== 'false');
+
+  useEffect(() => {
+    if (NotificationService.isNotificationSupported()) {
+      try {
+        setNotifPermission(Notification.permission || 'default');
+      } catch { /* ignore */ }
+    } else {
+      setNotifPermission('denied');
+    }
+  }, []);
 
   const updateAutoConfig = (partial) => {
     const updated = setAutoConfig(partial);
@@ -567,6 +583,92 @@ function SettingsPage() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      <div className="gradient-border p-4 md:p-5">
+        <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
+          <Bell className="w-4 h-4 text-amber-400" />
+          {isZh ? t('settings.notifications_title') : t('settings.notifications_title')}
+        </h3>
+        <p className="text-[10.5px] text-gray-400 mb-3 leading-relaxed">
+          {isZh ? t('settings.notifications_desc') : t('settings.notifications_desc')}
+        </p>
+        <div className="space-y-3">
+          {/* Permission status + request */}
+          <div className="p-3 rounded-lg bg-white/5 flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="text-xs text-gray-300 font-medium">
+                {isZh ? '浏览器通知权限' : 'Browser Notification Permission'}
+              </div>
+              <div className={`text-[10.5px] mt-0.5 flex items-center gap-1 ${notifPermission === 'granted' ? 'text-emerald-400' : notifPermission === 'denied' ? 'text-rose-400' : 'text-amber-400'}`}>
+                {notifPermission === 'granted' && <CheckCircle className="w-3 h-3" />}
+                {notifPermission === 'denied' && <AlertCircle className="w-3 h-3" />}
+                {notifPermission === 'granted'
+                  ? t('settings.notifications_permission_granted')
+                  : notifPermission === 'denied'
+                    ? t('settings.notifications_permission_denied')
+                    : t('settings.notifications_permission_default')}
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                const result = await NotificationService.requestPermission();
+                setNotifPermission(result);
+                if (result === 'granted') {
+                  setNotifEnabled(true);
+                  localStorage.setItem('zmusic_notifications_enabled', 'true');
+                }
+              }}
+              disabled={notifPermission === 'granted' || notifPermission === 'denied' || !NotificationService.isNotificationSupported()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+            >
+              <Bell className="w-3 h-3" />
+              {t('settings.notifications_permission_request')}
+            </button>
+          </div>
+
+          {/* Enable notifications toggle */}
+          <div className="p-3 rounded-lg bg-white/5 flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="text-xs text-gray-300 font-medium">{t('settings.notifications_enable')}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">
+                {isZh ? '开启后，下方各事件通知才会生效' : 'Master switch for all event notifications below'}
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                const next = !notifEnabled;
+                setNotifEnabled(next);
+                localStorage.setItem('zmusic_notifications_enabled', String(next));
+              }}
+              className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${notifEnabled ? 'bg-emerald-500' : 'bg-gray-600'}`}
+            >
+              <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${notifEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            </button>
+          </div>
+
+          {/* Per-event toggles */}
+          {[
+            { key: 'auto', label: t('settings.notifications_auto'), state: notifAuto, set: setNotifAuto, lsKey: 'zmusic_notifications_auto' },
+            { key: 'publish', label: t('settings.notifications_publish'), state: notifPublish, set: setNotifPublish, lsKey: 'zmusic_notifications_publish' },
+            { key: 'batch', label: t('settings.notifications_batch'), state: notifBatch, set: setNotifBatch, lsKey: 'zmusic_notifications_batch' },
+          ].map(({ key, label, state, set, lsKey }) => (
+            <div key={key} className="p-3 rounded-lg bg-white/5 flex items-center justify-between gap-3">
+              <div className="text-xs text-gray-300">{label}</div>
+              <button
+                onClick={() => {
+                  const next = !state;
+                  set(next);
+                  localStorage.setItem(lsKey, String(next));
+                }}
+                disabled={!notifEnabled}
+                className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 disabled:opacity-40 ${state ? 'bg-emerald-500' : 'bg-gray-600'}`}
+              >
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${state ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 

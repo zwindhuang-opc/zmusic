@@ -22,6 +22,7 @@ import { useTranslation } from '../i18n/useTranslation.js';
 import StrategySelector from './StrategySelector.jsx';
 import { getAutoConfig, setAutoConfig } from '../utils/autoConfig.js';
 import { getStrategy } from '../data/creativePresets.js';
+import NotificationService from '../services/notification.service.js';
 
 const ENGINE_THEMES = {
   'Muse AI': {
@@ -104,6 +105,7 @@ export default function AutoCreativePanel({
   onClose,
 }) {
   const scrollRef = useRef(null);
+  const prevThoughtsLenRef = useRef(thoughts.length);
   const [copiedIdx, setCopiedIdx] = useState(-1);
   const [selectedStrategyId, setSelectedStrategyId] = useState(() => {
     try { return getAutoConfig()?.selectedStrategyId || null; } catch { return null; }
@@ -149,6 +151,22 @@ export default function AutoCreativePanel({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [thoughts.length]);
+
+  // Fire PWA notification when a new AUTO song thought arrives
+  useEffect(() => {
+    const prevLen = prevThoughtsLenRef.current;
+    prevThoughtsLenRef.current = thoughts.length;
+    if (thoughts.length > prevLen && autoRunning) {
+      try {
+        if (localStorage.getItem('zmusic_notifications_enabled') === 'true'
+          && localStorage.getItem('zmusic_notifications_auto') !== 'false') {
+          const latestThought = thoughts[thoughts.length - 1];
+          const songTitle = latestThought?.title || (isZh ? '未命名构思' : 'Untitled');
+          NotificationService.notifyAutoComplete(songTitle, engineName);
+        }
+      } catch { /* ignore */ }
+    }
+  }, [thoughts.length, autoRunning, engineName]);
 
   if (!open) return null;
 
