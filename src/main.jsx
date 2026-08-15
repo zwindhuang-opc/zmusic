@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './i18n/index.js';
+import { t } from './i18n/index.js';
 import App from './App.jsx';
 import './index.css';
 import { initMobile } from './mobile.js';
@@ -82,13 +83,13 @@ class RootErrorBoundary extends React.Component {
                             background: 'linear-gradient(135deg,#8b5cf6,#ec4899)', color: '#fff',
                             border: 'none', padding: '10px 20px', borderRadius: '10px',
                             fontWeight: 600, fontSize: '13px', cursor: 'pointer',
-                        }}>Restart App</button>
+                        }}>{t('app.restart')}</button>
                         <button onClick={this.handleReset} style={{
                             background: 'rgba(255,255,255,0.08)', color: '#fff',
                             border: '1px solid rgba(255,255,255,0.12)',
                             padding: '10px 20px', borderRadius: '10px',
                             fontWeight: 600, fontSize: '13px', cursor: 'pointer',
-                        }}>Retry Render</button>
+                        }}>{t('app.retry_render')}</button>
                     </div>
                     <div style={{ fontSize: '10px', opacity: 0.4, marginTop: '8px' }}>
                         Please restart the app if the problem persists.

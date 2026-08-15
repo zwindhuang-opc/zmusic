@@ -877,11 +877,11 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
 
     // 3. Initial welcome thought
     const startThought = {
-      phase: '启动阶段', time: new Date().toLocaleTimeString(),
+      phase: t('mv.phase_starting'), time: new Date().toLocaleTimeString(),
       step: 'AUTO_INIT',
-      title: `▶️ ${displayName} AUTO 模式启动`,
-      summary: `打开 ${displayName} 官网标签页 → 60 秒构思倒计时 → 生成 MV`,
-      detail: `此阶段：\n  • 已自动为你在新标签打开 ${displayName} 官网（无需登录，仅用于查看官网状态）\n  • 接下来 60 秒用于"深度构思"：\n     - 50s：确定主题与情感基调\n     - 40s：确定流派、视觉风格、调色板、标题\n     - 20s：确定 BPM、调性、歌词草稿\n     - 5s：最终检查 + 启动生成\n  • 即便积分不足导致生成失败，整个构思过程都会被记录到「创作构思记录簿」。`,
+      title: t('mv.auto_start', { engine: displayName }),
+      summary: t('mv.auto_start_summary', { engine: displayName }),
+      detail: t('mv.auto_start_detail', { engine: displayName }),
     };
     setAutoThoughts(prev => [...prev, startThought]);
     autoProgress.addThought(startThought);

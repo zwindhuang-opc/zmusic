@@ -12,19 +12,27 @@ import './init.js';
 import express from 'express';
 import cors from 'cors';
 import net from 'net';
-import { readFileSync, existsSync } from 'fs';
+import fs from 'fs';
+import { readFileSync, existsSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { config } from './config/index.js';
-import Logger from './utils/logger.js';
+import Logger, { FileAppender } from './utils/logger.js';
 import { handleRoute } from './routes/index.js';
 
 const logger = new Logger('BackendServer');
+
+// Wire up file appender so all server logs are persisted to logs/server.log
+// (log4j-style: console appender + rolling file appender). 5MB rotation.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const LOG_DIR = join(__dirname, '..', 'logs');
+try { mkdirSync(LOG_DIR, { recursive: true }); } catch { /* already exists */ }
+logger.addAppender(new FileAppender(join(LOG_DIR, 'server.log'), { maxSize: 5 * 1024 * 1024, fs }));
+
 const app = express();
 
 // Load version from VERSION.json (single source of truth for web + mobile + server)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 let APP_VERSION = '0.0.0';
 try {
   const versionFile = JSON.parse(readFileSync(join(__dirname, '..', 'VERSION.json'), 'utf8'));

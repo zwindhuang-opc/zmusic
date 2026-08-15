@@ -721,7 +721,7 @@ function LyricsPage({ onNavigate, defaultMode }) {
                 disabled={isGenerating}
                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold text-base flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50 shadow-lg shadow-purple-500/20 active:scale-[0.98]"
               >
-                {isGenerating ? (<><Loader className="w-5 h-5 animate-spin" /> 生成中...</>) : (<><Sparkles className="w-5 h-5" /> {t('lyrics.generate')}</>)}
+                {isGenerating ? (<><Loader className="w-5 h-5 animate-spin" /> {t('common.generating')}</>) : (<><Sparkles className="w-5 h-5" /> {t('lyrics.generate')}</>)}
               </button>
             </div>
 
@@ -1666,21 +1666,21 @@ function LyricsPage({ onNavigate, defaultMode }) {
                         <button
                           onClick={() => handleSendToEngine('muse')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/30 text-xs text-fuchsia-300 hover:bg-fuchsia-500/25 transition-all"
-                          title="发送到 Muse AI 生成歌曲"
+                          title={t('lyrics.send_to_muse')}
                         >
                           <Headphones className="w-3.5 h-3.5" /> Muse
                         </button>
                         <button
                           onClick={() => handleSendToEngine('suno')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-xs text-cyan-300 hover:bg-cyan-500/25 transition-all"
-                          title="发送到 Suno AI 生成歌曲"
+                          title={t('lyrics.send_to_suno')}
                         >
                           <Cloud className="w-3.5 h-3.5" /> Suno
                         </button>
                         <button
                           onClick={() => handleSendToEngine('melo')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-xs text-amber-300 hover:bg-amber-500/25 transition-all"
-                          title="发送到 Melo AI 生成歌曲"
+                          title={t('lyrics.send_to_melo')}
                         >
                           <Music2 className="w-3.5 h-3.5" /> Melo
                         </button>
@@ -1707,18 +1707,21 @@ function LyricsPage({ onNavigate, defaultMode }) {
                         <button
                           onClick={() => handleSendToEngine('muse')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/30 text-xs text-fuchsia-300 hover:bg-fuchsia-500/25 transition-all"
+                          title={t('lyrics.send_to_muse')}
                         >
                           <Headphones className="w-3.5 h-3.5" /> Muse
                         </button>
                         <button
                           onClick={() => handleSendToEngine('suno')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-xs text-cyan-300 hover:bg-cyan-500/25 transition-all"
+                          title={t('lyrics.send_to_suno')}
                         >
                           <Cloud className="w-3.5 h-3.5" /> Suno
                         </button>
                         <button
                           onClick={() => handleSendToEngine('melo')}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-xs text-amber-300 hover:bg-amber-500/25 transition-all"
+                          title={t('lyrics.send_to_melo')}
                         >
                           <Music2 className="w-3.5 h-3.5" /> Melo
                         </button>

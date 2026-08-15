@@ -1315,14 +1315,14 @@ function MusePage({ onNavigate }) {
             <button
               onClick={loadMuseConfig}
               className="p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
-              title="刷新"
+              title={t('common.refresh')}
             >
               <RefreshCw className="w-4 h-4" />
             </button>
             <button
               onClick={() => setShowHistory(!showHistory)}
               className="p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
-              title="历史"
+              title={t('lyrics.history')}
             >
               <History className="w-4 h-4" />
             </button>
@@ -1435,7 +1435,7 @@ function MusePage({ onNavigate }) {
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="用一句话描述你想要的歌曲... 例如：夏日海边，夕阳西下的浪漫回忆"
+                  placeholder={t('muse.prompt_placeholder')}
                   className="w-full h-28 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 resize-none transition-all"
                   maxLength={200}
                 />
@@ -1464,7 +1464,7 @@ function MusePage({ onNavigate }) {
                   <textarea
                     value={lyrics}
                     onChange={(e) => setLyrics(e.target.value)}
-                    placeholder="输入完整歌词... Muse AI 将根据歌词生成歌曲"
+                    placeholder={t('muse.lyrics_placeholder')}
                     className="w-full h-48 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500/50 focus:ring-2 focus:ring-fuchsia-500/20 resize-y font-mono transition-all"
                   />
                   <p className="text-[11px] text-gray-500 mt-1.5 flex items-center gap-1">
@@ -1482,7 +1482,7 @@ function MusePage({ onNavigate }) {
                     <input
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="为你的歌曲取一个名字"
+                      placeholder={t('muse.song_title_placeholder')}
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500/50 transition-all"
                     />
                   </div>
@@ -1494,7 +1494,7 @@ function MusePage({ onNavigate }) {
                       value={selectedTemplate}
                       onChange={setSelectedTemplate}
                       options={MASTER_TEMPLATES.map(t => ({ value: t.id, label: t.label, icon: t.icon }))}
-                      placeholder="选择结构"
+                      placeholder={t('muse.select_structure')}
                     />
                   </div>
                 </div>
@@ -1878,7 +1878,7 @@ function MusePage({ onNavigate }) {
                           <button
                             onClick={() => copySessionItem(session)}
                             className="p-2 rounded-lg bg-white/5 hover:bg-fuchsia-500/20 text-gray-400 hover:text-fuchsia-300 transition-all"
-                            title="复制完整记录（歌词+风格+参数）"
+                            title={t('muse.copy_full_record')}
                           >
                             <Copy className="w-3.5 h-3.5" />
                           </button>
@@ -1894,7 +1894,7 @@ function MusePage({ onNavigate }) {
                                 });
                               }}
                               className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-amber-400 transition-all"
-                              title="恢复此歌曲"
+                              title={t('song_history.restore')}
                             >
                               <Play className="w-3.5 h-3.5" />
                             </button>
@@ -1981,7 +1981,7 @@ function MusePage({ onNavigate }) {
                             }
                           }}
                           className="p-1.5 rounded-lg bg-fuchsia-500/20 text-fuchsia-300 hover:bg-fuchsia-500/30 transition-colors"
-                          title="播放"
+                          title={t('song_history.play')}
                         >
                           <Play className="w-3 h-3" />
                         </button>
@@ -1996,7 +1996,7 @@ function MusePage({ onNavigate }) {
                             }
                           }}
                           className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-                          title="下载"
+                          title={t('song_history.download')}
                         >
                           <Download className="w-3 h-3" />
                         </button>

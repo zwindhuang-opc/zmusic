@@ -1,5 +1,50 @@
 # ZMusic Changelog
 
+## v7.5.0 (2026-08-15) · Documentation & Logging Overhaul Release
+
+**Documentation Suite (PMP Standard)**
+- NEW `docs/SYSTEM_SPEC.md` — PMP System Specification (50+ functional requirements FR-001~FR-151, 71 non-functional requirements NFR-001~NFR-071, system boundaries, constraints, acceptance criteria, glossary)
+- NEW `docs/PROGRAM_SPEC.md` — PMP Program Specification (5-layer MVC + Agent architecture, module specs for all 14 controllers / 17 services / 18 pages, data flow diagrams, integration points, API summary, persistence design, logging spec, error handling, security)
+- NEW `docs/TECHNICAL_GUIDE.md` — Developer Technical Guide (environment setup, project structure, build & deployment for web/APK/IPA/Electron/Vercel/Netlify/Cloudflare, coding standards, step-by-step guides for adding new pages/API endpoints/AI engines, logging usage examples with all 6 levels + FileAppender, testing, troubleshooting, performance, version management)
+- UPDATED `docs/USER_GUIDE.md` — Rewritten from v5.4.0 to v7.5.0 (25 sections covering all 18 pages, GLOBAL AUTO, 10 strategy presets, lyrics engine, studios, library, quality analyzer, batch gen, analytics, audio player, settings, auth, history, i18n, tips, FAQ, troubleshooting)
+- UPDATED `README.md` — Rewritten from v5.4.0 to v7.5.0 (badges, 3 AI engines, live demo links, feature highlights, tech stack table, quick start, project structure, mobile apps, deployment, config, API reference, documentation table linking all 10 docs, screenshots, repo zwindhuang-opc/zmusic, contact zwindhuang@qq.com)
+- UPDATED `docs/PMP_PROJECT_PLAN.md` — Updated from v1.0.0 to v7.5.0 (all 8 phases marked ✅ Complete, 13 sprints, full version history v1→v7.5, updated risk register with port conflicts RESOLVED and GitHub Pages private repo OPEN, issue log summary, updated resources, pinned ports 4720/4721)
+- UPDATED `docs/ISSUE_LOG.md` — Added v7.x resolved issues (i18n 582-key fix, APK black screen, MV translations, Melo validation) and v7.5.0 entries (documentation overhaul ✅, logging file appender ✅, GitHub Pages private repo limitation ⚠️ Open)
+
+**Logging Mechanism Enhancement (log4j-style)**
+- `src/utils/logger.js` — Added `FileAppender` class with rolling 5MB file rotation (log4j-style); exported alongside `ConsoleAppender` and `PatternLayout`
+- `src/server.js` — Wired FileAppender into BackendServer logger; all server logs now persist to `logs/server.log` (dual appender: console + file); logs/ already in .gitignore
+- 6 log levels: TRACE / DEBUG / INFO / WARN / ERROR / FATAL
+- Pattern layout: `[YYYY-MM-DDTHH:mm:ss.sssZ] [LEVEL] [Category] - message`
+- UTF-8 encoding enforced on Windows via `src/init.js` (process.stdout.setDefaultEncoding('utf8'))
+
+**i18n Cleanup**
+- Migrated remaining hardcoded strings to `t()` i18n calls across `App.jsx`, `main.jsx`, and 15 other component/page files
+- 75+ new translation keys added to `en.json` / `zh.json` (header.edge_cdp, app.restart, app.retry_render, common.untitled, visual_recommendations, send_to_muse/suno/melo, score_badge_click, six_metrics, feedback, click_to_expand, untitled_song, suffix_songs, zip_building, enter_themes_or_csv, select_at_least_one_engine, queue_built, api_error, response_parse_error, sample_lyrics, simulated_failure, unknown_error, processing_complete, file_parsed_success, file_parse_error, no_completed_results, zip_library_failed, packaged_songs, bundle_failed, engine_muse/suno/melo, strategy.preset_applied, strategy.applied_short, etc.)
+- `en.json` and `zh.json` perfectly synchronized with zero mixed CN/EN
+
+**Verification**
+- Browser verification: 11+ pages verified working without console errors (Dashboard, Music Studio, Muse AI, Suno AI, Melo AI, Lyrics, Creative Notebook, Image-to-Lyrics, MV, Remix Studio, Settings)
+- Backend health endpoint confirms all services configured (apiConfigured, museConfigured, meloConfigured)
+- Dev server running on pinned ports: Frontend http://localhost:4720/, Backend http://localhost:4721/
+
+**Version Sync**
+- `VERSION.json`: 7.4.1 → 7.5.0 (buildNumber 11 → 12)
+- `package.json`: 7.4.1 → 7.5.0
+- `android/app/build.gradle`: versionCode 33 → 34, versionName "7.4.1" → "7.5.0"
+
+---
+
+## v7.4.1 (2026-08-15) · APK Black Screen Fix + Assisted Publishing
+
+- Fix APK black screen: AuthProvider/SongLibraryProvider/PlayerProvider imports in App.jsx
+- Assisted Publishing: auto-open portal + auto-copy + checklist
+- PWA Notifications
+- SongLibraryProvider auto-reads auth context
+- versionCode 33
+
+---
+
 ## v7.4.0 (2026-08-14) · Super Feature Release
 
 **P1 · Song Library & Accounts Phase 1**

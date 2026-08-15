@@ -510,7 +510,7 @@ export default function ImageLyricsPage({ onNavigate }) {
                         onChange={(e) => setScript(e.target.value)}
                         rows={2}
                         className="w-full px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 resize-none"
-                        placeholder="AI 根据图片自动生成的灵感描述..."
+                        placeholder={t('image_lyrics.auto_description_placeholder')}
                       />
                     </div>
                   )}

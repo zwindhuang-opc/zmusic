@@ -17,7 +17,7 @@ function formatTime(sec) {
 
 export default function PersistentAudioPlayer() {
   const {
-    currentSong, playlist, isPlaying, currentTime, duration, volume,
+    currentSong, currentIndex, playlist, isPlaying, currentTime, duration, volume,
     shuffle, repeat,
     play, pause, togglePlay, seek, enqueue, playNext, playPrev,
     toggleShuffle, toggleRepeat, setVolume, removeFromQueue,
@@ -62,7 +62,7 @@ export default function PersistentAudioPlayer() {
 
   const url = currentSong?.audioUrl || currentSong?.audio_url || currentSong?.result?.audioUrl || '';
   const title = currentSong?.title || currentSong?.creativeProcess?.snapshot?.title ||
-    (isZh ? '未命名歌曲' : 'Untitled Song');
+    t('player.untitled_song');
   const engine = (currentSong?.engine || currentSong?.creativeProcess?.engine || 'ZMusic').toString();
   const cover = currentSong?.cover_data || currentSong?.coverUrl || currentSong?.imageUrl ||
     currentSong?.creativeProcess?.imageUrl || '';
@@ -212,18 +212,16 @@ export default function PersistentAudioPlayer() {
             <div className="flex items-center gap-1">
               <button
                 onClick={(e) => { e.stopPropagation(); toggleShuffle(); }}
-                className={`p-1.5 md:p-2 rounded-lg transition-colors ${
-                  shuffle ? 'text-fuchsia-400 bg-fuchsia-500/15' : 'text-gray-400 hover:text-white hover:bg-white/10'
-                }`}
+                className={`p-1.5 md:p-2 rounded-lg transition-colors ${shuffle ? 'text-fuchsia-400 bg-fuchsia-500/15' : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
                 title={L.shuffle}
               >
                 <Shuffle className="w-3.5 h-3.5 md:w-4 md:h-4" />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); toggleRepeat(); }}
-                className={`p-1.5 md:p-2 rounded-lg transition-colors ${
-                  repeat ? 'text-violet-400 bg-violet-500/15' : 'text-gray-400 hover:text-white hover:bg-white/10'
-                }`}
+                className={`p-1.5 md:p-2 rounded-lg transition-colors ${repeat ? 'text-violet-400 bg-violet-500/15' : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
                 title={L.repeat}
               >
                 <Repeat className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -337,14 +335,14 @@ export default function PersistentAudioPlayer() {
                 <div className="hidden md:flex flex-col gap-3">
                   <div className="flex items-center justify-between text-xs font-bold text-gray-400 px-1">
                     <span>{L.queue}</span>
-                    <span className="text-gray-600">{playlist.length} {isZh ? '首' : 'songs'}</span>
+                    <span className="text-gray-600">{playlist.length} {t('player.suffix_songs')}</span>
                   </div>
                   <div className="h-52 overflow-y-auto rounded-xl bg-black/30 border border-white/5 divide-y divide-white/5">
                     {playlist.length === 0 && (
                       <div className="p-4 text-center text-[11px] text-gray-500">{L.no_song_loaded}</div>
                     )}
                     {playlist.map((s, idx) => {
-                      const t = s.title || s.creativeProcess?.snapshot?.title || (isZh ? '未命名' : 'Untitled');
+                      const songTitle = s.title || s.creativeProcess?.snapshot?.title || t('player.untitled_short');
                       const e = (s.engine || s.creativeProcess?.engine || '').toString().slice(0, 6);
                       const active = idx === currentIndex;
                       return (
@@ -356,7 +354,7 @@ export default function PersistentAudioPlayer() {
                           <GripVertical className="w-3 h-3 text-gray-600 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
                             <div className={`text-[11px] font-medium truncate ${active ? 'text-fuchsia-300' : 'text-gray-300'}`}>
-                              {t}
+                              {songTitle}
                             </div>
                             <div className="text-[9px] text-gray-500 truncate">{e}</div>
                           </div>
@@ -400,7 +398,7 @@ export default function PersistentAudioPlayer() {
               <div className="p-6 text-center text-xs text-gray-500">{L.no_song_loaded}</div>
             )}
             {playlist.map((s, idx) => {
-              const t = s.title || s.creativeProcess?.snapshot?.title || (isZh ? '未命名' : 'Untitled');
+              const songTitle = s.title || s.creativeProcess?.snapshot?.title || t('player.untitled_short');
               const e = (s.engine || s.creativeProcess?.engine || 'ZMusic').toString();
               const active = idx === currentIndex;
               return (
@@ -409,13 +407,12 @@ export default function PersistentAudioPlayer() {
                   className={`flex items-center gap-2 p-2.5 cursor-pointer ${active ? 'bg-fuchsia-500/10' : 'hover:bg-white/5'}`}
                   onClick={() => play(s)}
                 >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold tabular-nums ${
-                    active ? 'bg-gradient-to-br from-fuchsia-500 to-violet-500 text-white' : 'bg-white/5 text-gray-500'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold tabular-nums ${active ? 'bg-gradient-to-br from-fuchsia-500 to-violet-500 text-white' : 'bg-white/5 text-gray-500'
+                    }`}>
                     {idx + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className={`text-xs font-medium truncate ${active ? 'text-fuchsia-300' : 'text-gray-200'}`}>{t}</div>
+                    <div className={`text-xs font-medium truncate ${active ? 'text-fuchsia-300' : 'text-gray-200'}`}>{songTitle}</div>
                     <div className="text-[10px] text-gray-500 truncate">{e}</div>
                   </div>
                   <button

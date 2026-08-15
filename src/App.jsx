@@ -322,7 +322,7 @@ function App() {
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400">Edge CDP</span>
+            <span className="text-xs text-gray-400">{t('header.edge_cdp')}</span>
             <div className={`flex items-center gap-1.5 ${apiStatus.browserConnected ? 'text-emerald-400' : 'text-gray-500'}`}>
               <div className={`w-1.5 h-1.5 rounded-full ${apiStatus.browserConnected ? 'bg-emerald-400' : 'bg-gray-500'}`} />
               <span className="text-[10px] font-medium">{apiStatus.browserConnected ? t('header.connected') : t('header.offline')}</span>

@@ -88,7 +88,9 @@
   },
   "app": {
     "subtitle": "AI音乐生成平台",
-    "title": "ZMusic"
+    "title": "ZMusic",
+    "restart": "重启应用",
+    "retry_render": "重试渲染"
   },
   "chat": {
     "agents": {
@@ -122,7 +124,10 @@
     "placeholder": "输入您的创作想法...",
     "title": "AI助手",
     "welcome": "您好！我是您的AI音乐创作助手。您可以选择不同的AI模型来帮助您创作音乐、歌词和MV。",
-    "you": "您"
+    "you": "您",
+    "network_result": "已为您生成网络层架构音乐：\n\n{text}...",
+    "melo_result": "已为您生成 Melo AI 多层创作命令：\n\n【标题指令】{title}\n【风格标签】流派: {genre} | 情绪: {mood} | 配器: {instruments}\n【BPM】{bpm}\n\n{fullText}...\n\n💡 提示：您可以用 \"BPM 90\"、\"古风\"、\"爵士\"、\"140拍\" 等关键词精确控制生成结果。",
+    "error_response": "处理您的请求时出现错误: {msg}"
   },
   "auto": {
     "btn_label": "AUTO",
@@ -186,7 +191,14 @@
     "send_to_muse": "发送到Muse AI",
     "send_to_suno": "发送到Suno AI",
     "success": "成功",
-    "untitled": "未命名"
+    "untitled": "未命名",
+    "support_jpg_png": "支持 JPG, PNG 格式",
+    "generating": "生成中...",
+    "engine_muse": "Muse",
+    "engine_suno": "Suno",
+    "engine_melo": "Melo",
+    "hide": "隐藏",
+    "refresh": "刷新"
   },
   "history": {
     "creation_draft": "创作草稿",
@@ -199,7 +211,10 @@
     "copy_commands": "复制命令",
     "commands": "命令",
     "copy_lyrics": "仅复制歌词",
-    "lyrics": "歌词"
+    "lyrics": "歌词",
+    "send_to_muse": "Send to Muse AI",
+    "send_to_suno": "Send to Suno AI",
+    "send_to_melo": "Send to Melo AI"
   },
   "song_history": {
     "title": "历史音乐",
@@ -384,7 +399,8 @@
     "switch_to_easy": "切换到向导模式",
     "switch_to_expert": "切换到专家模式",
     "ui_mode": "向导模式",
-    "ui_mode_toggle_title": "切换界面模式"
+    "ui_mode_toggle_title": "切换界面模式",
+    "edge_cdp": "Edge CDP"
   },
   "imagery": {
     "T恤": "T恤",
@@ -828,7 +844,10 @@
     "view_lyrics": "仅歌词",
     "view_lyrics_only": "仅歌词",
     "visual_reco_desc": "基于上传图片分析，推荐以下音乐风格",
-    "visual_recommendations": "视觉风格推荐"
+    "visual_recommendations": "视觉风格推荐",
+    "send_to_muse": "发送到 Muse AI 生成歌曲",
+    "send_to_suno": "发送到 Suno AI 生成歌曲",
+    "send_to_melo": "发送到 Melo AI 生成歌曲"
   },
   "notebook": {
     "title": "创作构思记录簿",
@@ -862,7 +881,12 @@
     "ab_compare": "A/B对比",
     "original": "原作",
     "remastered": "新编版",
-    "pick_another_engine": "选择另一个引擎"
+    "pick_another_engine": "选择另一个引擎",
+    "click_hint": "点击后会依次跳转各引擎页面，并自动预填歌词/风格/BPM/标题，用户确认后点\"生成\"即可",
+    "regen_hint": "歌词/风格/BPM 已预填。请点击顶部「{engine}」导航到引擎页面，然后点击\"生成\"按钮即可听到实际对比效果。",
+    "remix_to_engines": "🎼 同时重混到 {n} 个引擎",
+    "next_step": "💡 下一步",
+    "go_to_engine": "前往 {engine}"
   },
   "library": {
     "title": "歌曲库",
@@ -951,7 +975,9 @@
     "expanded": "收起策略选择器",
     "none_selected": "未选择策略 — 参数将完全随机",
     "bpm_range": "BPM 区间",
-    "structure": "歌曲结构"
+    "structure": "歌曲结构",
+    "preset_applied": "创作策略预设 · 应用到 AUTO 模式",
+    "applied_short": "已应用"
   },
   "publish": {
     "toast_success": "发布成功！作品已提交平台审核",
@@ -1206,7 +1232,9 @@
     "test_mode": "测试模式",
     "title": "Muse AI 音乐生成",
     "uploading": "上传中",
-    "vocal": "声线"
+    "vocal": "声线",
+    "select_structure": "选择结构",
+    "copy_full_record": "复制完整记录（歌词+风格+参数）"
   },
   "music": {
     "ai_agent_method": "AI代理方法",
@@ -1293,7 +1321,8 @@
     "task_id": "任务ID",
     "theme": "主题",
     "title": "音乐生成",
-    "works_gallery": "作品集"
+    "works_gallery": "作品集",
+    "ai_thinking_process": "AI 思考过程"
   },
   "music_elements": {
     "tango": "探戈",
@@ -1963,7 +1992,11 @@
     "gen_error_melo_no_audio": "Melo AI 未返回音频",
     "gen_error_failed": "生成音乐失败",
     "timeline_copied": "时间轴已复制到剪贴板",
-    "history_section_title": "生成历史"
+    "history_section_title": "生成历史",
+    "phase_starting": "Starting Phase",
+    "auto_start": "▶️ {engine} AUTO Mode Started",
+    "auto_start_summary": "Open {engine} website tab → 60s thinking countdown → Generate MV",
+    "auto_start_detail": "This phase:\n  • Automatically opened {engine} website in a new tab (no login needed, for checking website status only)\n  • Next 60s for \"deep thinking\":\n     - 50s: Determine theme and emotional tone\n     - 40s: Determine genre, visual style, color palette, title\n     - 20s: Determine BPM, key, lyrics draft\n     - 5s: Final check + start generation\n  • Even if generation fails due to insufficient credits, the entire thinking process will be recorded in the Creation Thinking Log."
   },
   "scenes": {
     "cinematic_concert": "电影演唱会",
@@ -2049,7 +2082,10 @@
     "feedback_suggest_duration": "建议：调整目标时长以提升精准度",
     "feedback_suggest_bpm": "建议：锁定 BPM 至策略推荐区间",
     "feedback_suggest_style": "建议：补充更具体的风格标签",
-    "score_badge_click": "点击查看 6 项指标详情"
+    "score_badge_click": "点击查看 6 项指标详情",
+    "click_details": "点击查看详情",
+    "six_metrics": "6项质量指标",
+    "feedback": "反馈建议"
   },
   "player": {
     "now_playing": "正在播放",
@@ -2065,7 +2101,11 @@
     "no_song_loaded": "未加载歌曲 — 播放一首歌曲开始",
     "lyrics_scroller": "歌词摘录",
     "time_scrub": "拖动进度条",
-    "click_to_expand": "点击展开迷你播放器"
+    "click_to_expand": "点击展开迷你播放器",
+    "untitled_song": "未命名歌曲",
+    "suffix_songs": "首",
+    "untitled_short": "未命名",
+    "untitled_idea": "未命名构思"
   },
   "batch": {
     "title": "批量生成",
@@ -2104,7 +2144,25 @@
     "item_index": "第 {i} 项",
     "per_item_avg": "每项平均",
     "zip_ready": "ZIP 已就绪 — 共 {n} 个输出文件",
-    "zip_building": "正在构建 ZIP 包…"
+    "zip_building": "正在构建 ZIP 包…",
+    "enter_themes_or_csv": "请先输入生成主题或上传CSV文件",
+    "select_at_least_one_engine": "请至少选择一个引擎",
+    "queue_built": "已构建队列: {n} 个任务 ({items}项 × {engines}引擎)",
+    "api_error": "API返回错误",
+    "response_parse_error": "响应解析失败",
+    "sample_lyrics": "示例歌词",
+    "simulated_failure": "模拟失败 (35%概率)",
+    "unknown_error": "未知异常",
+    "processing_complete": "批量任务完成！",
+    "file_parsed_success": "文件解析成功",
+    "file_parse_error": "文件解析失败：{msg}",
+    "no_completed_results": "暂无可下载的结果",
+    "zip_library_failed": "ZIP库加载失败，请检查网络",
+    "packaged_songs": "已打包 {n} 首歌曲",
+    "bundle_failed": "打包失败：{msg}",
+    "engine_muse": "Muse AI",
+    "engine_suno": "Suno AI",
+    "engine_melo": "Melo AI"
   },
   "analytics": {
     "title": "数据分析",
@@ -2141,5 +2199,11 @@
     "no_data": "暂无数据，先生成一些歌曲吧",
     "published_total": "已发布歌曲",
     "most_shared": "发布最多的平台"
+  },
+  "easy": {
+    "ai_creating": "AI Creating..."
+  },
+  "image_lyrics": {
+    "auto_description_placeholder": "AI-generated inspiration description based on image..."
   }
 }

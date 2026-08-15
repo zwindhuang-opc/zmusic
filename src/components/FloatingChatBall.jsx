@@ -73,7 +73,7 @@ function FloatingChatBall() {
             script: userInput,
             language: 'zh'
           });
-          responseContent = `已为您生成网络层架构音乐:\n\n${networkResult.result.fullText.substring(0, 300)}...`;
+          responseContent = t('chat.network_result', { text: networkResult.result.fullText.substring(0, 300) });
           break;
         case 'melo':
           const meloResult = unicornAgent.generateMeloCommand(
@@ -81,18 +81,20 @@ function FloatingChatBall() {
             extractStyle(userInput) || 'pop',
             { bpm: extractBPM(userInput) || 120, script: userInput, language: 'zh' }
           );
-          responseContent = `已为您生成 Melo AI 多层创作命令：\n\n` +
-            `【标题指令】${meloResult.title}\n` +
-            `【风格标签】流派: ${meloResult.styleInfo.genre} | 情绪: ${meloResult.styleInfo.mood} | 配器: ${meloResult.styleInfo.instruments}\n` +
-            `【BPM】${meloResult.bpm}\n\n` +
-            `${meloResult.fullText.substring(0, 280)}...\n\n` +
-            `💡 提示：您可以用 "BPM 90"、"古风"、"爵士"、"140拍" 等关键词精确控制生成结果。`;
+          responseContent = t('chat.melo_result', {
+            title: meloResult.title,
+            genre: meloResult.styleInfo.genre,
+            mood: meloResult.styleInfo.mood,
+            instruments: meloResult.styleInfo.instruments,
+            bpm: meloResult.bpm,
+            fullText: meloResult.fullText.substring(0, 280)
+          });
           break;
         default:
           responseContent = t('chat.default_response');
       }
     } catch (error) {
-      responseContent = `处理您的请求时出现错误: ${error.message}`;
+      responseContent = t('chat.error_response', { msg: error.message });
     }
 
     setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', content: responseContent, agent: selectedAgent }]);

@@ -410,7 +410,7 @@ export default function RemixStudio({ onNavigate }) {
                 className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-300 bg-white/5 border border-white/10 hover:bg-white/10"
               >
                 <RefreshCcw className="w-4 h-4" />
-                {isZh ? '清空' : 'Clear'}
+                {t('common.clear')}
               </button>
               <button
                 onClick={doSendAll}
@@ -418,13 +418,11 @@ export default function RemixStudio({ onNavigate }) {
                 className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 hover:from-violet-400 hover:via-fuchsia-400 hover:to-pink-400 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-fuchsia-500/30 hover:scale-[1.005] active:scale-[0.995] transition-all"
               >
                 <Play className="w-5 h-5" />
-                {isZh ? `🎼 同时重混到 ${targetEngines.length} 个引擎` : `🎼 Remix to ${targetEngines.length} engine(s)`}
+                {t('remix.remix_to_engines', { n: targetEngines.length })}
               </button>
             </div>
             <p className="text-[10.5px] text-gray-500 text-center pt-0.5">
-              {isZh
-                ? '点击后会依次跳转各引擎页面，并自动预填歌词/风格/BPM/标题，用户确认后点"生成"即可'
-                : 'Target engine pages will open auto-filled with lyrics, style, BPM, title — just click Generate'}
+              {t('remix.click_hint')}
             </p>
           </div>
         </div>
@@ -618,12 +616,10 @@ export default function RemixStudio({ onNavigate }) {
                     ) : (
                       <div className="rounded-lg bg-black/30 border border-amber-500/20 p-3 text-xs text-amber-200/80">
                         <div className="font-semibold mb-1">
-                          {isZh ? '💡 下一步' : '💡 Next step'}
+                          {t('remix.next_step')}
                         </div>
                         <div className="text-[10.5px] text-gray-400 leading-relaxed">
-                          {isZh
-                            ? `歌词/风格/BPM 已预填。请点击顶部「${tgtEngObj?.name || ''}」导航到引擎页面，然后点击"生成"按钮即可听到实际对比效果。`
-                            : `Lyrics/style/BPM are pre-filled. Navigate to ${tgtEngObj?.name || ''} and click Generate to hear the actual comparison.`}
+                          {t('remix.regen_hint', { engine: tgtEngObj?.name || '' })}
                         </div>
                       </div>
                     )}
@@ -635,7 +631,7 @@ export default function RemixStudio({ onNavigate }) {
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-amber-500/80 to-orange-500/80 hover:from-amber-500 hover:to-orange-500 transition-all"
                       >
                         <ArrowRight className="w-3.5 h-3.5" />
-                        {isZh ? `前往 ${tgtEngObj?.name || abTargetEngine}` : `Go to ${tgtEngObj?.name || abTargetEngine}`}
+                        {t('remix.go_to_engine', { engine: tgtEngObj?.name || abTargetEngine })}
                       </button>
                       <button
                         onClick={() => {

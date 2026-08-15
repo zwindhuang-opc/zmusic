@@ -97,11 +97,11 @@ export default function BatchGenerationPage() {
 
   const buildQueue = () => {
     if (baseItems.length === 0) {
-      showToast?.(isZh ? '请先输入生成主题或上传CSV文件' : 'Please enter themes or upload a CSV', 'error');
+      showToast?.(t('batch.enter_themes_or_csv'), 'error');
       return;
     }
     if (engines.length === 0) {
-      showToast?.(isZh ? '请至少选择一个引擎' : 'Select at least one engine', 'error');
+      showToast?.(t('batch.select_at_least_one_engine'), 'error');
       return;
     }
     const strategy = selectedStrategy ? getStrategy(selectedStrategy) : null;
@@ -123,7 +123,7 @@ export default function BatchGenerationPage() {
         q.push({
           id: `batch-${Date.now()}-${i}-${j}`,
           index: q.length,
-          theme: params.theme || (isZh ? `第 ${i + 1} 项` : `Item #${i + 1}`),
+          theme: params.theme || t('batch.item_index', { i: i + 1 }),
           engine: eid,
           params,
           status: 'queued',
@@ -141,9 +141,7 @@ export default function BatchGenerationPage() {
     setAvgPerItem(0);
     setCurrentRunningIdx(-1);
     showToast?.(
-      isZh
-        ? `已构建队列: ${q.length} 个任务 (${baseItems.length}项 × ${engines.length}引擎)`
-        : `Queue built: ${q.length} tasks (${baseItems.length} items × ${engines.length} engines)`,
+      t('batch.queue_built', { n: q.length, items: baseItems.length, engines: engines.length }),
       'success'
     );
   };
@@ -156,7 +154,7 @@ export default function BatchGenerationPage() {
     try {
       const ev = new CustomEvent('zmusic:add-history', { detail: result });
       window.dispatchEvent(ev);
-    } catch (_) {}
+    } catch (_) { }
     try {
       if (addToHistory) {
         addToHistory({
@@ -173,7 +171,7 @@ export default function BatchGenerationPage() {
           prompt: result.theme,
         });
       }
-    } catch (_) {}
+    } catch (_) { }
   };
 
   const runOne = async (task) => {
@@ -216,9 +214,9 @@ export default function BatchGenerationPage() {
               raw: data,
             };
             success = !(data.error || data.status === 'failed');
-            if (!success) errorMsg = data.error || (isZh ? 'API返回错误' : 'API error');
+            if (!success) errorMsg = data.error || t('batch.api_error');
           } catch (pe) {
-            errorMsg = isZh ? '响应解析失败' : 'Response parse error';
+            errorMsg = t('batch.response_parse_error');
           }
         } else {
           await new Promise(r => setTimeout(r, 2000));
@@ -229,15 +227,15 @@ export default function BatchGenerationPage() {
               engine,
               audioUrl: '',
               cover_data: '',
-              lyrics: params.lyrics || (isZh ? '示例歌词' : 'Sample lyrics'),
+              lyrics: params.lyrics || t('batch.sample_lyrics'),
               status: 'simulated_success',
             };
           } else {
-            errorMsg = isZh ? '模拟失败 (35%概率)' : 'Simulated failure (35%)';
+            errorMsg = t('batch.simulated_failure');
           }
         }
       } catch (e) {
-        errorMsg = e.message || (isZh ? '未知异常' : 'Unknown error');
+        errorMsg = e.message || t('batch.unknown_error');
       }
       resolve({ success, result: resultData, error: errorMsg });
     });
@@ -288,7 +286,7 @@ export default function BatchGenerationPage() {
     setIsRunning(false);
     setIsPaused(false);
     setCurrentRunningIdx(-1);
-    showToast?.(isZh ? '批量任务完成！' : 'Batch processing complete!', 'success');
+    showToast?.(t('batch.processing_complete'), 'success');
   };
 
   const pauseQueue = () => setIsPaused(p => !p);
@@ -317,15 +315,15 @@ export default function BatchGenerationPage() {
       } else {
         setRawItems(parseCSV(text));
       }
-      showToast?.(isZh ? '文件解析成功' : 'File parsed successfully', 'success');
+      showToast?.(t('batch.file_parsed_success'), 'success');
     } catch (e) {
-      showToast?.(isZh ? '文件解析失败：' + e.message : 'Parse error: ' + e.message, 'error');
+      showToast?.(t('batch.file_parse_error', { msg: e.message }), 'error');
     }
   };
 
   const downloadZip = async () => {
     if (completedResults.length === 0) {
-      showToast?.(isZh ? '暂无可下载的结果' : 'No completed results to download', 'error');
+      showToast?.(t('batch.no_completed_results'), 'error');
       return;
     }
     try {
@@ -334,7 +332,7 @@ export default function BatchGenerationPage() {
         const mod = await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
         JSZip = mod.default;
       } catch (_) {
-        showToast?.(isZh ? 'ZIP库加载失败，请检查网络' : 'ZIP library failed to load — check network', 'error');
+        showToast?.(t('batch.zip_library_failed'), 'error');
         return;
       }
       const zip = new JSZip();
@@ -357,7 +355,7 @@ export default function BatchGenerationPage() {
           try {
             const b64 = String(result.cover_data).split(',')[1] || result.cover_data;
             zip.file(`${safeName}_cover.jpg`, b64, { base64: true });
-          } catch (_) {}
+          } catch (_) { }
         }
         if (result.audioUrl) {
           try {
@@ -369,7 +367,7 @@ export default function BatchGenerationPage() {
             } else {
               zip.file(`${safeName}_url.txt`, `Audio URL: ${result.audioUrl}\n\nDownload manually if external.`);
             }
-          } catch (_) {}
+          } catch (_) { }
         }
       });
       const blob = await zip.generateAsync({ type: 'blob' });
@@ -380,9 +378,9 @@ export default function BatchGenerationPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(a.href);
-      showToast?.(isZh ? `已打包 ${completedResults.length} 首歌曲` : `Packaged ${completedResults.length} songs`, 'success');
+      showToast?.(t('batch.packaged_songs', { n: completedResults.length }), 'success');
     } catch (e) {
-      showToast?.(isZh ? '打包失败：' + e.message : 'Bundle failed: ' + e.message, 'error');
+      showToast?.(t('batch.bundle_failed', { msg: e.message }), 'error');
     }
   };
 
@@ -484,11 +482,10 @@ export default function BatchGenerationPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setInputMode('manual')}
-                className={`flex-1 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  inputMode === 'manual'
-                    ? 'bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-lg shadow-indigo-500/20'
-                    : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/10'
-                }`}
+                className={`flex-1 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${inputMode === 'manual'
+                  ? 'bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-lg shadow-indigo-500/20'
+                  : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/10'
+                  }`}
               >
                 <span className="flex items-center justify-center gap-1.5">
                   <FileText className="w-4 h-4" />
@@ -497,11 +494,10 @@ export default function BatchGenerationPage() {
               </button>
               <button
                 onClick={() => setInputMode('file')}
-                className={`flex-1 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  inputMode === 'file'
-                    ? 'bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-lg shadow-indigo-500/20'
-                    : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/10'
-                }`}
+                className={`flex-1 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${inputMode === 'file'
+                  ? 'bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-lg shadow-indigo-500/20'
+                  : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/10'
+                  }`}
               >
                 <span className="flex items-center justify-center gap-1.5">
                   <FileSpreadsheet className="w-4 h-4" />
@@ -572,15 +568,14 @@ export default function BatchGenerationPage() {
                     <button
                       key={opt.id}
                       onClick={() => toggleEngine(opt.id)}
-                      className={`flex-1 p-2.5 rounded-xl text-sm font-semibold transition-all border ${
-                        active
-                          ? `bg-gradient-to-r ${opt.color} text-white border-transparent shadow-lg scale-[1.02]`
-                          : 'bg-white/5 text-gray-400 border-white/10 hover:text-white hover:bg-white/10'
-                      }`}
+                      className={`flex-1 p-2.5 rounded-xl text-sm font-semibold transition-all border ${active
+                        ? `bg-gradient-to-r ${opt.color} text-white border-transparent shadow-lg scale-[1.02]`
+                        : 'bg-white/5 text-gray-400 border-white/10 hover:text-white hover:bg-white/10'
+                        }`}
                     >
                       <span className="flex items-center justify-center gap-1.5">
                         <Music2 className="w-4 h-4" />
-                        {isZh ? opt.zh : opt.en}
+                        {t(`batch.engine_${opt.id}`)}
                       </span>
                     </button>
                   );
@@ -656,11 +651,10 @@ export default function BatchGenerationPage() {
                 <button
                   onClick={downloadZip}
                   disabled={completedResults.length === 0}
-                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-transform ${
-                    completedResults.length > 0
-                      ? 'bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white shadow-lg shadow-pink-500/25 hover:scale-[1.02]'
-                      : 'bg-white/5 text-gray-600 cursor-not-allowed'
-                  }`}
+                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-transform ${completedResults.length > 0
+                    ? 'bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white shadow-lg shadow-pink-500/25 hover:scale-[1.02]'
+                    : 'bg-white/5 text-gray-600 cursor-not-allowed'
+                    }`}
                 >
                   <Download className="w-4 h-4" />
                   {L.download_zip}
@@ -690,11 +684,10 @@ export default function BatchGenerationPage() {
                 return (
                   <div
                     key={task.id}
-                    className={`rounded-xl p-3 border transition-all ${
-                      active
-                        ? 'bg-indigo-500/10 border-indigo-500/40 shadow-lg shadow-indigo-500/10'
-                        : 'bg-black/30 border-white/5 hover:bg-black/40'
-                    }`}
+                    className={`rounded-xl p-3 border transition-all ${active
+                      ? 'bg-indigo-500/10 border-indigo-500/40 shadow-lg shadow-indigo-500/10'
+                      : 'bg-black/30 border-white/5 hover:bg-black/40'
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${engine.color} flex items-center justify-center flex-shrink-0 text-white font-bold text-xs shadow`}>
@@ -713,13 +706,12 @@ export default function BatchGenerationPage() {
                         </div>
                         <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              task.status === 'completed'
-                                ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
-                                : task.status === 'failed'
-                                  ? 'bg-gradient-to-r from-red-500 to-rose-500'
-                                  : 'bg-gradient-to-r from-indigo-500 to-violet-500'
-                            }`}
+                            className={`h-full rounded-full transition-all duration-500 ${task.status === 'completed'
+                              ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                              : task.status === 'failed'
+                                ? 'bg-gradient-to-r from-red-500 to-rose-500'
+                                : 'bg-gradient-to-r from-indigo-500 to-violet-500'
+                              }`}
                             style={{ width: `${task.progress || 0}%` }}
                           />
                         </div>

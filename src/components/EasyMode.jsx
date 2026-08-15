@@ -15,7 +15,7 @@ import React, { useState, useRef } from 'react';
 import {
   Sparkles, Music2, Image as ImageIcon, Upload, Play, Copy, Check,
   ArrowRight, ArrowLeft, RefreshCw, Share2, Heart, Smile, Frown,
-  Sun, Moon, Cloud, Zap, Coffee, Music, Palette, Camera, X
+  Sun, Moon, Cloud, Zap, Coffee, Music, Palette, Camera, X, Settings
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import { useGeneration } from '../stores/generationStore.jsx';
@@ -388,7 +388,7 @@ export default function EasyMode({ onSwitchToExpert }) {
                   <Upload className="w-10 h-10 text-white" />
                 </div>
                 <div className="text-lg md:text-xl font-bold text-white mb-1">点击选择图片</div>
-                <div className="text-sm text-gray-400">支持 JPG, PNG 格式</div>
+                <div className="text-sm text-gray-400">{t('common.support_jpg_png')}</div>
               </button>
             ) : (
               <div className="relative rounded-2xl overflow-hidden border-2 border-violet-400/50">
@@ -490,7 +490,7 @@ export default function EasyMode({ onSwitchToExpert }) {
           <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-violet-500 to-pink-500 flex items-center justify-center animate-pulse">
             <Sparkles className="w-10 h-10 text-white animate-spin" />
           </div>
-          <div className="text-xl font-bold text-white mb-2">AI创作中...</div>
+          <div className="text-xl font-bold text-white mb-2">{t('easy.ai_creating')}</div>
           <div className="text-sm text-gray-400">请稍等片刻</div>
         </div>
       )}

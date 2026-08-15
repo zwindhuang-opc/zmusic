@@ -345,10 +345,10 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
                         handleSendToAI(item, 'muse');
                       }}
                       className="flex items-center justify-center gap-1 py-2 px-2.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors text-[11px] font-medium"
-                      title="发送到 Muse AI"
+                      title={t('history.send_to_muse')}
                     >
                       <Piano className="w-3 h-3" />
-                      <span>Muse</span>
+                      <span>{t('common.engine_muse')}</span>
                     </button>
                     <button
                       onClick={(e) => {
@@ -356,10 +356,10 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
                         handleSendToAI(item, 'suno');
                       }}
                       className="flex items-center justify-center gap-1 py-2 px-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors text-[11px] font-medium"
-                      title="发送到 Suno AI"
+                      title={t('history.send_to_suno')}
                     >
                       <Cloud className="w-3 h-3" />
-                      <span>Suno</span>
+                      <span>{t('common.engine_suno')}</span>
                     </button>
                     <button
                       onClick={(e) => {
@@ -367,10 +367,10 @@ function HistoryPanel({ isOpen, onClose, onSelectItem, filterType }) {
                         handleSendToAI(item, 'melo');
                       }}
                       className="flex items-center justify-center gap-1 py-2 px-2.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors text-[11px] font-medium"
-                      title="发送到 Melo AI"
+                      title={t('history.send_to_melo')}
                     >
                       <Headphones className="w-3 h-3" />
-                      <span>Melo</span>
+                      <span>{t('common.engine_melo')}</span>
                     </button>
                   </div>
                 </div>

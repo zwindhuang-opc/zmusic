@@ -161,7 +161,7 @@ export default function AutoCreativePanel({
         if (localStorage.getItem('zmusic_notifications_enabled') === 'true'
           && localStorage.getItem('zmusic_notifications_auto') !== 'false') {
           const latestThought = thoughts[thoughts.length - 1];
-          const songTitle = latestThought?.title || (isZh ? '未命名构思' : 'Untitled');
+          const songTitle = latestThought?.title || t('player.untitled_idea');
           NotificationService.notifyAutoComplete(songTitle, engineName);
         }
       } catch { /* ignore */ }
@@ -209,14 +209,14 @@ export default function AutoCreativePanel({
           <div className="flex items-center gap-1.5 mb-0.5 px-1">
             <Target className={`w-3.5 h-3.5 ${theme.thoughtText}`} />
             <span className="text-[10.5px] font-bold text-gray-300">
-              {isZh ? '创作策略预设 · 应用到 AUTO 模式' : 'Strategy Preset · Applied to AUTO Mode'}
+              {t('strategy.preset_applied')}
             </span>
             {selectedStrategyId && (() => {
               const s = getStrategy(selectedStrategyId);
               return s ? (
                 <span className="ml-auto inline-flex items-center gap-1 text-[9.5px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">
                   <Check className="w-2.5 h-2.5" />
-                  {isZh ? '已应用' : 'Applied'} · {isZh ? s.name?.zh : s.name?.en || s.id}
+                  {t('strategy.applied_short')} · {isZh ? s.name?.zh : s.name?.en || s.id}
                 </span>
               ) : null;
             })()}

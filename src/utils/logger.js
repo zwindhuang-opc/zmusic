@@ -88,6 +88,45 @@ class ConsoleAppender {
 }
 
 /**
+ * File appender - writes log lines to a file via Node.js fs (server-side only).
+ * Mirrors log4j FileAppender behaviour: appends with optional max file size
+ * rotation. Safe to import in the browser (no-ops when fs is unavailable).
+ *
+ * Pass an fs-compatible module via options.fs (server.js wires `node:fs` in).
+ */
+class FileAppender {
+  /**
+   * @param {string} filepath - Absolute path to the log file
+   * @param {Object} [options]
+   * @param {number} [options.maxSize=5_242_880] - Max bytes before rolling (default 5MB)
+   * @param {Object} [options.layout] - PatternLayout instance
+   * @param {Object} [options.fs] - Injected fs module (server-side)
+   */
+  constructor(filepath, options = {}) {
+    this.filepath = filepath;
+    this.maxSize = options.maxSize || 5 * 1024 * 1024;
+    this.layout = options.layout || new PatternLayout();
+    // Use injected fs if provided; otherwise no-op (browser-safe)
+    this._fs = options.fs || null;
+  }
+
+  append(level, category, message, timestamp) {
+    if (!this._fs) return; // No-op in browser
+    try {
+      const line = this.layout.format(level, category, message, timestamp) + '\n';
+      // Rotate if file exceeds maxSize
+      if (this._fs.existsSync(this.filepath)) {
+        const stat = this._fs.statSync(this.filepath);
+        if (stat.size > this.maxSize) {
+          this._fs.renameSync(this.filepath, this.filepath + '.1');
+        }
+      }
+      this._fs.appendFileSync(this.filepath, line, 'utf8');
+    } catch { /* never let logging crash the app */ }
+  }
+}
+
+/**
  * Main Logger class
  */
 export class Logger {
@@ -320,3 +359,5 @@ export const LoggerConfig = {
 };
 
 export default Logger;
+
+export { FileAppender, ConsoleAppender, PatternLayout };

@@ -27,7 +27,7 @@ export default function QualityScoreBadge({ song, compact = false, onClick }) {
     setLoading(false);
     analyzeSong(song).then(full => {
       setAnalysis(full);
-    }).catch(() => {});
+    }).catch(() => { });
   }, [song]);
 
   if (!analysis) {
@@ -52,7 +52,7 @@ export default function QualityScoreBadge({ song, compact = false, onClick }) {
         type="button"
         onClick={(e) => { setExpanded(v => !v); onClick?.(e); }}
         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r ${gradient} text-white text-[11px] font-bold shadow-lg shadow-black/20 hover:scale-105 transition-transform`}
-        title={isZh ? '点击查看详情' : 'Click for details'}
+        title={t('quality.click_details')}
       >
         <Sparkles className="w-3 h-3" />
         <span>{overall}</span>
@@ -77,7 +77,7 @@ export default function QualityScoreBadge({ song, compact = false, onClick }) {
         <div className="mt-2 p-4 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl w-72 space-y-3 animate-fade-in">
           <div className="flex items-center justify-between">
             <div className={`text-xs font-bold ${textColor}`}>
-              {isZh ? '6项质量指标' : '6 Quality Metrics'}
+              {t('quality.six_metrics')}
             </div>
             <div className="text-[10px] text-gray-500">0-100</div>
           </div>
@@ -103,7 +103,7 @@ export default function QualityScoreBadge({ song, compact = false, onClick }) {
           </div>
           <div className="pt-2 border-t border-white/10 space-y-1.5">
             <div className="text-[11px] font-bold text-gray-400">
-              {isZh ? '反馈建议' : 'Feedback'}
+              {t('quality.feedback')}
             </div>
             <ul className="space-y-1">
               {feedback.map((fb, idx) => (

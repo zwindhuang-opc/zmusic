@@ -951,13 +951,13 @@ function MusicPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Brain className="w-3.5 h-3.5 text-violet-400" />
-                <span className="text-[11px] font-semibold text-violet-300">AI Thinking Process</span>
+                <span className="text-[11px] font-semibold text-violet-300">{t('music.ai_thinking_process')}</span>
               </div>
               <button
                 onClick={() => setShowThinking(false)}
                 className="text-[10px] text-gray-500 hover:text-gray-300"
               >
-                Hide
+                {t('common.hide')}
               </button>
             </div>
             <div className="space-y-1.5">
