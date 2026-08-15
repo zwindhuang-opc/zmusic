@@ -4,4 +4,12 @@
     <string name="title_activity_main">ZMusic</string>
     <string name="package_name">com.zmusic.app</string>
     <string name="custom_url_scheme">com.zmusic.app</string>
+    <string name="shortcut_new_song">New Song</string>
+    <string name="shortcut_new_song_long">Create New Song</string>
+    <string name="shortcut_library">Library</string>
+    <string name="shortcut_library_long">Open Song Library</string>
+    <string name="shortcut_auto">AUTO</string>
+    <string name="shortcut_auto_long">Start AUTO Mode</string>
+    <string name="shortcut_publish">Publish</string>
+    <string name="shortcut_publish_long">Open Publish Studio</string>
 </resources>
