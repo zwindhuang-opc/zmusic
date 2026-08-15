@@ -14,7 +14,7 @@ import HistoryPanel from '../components/HistoryPanel.jsx';
 import { MVControls, MVVideoPlayer, MVTimelinePreview } from '../components/mv/index.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
-import { getEngineSongCount, getAutoConfig, getMaxErrors } from '../utils/autoConfig.js';
+import { getEngineSongCount, getAutoConfig, getMaxErrors, getCountdownSeconds, shouldStopOnError, shouldAutoCloseOnStop, shouldAutoCloseOnDone, getAutoCloseDelay } from '../utils/autoConfig.js';
 import { AUTO_CONFIRM, openPlatformWebsite, generateCreativeThought, generateRandomTitle, pickRandomThemeStyle, generateAutoLyrics } from '../utils/autoGenUtils.js';
 
 const ICON_MAP = {
@@ -749,7 +749,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
           const shouldStop =
             autoStopRequestedRef.current ||
             !autoRunningRef.current ||
-            autoConsecutiveErrorsRef.current >= maxErrors ||
+            (shouldStopOnError() && autoConsecutiveErrorsRef.current >= maxErrors) ||
             autoCountRef.current >= maxSongs;
 
           if (shouldStop) {
@@ -758,7 +758,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
             autoProgress.stopProgress();
             // Auto-close panels if configured
             const autoCfg = getAutoConfig();
-            const closeDelay = autoCfg.autoCloseDelay || 3000;
+            const closeDelay = getAutoCloseDelay();
             if (autoCfg.autoCloseOnStop || autoCfg.autoCloseOnDone) {
               setTimeout(() => {
                 setShowCreativePanel(false);
@@ -830,7 +830,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
     console.log('%c[AUTO] [MVPage] startAutoGeneration() 入口',
       'background:#16a085;color:#fff;padding:2px 6px;border-radius:3px;font-weight:bold;');
     // Report to global progress bar
-    autoProgress.startProgress({ engine, engineName: displayName, totalCountdown: 60 });
+    autoProgress.startProgress({ engine, engineName: displayName, totalCountdown: getCountdownSeconds() });
 
     // 1. Open platform website tab (deduplicated by sessionStorage)
     const tabOpened = openPlatformWebsite(engine);
@@ -898,9 +898,9 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
     showToast?.(t('auto.starting', { engine: displayName }), 'info');
 
     // 4. Start 60s countdown — publish planning thoughts at milestones
-    setAutoCountdownSec(60);
+    setAutoCountdownSec(getCountdownSeconds());
     setAutoCountdownActive(true);
-    let sec = 60;
+    let sec = getCountdownSeconds();
     autoCountdownIntervalRef.current = setInterval(() => {
       sec -= 1;
       setAutoCountdownSec(sec);

@@ -352,6 +352,57 @@ function SettingsPage() {
             </div>
           </div>
 
+          {/* Song Duration */}
+          <div className="p-3 rounded-lg bg-white/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-400 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                每首歌曲时长（秒）
+              </span>
+              <span className="text-sm font-bold text-violet-300">{autoConfig.songDuration}s</span>
+            </div>
+            <input
+              type="range"
+              min="30"
+              max="300"
+              step="30"
+              value={autoConfig.songDuration}
+              onChange={(e) => updateAutoConfig({ songDuration: parseInt(e.target.value) })}
+              className="w-full accent-violet-500"
+            />
+            <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+              <span>30s</span>
+              <span>90s</span>
+              <span>180s</span>
+              <span>300s</span>
+            </div>
+          </div>
+
+          {/* Max errors */}
+          <div className="p-3 rounded-lg bg-white/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-400 flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5" />
+                最大连续失败次数
+              </span>
+              <span className="text-sm font-bold text-violet-300">{autoConfig.maxErrors}</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="20"
+              value={autoConfig.maxErrors}
+              onChange={(e) => updateAutoConfig({ maxErrors: parseInt(e.target.value) })}
+              className="w-full accent-violet-500"
+            />
+            <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+              <span>1</span>
+              <span>5</span>
+              <span>10</span>
+              <span>20</span>
+            </div>
+          </div>
+
           {/* Auto chaining */}
           <div className="p-3 rounded-lg bg-white/5">
             <div className="flex items-center justify-between mb-2">
@@ -377,7 +428,7 @@ function SettingsPage() {
                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${autoConfig.stopOnError ? 'translate-x-5' : 'translate-x-0.5'}`} />
               </button>
             </div>
-            <p className="text-[10px] text-gray-500">连续 {autoConfig.maxErrors} 次失败后自动停止</p>
+            <p className="text-[10px] text-gray-500">达到最大失败次数后自动停止 (使用上方滑块配置)</p>
           </div>
         </div>
 

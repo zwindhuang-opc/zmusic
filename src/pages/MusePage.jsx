@@ -21,7 +21,7 @@ import {
 } from '../utils/autoGenUtils.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
-import { getEngineSongCount, getAutoConfig, getMaxErrors } from '../utils/autoConfig.js';
+import { getEngineSongCount, getAutoConfig, getMaxErrors, getCountdownSeconds, shouldStopOnError, shouldAutoCloseOnStop, shouldAutoCloseOnDone, getAutoCloseDelay } from '../utils/autoConfig.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 import StrategySelector from '../components/StrategySelector.jsx';
 import { applyStrategyPreset, CREATIVE_STRATEGIES, getStrategy } from '../data/creativePresets.js';
@@ -515,7 +515,7 @@ function MusePage({ onNavigate }) {
       console.warn('[AUTO] strategy preset apply failed:', e);
     }
     // Report to global progress bar
-    autoProgress.startProgress({ engine: 'muse', engineName: 'Muse AI', totalCountdown: 60 });
+    autoProgress.startProgress({ engine: 'muse', engineName: 'Muse AI', totalCountdown: getCountdownSeconds() });
     // 1. Open Muse AI website tab (deduplicated by sessionStorage)
     const tabOpened = openPlatformWebsite('muse');
     console.log('[AUTO] [MusePage] openPlatformWebsite(muse) result:', tabOpened ? '✅ 新标签已打开' : '⏭ 已存在（去重跳过）');
@@ -575,9 +575,9 @@ function MusePage({ onNavigate }) {
     showToast?.('AUTO 启动 — Muse AI 构思中（60 秒倒计时，期间会打开官网标签查看状态）', 'info');
 
     // 4. Start 60s countdown — every 10 seconds we publish a planning thought
-    setAutoCountdownSec(60);
+    setAutoCountdownSec(getCountdownSeconds());
     setAutoCountdownActive(true);
-    let sec = 60;
+    let sec = getCountdownSeconds();
     autoCountdownIntervalRef.current = setInterval(() => {
       sec -= 1;
       setAutoCountdownSec(sec);
@@ -1104,7 +1104,7 @@ function MusePage({ onNavigate }) {
           const shouldStop =
             autoStopRequestedRef.current ||
             !autoRunningRef.current ||
-            autoConsecutiveErrorsRef.current >= maxErrors ||
+            (shouldStopOnError() && autoConsecutiveErrorsRef.current >= maxErrors) ||
             autoCountRef.current >= maxSongs;
 
           if (shouldStop) {
@@ -1112,7 +1112,7 @@ function MusePage({ onNavigate }) {
             setAutoStopRequested(false);
             // Auto-close panels if configured
             const autoCfg = getAutoConfig();
-            const closeDelay = autoCfg.autoCloseDelay || 3000;
+            const closeDelay = getAutoCloseDelay();
             if (autoCfg.autoCloseOnStop || autoCfg.autoCloseOnDone) {
               setTimeout(() => {
                 setShowCreativePanel(false);

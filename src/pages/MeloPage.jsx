@@ -21,7 +21,7 @@ import {
 } from '../utils/autoGenUtils.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
-import { getEngineSongCount, getAutoConfig, getMaxErrors } from '../utils/autoConfig.js';
+import { getEngineSongCount, getAutoConfig, getMaxErrors, getCountdownSeconds, getSongDuration, shouldStopOnError, shouldAutoCloseOnStop, shouldAutoCloseOnDone, getAutoCloseDelay } from '../utils/autoConfig.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 import { applyStrategyPreset, getStrategy } from '../data/creativePresets.js';
 
@@ -433,7 +433,7 @@ function MeloPage({ onNavigate }) {
     } catch (e) {
       console.warn('[AUTO] strategy preset apply failed:', e);
     }
-    autoProgress.startProgress({ engine: 'melo', engineName: 'Melo AI', totalCountdown: 60 });
+    autoProgress.startProgress({ engine: 'melo', engineName: 'Melo AI', totalCountdown: getCountdownSeconds() });
     // 1. Open Melo AI website tab (deduplicated by sessionStorage)
     const tabOpened = openPlatformWebsite('melo');
     console.log('[AUTO] [MeloPage] openPlatformWebsite(melo) result:', tabOpened ? '✅ 新标签已打开' : '⏭ 已存在（去重跳过）');
@@ -486,9 +486,9 @@ function MeloPage({ onNavigate }) {
     showToast?.('AUTO 启动 — Melo AI 构思中（60 秒倒计时，期间会打开官网标签查看状态）', 'info');
 
     // 4. Start 60s countdown
-    setAutoCountdownSec(60);
+    setAutoCountdownSec(getCountdownSeconds());
     setAutoCountdownActive(true);
-    let sec = 60;
+    let sec = getCountdownSeconds();
     autoCountdownIntervalRef.current = setInterval(() => {
       sec -= 1;
       setAutoCountdownSec(sec);
@@ -831,7 +831,7 @@ function MeloPage({ onNavigate }) {
       structure: effectiveStructure,
       audioWeight: effectiveAudioWeight,
       layers: effectiveLayers,
-      duration: 240,
+      duration: getSongDuration('melo'),
     };
 
     // === DETAILED LOGGING for verification ===
@@ -1067,7 +1067,7 @@ function MeloPage({ onNavigate }) {
           const shouldStop =
             autoStopRequestedRef.current ||
             !autoRunningRef.current ||
-            autoConsecutiveErrorsRef.current >= maxErrors ||
+            (shouldStopOnError() && autoConsecutiveErrorsRef.current >= maxErrors) ||
             autoCountRef.current >= maxSongs;
 
           if (shouldStop) {
@@ -1075,7 +1075,7 @@ function MeloPage({ onNavigate }) {
             setAutoStopRequested(false);
             // Auto-close panels if configured
             const autoCfg = getAutoConfig();
-            const closeDelay = autoCfg.autoCloseDelay || 3000;
+            const closeDelay = getAutoCloseDelay();
             if (autoCfg.autoCloseOnStop || autoCfg.autoCloseOnDone) {
               setTimeout(() => {
                 setShowCreativePanel(false);
