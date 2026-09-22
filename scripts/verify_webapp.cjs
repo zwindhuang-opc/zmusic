@@ -1,5 +1,34 @@
+/**
+ * Web app smoke verification (Puppeteer).
+ *
+ * Loads the running frontend, prints the page title / URL / visible text and
+ * saves a full-page screenshot.
+ *
+ * Usage: node scripts/verify_webapp.cjs
+ *
+ * The screenshot is written to `screenshots/<version>/` as required by
+ * .trae/RULES.md ("Screenshots go under project-local screenshots/<version>/
+ * subfolders"), so verification evidence stays grouped per release.
+ *
+ * @module scripts/verify_webapp
+ */
+
 const puppeteer = require('puppeteer');
+const fs = require('fs');
 const path = require('path');
+
+/**
+ * Read the current app version, falling back to 'dev'.
+ * @returns {string}
+ */
+function getAppVersion() {
+  try {
+    const versionFile = path.join(__dirname, '..', 'VERSION.json');
+    return JSON.parse(fs.readFileSync(versionFile, 'utf-8')).version || 'dev';
+  } catch {
+    return 'dev';
+  }
+}
 
 (async () => {
   let browser;
@@ -22,7 +51,10 @@ const path = require('path');
     console.log(`Final URL: ${url}`);
     const bodyText = await page.evaluate(() => document.body.innerText.substring(0, 2000));
     console.log(`Body text preview:\n${bodyText}`);
-    const screenshotPath = path.join(__dirname, '..', 'screenshots', 'verify-localhost-4720.png');
+
+    const screenshotDir = path.join(__dirname, '..', 'screenshots', `v${getAppVersion()}`);
+    fs.mkdirSync(screenshotDir, { recursive: true });
+    const screenshotPath = path.join(screenshotDir, 'verify-localhost-4720.png');
     await page.screenshot({ path: screenshotPath, fullPage: true });
     console.log(`Screenshot saved to: ${screenshotPath}`);
   } catch (err) {
