@@ -16,7 +16,11 @@ const __dirname = (typeof import.meta !== 'undefined' && import.meta.url)
   ? dirname(fileURLToPath(import.meta.url))
   : process.cwd();
 
-const DB_DIR = join(process.cwd(), 'data');
+// ZMUSIC_DATA_DIR lets tests (npm run test:unit) point the auth DB at a
+// throwaway directory instead of the real data/zmusic_auth.db.
+const DB_DIR = process.env.ZMUSIC_DATA_DIR
+  ? join(process.env.ZMUSIC_DATA_DIR)
+  : join(process.cwd(), 'data');
 const DB_PATH = join(DB_DIR, 'zmusic_auth.db');
 
 let db = null;

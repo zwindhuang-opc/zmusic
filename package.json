@@ -43,8 +43,9 @@
     "i18n:sync": "node scripts/i18n-db.mjs sync",
     "i18n:validate": "node scripts/i18n-db.mjs validate",
     "i18n:stats": "node scripts/i18n-db.mjs stats",
-    "test": "npm run test:i18n && npm run test:api",
+    "test": "npm run test:i18n && npm run test:unit && npm run test:api",
     "test:i18n": "node scripts/i18n-db.mjs validate",
+    "test:unit": "node test/unit.test.js",
     "test:api": "node test/api.test.js"
   },
   "dependencies": {
