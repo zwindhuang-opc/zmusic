@@ -1,9 +1,25 @@
 # ZMusic Changelog
 
-## v7.7.2 (2026-09-22)
+## v7.7.2 (2026-09-23) — Guest Mode & Suno Music List Fix Release
 
-- Release v7.7.2
-- Build #17
+**Guest Mode Actually Works Now (I023)**
+- The login page's "无需账号继续浏览 / Continue without account" button was a no-op: it set `user` to `null`, so the App-level auth guard immediately bounced the user back to the login page — all 17 main pages were unreachable without an account. The `zmusic_users` localStorage write it performed was dead code (nothing read it).
+- `src/contexts/AuthContext.jsx` — NEW real guest session: `enterGuest()` clears the token, persists a `zmusic_guest_mode` flag, and installs `GUEST_USER` (`{ id: 'guest', isGuest: true }`); `restoreSession()` resumes the guest session on reload; real login/register clear the flag; `logout()` ends guest mode.
+- `src/pages/LoginPage.jsx` — `handleGuest` calls `enterGuest()` instead of `setUser(null)`; dead code removed.
+- Guest data lands in the local `guest` bucket (`zmusic_songs_guest`), matching the i18n guest note "数据仅保存在本机".
+
+**Suno Music List 500 Fixed (I024)**
+- `GET /api/suno/music` (Suno page song history) always returned HTTP 500 ("Failed to load music list"). Root cause: `src/routes/index.js` assigned `req.query = url.searchParams` — `IncomingMessage.query` is a getter-only accessor on modern Node, so the assignment throws; and `URLSearchParams` doesn't expose the plain `.page`/`.page_size` properties the controller reads anyway.
+- NEW `setQuery(req, url)` helper converts search params into a plain object and installs it via `Object.defineProperty` (safe against getter-only accessors). Applied to `/api/suno/music` and `/api/suno/task/:serialNo`.
+- Verified: `/api/suno/music?page=1&page_size=5` returns the real upstream song list.
+
+**Full UI Walkthrough Verification (new capability)**
+- `scripts/verify_webapp.cjs` upgraded from a single-page smoke check to a full walkthrough: enters via the guest button, clicks all 18 navigation targets (17 pages + guest entry), captures one screenshot per page under `screenshots/v7.7.2/walkthrough-*.png`, and fails (exit 1) on any uncaught page error.
+- Result: **19/19 PASS, 0 console errors**; `npm run test:api` 20/20 passed.
+
+**Chores**
+- Untracked 8 legacy root APK build artifacts from git (committed before the `*.apk` ignore rule existed; files remain on disk).
+- ISSUE_LOG: I008 (GitHub push reset) confirmed resolved — pushes succeed on retry; statistics updated to 24 issues / 20 resolved.
 
 
 ## v7.7.1 (2026-09-22) · Reliability & Observability Release

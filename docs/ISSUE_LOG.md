@@ -87,13 +87,16 @@
 |-------|-------|
 | **ID** | I008 |
 | **Severity** | 🟡 Medium |
-| **Status** | ⚠️ Open |
+| **Status** | ✅ Resolved (2026-09-23) |
 | **Created** | 2026-08-10 |
+| **Resolved** | 2026-09-23 |
 | **Priority** | P2 |
 
 **Description**: `git push origin master` fails with `fatal: unable to access 'https://github.com/zwindhuang-opc/zmusic.git/': Recv failure: Connection was reset` due to transient ISP / GFW network instability to github.com.
 
-**Workaround**: When connectivity returns, run:
+**Resolution**: Confirmed transient — pushes to `origin/master` succeeded repeatedly on 2026-09-22/23 (commits `a3b5a1f`, `5b122b3` landed; tag `v7.7.1` pushed). Occasional single-attempt failures still happen; retrying after a few seconds works. No code change required.
+
+**Workaround** (for the occasional reset): when connectivity returns, run:
 ```
 git -C "d:/AI_Projects/zmusic" push origin master
 ```
@@ -126,6 +129,52 @@ Auto-deploy workflow triggers on push to `master` and will run deploy-pages (non
 ---
 
 ## v7.7.x Issues (Resolved)
+
+### Issue I024: `req.query` Assignment Threw on Node IncomingMessage (Suno Music List 500)
+
+| Field | Value |
+|-------|-------|
+| **ID** | I024 |
+| **Severity** | 🟠 High |
+| **Status** | ✅ Resolved (v7.7.2) |
+| **Created** | 2026-09-23 |
+| **Resolved** | 2026-09-23 |
+| **Priority** | P1 |
+| **Version** | v7.7.2 |
+
+**Description**: `GET /api/suno/music` (the Suno page's song history list) always failed with HTTP 500 — "Failed to load music list: Error: List error: 500" — making the Suno page's history panel permanently empty.
+
+**Root Cause**: `src/routes/index.js` assigned `req.query = url.searchParams`. On modern Node, `IncomingMessage.query` is a getter-only legacy accessor, so the assignment throws `Cannot set property query of #<IncomingMessage> which has only a getter`. Even if it had worked, `URLSearchParams` exposes `.get()`, not the plain `.page`/`.page_size` properties the controller reads.
+
+**Resolution** (v7.7.2): Added `setQuery()` helper that converts `url.searchParams` into a plain object and installs it via `Object.defineProperty(req, 'query', …)` (assignment-safe on getter-only accessors). Applied to both `/api/suno/music` and `/api/suno/task/:serialNo`.
+
+**Verification**: `GET /api/suno/music?page=1&page_size=5` now returns the real upstream song list (titles + play URLs); the Suno page walkthrough reports 0 console errors.
+
+---
+
+### Issue I023: Guest Mode Button Was a No-Op (Bounced Back to Login)
+
+| Field | Value |
+|-------|-------|
+| **ID** | I023 |
+| **Severity** | 🟠 High |
+| **Status** | ✅ Resolved (v7.7.2) |
+| **Created** | 2026-09-23 |
+| **Resolved** | 2026-09-23 |
+| **Priority** | P1 |
+| **Version** | v7.7.2 |
+
+**Description**: The login page's "无需账号继续浏览 / Continue without account" button showed a success toast but never entered the app — the user stayed on the login page, so all 17 main pages were unreachable without an account.
+
+**Root Cause**: `LoginPage.handleGuest` set `user` to `null` and navigated to `dashboard`, but the App-level auth guard (`!user && !publicPages.includes(currentPage) → setCurrentPage('login')`) immediately bounced back to the login page. The `zmusic_users`/`activeUserId` localStorage write it performed was dead code — nothing anywhere reads it.
+
+**Resolution** (v7.7.2):
+1. `AuthContext` gains a real guest session: `enterGuest()` clears the token, sets a persisted `zmusic_guest_mode` flag and a `GUEST_USER` object (`{ id: 'guest', isGuest: true }`); `restoreSession()` resumes it on reload; real login/register clear the flag; logout ends guest mode.
+2. `handleGuest` now calls `enterGuest()` instead of `setUser(null)`; dead `zmusic_users` code removed.
+
+**Verification**: The Puppeteer walkthrough (`node scripts/verify_webapp.cjs`) enters via the guest button and successfully visits all 18 nav targets (17 pages + guest entry) with zero console errors; guest data lands in the `guest` bucket (`zmusic_songs_guest`) as the i18n guest note promises.
+
+---
 
 ### Issue I022: PWA Service Worker Served a Stale App Shell
 
@@ -546,20 +595,20 @@ All documents cross-reference each other and reference version 7.5.0, the GitHub
 
 | Metric | Count |
 |--------|-------|
-| Total Issues | 22 (I001–I022) |
-| ✅ Resolved | 18 |
-| ⚠️ Open | 3 |
+| Total Issues | 24 (I001–I024) |
+| ✅ Resolved | 20 |
+| ⚠️ Open | 2 |
 | 🔄 In Progress | 1 |
 | 🔴 Critical | 2 (both resolved) |
-| 🟠 High | 7 |
+| 🟠 High | 9 |
 | 🟡 Medium | 10 |
 | 🟢 Low | 3 |
 
 ### Status Breakdown
 | Status | Issues |
 |--------|--------|
-| ✅ Resolved | I001, I002, I004, I005, I006, I009, I010, I011, I012, I013, I014, I015, I017, I018, I019, I020, I021, I022 |
-| ⚠️ Open | I007, I008, I016 |
+| ✅ Resolved | I001, I002, I004, I005, I006, I008, I009, I010, I011, I012, I013, I014, I015, I017, I018, I019, I020, I021, I022, I023, I024 |
+| ⚠️ Open | I007, I016 |
 | 🔄 In Progress | I003 |
 
 ---
@@ -585,7 +634,7 @@ All documents cross-reference each other and reference version 7.5.0, the GitHub
 - [ ] Wire APK build verification into the auto-deploy workflow (build + install smoke check)
 - [ ] I003 - User credit management 🔄 In Progress (blocks live Suno/Muse generation; top-up https://www.suno.cn/home/#/account → the API tests SKIP until funded)
 - [ ] I007 - Muse server-side session expiry ⚠️ Open (mitigated by server-side platform token store in v7.7.0; user re-login still needed when no token is pasted)
-- [ ] I008 - GitHub push transient network failure ⚠️ Open (retry when connectivity returns)
+- [ ] I008 - GitHub push transient network failure ✅ Resolved (pushes succeed on retry; 2026-09-23)
 
 ---
 
