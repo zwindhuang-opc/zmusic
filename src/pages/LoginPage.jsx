@@ -5,13 +5,13 @@ import {
   CheckCircle2, Send, RefreshCw,
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
-import { useAuth, AUTH_TOKEN_KEY } from '../contexts/AuthContext.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 export default function LoginPage({ onNavigate }) {
   const { lang } = useTranslation();
   const isZh = lang === 'zh';
   const {
-    login, register, logout, sendSmsCode, smsProvider, setUser,
+    login, register, logout, sendSmsCode, smsProvider, enterGuest,
   } = useAuth();
 
   // --- Tab state --------------------------------------------------------
@@ -304,17 +304,12 @@ export default function LoginPage({ onNavigate }) {
   }
 
   const handleGuest = () => {
-    try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (_) { }
-    try {
-      const GUEST_KEY = 'zmusic_users';
-      const raw = localStorage.getItem(GUEST_KEY);
-      const store = raw ? JSON.parse(raw) : { users: [], activeUserId: null };
-      store.activeUserId = 'guest';
-      localStorage.setItem(GUEST_KEY, JSON.stringify(store));
-    } catch (_) { }
-    setUser?.(null);
+    // Establish a real guest session in AuthContext. Setting user to null
+    // here would make the App-level auth guard bounce straight back to this
+    // login page, so the guest button would appear to do nothing.
+    enterGuest?.();
     showToast(isZh ? '已进入访客模式' : 'Guest mode activated', 'success');
-    setTimeout(() => onNavigate?.('dashboard' || 'Dashboard'), 400);
+    setTimeout(() => onNavigate?.('dashboard'), 400);
   };
 
   const inputBase = 'w-full bg-black/40 border border-white/10 focus:border-violet-500/50 focus:bg-violet-500/5 focus:outline-none rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 transition-all';

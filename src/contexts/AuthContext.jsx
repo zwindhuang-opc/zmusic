@@ -1,6 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 export const AUTH_TOKEN_KEY = 'zmusic_auth_token';
+export const GUEST_FLAG_KEY = 'zmusic_guest_mode';
+
+/**
+ * Pseudo user object for guest browsing. Pages that key off `user.id` fall
+ * back to 'guest' anyway (songLibraryStore, library.controller), so guest
+ * data stays in the local 'guest' bucket — matching the i18n guest_note
+ * "当前以访客身份浏览，数据仅保存在本机".
+ */
+export const GUEST_USER = Object.freeze({ id: 'guest', username: '访客', isGuest: true });
 
 // ------ Low-level token storage (shared by everyone) ------
 function saveToken(token) {
@@ -11,6 +20,17 @@ function readToken() {
 }
 function clearToken() {
   try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (_) {}
+}
+
+// ------ Guest flag storage ------
+function saveGuestFlag(on) {
+  try {
+    if (on) localStorage.setItem(GUEST_FLAG_KEY, '1');
+    else localStorage.removeItem(GUEST_FLAG_KEY);
+  } catch (_) {}
+}
+function readGuestFlag() {
+  try { return localStorage.getItem(GUEST_FLAG_KEY) === '1'; } catch (_) { return false; }
 }
 
 // ------ Light API helpers (no import of api.client to avoid circular deps) ------
@@ -54,7 +74,12 @@ export function AuthProvider({ children }) {
    */
   const restoreSession = useCallback(async () => {
     const token = readToken();
-    if (!token) { setLoading(false); return null; }
+    if (!token) {
+      // No token: resume guest browsing if the user chose it earlier.
+      if (readGuestFlag()) setUser(GUEST_USER);
+      setLoading(false);
+      return readGuestFlag() ? GUEST_USER : null;
+    }
     try {
       const data = await apiGet('/auth/me');
       if (data?.success && data?.user) {
@@ -82,6 +107,7 @@ export function AuthProvider({ children }) {
       throw new Error(res.data?.message_en || res.data?.error || 'Login failed');
     }
     const { user: u, token } = res.data;
+    saveGuestFlag(false); // real login supersedes guest browsing
     if (token) saveToken(token);
     setUser(u || null);
     return u;
@@ -94,9 +120,21 @@ export function AuthProvider({ children }) {
       throw new Error(res.data?.message_en || res.data?.error || 'Registration failed');
     }
     const { user: u, token } = res.data;
+    saveGuestFlag(false);
     if (token) saveToken(token);
     setUser(u || null);
     return u;
+  }, []);
+
+  // ------ Guest browsing: local-only session, no token ------
+  // Without this, the App-level guard (`!user → login page`) bounces guests
+  // straight back to the login page, making the "continue without account"
+  // button a no-op.
+  const enterGuest = useCallback(() => {
+    clearToken();
+    saveGuestFlag(true);
+    setUser(GUEST_USER);
+    return GUEST_USER;
   }, []);
 
   // ------ Logout: server-side destroy + clear local state ------
@@ -109,6 +147,7 @@ export function AuthProvider({ children }) {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     }).catch(() => {});
     clearToken();
+    saveGuestFlag(false);
     setUser(null);
     return true;
   }, []);
@@ -164,6 +203,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     register,
+    enterGuest,
     updateProfile,
     resetPassword,
     changePassword,

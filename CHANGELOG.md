@@ -1,5 +1,11 @@
 # ZMusic Changelog
 
+## v7.7.2 (2026-09-22)
+
+- Release v7.7.2
+- Build #17
+
+
 ## v7.7.1 (2026-09-22) · Reliability & Observability Release
 
 **Per-Page Error Isolation**

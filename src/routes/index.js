@@ -26,6 +26,28 @@ import Logger from '../utils/logger.js';
 const logger = new Logger('Routes');
 
 /**
+ * Populate `req.query` with a plain object of URL search params.
+ *
+ * Node's IncomingMessage exposes `query` as a getter-only legacy accessor,
+ * so a plain assignment (`req.query = ...`) throws
+ * "Cannot set property query of #<IncomingMessage> which has only a getter"
+ * (which surfaced as HTTP 500 on /api/suno/music). Controllers also expect
+ * plain properties (`req.query.page`), not URLSearchParams methods.
+ *
+ * @param {http.IncomingMessage} req - Request object
+ * @param {URL} url - Parsed request URL
+ */
+function setQuery(req, url) {
+  const query = {};
+  for (const [key, value] of url.searchParams) query[key] = value;
+  Object.defineProperty(req, 'query', {
+    value: query,
+    configurable: true,
+    enumerable: true,
+  });
+}
+
+/**
  * Route registration function
  * @param {http.ServerResponse} res - HTTP response object
  * @param {URL} url - Parsed URL
@@ -173,7 +195,7 @@ export async function handleRoute(req, res, url, method, body) {
     const taskMatch = subPath.match(/^task\/(.+)$/);
     if (taskMatch && method === 'GET') {
       req.params = { serialNo: taskMatch[1] };
-      req.query = url.searchParams;
+      setQuery(req, url);
       return sunoController.queryTask(req, res);
     }
 
@@ -183,7 +205,7 @@ export async function handleRoute(req, res, url, method, body) {
     }
 
     if (subPath === 'music' && method === 'GET') {
-      req.query = url.searchParams;
+      setQuery(req, url);
       return sunoController.getMusicList(req, res);
     }
   }
