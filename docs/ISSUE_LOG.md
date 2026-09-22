@@ -630,7 +630,7 @@ All documents cross-reference each other and reference version 7.5.0, the GitHub
 ### Current Sprint (Sprint 15 — proposed)
 - [ ] Resolve I016: Decide on GitHub Pages strategy (paid plan vs public repo vs Vercel/Netlify primary)
 - [ ] Centralized log shipping to centralizedhub sink (per user rules — must use centralizedhub + zunicornagent project as base)
-- [ ] Extend unit-test coverage beyond `test/api.test.js` (service-level tests for auth/SMS/library, runnable offline)
+- [x] Extend unit-test coverage beyond `test/api.test.js` ✅ Done (v7.7.2, 2026-09-23): `test/unit.test.js` — 29 offline assertions across AuthController (email + phone/SMS + reset flows) and LibraryController (CRUD); `ZMUSIC_DATA_DIR` redirects the auth SQLite DB to a temp dir; `npm run test:unit`, chained into `npm test`
 - [ ] Wire APK build verification into the auto-deploy workflow (build + install smoke check)
 - [ ] I003 - User credit management 🔄 In Progress (blocks live Suno/Muse generation; top-up https://www.suno.cn/home/#/account → the API tests SKIP until funded)
 - [ ] I007 - Muse server-side session expiry ⚠️ Open (mitigated by server-side platform token store in v7.7.0; user re-login still needed when no token is pasted)
