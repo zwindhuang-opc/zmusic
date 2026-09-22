@@ -87,6 +87,9 @@ netlify/functions/api/VERSION.json
 # GitHub auth temp files
 .gh_auth_output.txt
 .gh_refresh.txt
+
+# Dev port runtime state (pid/timestamp churn on every npm start)
+.dev-ports.json
 temp_jwt.txt
 
 # Python vision model (auto-downloaded, ~12MB) — DO NOT commit
