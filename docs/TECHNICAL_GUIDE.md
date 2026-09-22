@@ -447,7 +447,18 @@ npm run i18n:validate
 
 Performs a JSON parity check between `zh.json` and `en.json`. CI-safe (does not load `better-sqlite3`, avoiding segfaults). Must pass before any build.
 
-### 10.2 Simulation Script
+### 10.2 API Smoke Test
+
+```bash
+npm run test:api     # live backend required
+npm test             # test:i18n + test:api
+```
+
+`test/api.test.js` runs 20 assertions against a **running** backend (health, error reporting, lyrics, music, MV, history). It is port-agnostic: the base URL resolves from `API_BASE_URL` → `BACKEND_PORT` → `.dev-ports.json` → `4721`, so it follows whatever port `npm start` pinned. The suite exits non-zero on failure, so it can gate CI.
+
+Assertions that depend on an external account state report **SKIP** instead of FAIL — currently `POST /api/music/generate` when suno.cn answers `用户积点不足` (see ISSUE_LOG I003). Fund the Suno account and the assertion starts verifying the real response automatically.
+
+### 10.3 Simulation Script
 
 ```bash
 node scripts/simulate-generation.mjs
@@ -455,7 +466,7 @@ node scripts/simulate-generation.mjs
 
 Simulates a generation flow end-to-end for smoke testing without spending engine credits.
 
-### 10.3 Build Validation
+### 10.4 Build Validation
 
 ```bash
 npm run build
@@ -463,7 +474,7 @@ npm run build
 
 Runs i18n validate + API bundle + Vite production build. A clean build (0 errors) is the primary integration test.
 
-### 10.4 Manual Smoke Checks
+### 10.5 Manual Smoke Checks
 
 - `GET /api/health` returns `status: "healthy"` and `browser.connected`.
 - All 18 pages render without console errors.
@@ -486,6 +497,8 @@ taskkill /PID <PID> /F
 ```
 
 `npm start` automatically kills lingering processes on the target ports before spawning. Never use forbidden ports (5500, 5501, 5502, 5173, 3000, 8000).
+
+**Pinned ports never fall back (I021).** Ports in `.env` / `.dev-ports.json` are pinned: if the backend port is still occupied after the kill attempt, `npm start` fails with the `netstat` / `taskkill` commands instead of switching ports, and `src/server.js` exits with code 1 rather than binding a different port. This is deliberate — a silent switch previously left the old backend answering on the port the frontend proxy targets, so the app kept serving **stale code with no visible error**. If you see this error, close the listed PID and restart (`GET /api/health` reports the real listening port, so you can confirm which process you are talking to).
 
 ### 11.2 CDP Connection Issues (Edge)
 
@@ -517,8 +530,8 @@ taskkill /PID <PID> /F
 Transient network resets to github.com are common (GFW/ISP). Retry when connectivity returns:
 
 ```bash
-git -C "e:/AI_Projects/zmusic" push origin master
-git -C "e:/AI_Projects/zmusic" push origin v7.5.0
+git -C "d:/AI_Projects/zmusic" push origin master
+git -C "d:/AI_Projects/zmusic" push origin v7.5.0
 ```
 
 ---

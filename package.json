@@ -1,6 +1,6 @@
 {
   "name": "zmusic",
-  "version": "7.5.0",
+  "version": "7.7.1",
   "description": "ZMusic - Real AI Music Generation Platform with MVC Architecture",
   "main": "electron/main.js",
   "type": "module",
@@ -37,10 +37,15 @@
     "screenshot:version": "node scripts/take-screenshots.mjs --version",
     "deploy:netlify": "npm run build && npx netlify-cli deploy --prod",
     "deploy:netlify:preview": "npm run build && npx netlify-cli deploy",
+    "build:ghpages": "npm run i18n:validate && vite build --base ./",
+    "deploy:ghpages": "npm run build:ghpages && npx gh-pages -d dist -b gh-pages -m \"Deploy v$npm_package_version to GitHub Pages\"",
     "i18n:seed": "node scripts/i18n-db.mjs seed",
     "i18n:sync": "node scripts/i18n-db.mjs sync",
     "i18n:validate": "node scripts/i18n-db.mjs validate",
-    "i18n:stats": "node scripts/i18n-db.mjs stats"
+    "i18n:stats": "node scripts/i18n-db.mjs stats",
+    "test": "npm run test:i18n && npm run test:api",
+    "test:i18n": "node scripts/i18n-db.mjs validate",
+    "test:api": "node test/api.test.js"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.1",

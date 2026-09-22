@@ -1,5 +1,137 @@
 # ZMusic Changelog
 
+## v7.7.1 (2026-09-22) · Reliability & Observability Release
+
+**Per-Page Error Isolation**
+- NEW `src/components/PageErrorBoundary.jsx` — React error boundary wrapping the lazy-loaded page region. A render-time exception in one page no longer unmounts the whole SPA (previously a black screen): the sidebar, header, and persistent audio player stay alive, and the user can **Retry** (re-mount the page) or **Back to Dashboard**.
+- `src/App.jsx` — `<PageErrorBoundary key={currentPage} pageKey={currentPage} onNavigate={setCurrentPage}>` wraps `<Suspense>`; the `key={currentPage}` remount clears the boundary automatically on navigation.
+- Root boundary in `src/main.jsx` is retained for truly fatal startup errors.
+
+**Frontend Error Reporting (browser → backend log)**
+- NEW `src/utils/errorReporter.js` — fire-and-forget client reporter: djb2 fingerprint dedupe (same error reported once per session), 20 unique reports per session cap, `navigator.sendBeacon` fallback, never throws.
+- NEW `installGlobalErrorCapture()` — registers `window.onerror` + `unhandledrejection` handlers; called once from `src/main.jsx`.
+- NEW `src/controllers/errorReport.controller.js` + route `POST /api/errors/report` — writes each client report through the log4j-style logger into `logs/server.log`; in-memory rate limiter (max 100 reports / 60s) silently drops floods instead of 5xx-ing clients.
+- `src/utils/logger.js` — NEW `Logger.globalAppenders` + `Logger.addGlobalAppender()`; `severity()` now fans out to global appenders too, so **every** logger instance (controllers/services, not just the server entry-point logger) persists to `logs/server.log`.
+- `src/server.js` — registers the server-wide `FileAppender` via `Logger.addGlobalAppender()`.
+
+**Suno AI Generation Fixes (2 independent blockers)**
+- **Model**: `src/controllers/suno.controller.js` — the hardcoded `mv: 'chirp-fenix'` value is rejected by suno.cn (as is the legacy v3.5/v4 model set). Generation now sends a supported model and accepts a per-request override:
+  - `ALLOWED_MODELS = ['v6', 'v6-wild', 'v6-mini']`, default `v6`; callers may pass `model` in the request body.
+  - An unknown `model` value falls back to `v6` instead of being forwarded and rejected upstream.
+- **Duration**: suno.cn rejects `duration` unless `custom_mode` is enabled (`duration 仅支持 custom_mode=true 的自定义模式`). Since the app always passes a duration, custom mode is now implied:
+  `const customModeEnabled = customMode === true || customMode === 'true' || Boolean(duration);`
+  The effective `custom_mode` value is logged together with the other parameters so the request body is auditable in `logs/server.log`.
+
+**`/api/music/*` Rebuilt on Server-Side Controllers (I019)**
+- `src/controllers/music.controller.js` used to import the **browser** clients `services/suno.service.js` / `services/muse.service.js` and call them from the backend. Those modules fetch their own proxy through relative paths (`/api/suno/...`), which Node's `fetch` rejects — so `POST /api/music/generate` always failed with `Failed to parse URL from /api/suno/generate`, and `/api/music/generate-agent` was doubly broken (it also called `museService.generateMuseCommand()`, which does not exist on that module).
+- Now composes the real server-side controllers instead:
+  - NEW `invokeController(controller, method, body)` — runs another controller's `(req, res)` handler against a minimal response double and captures `{ statusCode, payload }`; no extra HTTP hop, and the method stays bound to its instance (`museController.sendMuseResult` relies on `this`).
+  - NEW `extractError(payload)` — normalises the many upstream error field names (`error` / `message` / `msg` / `data.error`).
+  - `POST /api/music/generate` delegates to `sunoController.generate`, preserving the 400 "not configured" contract and mapping upstream failures to `{ success: false, error }`.
+  - `POST /api/music/generate-agent` delegates to `sunoController.generate` / `museController.generate` and still reports each provider independently, so one failing engine cannot fail the whole request.
+
+**Restart Safety — No More Silently Served Stale Code (I021)**
+- `src/server.js` → `resolveBackendPort()` — an **explicitly configured** port (`.dev-ports.json`, `RESOLVED_BACKEND_PORT`, `BACKEND_PORT`, `API_PORT`) is now treated as pinned: if occupied, the process logs an actionable error (exact `netstat` / `taskkill` commands) and exits with code 1. Previously it silently auto-switched to the next free port (a `logger.warn` buried in `logs/server.log`), which left the *old* backend answering on the port vite proxies to — so `npm start` could serve stale code with no visible error. Only the generic fallback path (`PORT + 1`, default `4201`) still auto-increments.
+- `scripts/start-dev.mjs` — `killPort()` now parses the netstat `Local Address` column and requires an exact `:<port>` suffix (`findstr :4721` also matched `14721` / `47210`); and in pinned mode an occupied backend port fails loudly instead of falling back to another port.
+- `src/controllers/health.controller.js` — `GET /api/health` now reports the **real** backend listening port (`app.set('backendPort', …)` in the `listen` callback). It previously reported `config.port` — the *frontend* port — so a healthy backend on 4721 advertised `4720`.
+
+**PWA Cache Versioning (I022)**
+- `public/sw.js` — `CACHE_NAME` was frozen at `zmusic-v7.4.1` while the app version kept moving, so the `activate` cleanup never matched a new release and the installed PWA/mobile shell could keep serving the previous app shell. It is now derived from the registration query: ``zmusic-v${new URL(self.location.href).searchParams.get('v') || 'dev'}``.
+- `src/main.jsx` — registers `/sw.js?v=<__APP_VERSION__>` (build-time `define` from `vite.config.js`), giving every release a distinct worker URL so the browser installs it eagerly and the old cache is purged. No per-release manual edit of `sw.js` any more.
+
+**Testing Infrastructure**
+- `test/api.test.js` — rewritten to be port-agnostic and version-independent: backend base URL resolves from `API_BASE_URL` → `BACKEND_PORT` → `.dev-ports.json` → `4721` (was hardcoded `http://127.0.0.1:5501`, an obsolete port that made every assertion fail). The suite exits non-zero on failure so it can gate CI.
+- Credit-aware assertions: an upstream "not enough credits" rejection (suno.cn `用户积点不足`) is reported as **SKIP** rather than FAIL, since that is an account condition (I003), not a code defect.
+- `package.json` — new scripts `test` (`test:i18n` + `test:api`), `test:i18n` and `test:api` (live API suite, **20 assertions**).
+- Added assertions for `POST /api/errors/report` (accepts a report / rejects a missing message) and `POST /api/music/generate-agent` (structure + per-provider outcome).
+
+**Verification**
+- `npm run i18n:validate` — clean, zh/en key parity (including the new `error.*` keys).
+- `npm run test:api` — **20/20 passed** (1 skipped: upstream credits exhausted).
+- `npm run build` — production build succeeds (all lazy-page chunks emitted).
+- `POST /api/errors/report` smoke test → `{success:true,logged:true}` and the entry appears in `logs/server.log` as `[ERROR] [FrontendError]`.
+- `GET /api/health` → `status: healthy`, `version: 7.7.1`, `port: 4721`.
+- Fail-fast check: starting a second backend with `BACKEND_PORT=4721` exits with code 1 instead of binding a hidden port.
+
+**Version Sync**
+- `VERSION.json`: 7.7.0 → 7.7.1 (buildNumber 15 → 16)
+- `package.json`: 7.7.0 → 7.7.1
+- `src/App.jsx`: `BUILD_VERSION` fallback → 7.7.1
+- `android/app/build.gradle`: versionCode 70700 → 70701, versionName "7.7.0" → "7.7.1"
+
+---
+
+## v7.7.0 (2026-08-16) · Accounts, SMS Auth & Server-Side Platform Credentials
+
+**Auth Guard**
+- Unauthenticated visitors are no longer dropped into the Dashboard: `src/App.jsx` routes to `LoginPage` while `authLoading` is false and no user session exists, and redirects away from `login` once a session appears.
+- `src/contexts/AuthContext.jsx` — session bootstrap from Bearer token on mount, loading state exposed to the guard.
+
+**Phone / SMS Registration & Login (end-to-end)**
+- NEW `src/services/authdb.service.js` — SQLite-backed user store (better-sqlite3): `users` / `sessions` / `sms_codes` tables, sha256 password hashing, session create/get/destroy, SMS code issue + verify.
+- NEW `src/services/sms.service.js` — provider chain with automatic selection: Tencent Cloud SMS → Aliyun SMS → Twilio → **dev log-only fallback** (no keys required; the code is printed to the server log so register/login can be exercised locally).
+- NEW `src/controllers/auth.controller.js` — `POST /api/auth/register`, `POST /api/auth/login` (email+password, phone+password, phone+SMS), `POST /api/auth/sms/send`, `POST /api/auth/sms/verify` (returns `oneTimeToken`), `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/password/change`, `POST /api/auth/password/reset`.
+- `src/pages/LoginPage.jsx` — rewritten: login/register tab switch, email vs phone mode, SMS code request + countdown, guest mode, bilingual validation messages.
+- Registration and login endpoints verified working end-to-end.
+
+**Server-Side Platform Credentials (CDP replacement)**
+- NEW `src/services/platformAuth.service.js` + `src/controllers/platformAuth.controller.js` — browser-agnostic token store for Muse / Melo (and other platforms): the user pastes a platform JWT once in Settings, the backend validates it against the platform's user-info endpoint, persists it to a JSON file (survives restarts), and reuses it for all outbound API calls. Token priority: user token → CDP-extracted token → `.env` key.
+- Removes the previous hard dependency on Edge/Chrome running with `--remote-debugging-port` (fragile: process exits, port conflicts, IPv6 issues) and works from mobile/desktop/any browser. CDP (`src/services/museCdpBridge.js`) is retained as a fallback path.
+
+**AI Cover / Scene Image Generation**
+- NEW `src/services/imageGen.service.js` + `src/controllers/imageGen.controller.js` — text-to-image generation for song covers, MV scene cards and thumbnails (square / portrait / landscape size presets, zh+en prompt assembly, returns a directly usable image URL).
+
+**Settings Wiring — Zero Hardcoded Values**
+- `src/pages/SettingsPage.jsx` + `src/utils/autoConfig.js` — the AUTO pipeline now honours every setting instead of hardcoded defaults: song count, duration per engine, strategy preset, auto-close behaviour (`autoCloseOnStop` / `autoCloseOnDone` / `autoCloseDelay`), and language.
+- All four generation pages (Muse / Suno / Melo / MV) plus `EasyMode.jsx` read durations and counts from the shared auto-config rather than inline literals.
+
+**Other**
+- `src/services/socialPublish.service.js` — assisted publishing: auto-open portal, auto-copy metadata, pre-publish checklist.
+- `src/pages/PublishStudio.jsx` — publishes with the assisted flow.
+- `src/services/api.client.js` — retry with backoff for transient failures.
+- Codebase audit completed; version bumped 7.6.1 → 7.7.0.
+
+---
+
+## v7.6.1 (2026-08-16) · Version System Verification Patch
+
+- Test patch bump to verify the rewritten auto-versioning pipeline propagates to all four version locations (`VERSION.json`, `package.json`, `src/App.jsx`, `android/app/build.gradle`).
+
+---
+
+## v7.6.0 (2026-08-16) · Auto-Versioning, Auth Guard & Settings Wiring
+
+**Auto-Versioning**
+- `scripts/version.js` — rewritten from a JSON-only bumper into a full release helper:
+  - Updates `VERSION.json`, `package.json`, `src/App.jsx` (`BUILD_VERSION` fallback) and `android/app/build.gradle` in one pass.
+  - `versionCode` is derived deterministically as `major * 10000 + minor * 100 + patch` (e.g. 7.7.1 → 70701), removing manual Android version arithmetic.
+  - Increments `buildNumber`, stamps `releaseDate`, and accepts an optional changelog message: `node scripts/version.js patch "message"`.
+  - Prints the matching `git tag -a` command.
+
+**Fixes**
+- Auth guard added so the dashboard is no longer reachable without a session.
+- Settings wiring corrected so generation parameters actually reach the engines.
+- GLOBAL AUTO chaining fixed across engines.
+
+---
+
+## v7.5.2 (2026-08-15) · Zero Hardcoded Values
+
+- `src/utils/autoConfig.js` — centralised AUTO configuration; removed scattered hardcoded counts/durations.
+- `src/pages/SettingsPage.jsx` — AUTO settings section expanded and persisted.
+- Muse / Suno / Melo / MV pages now read song count and duration from the shared config on every generation, so changing a setting takes effect immediately without a reload.
+
+---
+
+## v7.5.1 (2026-08-15) · AUTO & Melo Fixes
+
+- **AUTO generation count** — the configured song count was ignored by the AUTO loop in Muse / Suno / Melo / MV; corrected in `src/utils/autoConfig.js` and all four pages.
+- **Melo HTML detection** — `src/services/melo.service.js` / `src/controllers/melo.controller.js` now detect an HTML login/page response instead of leaking a JSON parse error to the UI.
+- **Dialog auto-close** — generation dialogs close automatically after completion (or after the configured retry budget) instead of staying open.
+- **Melo page** — hardening around async result handling.
+
+---
+
 ## v7.5.0 (2026-08-15) · Documentation & Logging Overhaul Release
 
 **Documentation Suite (PMP Standard)**

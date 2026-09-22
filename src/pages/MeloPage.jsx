@@ -21,7 +21,7 @@ import {
 } from '../utils/autoGenUtils.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
-import { getEngineSongCount, getAutoConfig, getMaxErrors, getCountdownSeconds, getSongDuration, shouldStopOnError, shouldAutoCloseOnStop, shouldAutoCloseOnDone, getAutoCloseDelay } from '../utils/autoConfig.js';
+import { getEngineSongCount, getAutoConfig, getMaxErrors, getCountdownSeconds, getSongDuration, shouldStopOnError, shouldAutoCloseOnStop, shouldAutoCloseOnDone, getAutoCloseDelay, shouldAutoChain } from '../utils/autoConfig.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
 import { applyStrategyPreset, getStrategy } from '../data/creativePresets.js';
 
@@ -93,7 +93,26 @@ const QUICK_LYRICS_TEMPLATES = [
 ];
 
 function MeloPage({ onNavigate }) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
+  const isZh = lang === 'zh';
+  const L = {
+    zh: {
+      cancel: '已取消生成',
+      submit: '正在提交到 Melo AI...',
+      sync: '正在将歌词同步到 h.51melo.com...',
+      creating: 'Melo AI 正在创作...',
+      done: '生成完成！',
+      fail: '生成失败',
+    },
+    en: {
+      cancel: 'Generation cancelled',
+      submit: 'Submitting to Melo AI...',
+      sync: 'Syncing lyrics to h.51melo.com...',
+      creating: 'Melo AI is creating...',
+      done: 'Generation complete!',
+      fail: 'Generation failed',
+    },
+  }[isZh ? 'zh' : 'en'];
   const { pendingLyrics, clearPendingLyrics, pendingData, clearPendingData, startSession, updateSession, appendLog, cancelSession, completeSession, addToHistory, updateHistory, removeFromHistory, activeSession, sessions, copyToClipboard, showToast } = useGeneration();
   const autoProgress = useAutoProgress();
   const cancelRef = useRef(false);
@@ -238,19 +257,24 @@ function MeloPage({ onNavigate }) {
         { hasQueryParam, hasHandshake, handshakeData });
 
       if (hasQueryParam || hasHandshake) {
-        console.log('[GLOBAL AUTO] [MeloPage] ✅ 握手成功，400ms 后启动 AUTO，65400ms 后链式导航/清理（60s 构思倒计时 + 5.4s 观察期）');
+        console.log(`[GLOBAL AUTO] [MeloPage] ✅ 握手成功，400ms 后启动 AUTO，${getCountdownSeconds() * 1000 + 5400}ms 后链式导航/清理（${getCountdownSeconds()}s 构思倒计时 + 5.4s 观察期）`);
         // Step 1: 启动 AUTO (400ms)
         setTimeout(() => {
           console.log('[GLOBAL AUTO] [MeloPage] ⏱ 400ms 触发 startAutoGeneration()');
           startAutoGeneration();
         }, 400);
-        // Step 2: 链式导航或清理 (65400ms = 60s 倒计时 + 5.4s 观察期) — 与 AUTO 成败完全解耦
+        // Step 2: 链式导航或清理 (${getCountdownSeconds() * 1000 + 5400}ms = ${getCountdownSeconds()}s 倒计时 + 5.4s 观察期) — 与 AUTO 成败完全解耦
         setTimeout(() => {
-          console.log('[GLOBAL AUTO] [MeloPage] ⏱ 65400ms 链式导航定时器触发（60s 倒计时结束）');
+          console.log(`[GLOBAL AUTO] [MeloPage] ⏱ ${getCountdownSeconds() * 1000 + 5400}ms 链式导航定时器触发（${getCountdownSeconds()}s 倒计时结束）`);
           try {
             const raw = localStorage.getItem('zmusic_globalauto');
             if (!raw) {
               console.warn('[GLOBAL AUTO] [MeloPage] localStorage 无 zmusic_globalauto，跳过链式导航/清理');
+              return;
+            }
+            if (!shouldAutoChain()) {
+              console.log('[GLOBAL AUTO] [MeloPage] 自动链式生成已禁用，清理并跳过');
+              localStorage.removeItem('zmusic_globalauto');
               return;
             }
             const parsed = JSON.parse(raw);
@@ -290,7 +314,7 @@ function MeloPage({ onNavigate }) {
           } catch (e) {
             console.error('[GLOBAL AUTO] [MeloPage] 链式导航/清理异常:', e);
           }
-        }, 65400);
+        }, getCountdownSeconds() * 1000 + 5400);
         try {
           const url = new URL(window.location.href);
           url.searchParams.delete('globalauto');
@@ -765,7 +789,7 @@ function MeloPage({ onNavigate }) {
     if (taskId) {
       cancelSession(activeSession?.id);
     }
-    setPollMessage('已取消生成');
+    setPollMessage(L.cancel);
   }, [cancelSession, activeSession, taskId]);
 
   const handleGenerate = async (isAuto = false) => {
@@ -774,7 +798,7 @@ function MeloPage({ onNavigate }) {
     setGeneratedSong(null);
     setGenerating(true);
     setPollStatus('submitting');
-    setPollMessage('正在提交到 Melo AI...');
+    setPollMessage(L.submit);
     setProgress(5);
     setActiveSteps({ submit: true, analyze: false, compose: false, master: false });
 
@@ -867,7 +891,7 @@ function MeloPage({ onNavigate }) {
       // the h.51melo.com website — even when generation cannot complete due
       // to insufficient credits. Best-effort: a failure here must NOT block
       // the actual generation attempt.
-      setPollMessage('正在将歌词同步到 h.51melo.com...');
+      setPollMessage(L.sync);
       try {
         const fillRes = await fetch('/api/melo/fill-input', {
           method: 'POST',
@@ -898,7 +922,7 @@ function MeloPage({ onNavigate }) {
       const tid = result?.data?.taskId;
       setTaskId(tid);
       setPollStatus('processing');
-      setPollMessage('Melo AI 正在创作...');
+      setPollMessage(L.creating);
       setProgress(20);
       setActiveSteps({ submit: true, analyze: true, compose: false, master: false });
 
@@ -927,7 +951,7 @@ function MeloPage({ onNavigate }) {
         timeSignature: finalSong?.timeSignature || effectiveTimeSignature,
       };
       setGeneratedSong(songData);
-      setPollMessage('生成完成！');
+      setPollMessage(L.done);
 
       completeSession(session.id, {
         audioUrl: songData.audioUrl,
@@ -983,12 +1007,12 @@ function MeloPage({ onNavigate }) {
     } catch (e) {
       if (cancelRef.current) {
         setPollStatus('cancelled');
-        setPollMessage('已取消生成');
+        setPollMessage(L.cancel);
         completeSession(session.id, { error: 'Cancelled by user' });
       } else {
         setError(e.message);
         setPollStatus('failed');
-        setPollMessage('生成失败');
+        setPollMessage(L.fail);
         setActiveSteps({ submit: false, analyze: false, compose: false, master: false });
         completeSession(session.id, { error: e.message });
         autoProgress.setComplete({ title: '未命名构思', error: e.message });
@@ -1073,7 +1097,6 @@ function MeloPage({ onNavigate }) {
           if (shouldStop) {
             setAutoRunning(false);
             setAutoStopRequested(false);
-            // Auto-close panels if configured
             const autoCfg = getAutoConfig();
             const closeDelay = getAutoCloseDelay();
             if (autoCfg.autoCloseOnStop || autoCfg.autoCloseOnDone) {
@@ -1098,10 +1121,8 @@ function MeloPage({ onNavigate }) {
           setAutoCount(c => c + 1);
           autoCountRef.current = nextIteration;
 
-          // Randomize inputs + capture choices for creative thought
           const choices = randomizeMeloInputs();
 
-          // Log creative thinking process
           const thought = generateCreativeThought({
             iteration: nextIteration,
             theme: choices.theme,
@@ -1115,8 +1136,8 @@ function MeloPage({ onNavigate }) {
           });
           setAutoThoughts(prev => [...prev.slice(-15), thought]);
 
-          setTimeout(() => handleGenerateRef.current(true), 1800);
-        }, 1500);
+          setTimeout(() => handleGenerateRef.current(true), 5400);
+        }, getCountdownSeconds() * 1000);
       }
     }
   };

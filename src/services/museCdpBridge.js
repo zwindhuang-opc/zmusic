@@ -9,7 +9,11 @@
 import WebSocket from 'ws';
 import http from 'http';
 
-const CDP_HOST = 'localhost';
+// IMPORTANT: Must use '127.0.0.1' (not 'localhost') because Node.js 18+
+// resolves 'localhost' to IPv6 '::1' first, but Edge's CDP only listens on
+// IPv4 '127.0.0.1'. Using 'localhost' causes ECONNREFUSED with an empty
+// error message (AggregateError), making debugging very difficult.
+const CDP_HOST = '127.0.0.1';
 const CDP_PORT = 9222;
 
 let cdpWs = null;

@@ -131,6 +131,15 @@ class FileAppender {
  */
 export class Logger {
   /**
+   * Global appenders shared by ALL Logger instances (e.g. the server-wide
+   * FileAppender). Set once via Logger.addGlobalAppender() at server startup;
+   * every logger — including ones constructed in controllers/services — will
+   * write through these in addition to its own appenders.
+   * @static
+   */
+  static globalAppenders = [];
+
+  /**
    * Create a new logger instance
    * @param {string} category - Logger category (usually module name)
    * @param {number} level - Minimum log level
@@ -149,6 +158,18 @@ export class Logger {
    */
   static setGlobalLevel(level) {
     globalLevel = level;
+  }
+
+  /**
+   * Register a global appender used by every Logger instance (existing and
+   * future). Server startup calls this with the FileAppender so all server
+   * logs persist to logs/server.log, not just the entry-point logger's.
+   * @param {Object} appender - Appender instance (ConsoleAppender/FileAppender)
+   */
+  static addGlobalAppender(appender) {
+    if (appender && !Logger.globalAppenders.includes(appender)) {
+      Logger.globalAppenders.push(appender);
+    }
   }
 
   /**
@@ -182,6 +203,11 @@ export class Logger {
     }
 
     for (const appender of this.appenders) {
+      appender.append(level, this.category, formattedMessage, timestamp);
+    }
+
+    // Global appenders (server-wide FileAppender, etc.)
+    for (const appender of Logger.globalAppenders) {
       appender.append(level, this.category, formattedMessage, timestamp);
     }
   }

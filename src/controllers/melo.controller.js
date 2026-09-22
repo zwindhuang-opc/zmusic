@@ -25,7 +25,8 @@
  *     cover_type: "none",
  *     make_instrumental: false,
  *     model_code: "MS55",
- *     client_type, os, version
+ *     client_type, os, version,
+ *     duration: 10-360,   // Song duration in seconds (API-supported parameter)
  *   }
  *
  * STATUS FLOW: queue → pending → processing → streaming → completed | failed
@@ -41,6 +42,7 @@ import crypto from 'node:crypto';
 import { config } from '../config/index.js';
 import Logger from '../utils/logger.js';
 import { extractMeloAuthFromPage, fillInputOnPage } from '../services/museCdpBridge.js';
+import platformAuth from '../services/platformAuth.service.js';
 
 const logger = new Logger('MeloController');
 
@@ -61,26 +63,45 @@ function isMeloConfigured() {
 
 /**
  * Try to get a valid Melo auth token, using:
- *   1. Env MELO_API_KEY (fast, persistent)
- *   2. In-memory cache from a previous successful CDP extract
- *   3. CDP extraction from the open h.51melo.com Edge tab
+ *   1. platformAuth store (user-provided token via Settings — browser-agnostic)
+ *   2. Env MELO_API_KEY (fast, persistent fallback)
+ *   3. CDP extraction from the open h.51melo.com Edge tab (legacy fallback)
  *
- * When forceRefresh=true, re-read from CDP even if a cached token exists.
+ * When forceRefresh=true, re-read from all sources even if a cached token exists.
  *
- * @param {boolean} [forceRefresh] Skip CDP cache and re-read from browser
+ * @param {boolean} [forceRefresh] Skip cache and re-read from all sources
  * @returns {Promise<string|null>} JWT or null
  */
 async function resolveMeloToken(forceRefresh = false) {
+  // 1. Try platformAuth store first (works on ANY browser/device)
+  const storedToken = platformAuth.getToken('melo');
+  if (storedToken && storedToken.length > 20) {
+    if (forceRefresh || !_meloTokenCache || _meloTokenCache !== storedToken) {
+      _meloTokenCache = storedToken;
+      _meloTokenInfo = {
+        source: 'platformAuth',
+        userId: null,
+        lastCheckedAt: Date.now(),
+        lastError: null,
+      };
+      logger.info(`[melo] Using token from platformAuth store (len=${storedToken.length})`);
+    }
+    return _meloTokenCache;
+  }
+
+  // 2. Use in-memory cache if valid (and not force-refreshing)
   if (!forceRefresh && _meloTokenCache && _meloTokenCache.length > 20) {
     return _meloTokenCache;
   }
+
+  // 3. Try env MELO_API_KEY
   if (config.meloApiKey && config.meloApiKey.length > 20) {
     _meloTokenCache = config.meloApiKey;
     _meloTokenInfo.source = 'env';
     return _meloTokenCache;
   }
 
-  // Primary CDP path: user has h.51melo.com open in the same Edge window
+  // 4. CDP extraction from the open h.51melo.com Edge tab (legacy fallback)
   logger.info('[melo] Trying CDP extraction from h.51melo.com tab');
   try {
     const result = await extractMeloAuthFromPage();
@@ -536,7 +557,7 @@ export class MeloController {
       client_type: 'web',
       os: 'web',
       version: '1.0.0',
-      song_length: duration,
+      duration: Math.max(10, Math.min(360, duration)),
     };
 
     // --- Submit to Melo ---------------------------------------------------
@@ -573,15 +594,45 @@ export class MeloController {
       // Melo returns 200 with { success: true, task_id, message, status: "pending" }
       // or a 4xx with { detail: [...] } (Pydantic validation) / { msg, error_key }
       if (!response.ok || !data?.success || !data?.task_id) {
-        const errMsg = data?.detail
+        const rawErrMsg = data?.detail
           ? (Array.isArray(data.detail) ? data.detail.map(d => `${d.loc?.join('.')}: ${d.msg}`).join('; ') : String(data.detail))
           : data?.error || data?.msg || data?.message || `Melo generate failed (HTTP ${response.status})`;
-        logger.error(`[melo/generate] Failed: ${errMsg}`);
+        const rawKey = data?.error_key || data?.errorKey || null;
+
+        // --- Bilingual error mapping (avoids showing Melo's raw Chinese to EN users) ---
+        const ERROR_MAP = {
+          INSUFFICIENT_CREDIT: {
+            zh: '积分不足，无法生成：本次需要约50积分，请在h.51melo.com账号内充值后再试。',
+            en: 'Insufficient credits to generate (needs ~50 credits). Please top up your Melo account on h.51melo.com then try again.',
+          },
+          DAILY_LIMIT_EXCEEDED: {
+            zh: '已达到今日生成上限，请明天再试，或升级会员。',
+            en: 'Daily generation limit reached. Try again tomorrow or upgrade your membership.',
+          },
+          INVALID_SESSION: {
+            zh: '登录已过期，请在Settings→Platform Auth重新粘贴Melo token，或在浏览器中重新登录h.51melo.com。',
+            en: 'Session expired. Go to Settings → Platform Auth and re-paste your Melo token, or re-login on h.51melo.com.',
+          },
+          UNAUTHORIZED: {
+            zh: '未授权：请检查Melo token是否有效，或在Settings→Platform Auth重新粘贴。',
+            en: 'Unauthorized: verify your Melo token is valid, or re-paste it in Settings → Platform Auth.',
+          },
+        };
+        const mapped = rawKey ? ERROR_MAP[rawKey] : null;
+        // Use mapped message if available (bilingual), otherwise pass through raw
+        const errorKey = rawKey || (rawErrMsg.includes('积分') ? 'INSUFFICIENT_CREDIT' : null);
+        const fallback = errorKey ? ERROR_MAP[errorKey] : null;
+        const finalMap = mapped || fallback;
+        const errMsg = finalMap ? finalMap.zh : rawErrMsg;
+        const errMsgEn = finalMap ? finalMap.en : null;
+
+        logger.error(`[melo/generate] Failed key=${errorKey || 'n/a'}: ${rawErrMsg}`);
         return res.status(response.status >= 400 && response.status < 500 ? response.status : 502).json({
           success: false,
           error: errMsg,
+          error_en: errMsgEn,
           taskId: data?.task_id ?? null,
-          errorKey: data?.error_key || data?.errorKey || null,
+          errorKey: errorKey,
           upgradeAction: data?.upgrade_action || data?.upgradeAction || null,
         });
       }
@@ -666,65 +717,103 @@ export class MeloController {
       let data;
       try { data = JSON.parse(rawText); } catch { data = { raw: rawText }; }
 
-      // Melo's success indicator: top-level status === 20000
-      if (data?.status !== 20000 || !data?.data) {
-        const errMsg = data?.msg || `Melo queue status ${data?.status} (HTTP ${response.status})`;
-        logger.warn(`[melo/task/${taskId}] ${errMsg}`);
-        return res.status(502).json({
-          success: false,
-          error: errMsg,
-          taskId,
-        });
+      // --- ROBUST STATUS VALIDATION ---------------------------------------
+      // Accept multiple success codes because Melo may return:
+      //   20000 (normal), 200 (HTTP-level), 0 (some endpoints), or success:true
+      const isHttpOk = response.status >= 200 && response.status < 300;
+      const hasStatusOk = data?.status === 20000 || data?.status === 200 || data?.status === 0;
+      const hasSuccessFlag = data?.success === true;
+      const hasDataPayload = !!data?.data && typeof data.data === 'object';
+
+      if (!(isHttpOk && (hasStatusOk || hasSuccessFlag) && hasDataPayload)) {
+        // LAST CHANCE: maybe the task was actually completed but wrapped in a
+        // non-standard envelope. If songs[] exist anywhere with URLs, accept it.
+        const probeSongs = data?.data?.songs || data?.songs || [];
+        const probeHasAudio = probeSongs.some(s => s.audio_url || s.audioUrl || s.url);
+        if (probeHasAudio && isHttpOk) {
+          logger.info(`[melo/task/${taskId}] Non-standard envelope but songs found — treating as success`);
+          data = { status: 20000, data: data?.data || data };
+        } else {
+          const errMsg = data?.msg || `Melo queue status ${data?.status} (HTTP ${response.status})`;
+          logger.warn(`[melo/task/${taskId}] ${errMsg}`);
+          return res.status(502).json({
+            success: false,
+            error: errMsg,
+            taskId,
+          });
+        }
       }
 
       const q = data.data;
-      const status = String(q.status || 'pending').toLowerCase();
-      const songs = Array.isArray(q.songs) ? q.songs : [];
+      // Normalize status — Melo has been seen to return:
+      //   queue, pending, processing, streaming, completed, success, done, finished, failed, error
+      const rawStatus = String(q.status || q.state || 'pending').toLowerCase();
+      const hasSongs = Array.isArray(q.songs) && q.songs.length > 0;
+      const firstSong = Array.isArray(q.songs) ? q.songs[0] : (q.song || {});
+      const firstHasAudio = !!(firstSong?.audio_url || firstSong?.audioUrl || firstSong?.url);
+      const status = (() => {
+        // If songs with URLs exist, we're effectively done regardless of label
+        if (hasSongs && firstHasAudio) {
+          if (rawStatus.includes('fail') || rawStatus.includes('error')) return rawStatus;
+          return 'completed';
+        }
+        // Normalize to one of the known labels for frontend progress bar
+        if (['queue', 'pending', 'processing', 'streaming', 'completed', 'failed', 'error', 'success', 'done', 'finished'].includes(rawStatus)) {
+          return rawStatus === 'success' || rawStatus === 'done' || rawStatus === 'finished' ? 'completed' : rawStatus;
+        }
+        return hasSongs ? 'streaming' : 'pending';
+      })();
+      const songs = Array.isArray(q.songs) ? q.songs : (firstSong ? [firstSong] : []);
 
-      // Pick the first completed song as the primary result. Melo returns 2
-      // versions; we expose all of them via `songs` but lift the first one's
-      // fields to the top level for the frontend's simple consumer.
+      // Robustly extract URL fields (Melo uses inconsistent naming)
+      const pickAudio = (s) => s?.audio_url || s?.audioUrl || s?.audio || s?.url || s?.download_url || null;
+      const pickImage = (s) => s?.cover_url || s?.coverUrl || s?.image_url || s?.imageUrl || s?.cover || s?.image || null;
+      const pickDuration = (s) => {
+        const d = s?.duration ?? s?.length ?? s?.time ?? s?.audio_length ?? 0;
+        return d ? parseFloat(d) : 0;
+      };
+
       const first = songs[0] || {};
 
       // Map Melo status → progress percentage for the frontend progress bar.
       const progressMap = {
         queue: 15, pending: 25, processing: 50, streaming: 85,
-        completed: 100, failed: 0,
+        completed: 100, failed: 0, error: 0, success: 100,
       };
 
-      logger.info(`[melo/task/${taskId}] status=${status} songs=${songs.length} progress=${progressMap[status] ?? 50}`);
+      logger.info(`[melo/task/${taskId}] rawStatus=${rawStatus} normalized=${status} songs=${songs.length} audioReady=${firstHasAudio} progress=${progressMap[status] ?? 50}`);
 
       return res.json({
         success: true,
         data: {
           status,
-          // Primary song fields (camelCase for frontend)
-          audioUrl: first.audio_url || null,
-          imageUrl: first.cover_url || null,
-          title: first.title || q.params?.title || '',
-          duration: first.duration ? parseFloat(first.duration) : 0,
-          userName: first.user?.nickname || 'Melo AI',
-          themeColor: first.theme_color || null,
-          songId: first.id ? String(first.id) : null,
+          // Primary song fields (camelCase for frontend) — use robust pickers
+          audioUrl: pickAudio(first),
+          imageUrl: pickImage(first),
+          title: first.title || q.params?.title || q.title || '',
+          duration: pickDuration(first),
+          userName: first.user?.nickname || first.user_name || 'Melo AI',
+          themeColor: first.theme_color || first.themeColor || null,
+          songId: first.id ? String(first.id) : first.song_id || null,
           progress: progressMap[status] ?? 50,
           // Full song list (both versions) for the frontend to offer choice
           songs: songs.map(s => ({
-            id: s.id ? String(s.id) : null,
+            id: s.id ? String(s.id) : s.song_id || null,
             title: s.title || '',
-            audioUrl: s.audio_url || null,
-            imageUrl: s.cover_url || null,
-            duration: s.duration ? parseFloat(s.duration) : 0,
-            themeColor: s.theme_color || null,
-            climaxSegments: s.climax_segments || [],
+            audioUrl: pickAudio(s),
+            imageUrl: pickImage(s),
+            duration: pickDuration(s),
+            themeColor: s.theme_color || s.themeColor || null,
+            climaxSegments: s.climax_segments || s.climaxSegments || [],
           })),
           // Error info (present when status === failed)
-          error: q.error_message || null,
-          msg: q.error_message || null,
-          failReason: q.error_message || null,
+          error: q.error_message || q.errorMessage || q.msg || q.error || null,
+          msg: q.error_message || q.msg || null,
+          failReason: q.error_message || q.fail_reason || q.error || null,
           // Metadata
-          taskId: String(q.id || taskId),
-          createdAt: q.created_at || null,
-          completedAt: q.completed_at || null,
+          taskId: String(q.id || q.task_id || taskId),
+          createdAt: q.created_at || q.createdAt || null,
+          completedAt: q.completed_at || q.completedAt || null,
         },
       });
     } catch (e) {

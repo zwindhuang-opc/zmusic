@@ -6,7 +6,7 @@ echo.
 echo Attempting to push to GitHub...
 echo.
 
-cd /d e:\AI_Projects\zmusic
+cd /d d:\AI_Projects\zmusic
 
 echo [1/3] Pushing master branch...
 git push origin master

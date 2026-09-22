@@ -19,16 +19,19 @@ import { dirname, join } from 'path';
 import { config } from './config/index.js';
 import Logger, { FileAppender } from './utils/logger.js';
 import { handleRoute } from './routes/index.js';
+import { initAuthDB } from './services/authdb.service.js';
 
 const logger = new Logger('BackendServer');
 
 // Wire up file appender so all server logs are persisted to logs/server.log
 // (log4j-style: console appender + rolling file appender). 5MB rotation.
+// Registered GLOBALLY so every Logger instance (controllers, services,
+// FrontendError reporter, etc.) writes to the file — not just this one.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const LOG_DIR = join(__dirname, '..', 'logs');
 try { mkdirSync(LOG_DIR, { recursive: true }); } catch { /* already exists */ }
-logger.addAppender(new FileAppender(join(LOG_DIR, 'server.log'), { maxSize: 5 * 1024 * 1024, fs }));
+Logger.addGlobalAppender(new FileAppender(join(LOG_DIR, 'server.log'), { maxSize: 5 * 1024 * 1024, fs }));
 
 const app = express();
 
@@ -138,25 +141,48 @@ function readSharedPortFile() {
 }
 
 /**
- * Resolve the backend port using the priority chain, with automatic fallback.
+ * Resolve the backend port using the priority chain.
  * Priority:
  *   1. Shared port file (written by scripts/start-dev.mjs) — backendPort field
  *   2. RESOLVED_BACKEND_PORT — set by vite.config.js when frontend+backend start together
  *   3. BACKEND_PORT / API_PORT — from .env
  *   4. PORT + 1 — generic env port + 1 offset
  *   5. 4201 — safe default (NOT 5501, which is forbidden)
- * Then auto-increments until finding a free port, skipping forbidden ports.
+ *
+ * IMPORTANT: an explicitly configured port (1–3) is treated as PINNED. If it is
+ * already occupied we fail fast instead of silently switching to the next free
+ * port. Silently switching is worse than crashing: the previous backend keeps
+ * answering on the pinned port (the one vite/`.dev-ports.json` point at) while
+ * the new process serves on an unseen port — so the app happily runs STALE code
+ * with no visible error. Only the generic fallback path (4–5) auto-increments.
+ *
+ * @returns {Promise<number>} Port to listen on
  */
 async function resolveBackendPort() {
   const shared = readSharedPortFile();
-  const raw =
+  const explicitlyConfigured =
     (shared?.backendPort ? String(shared.backendPort) : null) ||
     process.env.RESOLVED_BACKEND_PORT ||
     process.env.BACKEND_PORT ||
     process.env.API_PORT ||
+    null;
+
+  const raw =
+    explicitlyConfigured ||
     (process.env.PORT ? String(parseInt(process.env.PORT, 10) + 1) : null) ||
     '4201';
   const preferred = parseInt(raw, 10) || 4201;
+
+  if (await isPortAvailable(preferred)) return preferred;
+
+  if (explicitlyConfigured) {
+    logger.error(`Backend port ${preferred} is already in use — refusing to auto-switch ports.`);
+    logger.error('A previous backend is most likely still running on it and would keep serving STALE code.');
+    logger.error(`Fix:  netstat -ano | findstr :${preferred}   then   taskkill /PID <PID> /F`);
+    logger.error('Or change BACKEND_PORT in .env, then restart with: npm start');
+    process.exit(1);
+  }
+
   const actual = await findAvailablePort(preferred);
   if (actual !== preferred) {
     logger.warn(`Preferred backend port ${preferred} occupied or forbidden → auto-switched to ${actual}`);
@@ -166,9 +192,17 @@ async function resolveBackendPort() {
 
 // Start server with dynamic port allocation
 (async function start() {
+  // Ensure auth DB (users / sessions / SMS codes) is initialized BEFORE
+  // accepting any requests — guarantees tables exist on cold start.
+  try { initAuthDB(); logger.info('AuthDB ready (users / sessions / SMS codes)'); }
+  catch (e) { logger.error(`AuthDB init failed: ${e.message}`); }
+
   const PORT = await resolveBackendPort();
   const server = app.listen(PORT, () => {
     const realPort = server.address().port;
+    // Expose the REAL listening port so /api/health reports where the backend
+    // actually lives (config.port is the frontend port in the dev setup).
+    app.set('backendPort', realPort);
     logger.info(`Backend API server running on http://localhost:${realPort}`);
     logger.info(`  (version ${APP_VERSION} | env: ${config.env})`);
   });

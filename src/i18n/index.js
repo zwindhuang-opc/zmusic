@@ -1,5 +1,5 @@
-import zhTranslations from './locales/zh.json';
-import enTranslations from './locales/en.json';
+import zhTranslations from './locales/zh.json' with { type: 'json' };
+import enTranslations from './locales/en.json' with { type: 'json' };
 
 const translations = {
   zh: zhTranslations,
@@ -43,24 +43,51 @@ function humanizeFallback(key) {
 
 /**
  * Core translation function.
+ *
+ * IMPORTANT: The fallback chain respects the TARGET language to avoid
+ * showing mixed Chinese/English text.
+ *
  * Resolution order:
  *   1. translations[targetLang] → value
- *   2. translations.zh (fallback) → value
+ *   2. If targetLang === 'en' → STOP: use humanizeFallback (English)
+ *      If targetLang === 'zh' → translations.zh fallback (Chinese)
+ *      If targetLang === other → translations.en → humanize
  *   3. humanized last-segment label (never returns raw dot/underscore keys)
+ *
+ * The previous behavior always fell back to zh.json for ANY missing key,
+ * which caused "Chinese text in English mode" when a key existed in zh.json
+ * but not in en.json.
+ *
  * Check with `t(key) !== key` → it is always true now; use ts() for null-on-miss instead.
  */
 export function t(key, vars, lang) {
   if (!key) return '';
   const targetLang = lang || currentLang;
   const parts = key.split('.');
-  const value = resolveKey(translations[targetLang] || translations.zh, parts);
+
+  // Step 1: Try target language directly
+  const value = resolveKey(translations[targetLang], parts);
   if (value !== undefined && value !== null) {
     return interpolate(value, vars);
   }
-  const fallbackValue = resolveKey(translations.zh, parts);
-  if (fallbackValue !== undefined && fallbackValue !== null) {
-    return interpolate(fallbackValue, vars);
+
+  // Step 2: Language-aware fallback
+  //    English mode → NEVER fall back to Chinese; use humanizeFallback immediately
+  //    Chinese mode → zh is already target; if missing, also humanize (keys should be in zh)
+  //    Other modes → try en first, then humanize
+  if (targetLang === 'en') {
+    // Try en one more time (same as above — already tried, skip), then humanize
+    return humanizeFallback(key);
   }
+
+  if (targetLang !== 'zh') {
+    const enFallback = resolveKey(translations.en, parts);
+    if (enFallback !== undefined && enFallback !== null) {
+      return interpolate(enFallback, vars);
+    }
+  }
+
+  // For zh: only reach here if key not in zh.json → humanize
   return humanizeFallback(key);
 }
 
@@ -68,19 +95,33 @@ export function t(key, vars, lang) {
  * Safe translation: returns translated string ONLY if found.
  * Returns null when key is not found (instead of raw key).
  * Use this instead of `t(key) || fallback` to avoid truthy-key bugs.
+ *
+ * Same language-aware fallback as t() but returns null instead of humanizing.
  */
 export function ts(key, vars, lang) {
   if (!key) return null;
   const targetLang = lang || currentLang;
   const parts = key.split('.');
-  const value = resolveKey(translations[targetLang] || translations.zh, parts);
+
+  // Step 1: Try target language
+  const value = resolveKey(translations[targetLang], parts);
   if (value !== undefined && value !== null) {
     return interpolate(value, vars);
   }
-  const fallbackValue = resolveKey(translations.zh, parts);
-  if (fallbackValue !== undefined && fallbackValue !== null) {
-    return interpolate(fallbackValue, vars);
+
+  // Step 2: Language-aware second chance (only for non-English/non-Chinese)
+  if (targetLang !== 'en' && targetLang !== 'zh') {
+    const enFallback = resolveKey(translations.en, parts);
+    if (enFallback !== undefined && enFallback !== null) {
+      return interpolate(enFallback, vars);
+    }
+    const zhFallback = resolveKey(translations.zh, parts);
+    if (zhFallback !== undefined && zhFallback !== null) {
+      return interpolate(zhFallback, vars);
+    }
   }
+
+  // Explicitly return null — no cross-language mixing
   return null;
 }
 

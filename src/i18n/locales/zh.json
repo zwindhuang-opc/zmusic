@@ -851,12 +851,15 @@
   },
   "notebook": {
     "title": "创作构思记录簿",
+    "badge": "记录每一次创意，无论成败",
+    "card_hint": "成功+失败的全部创作思考",
     "subtitle": "AUTO 模式 60 秒构思全过程 — 即便积分不足未生成歌曲，所有构思细节、创作参数、命令均完整保存于此",
     "total_records": "共 {count} 份构思记录",
-    "success_count": "✅ 成功 {count}",
+    "success_count": "成功 {count}",
+    "failed_count": "构思未生成 {count}",
     "failure_count": "❌ 失败 {count}",
     "no_data": "还没有创作构思记录",
-    "no_data_desc": "到任一平台页面点击 AUTO 按钮，系统会进入 60 秒构思倒计时 —— 整个灵感思考过程（主题、风格、标题、歌词草稿、生成命令）都会完整记录在此。",
+    "no_data_desc": "点击 🚀 GLOBAL AUTO 或任一平台页面的 AUTO 按钮，系统会进入 60 秒构思倒计时 —— 整个灵感思考过程（主题、风格、标题、歌词草稿、生成命令）都会完整记录在此，即使 API 因积分不足失败也不会丢失。",
     "status_success": "生成成功",
     "status_failed": "构思失败",
     "thinking_steps": "{count} 个思考步骤",
@@ -1980,6 +1983,11 @@
     "gen_stage_complete": "完成！",
     "gen_stage_composing_audio": "正在渲染音频...",
     "gen_stage_composing_video": "正在合成视频...",
+    "gen_stage_cover_image": "正在生成AI封面图...",
+    "cover_image_title": "AI 封面图",
+    "cover_image_alt": "为 {title} 生成的 AI 封面图",
+    "cover_image_desc": "通过 GPT-IMAGE 风格文生图 API 生成",
+    "download_cover": "下载封面",
     "gen_stage_initializing_muse": "正在初始化 Muse AI...",
     "gen_stage_waiting_muse": "正在等待 Muse AI...",
     "gen_stage_initializing_suno": "正在初始化 Suno AI...",
@@ -1996,7 +2004,17 @@
     "phase_starting": "Starting Phase",
     "auto_start": "▶️ {engine} AUTO Mode Started",
     "auto_start_summary": "Open {engine} website tab → 60s thinking countdown → Generate MV",
-    "auto_start_detail": "This phase:\n  • Automatically opened {engine} website in a new tab (no login needed, for checking website status only)\n  • Next 60s for \"deep thinking\":\n     - 50s: Determine theme and emotional tone\n     - 40s: Determine genre, visual style, color palette, title\n     - 20s: Determine BPM, key, lyrics draft\n     - 5s: Final check + start generation\n  • Even if generation fails due to insufficient credits, the entire thinking process will be recorded in the Creation Thinking Log."
+    "auto_start_detail": "This phasd:\n  • Automatically opened {engine} website in a new tab (no login needed, for checking website status only)\n  • Next 60s for \"deep thinking\":\n     - 50s: Determine theme and emotional tone\n     - 40s: Determine genre, visual style, color palette, title\n     - 20s: Determine BPM, key, lyrics draft\n     - 5s: Final check + start generation\n  • Even if generation fails due to insufficient credits, the entire thinking process will be recorded in the Creation Thinking Log.",
+    "video_title": "MV 视频",
+    "copy_lyrics": "复制歌词",
+    "share": "分享",
+    "download_audio": "下载音频",
+    "download_audio_title": "下载音轨",
+    "download_video": "下载视频",
+    "duration_label": "时长",
+    "palette_label": "配色",
+    "scenes_label": "场景",
+    "size_label": "尺寸"
   },
   "scenes": {
     "cinematic_concert": "电影演唱会",
@@ -2184,15 +2202,7 @@
     "top_styles": "最常用风格 (Top 5)",
     "top_engines": "最常用引擎",
     "top_bpms": "最常用 BPM 区间",
-    "day_labels": [
-      "一",
-      "二",
-      "三",
-      "四",
-      "五",
-      "六",
-      "日"
-    ],
+    "day_labels": "一,二,三,四,五,六,日",
     "total": "总计",
     "success_label": "成功",
     "failed_label": "失败",
@@ -2205,5 +2215,10 @@
   },
   "image_lyrics": {
     "auto_description_placeholder": "AI-generated inspiration description based on image..."
+  },
+  "error": {
+    "page_crashed_title": "页面出现问题了",
+    "page_crashed_desc": "应用其他部分仍在正常运行。您可以重试本页面，或返回仪表盘继续使用。",
+    "back_to_dashboard": "返回仪表盘"
   }
 }

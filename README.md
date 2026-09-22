@@ -22,6 +22,7 @@ ZMusic is a full-stack, cross-platform AI music generation platform that unifies
 - [Deployment](#deployment)
 - [Configuration](#configuration)
 - [API Reference](#api-reference)
+- [Testing](#testing)
 - [Version Management](#version-management)
 - [Documentation](#documentation)
 - [Screenshots](#screenshots)
@@ -185,7 +186,7 @@ npm run cap:android      # Build + sync + open Android Studio
 npm run build && npx cap sync android && cd android && .\gradlew.bat assembleRelease
 ```
 
-Output: `zmusic-v7.5.0-signed.apk` · Keystore: `android/keystore/zmusic.jks` (alias `zmusic`, validity 10000 days).
+Output: `releases/zmusic-v<version>.apk` · Keystore: `android/keystore/zmusic.jks` (alias `zmusic`, validity 10000 days).
 
 ### iOS IPA
 
@@ -268,13 +269,25 @@ Full reference: [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
 
 ---
 
+## Testing
+
+```bash
+npm test             # i18n parity + live API smoke suite
+npm run test:i18n    # JSON key parity between zh.json / en.json
+npm run test:api     # 20 assertions against the running backend
+```
+
+`test:api` requires the backend to be running (`npm start`). It follows whichever port is pinned (`.dev-ports.json` → `BACKEND_PORT` → `4721`) and exits non-zero on failure, so it can gate CI. Assertions that depend on an external account balance report **SKIP** instead of failing — currently `POST /api/music/generate` while the Suno account has no credits.
+
+---
+
 ## Version Management
 
 ```bash
 npm run version:show       # Show current version
-npm run version:patch      # 7.4.1 -> 7.4.2
-npm run version:minor      # 7.4.1 -> 7.5.0
-npm run version:major      # 7.4.1 -> 8.0.0
+npm run version:patch      # 7.7.0 -> 7.7.1
+npm run version:minor      # 7.7.1 -> 7.8.0
+npm run version:major      # 7.7.1 -> 8.0.0
 
 npm run release:patch      # Release a patch version
 npm run release:minor      # Release a minor version

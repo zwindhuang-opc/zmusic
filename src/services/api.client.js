@@ -8,6 +8,17 @@ import Logger from '../utils/logger.js';
 
 const logger = new Logger('ApiClient');
 
+// Shared auth token key — must match AuthContext.AUTH_TOKEN_KEY
+const AUTH_TOKEN_KEY = 'zmusic_auth_token';
+
+function readAuthToken() {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY) || '';
+  } catch (_) {
+    return '';
+  }
+}
+
 let _isNativeMobile = null;
 
 function checkNativePlatform() {
@@ -98,6 +109,12 @@ class ApiClient {
 
     try {
       const defaultHeaders = { 'Content-Type': 'application/json' };
+      // Auto-inject Bearer auth token so every API call carries the logged-in
+      // user credentials (used by /api/auth/me, session validation, etc.)
+      const token = readAuthToken();
+      if (token) {
+        defaultHeaders['Authorization'] = `Bearer ${token}`;
+      }
       const mergedHeaders = options.headers
         ? { ...defaultHeaders, ...options.headers }
         : defaultHeaders;

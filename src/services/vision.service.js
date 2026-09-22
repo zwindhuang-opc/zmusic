@@ -32,7 +32,7 @@ const logger = new Logger('VisionService');
 // Use centralizedhub's Python 3.14 vision runtime (satisfies "use centralizedhub
 // and zunicorn-agent as base project" rule).  If missing we fall back silently.
 const PYTHON_EXE = resolve(
-  'e:\\AI_Projects\\centralizedhub\\installations\\vision-venv-314\\Scripts\\python.exe'
+  'd:\\AI_Projects\\centralizedhub\\installations\\vision-venv-314\\Scripts\\python.exe'
 );
 
 // Compute __dirname robustly for both ESM (node src/server.js) and CJS bundles
@@ -73,6 +73,11 @@ const HINT_STYLE_MAP = {
   couple_couch_movie_night: { themes: ['love', 'cozy', 'dreams'], styles: ['rnb', 'ballad', 'lo_fi'], mood: 'romantic' },
   family_gathering: { themes: ['family', 'home', 'memories'], styles: ['ballad', 'acoustic', 'soft_pop'], mood: 'warm' },
   nature_healing: { themes: ['nature', 'healing', 'peace'], styles: ['ambient', 'new_age', 'folk'], mood: 'peaceful' },
+  // Solo portrait scenes (new)
+  solo_portrait: { themes: ['introspection', 'self_discovery', 'mood'], styles: ['acoustic', 'ballad', 'indie'], mood: 'introspective' },
+  introspective: { themes: ['introspection', 'reflection', 'solitude'], styles: ['ambient', 'lo_fi', 'acoustic'], mood: 'melancholy' },
+  nostalgic: { themes: ['nostalgia', 'memories', 'longing'], styles: ['ballad', 'jazz', 'soft_pop'], mood: 'reflective' },
+  contemplative: { themes: ['thinking', 'philosophy', 'inner_peace'], styles: ['classical', 'ambient', 'folk'], mood: 'peaceful' },
 };
 
 const COLOR_MOOD_MAP = [
@@ -165,13 +170,46 @@ export class VisionService {
     // MERGE: If Python returned a strong scene hint, bias themes / styles /
     //        mood toward the HINT_STYLE_MAP but keep the color palette +
     //        description from heuristic.
+    //        IMPORTANT: We must detect conflicts between scene hints (group/warm)
+    //        and color analysis (dark/lonely) and prioritize color when they conflict.
     // -----------------------------------------------------------------------
     if (pythonResult && heuristic) {
       const hints = (pythonResult.sceneHints || []).filter(h => h.score >= 0.6);
       if (hints.length > 0) {
         const topHint = hints[0];
         const mapped = HINT_STYLE_MAP[topHint.id];
-        if (mapped) {
+
+        // ---- CONFLICT DETECTION ----
+        // Check if the Python scene hint conflicts with color analysis
+        // Scenes that imply warmth, happiness, or groups
+        const GROUP_WARM_SCENES = new Set([
+          'festive_celebration', 'family_gathering', 'picnic_outdoor',
+          'romantic_dinner', 'couple_couch_movie_night', 'culinary_memory',
+          'pet_friendship'
+        ]);
+
+        const MOOD_TO_THEME = {
+          // Dark/lonely moods
+          melancholy: ['loneliness', 'heartbreak', 'dark'],
+          dark: ['heartbreak', 'loneliness', 'rebellion'],
+          // Warm/happy moods
+          joyful: ['happiness', 'celebration'],
+          warm: ['family', 'friendship'],
+          romantic: ['love', 'romance'],
+        };
+
+        // Check if there's a conflict
+        const isGroupWarmScene = GROUP_WARM_SCENES.has(topHint.id);
+        const heuristicMood = heuristic.mood || '';
+        const heuristicCategory = heuristic.dominantColor?.category || '';
+
+        // Conflict: scene suggests group/warm but color analysis says dark/lonely
+        const hasConflict = isGroupWarmScene &&
+          (heuristicMood === 'melancholy' || heuristicMood === 'dark' ||
+            heuristicCategory === 'dark' || heuristicCategory === 'cool');
+
+        if (mapped && !hasConflict) {
+          // Normal merge when no conflict
           const mergedThemes = [...new Set([...mapped.themes, ...heuristic.themes])].slice(0, 5);
           const mergedStyles = [...new Set([...mapped.styles, ...heuristic.styles])].slice(0, 5);
           heuristic.themes = mergedThemes;
@@ -184,7 +222,25 @@ export class VisionService {
             mood: mapped.mood || heuristic.mood,
             alternatives: { themes: mergedThemes, styles: mergedStyles },
           };
+        } else if (mapped && hasConflict) {
+          // Conflict detected! Prioritize color analysis, but add a note
+          // Keep the heuristic's dark/lonely themes and mood
+          // Only add the hint's themes as secondary options
+          const conflictThemes = mapped.themes.map(t => `note:${t}`);
+          const mergedThemes = [...new Set([...heuristic.themes, ...conflictThemes])].slice(0, 5);
+          heuristic.suggestions = {
+            ...(heuristic.suggestions || {}),
+            alternatives: {
+              themes: heuristic.themes,
+              styles: heuristic.styles
+            },
+            // Keep heuristic's dark mood, ignore the conflicting warm scene
+          };
+          // Add conflict marker for the description
+          heuristic._conflictDetected = true;
+          heuristic._pythonSceneIgnored = topHint.id;
         }
+
         // Prepend the detected object list (COCO labels + counts) to the
         // description so users can see *what* the neural net actually found.
         const counts = pythonResult.counts || {};
@@ -193,7 +249,11 @@ export class VisionService {
           ? countEntries.map(([k, v]) => v > 1 ? `${k}×${v}` : k).join('、')
           : '';
         const hintList = hints.slice(0, 3).map(h => `${h.id}(${Math.round(h.score * 100)}%)`).join('、');
-        const addendum = `[YOLO物体识别：${objectList || '(未识别到80类内物体)'} | 场景提示：${hintList || '无'}]`;
+
+        let addendum = `[YOLO物体识别：${objectList || '(未识别到80类内物体)'} | 场景提示：${hintList || '无'}]`;
+        if (hasConflict) {
+          addendum += ` [注意：检测到场景与色调冲突，已优先采用色调分析结果]`;
+        }
         heuristic.description = addendum + ' ' + (heuristic.description || '');
       }
       // Attach raw Python result for downstream consumers (visionAnalyzer.js,

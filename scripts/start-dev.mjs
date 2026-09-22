@@ -73,13 +73,17 @@ function killPort(port) {
     });
     const pids = new Set();
     output.split('\n').forEach(line => {
-      const match = line.trim().match(/\s(\d+)\s*$/);
-      if (match) {
-        const pid = parseInt(match[1], 10);
-        const proc = execSync(`tasklist /FI "PID eq ${pid}" /FO CSV /NH`, { encoding: 'utf8', timeout: 3000 });
-        if (proc.includes('node.exe') || proc.includes('node ')) {
-          pids.add(pid);
-        }
+      // Columns: Protocol  Local Address  Foreign Address  State  PID
+      // Match the LOCAL port exactly — `findstr :4721` also matches ports like
+      // 14721 / 47210, and killing those would be a nasty surprise.
+      const cols = line.trim().split(/\s+/);
+      const localAddress = cols[1] || '';
+      const pid = parseInt(cols[cols.length - 1], 10);
+      if (!localAddress.endsWith(`:${port}`) || !Number.isInteger(pid)) return;
+
+      const proc = execSync(`tasklist /FI "PID eq ${pid}" /FO CSV /NH`, { encoding: 'utf8', timeout: 3000 });
+      if (proc.includes('node.exe') || proc.includes('node ')) {
+        pids.add(pid);
       }
     });
     for (const pid of pids) {
@@ -192,14 +196,23 @@ async function main() {
 
     frontendPort = pinnedFrontend;
     backendPort = pinnedBackend || (pinnedFrontend + 1);
-    if (FORBIDDEN_PORTS.has(backendPort) || !(await isPortAvailable(backendPort))) {
-      // Find next available port
-      for (let p = backendPort + 1; p < backendPort + 20; p++) {
-        if (!FORBIDDEN_PORTS.has(p) && await isPortAvailable(p)) {
-          backendPort = p;
-          break;
-        }
-      }
+
+    if (FORBIDDEN_PORTS.has(backendPort)) {
+      console.error(`  ❌ Port ${backendPort} is in the forbidden list (5500-5502, etc.)`);
+      process.exit(1);
+    }
+
+    if (!(await isPortAvailable(backendPort))) {
+      // NEVER silently fall back to another port while pinned. Doing so leaves
+      // the previous backend answering on the pinned port (the one vite proxies
+      // to) while the new process listens on an invisible one — the app then
+      // runs STALE code with no visible error. Fail loudly instead.
+      console.error(`  ❌ Port ${backendPort} is still occupied after kill attempt`);
+      console.error('     A previous backend most likely survived the kill and would keep serving stale code.');
+      console.error(`       netstat -ano | findstr :${backendPort}`);
+      console.error('       taskkill /PID <PID> /F');
+      console.error('     Or change BACKEND_PORT in .env');
+      process.exit(1);
     }
   } else {
     console.log('\n  🚦 [CentralizedHub Dynamic Port Manager]');

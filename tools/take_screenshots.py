@@ -14,7 +14,7 @@ except ImportError:
     print("需要安装依赖: pip install mss pillow")
     sys.exit(1)
 
-screenshots_dir = r"e:\AI_Projects\zmusic\screenshots\v6.6.6"
+screenshots_dir = r"d:\AI_Projects\zmusic\screenshots\v6.6.6"
 os.makedirs(screenshots_dir, exist_ok=True)
 
 pages = {

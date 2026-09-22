@@ -20,7 +20,17 @@ function load() {
     const raw = localStorage.getItem(AUTO_CONFIG_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      return { ...DEFAULTS, ...parsed };
+      const merged = { ...DEFAULTS, ...parsed };
+      // Migration: persist any new default fields to old config
+      const needsMigration = Object.keys(DEFAULTS).some(
+        (k) => !(k in parsed)
+      );
+      if (needsMigration) {
+        try {
+          localStorage.setItem(AUTO_CONFIG_KEY, JSON.stringify(merged));
+        } catch { }
+      }
+      return merged;
     }
   } catch { }
   return { ...DEFAULTS };

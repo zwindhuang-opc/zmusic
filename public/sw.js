@@ -1,7 +1,10 @@
 // ZMusic Service Worker — Offline caching for PWA
 // Caches app shell + generated audio for offline access
 
-const CACHE_NAME = 'zmusic-v7.4.1';
+// The cache name is versioned from the registration query (`/sw.js?v=<app
+// version>`, see src/main.jsx) so every release purges the previous app-shell
+// cache. Falls back to 'dev' when the worker is loaded without a version.
+const CACHE_NAME = `zmusic-v${new URL(self.location.href).searchParams.get('v') || 'dev'}`;
 const APP_SHELL = [
   '/',
   '/index.html',

@@ -939,9 +939,13 @@ export async function generateMVVideo({
     };
   });
 
-  // Start audio first, wait for it to be ready, then start recording
+  // Start audio first, wait for it to be ready, then start recording.
+  // Mute the audio element so browsers allow autoplay without a user gesture.
+  // The MediaElementSourceNode still feeds the analyser + recording pipeline,
+  // so frequency-reactive visuals work even though the user doesn't hear it.
   audio.currentTime = 0;
-  await audio.play().catch(() => { /* CORS autoplay blocked — video only */ });
+  audio.muted = true;
+  await audio.play().catch(() => { /* CORS autoplay blocked — video only, render loop uses performance.now() fallback */ });
 
   // Now start recording (audio is already playing)
   recorder.start(100); // Collect data every 100ms
@@ -953,6 +957,8 @@ export async function generateMVVideo({
   let lastAudioTime = 0;
   /** @type {number} Previous-frame bass level for beat detection (onset) */
   let prevBass = 0;
+  /** @type {number} Last progress callback timestamp (throttle to ~10fps) */
+  let lastProgressTs = 0;
 
   const renderFrame = () => {
     // Use audio.currentTime for sync when possible, fallback to performance.now()
@@ -1002,8 +1008,10 @@ export async function generateMVVideo({
       });
     }
 
-    // Progress callback
-    if (onProgress) {
+    // Progress callback (throttled to ~10fps to avoid React state thrash)
+    const now = performance.now();
+    if (onProgress && (now - lastProgressTs > 100 || lastProgressTs === 0)) {
+      lastProgressTs = now;
       onProgress(Math.min(1, elapsed / duration));
     }
 

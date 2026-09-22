@@ -2150,7 +2150,7 @@ async function _callPythonVisionServer(imageElement) {
   if (!imageElement || !imageElement.complete || !imageElement.naturalWidth) throw new Error('image not ready');
 
   // Fast-path: skip entirely on static hosting (GitHub Pages, Netlify, Vercel, Cloudflare Pages)
-  // where no Node/Python backend exists.  Detect by hostname + file:// protocol.
+  // where no Node/Python backend exists.  Detect by hostname + fild:// protocol.
   const host = window.location.hostname || '';
   const staticHostPatterns = [/github\.io$/, /netlify\.app$/, /netlify\.dev$/, /vercel\.app$/, /vercel\.dev$/, /pages\.dev$/, /file$/];
   const isStaticHost = staticHostPatterns.some(p => p.test(host));
@@ -4006,7 +4006,7 @@ export async function fullImageAnalysis(imageElement) {
   // indoor/outdoor etc.  Results are merged into features.pythonVision
   // and used as a STRONG BIAS in classifyScene below.
   //
-  // If the server is unreachable (file://, offline, CORS error) we just
+  // If the server is unreachable (fild://, offline, CORS error) we just
   // fall back silently to the pure browser heuristics + face-api.  No
   // failure is ever surfaced to the user.
   // ─────────────────────────────────────────────────────────────────────

@@ -27,7 +27,9 @@
 import { config } from '../config/index.js';
 import Logger from '../utils/logger.js';
 import { createRequire } from 'module';
+import { execFileSync } from 'child_process';
 import { connectCDP, fetchFromEdge, checkLogin as cdpCheckLogin, extractAuthToken, disconnect as cdpDisconnect, startKeepalive, recoverSession, updateKeepaliveToken, readDisplayedCredit, fillInputOnPage } from '../services/museCdpBridge.js';
+import platformAuth from '../services/platformAuth.service.js';
 
 const require = createRequire(import.meta.url);
 const logger = new Logger('MuseController');
@@ -52,13 +54,58 @@ let cachedLoginInfo = null;
 // ===========================================================================
 
 /**
+ * Launch Edge with CDP enabled on port 9222.
+ * Called automatically by ensureCDP() when no Edge CDP is detected.
+ * Uses a dedicated user-data-dir at D:\EdgeCDP to avoid profile lock conflicts.
+ */
+function launchEdgeCDP() {
+  const edgePaths = [
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  ];
+  const edgePath = edgePaths.find(p => {
+    try { return require('fs').existsSync(p); } catch { return false; }
+  });
+  if (!edgePath) {
+    logger.warn('[CDP] Microsoft Edge not found on this system');
+    return false;
+  }
+
+  const userDataDir = 'D:\\EdgeCDP';
+  const args = [
+    `--remote-debugging-port=9222`,
+    `--user-data-dir=${userDataDir}`,
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--disable-features=msEdgeStartupBoost,msEdgeSleepingTabs,msEfficiencyMode',
+    'https://muse.top/',
+  ];
+
+  try {
+    const { spawn } = require('child_process');
+    const child = spawn(edgePath, args, {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: false,
+    });
+    child.unref();
+    logger.info(`[CDP] Edge launched with CDP (PID=${child.pid}, user-data-dir=${userDataDir})`);
+    return true;
+  } catch (e) {
+    logger.warn(`[CDP] Failed to launch Edge: ${e.message}`);
+    return false;
+  }
+}
+
+/**
  * Ensure the CDP bridge is connected to the user's existing Edge browser.
- * Connects to port 9222 which is the user's ALREADY RUNNING Edge.
- * Does NOT launch any new browser window.
+ * If no Edge CDP is running, automatically launches one.
  * @returns {Promise<boolean>}
  */
 async function ensureCDP() {
   if (cdpReady) return true;
+
+  // First attempt: try connecting to existing Edge CDP
   try {
     await connectCDP(9222);
     cdpReady = true;
@@ -94,6 +141,35 @@ async function ensureCDP() {
     return true;
   } catch (e) {
     logger.warn(`[CDP] Failed to connect: ${e.message}`);
+
+    // Auto-launch Edge CDP if not running, then retry once
+    const launched = launchEdgeCDP();
+    if (launched) {
+      logger.info('[CDP] Waiting 8s for Edge to initialize...');
+      await new Promise(r => setTimeout(r, 8000));
+      try {
+        await connectCDP(9222);
+        cdpReady = true;
+        logger.info('[CDP] Connected to auto-launched Edge on port 9222');
+
+        cachedLoginInfo = await cdpCheckLogin();
+        const li = cachedLoginInfo || {};
+        logger.info(
+          `[CDP] Login status: loggedIn=${li.loggedIn} credits=${li.credits}` +
+          ` tokenFound=${li.tokenFound} tokenSource=${li.tokenSource || 'none'}`
+        );
+
+        try {
+          startKeepalive(300000);
+          logger.info('[CDP] Session keepalive started (5-min interval)');
+        } catch { /* best-effort */ }
+
+        return true;
+      } catch (e2) {
+        logger.warn(`[CDP] Retry after auto-launch also failed: ${e2.message}`);
+      }
+    }
+
     cdpReady = false;
     return false;
   }
@@ -176,21 +252,34 @@ async function museCallViaCDP(path, body = {}, timeoutMs = 60000) {
  * @returns {Promise<{status:number, data:object|null, error?:string}>}
  */
 async function museCallDirect(path, body = {}) {
-  // Try to refresh MUSE_TOKEN from the browser before each DIRECT call.
-  // When the user re-logs in on muse.top, the browser gets a fresh JWT in
-  // localStorage. We extract it here so DIRECT calls use the live token,
-  // not the stale one from .env.
-  try {
-    const freshToken = await extractAuthToken();
-    if (freshToken?.token && freshToken.token.length > 100 && freshToken.token !== MUSE_TOKEN) {
-      logger.info(`[DIRECT] Refreshed MUSE_TOKEN from browser (source=${freshToken.source}, len=${freshToken.token.length})`);
-      MUSE_TOKEN = freshToken.token;
-      updateKeepaliveToken(MUSE_TOKEN);
-    }
-  } catch { /* extraction failure is non-fatal — fall through to .env token */ }
+  // TOKEN PRIORITY (browser-agnostic):
+  //   1. User-provided token via Settings → Platform Auth (platformAuth)
+  //   2. CDP-extracted token from browser (if Edge CDP is running)
+  //   3. .env MUSE_API_KEY (static fallback)
+  let activeToken = MUSE_TOKEN;
+  let tokenSource = 'env';
+
+  // 1. Try platformAuth store first (works on ANY browser/device)
+  const storedToken = platformAuth.getToken('muse');
+  if (storedToken && storedToken.length > 50) {
+    activeToken = storedToken;
+    tokenSource = 'platformAuth';
+  } else {
+    // 2. Try CDP extraction (only works if Edge CDP is running)
+    try {
+      const freshToken = await extractAuthToken();
+      if (freshToken?.token && freshToken.token.length > 100 && freshToken.token !== MUSE_TOKEN) {
+        logger.info(`[DIRECT] Refreshed token from browser CDP (source=${freshToken.source}, len=${freshToken.token.length})`);
+        activeToken = freshToken.token;
+        MUSE_TOKEN = freshToken.token;
+        tokenSource = 'cdp';
+        updateKeepaliveToken(MUSE_TOKEN);
+      }
+    } catch { /* extraction failure is non-fatal — fall through to .env token */ }
+  }
 
   const url = `${MUSE_HOST}${path}`;
-  logger.info(`[DIRECT] -> POST ${path} (auth=MUSE_API_KEY len=${MUSE_TOKEN.length})`);
+  logger.info(`[DIRECT] -> POST ${path} (auth=${tokenSource} len=${activeToken.length})`);
 
   // Build full request body. Like the CDP path, include authToken in the
   // body to match muse.top's web app request format.
@@ -201,7 +290,7 @@ async function museCallDirect(path, body = {}) {
     machineId: 'zmusic-direct',
     timestamp: Math.floor(Date.now() / 1000),
     nonce: 'zmusic' + Math.random().toString(36).substring(2, 10),
-    ...(MUSE_TOKEN ? { authToken: MUSE_TOKEN } : {}),
+    ...(activeToken ? { authToken: activeToken } : {}),
     ...body,
   };
 
@@ -211,7 +300,7 @@ async function museCallDirect(path, body = {}) {
       headers: {
         'Content-Type': 'application/json',
         'App-Key': MUSE_APP_KEY,
-        ...(MUSE_TOKEN ? { 'AuthToken': MUSE_TOKEN } : {}),
+        ...(activeToken ? { 'AuthToken': activeToken } : {}),
       },
       body: JSON.stringify(fullBody),
       signal: AbortSignal.timeout(20000),
@@ -223,7 +312,7 @@ async function museCallDirect(path, body = {}) {
     try {
       const data = JSON.parse(raw);
       const codeLabel = data.code === 0 ? 'OK' : data.code === 1006 ? 'LOGIN_EXPIRED' : `CODE_${data.code}`;
-      logger.info(`[DIRECT] <- ${status} ${codeLabel}`);
+      logger.info(`[DIRECT] <- ${status} ${codeLabel} (source=${tokenSource})`);
       return { status, data, error: null };
     } catch (parseErr) {
       logger.error(`[DIRECT] <- Parse error: ${parseErr.message} (${raw.substring(0, 200)})`);
@@ -238,12 +327,14 @@ async function museCallDirect(path, body = {}) {
 /**
  * Unified Muse API call with smart routing.
  *
- * For GENERATION calls (POST /song/*): MUST use CDP because the Muse server
- * requires a live browser session (cookies + server-side session). DIRECT
- * HTTP never works for generation — the server always returns code=1006.
+ * TOKEN PRIORITY for ALL calls (including generation):
+ *   1. DIRECT via platformAuth token (browser-agnostic, server-side stored)
+ *   2. DIRECT via .env MUSE_API_KEY
+ *   3. CDP bridge (Edge browser port 9222, legacy fallback)
  *
- * For STATUS calls (POST /user/info, etc.): DIRECT is faster and more reliable.
- * Falls back to CDP only if DIRECT fails.
+ * Previously generation was forced to CDP-only because the stale .env token
+ * always returned code=1006. But with platformAuth tokens (user-pasted fresh
+ * from ANY browser), DIRECT works perfectly for generation too.
  *
  * @param {string} path - API path
  * @param {object} [body] - POST body
@@ -253,78 +344,72 @@ async function museCallDirect(path, body = {}) {
 async function museCall(path, body = {}, options = {}) {
   const { isGeneration = false, timeoutMs = 60000 } = options;
 
-  // --- GENERATION: CDP PRIMARY (browser session is mandatory) -------------
-  if (isGeneration) {
-    try {
-      const cdpOk = await ensureCDP();
-      if (cdpOk) {
-        logger.info(`[MUSE] GEN: Using CDP-primary for ${path}`);
-        const result = await museCallViaCDP(path, body, timeoutMs);
-        if (result.data?.code === 0) {
-          return { ...result, via: 'cdp' };
-        }
-        // If code=1006, try recovery
-        if (result.data?.code === 1006) {
-          logger.warn(`[MUSE] GEN: CDP returned code=1006 — recovering...`);
-          const recovered = await recoverSession();
-          if (recovered) {
-            logger.info(`[MUSE] GEN: Recovered! Retrying...`);
-            const retry = await museCallViaCDP(path, body, timeoutMs);
-            if (retry.data?.code === 0) {
-              return { ...retry, via: 'cdp-recovered' };
-            }
-          }
-        }
-        return { ...result, via: 'cdp' };
-      }
-    } catch (e) {
-      logger.warn(`[MUSE] GEN: CDP failed: ${e.message}`);
-    }
-    // CDP not available — can't generate. Return error
-    return { status: 0, data: null, error: 'CDP not available — Edge must run with --remote-debugging-port=9222' };
-  }
+  // --- STEP 1: Try DIRECT first (works for generation too with platformAuth) ---
+  // Check for DIRECT token: platformAuth store → cache → .env
+  refreshEnvToken();
+  const haveDirectKey = Boolean(MUSE_TOKEN && MUSE_TOKEN.length > 100) ||
+    Boolean(platformAuth.getToken('muse'));
 
-  // --- STATUS/CREDIT: DIRECT PRIMARY (fast, reliable) ---------------------
   let via = 'direct';
   let result = { status: 0, data: null, error: null };
-  const haveDirectKey = Boolean(MUSE_TOKEN && MUSE_TOKEN.length > 100);
+  let directSucceeded = false;
 
   if (haveDirectKey) {
     result = await museCallDirect(path, body);
     if (result.data?.code === 0) {
       return { ...result, via };
     }
+    // code=1006 on DIRECT: token is expired
     if (result.data?.code === 1006) {
-      logger.warn(`[MUSE] STATUS: DIRECT code=1006 — recovering...`);
-      try {
-        const recovered = await recoverSession();
-        if (recovered) {
-          result = await museCallDirect(path, body);
-          if (result.data?.code === 0) {
-            return { ...result, via: 'direct-recovered' };
-          }
-        }
-      } catch (e) {
-        logger.warn(`[MUSE] STATUS: Recovery error: ${e.message}`);
-      }
+      logger.warn(`[MUSE] DIRECT code=1006 (token expired) — will try CDP fallback`);
     }
+    // Other non-zero codes: keep trying
+    logger.info(`[MUSE] DIRECT returned code=${result.data?.code}, trying CDP fallback`);
   }
 
-  // Fall back to CDP for status
+  // --- STEP 2: Try CDP bridge (legacy Edge-only fallback) ---
   try {
     const cdpOk = await ensureCDP();
     if (cdpOk) {
-      const cdpResult = await museCallViaCDP(path, body, 15000);
+      logger.info(`[MUSE] Trying CDP fallback for ${path}`);
+      const cdpTimeout = isGeneration ? timeoutMs : 15000;
+      const cdpResult = await museCallViaCDP(path, body, cdpTimeout);
       if (cdpResult.data?.code === 0) {
         return { ...cdpResult, via: 'cdp' };
+      }
+      // CDP code=1006 → try recovery once
+      if (cdpResult.data?.code === 1006) {
+        logger.warn(`[MUSE] CDP code=1006 — attempting auto-recovery...`);
+        try {
+          const recovered = await recoverSession();
+          if (recovered) {
+            logger.info(`[MUSE] CDP session recovered! Retrying...`);
+            const retry = await museCallViaCDP(path, body, cdpTimeout);
+            if (retry.data?.code === 0) {
+              return { ...retry, via: 'cdp-recovered' };
+            }
+            return { ...retry, via: 'cdp-recovered-failed' };
+          }
+        } catch (recoveryErr) {
+          logger.warn(`[MUSE] CDP recovery error: ${recoveryErr.message}`);
+        }
       }
       return { ...cdpResult, via: 'cdp' };
     }
   } catch (e) {
-    logger.warn(`[MUSE] STATUS: CDP fallback failed: ${e.message}`);
+    logger.warn(`[MUSE] CDP fallback error: ${e.message}`);
   }
 
-  return haveDirectKey ? { ...result, via } : { ...{ status: 0, data: null, error: 'CDP not available' }, via: 'cdp' };
+  // --- Both failed: return best available error ---
+  if (haveDirectKey && result.data) {
+    return { ...result, via };
+  }
+  return {
+    status: 0,
+    data: null,
+    error: 'No authentication available. Go to Settings → Platform Auth and paste your Muse token (works on any browser).',
+    via: 'none'
+  };
 }
 
 /**
@@ -382,10 +467,33 @@ export class MuseController {
           // --- LOG ALL RAW FIELDS (no more guessing!) ---
           logger.info(`[status] RAW API FIELDS: credit=${d.credit} mi.credit=${mi.credit} ep=${mi.evaluationCreditPaid} en=${mi.evaluationCreditNoPaid} liveCredit=${mi.liveCredit} loginStatus=${d.loginStatus}`);
 
-          // Try to read the ACTUAL displayed credit from the browser
-          // This reads the sidebar DOM / localStorage profile
-          let displayedCredit = mi.credit ?? d.credit ?? 0;
-          let creditSource = 'api_raw';
+          // Robust credit detection: Muse uses multiple credit buckets depending on
+          // the user's subscription tier. The "displayed" credit the user sees on
+          // the website uses a priority chain that we must replicate exactly:
+          //   1. liveCredit (instant-generate credits for paid members)
+          //   2. evaluationCreditPaid (evaluation tokens bought with real money)
+          //   3. evaluationCreditNoPaid (trial/free credits)
+          //   4. memberInfo.credit / data.credit (generic credit field)
+          //   5. CDP DOM read (what the website actually renders in the sidebar)
+          const fallbackLive = mi.liveCredit ?? mi.live_credit ?? 0;
+          const fallbackPaid = mi.evaluationCreditPaid ?? mi.evaluation_credit_paid ?? 0;
+          const fallbackFree = mi.evaluationCreditNoPaid ?? mi.evaluation_credit_no_paid ?? 0;
+          const fallbackGeneric = mi.credit ?? d.credit ?? d.credits ?? mi.credits ?? 0;
+
+          // Priority: paid buckets first (they don't expire easily), then free.
+          // Sum if generic credit is 0 (meaning platform uses split buckets).
+          let displayedCredit;
+          let creditSource;
+          if (fallbackGeneric > 0) {
+            displayedCredit = fallbackGeneric;
+            creditSource = 'api:memberInfo.credit';
+          } else if (fallbackLive > 0 || fallbackPaid > 0 || fallbackFree > 0) {
+            displayedCredit = fallbackLive + fallbackPaid + fallbackFree;
+            creditSource = `api:split(live=${fallbackLive}+paid=${fallbackPaid}+free=${fallbackFree})`;
+          } else {
+            displayedCredit = 0;
+            creditSource = 'api:none';
+          }
 
           if (cdpConnected) {
             try {
@@ -423,18 +531,29 @@ export class MuseController {
       try {
         const loginInfo = await cdpCheckLogin();
         if (loginInfo?.loggedIn) {
-          // Read the ACTUAL credit from the browser's localStorage profile
-          // This is exactly what the Muse sidebar displays
-          const mi = loginInfo.memberInfo || {};
-          const cachedCredit = mi.credit ?? loginInfo.credits ?? 0;
+          // Same robust credit detection as the DIRECT API path above
+          const mi = loginInfo.memberInfo || loginInfo.member_info || {};
+          const fallbackLive = mi.liveCredit ?? mi.live_credit ?? loginInfo.liveCredit ?? 0;
+          const fallbackPaid = mi.evaluationCreditPaid ?? mi.evaluation_credit_paid ?? loginInfo.evaluationCreditPaid ?? 0;
+          const fallbackFree = mi.evaluationCreditNoPaid ?? mi.evaluation_credit_no_paid ?? loginInfo.evaluationCreditNoPaid ?? 0;
+          const fallbackGeneric = mi.credit ?? loginInfo.credits ?? loginInfo.credit ?? mi.credits ?? 0;
+
+          let cachedCredit;
+          if (fallbackGeneric > 0) {
+            cachedCredit = fallbackGeneric;
+          } else if (fallbackLive > 0 || fallbackPaid > 0 || fallbackFree > 0) {
+            cachedCredit = fallbackLive + fallbackPaid + fallbackFree;
+          } else {
+            cachedCredit = 0;
+          }
 
           login = {
             loggedIn: true,
             loginStatus: loginInfo.loginStatus || 1,
             credits: cachedCredit,
-            liveCredit: loginInfo.liveCredit ?? cachedCredit,
-            evaluationCreditPaid: loginInfo.evaluationCreditPaid ?? mi.evaluationCreditPaid ?? 0,
-            evaluationCreditNoPaid: loginInfo.evaluationCreditNoPaid ?? mi.evaluationCreditNoPaid ?? 0,
+            liveCredit: fallbackLive || cachedCredit,
+            evaluationCreditPaid: fallbackPaid,
+            evaluationCreditNoPaid: fallbackFree,
             isMember: loginInfo.isMember || false,
             membershipExpired: loginInfo.membershipExpired || false,
             sessionExpired: (loginInfo.loginStatus || 0) === 0,
@@ -495,6 +614,26 @@ export class MuseController {
     // "configured" = we have real credentials that produced a valid credit
     const configured = !!login && login.loggedIn;
 
+    // Check platformAuth status (browser-agnostic token store)
+    let platformAuthStatus = null;
+    try {
+      platformAuthStatus = await platformAuth.getStatus('muse');
+    } catch { /* best-effort */ }
+
+    // Build a helpful note for the UI
+    let note = null;
+    if (!configured) {
+      if (platformAuthStatus?.hasToken) {
+        note = platformAuthStatus.expired
+          ? 'Your stored token has expired. Go to Settings → Platform Auth to update it.'
+          : 'Token stored but validation failed. Check Settings → Platform Auth.';
+      } else if (!cdpConnected && !haveDirectKey) {
+        note = 'No authentication configured. Go to Settings → Platform Auth to paste your Muse token (works on any browser).';
+      } else if (!cdpConnected) {
+        note = 'CDP not connected. For browser-agnostic auth, go to Settings → Platform Auth.';
+      }
+    }
+
     return res.json({
       success: true,
       configured,
@@ -507,11 +646,9 @@ export class MuseController {
       direct: {
         hasKey: haveDirectKey,
       },
+      platformAuth: platformAuthStatus,
       login,
-      // Helpful message for the UI
-      note: !cdpConnected
-        ? 'CDP not connected. To read your actual credit balance from the browser, close all Edge windows and double-click "ZMusic-Edge" on your desktop to restart Edge with debugging enabled.'
-        : null,
+      note,
     });
   }
 
@@ -685,7 +822,7 @@ export class MuseController {
   /**
    * POST /api/muse/generate
    * Generate a song via the user's Edge browser context.
-   * Body: { mode, prompt, lyrics, style, title, vocal, languageId, audioWeight, instrumental, structureId, songModel }
+   * Body: { mode, prompt, lyrics, style, title, vocal, languageId, audioWeight, instrumental, structureId, songModel, duration }
    */
   async generate(req, res) {
     const {
@@ -696,6 +833,7 @@ export class MuseController {
       title = '',
       songModel = 'general',
       instrumental = false,
+      duration = null,
     } = req.body || {};
 
     if (mode === 'quick' && (!prompt || prompt.length < 5)) {
@@ -710,17 +848,30 @@ export class MuseController {
     try {
       refreshEnvToken(); // Pick up any .env updates
 
-      // Build generate body
+      // Build generate body — include duration if provided, clamp to 10-360s
+      const dur = Number(duration);
+      const durationVal = (dur && dur >= 10 && dur <= 360) ? Math.round(dur) : undefined;
+      const durationFragment = durationVal !== undefined ? { duration: durationVal } : {};
+
       let endpoint, body;
       if (mode === 'master') {
         endpoint = '/project/song/v1/song/generate';
-        body = { lyrics, style, title: title || prompt?.substring(0, 20) || 'Untitled', instrumental: instrumental ? 1 : 0 };
+        body = {
+          lyrics, style, title: title || prompt?.substring(0, 20) || 'Untitled',
+          instrumental: instrumental ? 1 : 0,
+          ...durationFragment,
+        };
       } else {
         endpoint = '/project/song/v1/song/deepseek/generate';
-        body = { description: prompt, songModel, instrumental: instrumental ? 1 : 0, ...(style ? { style } : {}) };
+        body = {
+          description: prompt, songModel,
+          instrumental: instrumental ? 1 : 0,
+          ...(style ? { style } : {}),
+          ...durationFragment,
+        };
       }
 
-      logger.info(`[generate/${mode}] Calling ${endpoint} via CDP...`);
+      logger.info(`[generate/${mode}] Calling ${endpoint} via CDP (duration=${durationVal ?? 'default'})...`);
       const result = await museCall(endpoint, body, { isGeneration: true, timeoutMs: 60000 });
 
       if (result.error) {
@@ -789,16 +940,50 @@ export class MuseController {
 
   /**
    * Helper: Normalize muse API response into HTTP response.
+   * Also provides bilingual error messages so EN users don't see raw Chinese.
    */
   sendMuseResult(res, label, result) {
+    // --- Bilingual error map for Muse API codes ---
+    const MUSE_ERRORS = {
+      1006: {
+        zh: '登录已过期（code=1006）。请前往Settings → Platform Auth，从muse.top复制粘贴新的token（适用于任意浏览器）。',
+        en: 'Login expired (code=1006). Go to Settings → Platform Auth and paste a fresh token from muse.top (works in any browser).',
+      },
+      1001: {
+        zh: '参数错误（code=1001）：请检查歌词或提示词是否为空。',
+        en: 'Parameter error (code=1001). Check that lyrics/prompt is not empty.',
+      },
+      1002: {
+        zh: '积分不足（code=1002）：请在muse.top账号内充值或完成任务获取积分。',
+        en: 'Insufficient credits (code=1002). Top up your muse.top account or earn credits via tasks.',
+      },
+      1004: {
+        zh: '未授权（code=1004）：请检查token是否仍有效，或在Platform Auth重新粘贴新token。',
+        en: 'Unauthorized (code=1004). Re-paste a fresh token in Platform Auth.',
+      },
+      1500: {
+        zh: '服务暂时不可用（code=1500），请稍后重试。',
+        en: 'Service temporarily unavailable (code=1500). Please try again later.',
+      },
+    };
+
     if (result.status >= 400 && result.data?.code === undefined) {
-      return res.status(result.status).json({ success: false, error: result.data?.error || `HTTP ${result.status}`, label });
+      return res.status(result.status).json({
+        success: false,
+        error: result.data?.error || `HTTP ${result.status}`,
+        label,
+      });
     }
     if (result.data?.code !== 0 && result.data?.code !== undefined) {
+      const code = result.data.code;
+      const mapped = MUSE_ERRORS[code];
+      const rawMsg = result.data.msg || `Muse code ${code}`;
       return res.status(502).json({
         success: false,
-        error: result.data.msg || `Muse code ${result.data.code}`,
-        code: result.data.code,
+        error: mapped ? mapped.zh : rawMsg,
+        error_en: mapped ? mapped.en : null,
+        code,
+        errorKey: code === 1006 ? 'LOGIN_EXPIRED' : (code === 1002 ? 'INSUFFICIENT_CREDIT' : (code === 1004 ? 'UNAUTHORIZED' : `CODE_${code}`)),
         traceId: result.data.traceId,
         label,
       });

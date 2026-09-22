@@ -831,6 +831,31 @@ export default function PublishStudio({ onNavigate }) {
                         </div>
                       )}
 
+                      {r.fallback && r.helpers && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <span className={`text-[9.5px] px-1.5 py-0.5 rounded-full border ${r.helpers.captionCopied ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>
+                            {r.helpers.captionCopied ? '✓' : '○'} {isZh ? '文案已复制' : 'Caption copied'}
+                          </span>
+                          <span className={`text-[9.5px] px-1.5 py-0.5 rounded-full border ${r.helpers.fileDownloaded ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>
+                            {r.helpers.fileDownloaded ? '✓' : '○'} {isZh ? '文件已下载' : 'File downloaded'}
+                          </span>
+                          {r.helpers.coverDownloaded !== undefined && (
+                            <span className={`text-[9.5px] px-1.5 py-0.5 rounded-full border ${r.helpers.coverDownloaded ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>
+                              {r.helpers.coverDownloaded ? '✓' : '○'} {isZh ? '封面下载' : 'Cover DL'}
+                            </span>
+                          )}
+                          <span className={`text-[9.5px] px-1.5 py-0.5 rounded-full border ${r.helpers.portalOpened ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>
+                            {r.helpers.portalOpened ? '✓' : '○'} {isZh ? '创作平台已打开' : 'Portal opened'}
+                          </span>
+                        </div>
+                      )}
+
+                      {r.preparedBundle?.nextSteps && (
+                        <div className="mt-2 text-[10.5px] text-violet-300/90 bg-violet-500/5 border border-violet-500/15 rounded-md px-2.5 py-1.5 whitespace-pre-wrap leading-relaxed">
+                          💡 {r.preparedBundle.nextSteps}
+                        </div>
+                      )}
+
                       {r.fallback && (
                         <div className="mt-3 rounded-xl bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 border border-violet-500/20 p-3 space-y-3">
                           {r.creatorPortalUrl && (

@@ -29,7 +29,7 @@ These files have TypeScript compilation errors but **DO NOT affect the running a
 **Status**: TypeScript naming issue
 **Issue**: 
 ```
-Already included file name 'e:/AI_Projects/zmusic/src/App.ts' differs from file name 'e:/AI_Projects/zmusic/src/app.ts' only in casing.
+Already included file name 'd:/AI_Projects/zmusic/src/App.ts' differs from file name 'd:/AI_Projects/zmusic/src/app.ts' only in casing.
 ```
 
 **Explanation**:

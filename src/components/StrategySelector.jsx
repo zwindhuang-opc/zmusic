@@ -29,6 +29,7 @@ export default function StrategySelector({
       duration_label: '时长',
       complexity_melody: '旋律',
       complexity_lyrics: '歌词',
+      clear_preset: '（清除预设）',
     },
     en: {
       title: 'Creative Strategy Presets',
@@ -38,6 +39,7 @@ export default function StrategySelector({
       duration_label: 'Dur',
       complexity_melody: 'Mel',
       complexity_lyrics: 'Lyr',
+      clear_preset: ' (Clear preset)',
     },
   };
   const L = strategyLabels[isZh ? 'zh' : 'en'];
@@ -82,7 +84,7 @@ export default function StrategySelector({
               onClick={(e) => { e.stopPropagation(); onSelect?.(null); }}
               className="w-full text-[11px] text-gray-400 hover:text-white bg-white/5 border border-white/5 hover:bg-white/10 rounded-lg py-1.5 transition-colors"
             >
-              × {L.default_hint}（清除预设）
+              × {L.default_hint}{L.clear_preset}
             </button>
           )}
 

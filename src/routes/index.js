@@ -17,6 +17,10 @@ import meloController from '../controllers/melo.controller.js';
 import contentController from '../controllers/content.controller.js';
 import publishController from '../controllers/publish.controller.js';
 import libraryController from '../controllers/library.controller.js';
+import platformAuthController from '../controllers/platformAuth.controller.js';
+import authController from '../controllers/auth.controller.js';
+import imageGenController from '../controllers/imageGen.controller.js';
+import errorReportController from '../controllers/errorReport.controller.js';
 import Logger from '../utils/logger.js';
 
 const logger = new Logger('Routes');
@@ -34,6 +38,12 @@ export async function handleRoute(req, res, url, method, body) {
   // Health endpoints
   if (path === '/api/health' && method === 'GET') {
     return healthController.health(req, res);
+  }
+
+  // Frontend error reporting — client errors land in logs/server.log (Sprint 14)
+  if (path === '/api/errors/report' && method === 'POST') {
+    req.body = body;
+    return errorReportController.report(req, res);
   }
 
   if (path === '/api/business/analytics' && method === 'GET') {
@@ -100,6 +110,21 @@ export async function handleRoute(req, res, url, method, body) {
   if (path === '/api/mv/generate-agent' && method === 'POST') {
     req.body = body;
     return agentController.generateMV(req, res);
+  }
+
+  // Image generation endpoints (AI cover image / scene image via trae-api-cn text_to_image)
+  if (path === '/api/image/generate' && method === 'POST') {
+    req.body = body;
+    return imageGenController.generate(req, res);
+  }
+
+  if (path === '/api/image/sizes' && method === 'GET') {
+    return imageGenController.getSizes(req, res);
+  }
+
+  // Image proxy - bypasses CORS for external image URLs (e.g. text_to_image endpoint)
+  if (path === '/api/image/proxy' && method === 'GET') {
+    return imageGenController.proxy(req, res, url);
   }
 
   // History endpoints
@@ -377,19 +402,72 @@ export async function handleRoute(req, res, url, method, body) {
     return publishController.credentials(req, res, url, method, body);
   }
 
-  // === Auth + Library Endpoints (Phase 1 MVP - thin echo endpoints) ===
+  // === Platform Auth Endpoints (browser-agnostic token management) ===
+  if (path === '/api/platform' && method === 'GET') {
+    return platformAuthController.listPlatforms(req, res);
+  }
+
+  // /api/platform/:platform — GET status
+  const platformMatch = path.match(/^\/api\/platform\/(muse|melo)$/);
+  if (platformMatch && method === 'GET') {
+    req.params = { platform: platformMatch[1] };
+    return platformAuthController.getPlatformStatus(req, res);
+  }
+
+  // /api/platform/:platform/token — POST (store) or DELETE (clear)
+  const tokenMatch = path.match(/^\/api\/platform\/(muse|melo)\/token$/);
+  if (tokenMatch) {
+    req.params = { platform: tokenMatch[1] };
+    if (method === 'POST') {
+      req.body = body;
+      return platformAuthController.storeToken(req, res);
+    }
+    if (method === 'DELETE') {
+      return platformAuthController.clearToken(req, res);
+    }
+  }
+
+  // === Auth Endpoints — full account management (email + phone/SMS) ===
+  if (path === '/api/auth/config' && method === 'GET') {
+    return authController.getConfig(req, res);
+  }
+
+  if (path === '/api/auth/sms/send' && method === 'POST') {
+    req.body = body;
+    return authController.sendSmsCode(req, res);
+  }
+
+  if (path === '/api/auth/sms/verify' && method === 'POST') {
+    req.body = body;
+    return authController.verifySms(req, res);
+  }
+
   if (path === '/api/auth/register' && method === 'POST') {
     req.body = body;
-    return libraryController.register(req, res);
+    return authController.register(req, res);
   }
 
   if (path === '/api/auth/login' && method === 'POST') {
     req.body = body;
-    return libraryController.login(req, res);
+    return authController.login(req, res);
+  }
+
+  if (path === '/api/auth/logout' && method === 'POST') {
+    return authController.logout(req, res);
   }
 
   if (path === '/api/auth/me' && method === 'GET') {
-    return libraryController.me(req, res);
+    return authController.me(req, res);
+  }
+
+  if (path === '/api/auth/password/change' && method === 'POST') {
+    req.body = body;
+    return authController.changePassword(req, res);
+  }
+
+  if (path === '/api/auth/password/reset' && method === 'POST') {
+    req.body = body;
+    return authController.resetPassword(req, res);
   }
 
   if (path === '/api/albums' && method === 'GET') {

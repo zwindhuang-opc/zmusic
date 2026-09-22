@@ -3,9 +3,9 @@
 | Field | Value |
 |-------|-------|
 | **Document Title** | Issue Log |
-| **Version** | 7.5.0 |
+| **Version** | 7.7.1 |
 | **Date Created** | 2026-07-12 |
-| **Last Updated** | 2026-08-15 |
+| **Last Updated** | 2026-09-22 |
 | **Project Manager** | Vincent Huang (zwindhuang@qq.com) |
 | **Repository** | https://github.com/zwindhuang-opc/zmusic |
 | **Status** | Active |
@@ -95,7 +95,7 @@
 
 **Workaround**: When connectivity returns, run:
 ```
-git -C "e:/AI_Projects/zmusic" push origin master
+git -C "d:/AI_Projects/zmusic" push origin master
 ```
 Auto-deploy workflow triggers on push to `master` and will run deploy-pages (non-fatal) + APK build + GitHub release.
 
@@ -122,6 +122,161 @@ Auto-deploy workflow triggers on push to `master` and will run deploy-pages (non
 3. Continue using Vercel / Netlify / Cloudflare Pages as the primary web hosts (Pages remains a non-fatal bonus).
 
 **Impact**: No live web preview via GitHub Pages URL. Web deployment remains fully functional via Vercel/Netlify/Cloudflare.
+
+---
+
+## v7.7.x Issues (Resolved)
+
+### Issue I022: PWA Service Worker Served a Stale App Shell
+
+| Field | Value |
+|-------|-------|
+| **ID** | I022 |
+| **Severity** | 🟡 Medium |
+| **Status** | ✅ Resolved (v7.7.1) |
+| **Created** | 2026-09-22 |
+| **Resolved** | 2026-09-22 |
+| **Priority** | P2 |
+| **Version** | v7.7.1 |
+
+**Description**: The installed PWA / mobile shell could keep serving a previous release's HTML/JS after a deploy. The cache name was frozen at `zmusic-v7.4.1` while the app version kept moving, so the "activate" cleanup never matched a new version and the old app-shell cache was never purged.
+
+**Root Cause**: `public/sw.js` hardcoded `const CACHE_NAME = 'zmusic-v7.4.1'`, and `src/main.jsx` registered the worker at a version-less URL (`/sw.js`), so a deploy produced a byte-identical worker URL from the browser's point of view — no reliable update trigger for the shell.
+
+**Resolution** (v7.7.1):
+1. `src/main.jsx` registers `/sw.js?v=<__APP_VERSION__>` (build-time `define` from `vite.config.js`), so each release has a distinct worker URL and installs eagerly.
+2. `public/sw.js` derives the cache name from that query: `zmusic-v${new URL(self.location.href).searchParams.get('v') || 'dev'}` — a new version therefore creates a new cache and the existing `activate` handler deletes the previous one.
+
+**Verification**: the generated service worker URL carries the release version and the cache name changes with it; no per-release manual edit of `sw.js` is needed any more.
+
+---
+
+### Issue I021: `npm start` Silently Served Stale Code (Port Auto-Switch + Unreliable Kill)
+
+| Field | Value |
+|-------|-------|
+| **ID** | I021 |
+| **Severity** | 🟡 Medium |
+| **Status** | ✅ Resolved (v7.7.1) |
+| **Created** | 2026-09-22 |
+| **Resolved** | 2026-09-22 |
+| **Priority** | P2 |
+| **Version** | v7.7.1 |
+
+**Description**: Restarting with `npm start` sometimes left the OLD backend running: the edits just made were not in effect, yet no error was shown — `npm start` reported "✅ Backend : 4721" and the app kept answering with the previous build. Combined with the new test suite this looked like a phantom bug in freshly written code.
+
+**Root Cause**: two cooperating defects:
+1. `src/server.js` → `resolveBackendPort()` **silently auto-switched** to the next free port (`logger.warn` only, i.e. a line buried in `logs/server.log`) when the configured port was occupied. So the new backend bound an unseen port (e.g. 4722) while the old backend kept answering on the pinned 4721 — which is exactly the port `vite.config.js`/`.dev-ports.json` point at.
+2. `scripts/start-dev.mjs` → `killPort()` matched ports with `findstr :4721`, which also matches `14721`/`47210`, and it did not verify the kill result; then the pinned-port branch fell back to another port instead of failing.
+
+**Resolution** (v7.7.1):
+1. `resolveBackendPort()` — an **explicitly configured** port (`.dev-ports.json`, `RESOLVED_BACKEND_PORT`, `BACKEND_PORT`, `API_PORT`) is now treated as pinned: if it is occupied the process logs an actionable error and `process.exit(1)`. Only the generic fallback path (`PORT + 1`, default `4201`) still auto-increments.
+2. `scripts/start-dev.mjs` — `killPort()` now parses the netstat `Local Address` column and requires an exact `:<port>` suffix; the pinned-port branch fails loudly (with the exact `netstat`/`taskkill` commands) instead of silently switching ports.
+3. `GET /api/health` now reports the **real** backend listening port (`app.set('backendPort', …)` in the listen callback) instead of `config.port`, which is the *frontend* port in the dev setup — it previously reported `4720` while listening on `4721`.
+
+**Verification**: with the backend live on 4721, starting a second instance with `BACKEND_PORT=4721` exits with code 1 and prints the remediation steps; `/api/health` reports `port: 4721`.
+
+---
+
+### Issue I020: Suno Rejects `duration` Unless `custom_mode` Is Enabled
+
+| Field | Value |
+|-------|-------|
+| **ID** | I020 |
+| **Severity** | 🟠 High |
+| **Status** | ✅ Resolved (v7.7.1) |
+| **Created** | 2026-09-22 |
+| **Resolved** | 2026-09-22 |
+| **Priority** | P1 |
+| **Version** | v7.7.1 |
+
+**Description**: Any generation request carrying a `duration` was rejected by suno.cn with HTTP 400 `duration 仅支持 custom_mode=true 的自定义模式`. Because the app always passes a duration (settings-driven), this made Suno generation unusable.
+
+**Root Cause**: `src/controllers/suno.controller.js` forwarded `duration` while sending `custom_mode: false` (the default `false` was hardcoded via `customMode || false`). The upstream contract only accepts `duration` in custom mode.
+
+**Resolution** (v7.7.1): custom mode is now implied whenever a duration is requested:
+`const customModeEnabled = customMode === true || customMode === 'true' || Boolean(duration);`
+`custom_mode` is set from that variable and the effective value is logged alongside the other parameters, so the request body is auditable in `logs/server.log`.
+
+**Verification**: the generate call now passes input validation and reaches the credit check (the remaining failure was the account balance — see I003), which proves the payload is accepted.
+
+---
+
+### Issue I019: `/api/music/generate` Always Failed Server-Side (Relative URL Fetch)
+
+| Field | Value |
+|-------|-------|
+| **ID** | I019 |
+| **Severity** | 🟠 High |
+| **Status** | ✅ Resolved (v7.7.1) |
+| **Created** | 2026-09-22 |
+| **Resolved** | 2026-09-22 |
+| **Priority** | P1 |
+| **Version** | v7.7.1 |
+
+**Description**: The two documented dual-provider endpoints `POST /api/music/generate` and `POST /api/music/generate-agent` failed on every call with
+`Failed to parse URL from /api/suno/generate`. They are listed in `README.md`, `API_DOCUMENTATION.md`, `PROGRAM_SPEC.md` and in the `GET /api/health` endpoint inventory, but were effectively dead.
+
+**Root Cause**: `src/controllers/music.controller.js` imported `services/suno.service.js` and `services/muse.service.js` and called them **from the backend**. Those modules are *browser* clients: they fetch their own backend proxy through relative paths (`/api/suno/...`, `/api/muse/...`). Node's `fetch` rejects relative URLs, so every call threw. The Muse branch was doubly broken — it called `museService.generateMuseCommand()`, which does not exist on that module (the helper lives in `utils/referenceData.js`), and the resulting `TypeError` was swallowed into `providers.muse = { success: false }`.
+
+**Resolution** (v7.7.1): `music.controller.js` now composes the **server-side** engine controllers instead of the browser clients:
+1. New `invokeController(controller, method, body)` runs another controller's `(req, res)` handler against a minimal response double and captures `{ statusCode, payload}` — no extra HTTP round-trip, and the method is invoked on the instance so `this`-bound helpers (`museController.sendMuseResult`) keep working.
+2. `/api/music/generate` delegates to `sunoController.generate` and returns `{ success, data }`, preserving the 400 "not configured" contract and mapping upstream errors to `{ success: false, error }`.
+3. `/api/music/generate-agent` delegates to `sunoController.generate` / `museController.generate` and keeps reporting each provider independently, so one failing engine cannot fail the whole request.
+4. `extractError()` normalises the many upstream error field names (`error`, `message`, `msg`, `data.error`).
+
+**Verification**: both endpoints now return structured JSON; `POST /api/music/generate-agent` returns `taskId` + per-provider `success` flags (covered by the new test suite).
+
+---
+
+### Issue I018: Suno Generation Rejected — Unsupported `mv` Model Value
+
+| Field | Value |
+|-------|-------|
+| **ID** | I018 |
+| **Severity** | 🔴 Critical |
+| **Status** | ✅ Resolved (v7.7.1) |
+| **Created** | 2026-09-22 |
+| **Resolved** | 2026-09-22 |
+| **Priority** | P0 |
+| **Version** | v7.7.1 |
+
+**Description**: Every Suno AI generation failed on suno.cn. `src/controllers/suno.controller.js` hardcoded `mv: 'chirp-fenix'` in the generate body — an internal model identifier that suno.cn no longer accepts (the current API only serves the v6 model family).
+
+**Root Cause**: Hardcoded model identifier that was never validated against the upstream API contract; the failure happened server-side at suno.cn, so the UI only surfaced a generic generation error.
+
+**Resolution** (v7.7.1):
+1. Introduced a whitelist `ALLOWED_MODELS = ['v6', 'v6-wild', 'v6-mini']` with `v6` as the default, replacing the hardcoded `chirp-fenix`.
+2. `model` is now read from `req.body` and validated against the whitelist — an unknown value falls back to `v6` rather than being forwarded and rejected upstream.
+3. Documented the constraint inline so the legacy value is not reintroduced.
+
+**Verification**: Generation request body carries a supported `mv` value; unknown `model` values fall back to `v6`.
+
+---
+
+### Issue I017: Page Render Error Killed The Whole SPA (Black Screen) + No Client-Side Error Visibility
+
+| Field | Value |
+|-------|-------|
+| **ID** | I017 |
+| **Severity** | 🟠 High |
+| **Status** | ✅ Resolved (v7.7.1) |
+| **Created** | 2026-09-22 |
+| **Resolved** | 2026-09-22 |
+| **Priority** | P1 |
+| **Version** | v7.7.1 |
+
+**Description**: Two related observability gaps:
+1. A render-time exception in any single lazy-loaded page unmounted the entire SPA, leaving the user on a blank screen with no way back except a full reload.
+2. Errors happening in the browser (devtools-level `window.onerror` / `unhandledrejection`) were invisible in production, in the Capacitor/APK shell, and in post-mortem debugging — server logs only contained backend activity.
+
+**Resolution** (v7.7.1):
+1. **Isolation** — new `src/components/PageErrorBoundary.jsx` wraps the lazy-page region in `src/App.jsx` with `key={currentPage}`, so a crashing page shows an inline recovery card (Retry / Back to Dashboard) while the sidebar, header and persistent audio player stay alive. Navigating away auto-clears the boundary.
+2. **Reporting** — new `src/utils/errorReporter.js` (djb2 fingerprint dedupe, 20 reports/session cap, `sendBeacon` fallback, never throws) plus `installGlobalErrorCapture()` in `src/main.jsx` capturing `window.onerror` + `unhandledrejection`.
+3. **Ingestion** — new `POST /api/errors/report` (`src/controllers/errorReport.controller.js`) writes client reports into the log4j-style logger, so they land in `logs/server.log`; guarded by an in-memory 100-reports/60s limiter that drops floods with HTTP 200 instead of 5xx-ing clients.
+4. **Global appenders** — `src/utils/logger.js` gained `Logger.globalAppenders` / `Logger.addGlobalAppender()`; `src/server.js` registers the `FileAppender` globally, so **all** logger instances (controllers/services, not only the entry-point logger) persist to `logs/server.log`.
+
+**Verification**: `POST /api/errors/report` returns `{success:true,logged:true}` and the report appears in `logs/server.log` as `[ERROR] [FrontendError]`; production build succeeds; `npm run i18n:validate` clean including the new `error.*` keys.
 
 ---
 
@@ -391,19 +546,19 @@ All documents cross-reference each other and reference version 7.5.0, the GitHub
 
 | Metric | Count |
 |--------|-------|
-| Total Issues | 16 (I001–I016) |
-| ✅ Resolved | 12 |
-| ⚠️ Open | 4 |
+| Total Issues | 22 (I001–I022) |
+| ✅ Resolved | 18 |
+| ⚠️ Open | 3 |
 | 🔄 In Progress | 1 |
-| 🔴 Critical | 1 (resolved) |
-| 🟠 High | 4 |
-| 🟡 Medium | 8 |
+| 🔴 Critical | 2 (both resolved) |
+| 🟠 High | 7 |
+| 🟡 Medium | 10 |
 | 🟢 Low | 3 |
 
 ### Status Breakdown
 | Status | Issues |
 |--------|--------|
-| ✅ Resolved | I001, I002, I004, I005, I006, I009, I010, I011, I012, I013, I014, I015 |
+| ✅ Resolved | I001, I002, I004, I005, I006, I009, I010, I011, I012, I013, I014, I015, I017, I018, I019, I020, I021, I022 |
 | ⚠️ Open | I007, I008, I016 |
 | 🔄 In Progress | I003 |
 
@@ -411,21 +566,26 @@ All documents cross-reference each other and reference version 7.5.0, the GitHub
 
 ## Sprint Backlog
 
-### Current Sprint (Sprint 13 — v7.5.0 Documentation & Logging Sprint)
-- [x] I014 - Documentation overhaul (System/Program/Technical specs + User Guide + README + PMP plan) → ✅ Resolved
-- [x] I015 - Logging file appender added (FileAppender, 5MB rolling) → ✅ Resolved
-- [ ] I016 - GitHub Pages private repo limitation ⚠️ Open (awaiting plan upgrade or repo public conversion)
-- [ ] I003 - User credit management 🔄 In Progress (bypass shipped; permanent: user to top-up Muse/Suno/Melo)
-- [ ] I007 - Muse server-side session expiry ⚠️ Open (user re-login required, diagnostic scripts shipped)
-- [ ] I008 - GitHub push transient network failure ⚠️ Open (retry when connectivity returns)
+### Previous Sprint (Sprint 14 — Reliability & Observability Sprint) — completed v7.7.1
+- [x] I017 - Per-page React error boundary (`PageErrorBoundary`) → ✅ Resolved
+- [x] I017 - Frontend error reporting (browser → `POST /api/errors/report` → `logs/server.log`) → ✅ Resolved
+- [x] I018 - Suno `mv` model parameter fix (v6 family whitelist) → ✅ Resolved
+- [x] I020 - Suno `duration` requires `custom_mode=true` → ✅ Resolved
+- [x] I019 - `/api/music/*` relative-URL fetch failure → ✅ Resolved
+- [x] I021 - `npm start` silently served stale code (port auto-switch) → ✅ Resolved
+- [x] I022 - PWA service worker served a stale app shell → ✅ Resolved
+- [x] Global log appenders so all server loggers persist to `logs/server.log` → ✅ Done
+- [x] Test coverage: port-agnostic `test/api.test.js` (20 assertions) + `npm run test:api` / `npm run test:i18n` → ✅ Done
+- [ ] I016 - GitHub Pages private repo limitation ⚠️ Open (`build:ghpages` / `deploy:ghpages` scripts added as workaround; decision still pending)
 
-### Next Sprint (Sprint 14 — proposed)
+### Current Sprint (Sprint 15 — proposed)
 - [ ] Resolve I016: Decide on GitHub Pages strategy (paid plan vs public repo vs Vercel/Netlify primary)
-- [ ] Add error boundary components to React (catch per-page errors without crashing whole SPA)
-- [ ] Implement comprehensive error reporting (frontend error → backend log → GitHub issue draft)
 - [ ] Centralized log shipping to centralizedhub sink (per user rules — must use centralizedhub + zunicornagent project as base)
-- [ ] Expand test coverage beyond i18n:validate + simulation (unit tests for services)
-- [ ] Watch auto-deploy workflow on next push: APK build + release + deploy-pages (non-fatal)
+- [ ] Extend unit-test coverage beyond `test/api.test.js` (service-level tests for auth/SMS/library, runnable offline)
+- [ ] Wire APK build verification into the auto-deploy workflow (build + install smoke check)
+- [ ] I003 - User credit management 🔄 In Progress (blocks live Suno/Muse generation; top-up https://www.suno.cn/home/#/account → the API tests SKIP until funded)
+- [ ] I007 - Muse server-side session expiry ⚠️ Open (mitigated by server-side platform token store in v7.7.0; user re-login still needed when no token is pasted)
+- [ ] I008 - GitHub push transient network failure ⚠️ Open (retry when connectivity returns)
 
 ---
 
@@ -446,9 +606,18 @@ All documents cross-reference each other and reference version 7.5.0, the GitHub
 | 2026-08-15 | I014 | Documentation overhaul — created System/Program/Technical specs, updated User Guide/README/PMP plan (v7.5.0) | AI Assistant |
 | 2026-08-15 | I015 | Added FileAppender to logger (5MB rolling, browser-safe) (v7.5.0) | AI Assistant |
 | 2026-08-15 | I016 | Opened — GitHub Pages private repo limitation (non-fatal, awaiting decision) (v7.5.0) | AI Assistant |
+| 2026-08-16 | I017 (open) | Opened — page render errors killed the SPA; no client-side error visibility (v7.6.0) | AI Assistant |
+| 2026-08-16 | I018 (open) | Opened — Suno generation rejected (unsupported `mv` model value) (v7.7.0) | AI Assistant |
+| 2026-09-22 | I017 | Resolved — per-page error boundary + global error capture + `POST /api/errors/report` + global log appenders (v7.7.1) | AI Assistant |
+| 2026-09-22 | I018 | Resolved — Suno `mv` whitelist (v6/v6-wild/v6-mini), default v6, body override (v7.7.1) | AI Assistant |
+| 2026-09-22 | I019 | Resolved — `/api/music/generate(-agent)` now composes server-side engine controllers via `invokeController()` (v7.7.1) | AI Assistant |
+| 2026-09-22 | I020 | Resolved — Suno `custom_mode` implied when `duration` is sent (v7.7.1) | AI Assistant |
+| 2026-09-22 | I021 | Resolved — pinned backend port no longer silently auto-switched; `killPort` exact-port match; `/api/health` reports real port (v7.7.1) | AI Assistant |
+| 2026-09-22 | I022 | Resolved — service worker registered with `?v=<version>`, cache name derived from it (v7.7.1) | AI Assistant |
+| 2026-09-22 | — | Added port-agnostic API test suite (20 assertions, credit-aware SKIP) + `test` / `test:api` / `test:i18n` npm scripts (v7.7.1) | AI Assistant |
 
 ---
 
 *Cross-references: [System Specification](SYSTEM_SPEC.md) · [Program Specification](PROGRAM_SPEC.md) · [Technical Guide](TECHNICAL_GUIDE.md) · [User Guide](USER_GUIDE.md) · [PMP Project Plan](PMP_PROJECT_PLAN.md)*
 
-*Last Updated: 2026-08-15 · Document Version: 7.5.0*
+*Last Updated: 2026-09-22 · Document Version: 7.7.1*

@@ -27,6 +27,7 @@
 
 import Logger from '../utils/logger.js';
 import { config } from '../config/index.js';
+import { getCurrentLanguage } from '../i18n/index.js';
 
 const logger = new Logger('MuseService');
 
@@ -94,12 +95,25 @@ async function museFetch(path, opts = {}) {
   });
 
   let data;
-  try { data = await response.json(); } catch { data = { raw: await response.text() }; }
+  try { data = await response.json(); } catch (e) {
+    if (e?.message?.includes('body stream already read')) {
+      return { success: false, error: 'Muse API 响应体已被读取（请刷新页面重试）', status: response.status };
+    }
+    const rawText = await response.text().catch(() => '');
+    try { data = rawText ? JSON.parse(rawText) : { raw: '' }; } catch { data = { raw: rawText }; }
+  }
 
   if (!response.ok || data?.success === false) {
-    const msg = data?.error || `Muse API error: ${response.status}`;
+    // Pick bilingual error: EN mode uses error_en if available, otherwise error
+    const lang = getCurrentLanguage();
+    const msg = (lang === 'en' && data?.error_en) ? data.error_en : (data?.error || `Muse API error: ${response.status}`);
     logger.error(`Muse ← ${response.status} ${msg}`);
-    throw new Error(msg);
+    // Preserve errorKey + data on the thrown error for UI-level handling (e.g. LOGIN_EXPIRED toast)
+    const err = new Error(msg);
+    err.errorKey = data?.errorKey || null;
+    err.code = data?.code || null;
+    err.responseData = data || null;
+    throw err;
   }
   logger.info(`Muse ← ${response.status} OK`);
   return data;

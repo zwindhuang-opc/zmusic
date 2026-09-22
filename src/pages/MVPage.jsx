@@ -14,7 +14,7 @@ import HistoryPanel from '../components/HistoryPanel.jsx';
 import { MVControls, MVVideoPlayer, MVTimelinePreview } from '../components/mv/index.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
-import { getEngineSongCount, getAutoConfig, getMaxErrors, getCountdownSeconds, shouldStopOnError, shouldAutoCloseOnStop, shouldAutoCloseOnDone, getAutoCloseDelay } from '../utils/autoConfig.js';
+import { getEngineSongCount, getAutoConfig, getMaxErrors, getCountdownSeconds, shouldStopOnError, shouldAutoCloseOnStop, shouldAutoCloseOnDone, getAutoCloseDelay, shouldAutoChain } from '../utils/autoConfig.js';
 import { AUTO_CONFIRM, openPlatformWebsite, generateCreativeThought, generateRandomTitle, pickRandomThemeStyle, generateAutoLyrics } from '../utils/autoGenUtils.js';
 
 const ICON_MAP = {
@@ -137,6 +137,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
   const [videoUrl, setVideoUrl] = useState(null);
   const [videoBlob, setVideoBlob] = useState(null);
   const [timelineResult, setTimelineResult] = useState(null);
+  const [coverImageUrl, setCoverImageUrl] = useState(null);
 
   const resultRef = useRef(null);
 
@@ -450,6 +451,10 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
       effects: params.effects,
       lyrics: params.lyrics,
       duration: params.duration,
+      onProgress: (p) => {
+        // Map video composition progress to 55-90% range for local generation
+        setGenProgress(55 + Math.floor(p * 35));
+      },
     });
 
     const videoUrl = URL.createObjectURL(videoBlob);
@@ -526,6 +531,38 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
     };
   }, [genres, paletteList, effectList, displayName]);
 
+  // === Cover image generation via backend /api/image/generate ===
+  // Calls trae-api-cn text_to_image endpoint (GPT-IMAGE style, same as anna_ai)
+  // Returns a URL that can be used directly as <img src> for the MV cover.
+  const generateCoverImage = async (params) => {
+    try {
+      setGenStage(t('mv.gen_stage_cover_image') || 'Generating cover image...');
+      console.log('[MVPage] Generating cover image:', { genre: params.genre, style: params.style, palette: params.colorPalette });
+      const resp = await api.request('/image/generate', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: params.title,
+          genre: params.genre,
+          style: params.style,
+          colorPalette: params.colorPalette,
+          lyrics: params.lyrics,
+          scene: params.scene,
+          imageSize: 'landscape_16_9',
+        }),
+      });
+      if (resp && resp.success && resp.data && resp.data.imageUrl) {
+        console.log('[MVPage] Cover image generated:', resp.data.imageUrl.substring(0, 80));
+        setCoverImageUrl(resp.data.imageUrl);
+        return resp.data.imageUrl;
+      }
+      console.warn('[MVPage] Cover image generation returned no URL:', resp);
+      return null;
+    } catch (e) {
+      console.warn('[MVPage] Cover image generation failed (non-blocking):', e.message);
+      return null;
+    }
+  };
+
   const handleGenerate = async (isAuto = false) => {
     // Normalize: when wired directly to onClick, the first arg is a DOM event.
     if (typeof isAuto !== 'boolean') isAuto = false;
@@ -535,6 +572,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
     setAudioUrl(null);
     setVideoUrl(null);
     setVideoBlob(null);
+    setCoverImageUrl(null);
 
     // === AUTO path: read from snapshot ref (setState is async, would be stale) ===
     const snap = autoCreativeSnapshotRef.current;
@@ -602,6 +640,17 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
       let finalVideoBlob = musicResult.videoBlob;
       let finalVideoUrl = musicResult.videoUrl;
 
+      // Kick off cover image generation in parallel with video composition.
+      // Cover image generation is non-blocking: failures don't break MV flow.
+      const coverPromise = generateCoverImage({
+        title,
+        genre: effGenre,
+        style: effStyle,
+        colorPalette: effColorPalette,
+        lyrics: musicResult.lyrics || params.prompt,
+        scene: params.scene,
+      });
+
       if (!finalVideoBlob && engine !== 'local') {
         console.log('[MVPage] Composing video from AI audio:', { engine, audioUrl: musicResult.url });
         const mvData = generateMV({ genre: effGenre, duration: effDuration });
@@ -613,11 +662,18 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
           effects: effEffects,
           lyrics: params.prompt,
           duration: effDuration,
+          onProgress: (p) => {
+            // Map video composition progress to 65-95% range
+            setGenProgress(65 + Math.floor(p * 30));
+          },
         });
         finalVideoBlob = videoBlob;
         finalVideoUrl = URL.createObjectURL(videoBlob);
         console.log('[MVPage] AI video composed:', { videoSize: videoBlob.size });
       }
+
+      // Await cover image (already running in parallel; usually resolved by now)
+      const finalCoverUrl = await coverPromise;
 
       const finalResult = {
         id: Date.now().toString(),
@@ -626,6 +682,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
         audioUrl: musicResult.url,
         videoUrl: finalVideoUrl,
         videoBlob: finalVideoBlob,
+        coverImageUrl: finalCoverUrl,
         lyrics: musicResult.lyrics,
         engine,
         genre: effGenre,
@@ -637,6 +694,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
       setAudioUrl(musicResult.url);
       setVideoUrl(finalVideoUrl);
       setVideoBlob(finalVideoBlob);
+      if (finalCoverUrl) setCoverImageUrl(finalCoverUrl);
 
       // === History: AUTO path removes draft & records song; manual path records directly ===
       if (isAuto || autoRunningRef.current) {
@@ -815,9 +873,8 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
           });
           setAutoThoughts(prev => [...prev.slice(-15), thought]);
           autoProgress.addThought(thought);
-          // Schedule next song with a small delay so user sees the result briefly
-          setTimeout(() => handleGenerateRef.current(true), 1800);
-        }, 1500);
+          setTimeout(() => handleGenerateRef.current(true), 5400);
+        }, getCountdownSeconds() * 1000);
       }
     }
   };
@@ -1326,6 +1383,7 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
           videoUrl={videoUrl}
           videoBlob={videoBlob}
           audioUrl={audioUrl}
+          coverImageUrl={coverImageUrl}
           duration={duration}
           colorPalette={colorPalette}
           onDownloadVideo={handleDownload}

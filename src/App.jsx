@@ -35,14 +35,31 @@ import { SongLibraryProvider } from './stores/songLibraryStore.jsx';
 import { PlayerProvider } from './contexts/PlayerContext.jsx';
 import AutoProgressBar from './components/AutoProgressBar.jsx';
 import PersistentAudioPlayer from './components/PersistentAudioPlayer.jsx';
+import PageErrorBoundary from './components/PageErrorBoundary.jsx';
 
 const UI_MODE_KEY = 'zmusic-ui-mode';
-const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '7.4.1';
+const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '7.7.1';
 
 function App() {
   const { t, i18n } = useTranslation();
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading) setAuthChecked(true);
+  }, [authLoading]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    const publicPages = ['login'];
+    if (!user && !publicPages.includes(currentPage)) {
+      setCurrentPage('login');
+    }
+    if (user && currentPage === 'login') {
+      setCurrentPage('dashboard');
+    }
+  }, [user, authLoading, currentPage]);
   const [apiStatus, setApiStatus] = useState({ configured: false, version: BUILD_VERSION, uptime: 0 });
   const [agentStatus, setAgentStatus] = useState(null);
   const [uiMode, setUiMode] = useState(() => localStorage.getItem(UI_MODE_KEY) || 'expert');
@@ -189,86 +206,99 @@ function App() {
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar min-h-0">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
+          {(!user && !authLoading) ? (
+            <div className="p-3 rounded-lg bg-white/5 border border-white/10 text-center">
+              <LogIn className="w-6 h-6 text-violet-400 mx-auto mb-2" />
+              <p className="text-xs text-gray-400">{t('auth.login_required') || 'Login required'}</p>
+              <button
+                onClick={() => setCurrentPage('login')}
+                className="mt-2 w-full px-3 py-2 rounded-lg bg-gradient-to-r from-violet-500 to-pink-500 text-white text-xs font-medium hover:opacity-90 transition-opacity"
+              >
+                {t('nav.login')}
+              </button>
+            </div>
+          ) : (
+            navigationItems.map((item) => {
+              const Icon = item.icon;
 
-            if (item.isGroup) {
-              const groupActive = item.children.some(c => currentPage === c.id);
-              const expanded =
-                item.id === 'music-group' ? musicGroupExpanded
-                  : item.id === 'mv-group' ? mvGroupExpanded
-                    : item.id === 'studio-group' ? studioGroupExpanded
-                      : workbenchGroupExpanded;
-              const setExpanded =
-                item.id === 'music-group' ? setMusicGroupExpanded
-                  : item.id === 'mv-group' ? setMvGroupExpanded
-                    : item.id === 'studio-group' ? setStudioGroupExpanded
-                      : setWorkbenchGroupExpanded;
-              return (
-                <div key={item.id}>
+              if (item.isGroup) {
+                const groupActive = item.children.some(c => currentPage === c.id);
+                const expanded =
+                  item.id === 'music-group' ? musicGroupExpanded
+                    : item.id === 'mv-group' ? mvGroupExpanded
+                      : item.id === 'studio-group' ? studioGroupExpanded
+                        : workbenchGroupExpanded;
+                const setExpanded =
+                  item.id === 'music-group' ? setMusicGroupExpanded
+                    : item.id === 'mv-group' ? setMvGroupExpanded
+                      : item.id === 'studio-group' ? setStudioGroupExpanded
+                        : setWorkbenchGroupExpanded;
+                return (
+                  <div key={item.id}>
+                    <button
+                      onClick={() => setExpanded(!expanded)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${groupActive
+                        ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 text-white border border-violet-500/30'
+                        : 'text-gray-300 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="font-medium flex-1 text-left">{item.label}</span>
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                    </button>
+                    {expanded && (
+                      <div className="mt-1 ml-4 pl-3 border-l border-violet-500/20 space-y-0.5">
+                        {item.children.map((child) => {
+                          const ChildIcon = child.icon;
+                          const isActive = currentPage === child.id;
+                          return (
+                            <button
+                              key={child.id}
+                              onClick={() => setCurrentPage(child.id)}
+                              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${isActive
+                                ? 'bg-gradient-to-r from-violet-500/30 to-pink-500/30 text-white border border-violet-500/40'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                }`}
+                            >
+                              <ChildIcon className="w-3.5 h-3.5" />
+                              <span className="text-[13px]">{child.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              const isActive = currentPage === item.id;
+              if (item.isAction && item.onClick) {
+                return (
                   <button
-                    onClick={() => setExpanded(!expanded)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${groupActive
-                      ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 text-white border border-violet-500/30'
-                      : 'text-gray-300 hover:text-white hover:bg-white/5'
-                      }`}
+                    key={item.id}
+                    onClick={item.onClick}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all text-rose-300 hover:text-white hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20"
                   >
                     <Icon className="w-4 h-4" />
-                    <span className="font-medium flex-1 text-left">{item.label}</span>
-                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                    <span className="font-medium flex-1 truncate">{item.label}</span>
                   </button>
-                  {expanded && (
-                    <div className="mt-1 ml-4 pl-3 border-l border-violet-500/20 space-y-0.5">
-                      {item.children.map((child) => {
-                        const ChildIcon = child.icon;
-                        const isActive = currentPage === child.id;
-                        return (
-                          <button
-                            key={child.id}
-                            onClick={() => setCurrentPage(child.id)}
-                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${isActive
-                              ? 'bg-gradient-to-r from-violet-500/30 to-pink-500/30 text-white border border-violet-500/40'
-                              : 'text-gray-400 hover:text-white hover:bg-white/5'
-                              }`}
-                          >
-                            <ChildIcon className="w-3.5 h-3.5" />
-                            <span className="text-[13px]">{child.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            }
-
-            const isActive = currentPage === item.id;
-            if (item.isAction && item.onClick) {
+                );
+              }
               return (
                 <button
                   key={item.id}
-                  onClick={item.onClick}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all text-rose-300 hover:text-white hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20"
+                  onClick={() => setCurrentPage(item.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${isActive
+                    ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 text-white border border-violet-500/30'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
-                  <span className="font-medium flex-1 truncate">{item.label}</span>
+                  <span className="font-medium">{item.label}</span>
                 </button>
               );
-            }
-            return (
-              <button
-                key={item.id}
-                onClick={() => setCurrentPage(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${isActive
-                  ? 'bg-gradient-to-r from-violet-500/20 to-pink-500/20 text-white border border-violet-500/30'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-                  }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            );
-          })}
+            })
+          )}
         </nav>
 
         <div className="p-3 border-t border-purple-500/10">
@@ -380,111 +410,128 @@ function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-[#0a0a0f] via-[#0f0a1a] to-[#0a0a0f]">
-          <Suspense fallback={
-            <div className="flex items-center justify-center h-48">
-              <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          {authLoading ? (
+            <div className="flex flex-col items-center justify-center h-full min-h-[400px] gap-4">
+              <div className="w-12 h-12 border-3 border-violet-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-gray-400">{t('header.loading') || 'Loading...'}</p>
             </div>
-          }>
-            {currentPage === 'dashboard' && <Dashboard apiStatus={apiStatus} agentStatus={agentStatus} onNavigate={setCurrentPage} />}
-            {currentPage === 'music' && (uiMode === 'easy'
-              ? <EasyMode onSwitchToExpert={toggleUiMode} />
-              : <MusicPage />)}
-            {currentPage === 'lyrics' && (
-              <LyricsPage key={uiMode} onNavigate={setCurrentPage} defaultMode={uiMode === 'easy' ? 'guided' : 'expert'} />
-            )}
-            {currentPage === 'image-lyrics' && <ImageLyricsPage onNavigate={setCurrentPage} />}
-            {currentPage === 'notebook' && <CreativeNotebook />}
-            {currentPage === 'mv-muse' && <MVPage engine="muse" engineName="Muse AI" />}
-            {currentPage === 'mv-suno' && <MVPage engine="suno" engineName="Suno AI" />}
-            {currentPage === 'mv-melo' && <MVPage engine="melo" engineName="Melo AI" />}
-            {currentPage === 'muse' && <MusePage onNavigate={setCurrentPage} />}
-            {currentPage === 'suno' && <SunoPage onNavigate={setCurrentPage} />}
-            {currentPage === 'melo' && <MeloPage onNavigate={setCurrentPage} />}
-            {currentPage === 'remix' && <RemixStudio onNavigate={setCurrentPage} />}
-            {currentPage === 'publish' && <PublishStudio onNavigate={setCurrentPage} />}
-            {currentPage === 'login' && <LoginPage onNavigate={setCurrentPage} />}
-            {currentPage === 'library' && <SongLibrary onNavigate={setCurrentPage} />}
-            {currentPage === 'album' && <AlbumDetail onNavigate={setCurrentPage} />}
-            {currentPage === 'quality' && <QualityAnalyzerPage onNavigate={setCurrentPage} />}
-            {currentPage === 'batch' && <BatchGenerationPage onNavigate={setCurrentPage} />}
-            {currentPage === 'analytics' && <AnalyticsPage />}
-            {currentPage === 'settings' && <SettingsPage />}
-          </Suspense>
+          ) : !user ? (
+            <LoginPage onNavigate={setCurrentPage} />
+          ) : (
+            <PageErrorBoundary key={currentPage} pageKey={currentPage} onNavigate={setCurrentPage}>
+            <Suspense fallback={
+              <div className="flex items-center justify-center h-48">
+                <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            }>
+              {currentPage === 'dashboard' && <Dashboard apiStatus={apiStatus} agentStatus={agentStatus} onNavigate={setCurrentPage} />}
+              {currentPage === 'music' && (uiMode === 'easy'
+                ? <EasyMode onSwitchToExpert={toggleUiMode} />
+                : <MusicPage />)}
+              {currentPage === 'lyrics' && (
+                <LyricsPage key={uiMode} onNavigate={setCurrentPage} defaultMode={uiMode === 'easy' ? 'guided' : 'expert'} />
+              )}
+              {currentPage === 'image-lyrics' && <ImageLyricsPage onNavigate={setCurrentPage} />}
+              {currentPage === 'notebook' && <CreativeNotebook />}
+              {currentPage === 'mv-muse' && <MVPage engine="muse" engineName="Muse AI" />}
+              {currentPage === 'mv-suno' && <MVPage engine="suno" engineName="Suno AI" />}
+              {currentPage === 'mv-melo' && <MVPage engine="melo" engineName="Melo AI" />}
+              {currentPage === 'muse' && <MusePage onNavigate={setCurrentPage} />}
+              {currentPage === 'suno' && <SunoPage onNavigate={setCurrentPage} />}
+              {currentPage === 'melo' && <MeloPage onNavigate={setCurrentPage} />}
+              {currentPage === 'remix' && <RemixStudio onNavigate={setCurrentPage} />}
+              {currentPage === 'publish' && <PublishStudio onNavigate={setCurrentPage} />}
+              {currentPage === 'login' && <LoginPage onNavigate={setCurrentPage} />}
+              {currentPage === 'library' && <SongLibrary onNavigate={setCurrentPage} />}
+              {currentPage === 'album' && <AlbumDetail onNavigate={setCurrentPage} />}
+              {currentPage === 'quality' && <QualityAnalyzerPage onNavigate={setCurrentPage} />}
+              {currentPage === 'batch' && <BatchGenerationPage onNavigate={setCurrentPage} />}
+              {currentPage === 'analytics' && <AnalyticsPage />}
+              {currentPage === 'settings' && <SettingsPage />}
+            </Suspense>
+            </PageErrorBoundary>
+          )}
         </div>
 
-        <nav className="mobile-bottom-nav safe-area-bottom glass border-t border-purple-500/10 z-50 relative">
-          {/* Group children row — shows sub-items when a group page is active */}
-          {(() => {
-            const activeGroup = navigationItems.find(i => {
-              if (!i.isGroup) return false;
-              if (i.children.some(c => c.id === currentPage)) return true;
-              return false;
-            });
-            if (!activeGroup) return null;
-            return (
-              <div className="flex items-center justify-center gap-1 px-2 py-1.5 border-b border-purple-500/10 bg-violet-500/5">
-                {activeGroup.children.map(child => {
-                  const Icon = child.icon;
-                  const isActive = currentPage === child.id;
+        {user && (
+          <nav className="mobile-bottom-nav safe-area-bottom glass border-t border-purple-500/10 z-50 relative">
+            {/* Group children row — shows sub-items when a group page is active */}
+            {(() => {
+              const activeGroup = navigationItems.find(i => {
+                if (!i.isGroup) return false;
+                if (i.children.some(c => c.id === currentPage)) return true;
+                return false;
+              });
+              if (!activeGroup) return null;
+              return (
+                <div className="flex items-center justify-center gap-1 px-2 py-1.5 border-b border-purple-500/10 bg-violet-500/5">
+                  {activeGroup.children.map(child => {
+                    const Icon = child.icon;
+                    const isActive = currentPage === child.id;
+                    return (
+                      <button
+                        key={child.id}
+                        onClick={() => setCurrentPage(child.id)}
+                        className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all ${isActive ? 'text-violet-400 bg-violet-500/10' : 'text-gray-500'}`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span className="text-[8px] font-medium">{child.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* Primary bottom nav */}
+            <div className="flex items-center justify-around px-2 py-2">
+              {navigationItems.map((item) => {
+                if (item.isGroup) {
+                  const Icon = item.icon;
+                  const childrenActive = item.children.some(c => c.id === currentPage);
+                  const primaryChild = item.children[0];
                   return (
                     <button
-                      key={child.id}
-                      onClick={() => setCurrentPage(child.id)}
-                      className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all ${isActive ? 'text-violet-400 bg-violet-500/10' : 'text-gray-500'}`}
+                      key={item.id}
+                      onClick={() => {
+                        if (childrenActive) {
+                          setCurrentPage(currentPage);
+                        } else {
+                          setCurrentPage(primaryChild.id);
+                        }
+                      }}
+                      className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all ${childrenActive ? 'text-violet-400' : 'text-gray-500'}`}
                     >
-                      <Icon className="w-4 h-4" />
-                      <span className="text-[8px] font-medium">{child.label}</span>
+                      <Icon className="w-6 h-6" />
+                      <span className="text-[10px] font-medium">{item.label}</span>
                     </button>
                   );
-                })}
-              </div>
-            );
-          })()}
-
-          {/* Primary bottom nav */}
-          <div className="flex items-center justify-around px-2 py-2">
-            {navigationItems.map((item) => {
-              if (item.isGroup) {
+                }
                 const Icon = item.icon;
-                const childrenActive = item.children.some(c => c.id === currentPage);
-                const primaryChild = item.children[0];
+                const isActive = currentPage === item.id;
                 return (
                   <button
                     key={item.id}
-                    onClick={() => {
-                      if (childrenActive) {
-                        setCurrentPage(currentPage);
-                      } else {
-                        setCurrentPage(primaryChild.id);
-                      }
-                    }}
-                    className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all ${childrenActive ? 'text-violet-400' : 'text-gray-500'}`}
+                    onClick={() => setCurrentPage(item.id)}
+                    className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all ${isActive ? 'text-violet-400' : 'text-gray-500'}`}
                   >
                     <Icon className="w-6 h-6" />
                     <span className="text-[10px] font-medium">{item.label}</span>
                   </button>
                 );
-              }
-              const Icon = item.icon;
-              const isActive = currentPage === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setCurrentPage(item.id)}
-                  className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all ${isActive ? 'text-violet-400' : 'text-gray-500'}`}
-                >
-                  <Icon className="w-6 h-6" />
-                  <span className="text-[10px] font-medium">{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
+              })}
+            </div>
+          </nav>
+        )}
       </main>
 
-      <FloatingChatBall />
-      <AutoProgressBar />
-      <PersistentAudioPlayer />
+      {user && (
+        <>
+          <FloatingChatBall />
+          <AutoProgressBar />
+          <PersistentAudioPlayer />
+        </>
+      )}
     </div>
   );
 }

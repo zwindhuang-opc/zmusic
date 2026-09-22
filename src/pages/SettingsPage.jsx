@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Key, Save, RefreshCw, Server, Bot, Cpu, CheckCircle, AlertCircle, Sparkles, Wand2, Sliders, Music, RotateCcw, Gauge, Clock, Video, BookOpen, Youtube, Trash2, Bell } from 'lucide-react';
+import { Settings, Key, Save, RefreshCw, Server, Bot, Cpu, CheckCircle, AlertCircle, Sparkles, Wand2, Sliders, Music, RotateCcw, Gauge, Clock, Video, BookOpen, Youtube, Trash2, Bell, ShieldCheck, Link2, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
 import api, { isMobileEnvironment } from '../services/api.client.js';
 import { getAutoConfig, setAutoConfig, AUTO_DEFAULTS } from '../utils/autoConfig.js';
 import NotificationService from '../services/notification.service.js';
+
+const PLATFORM_AUTH_PLATFORMS = [
+  { id: 'muse', name: { zh: 'Muse AI', en: 'Muse AI' }, color: 'from-violet-500 to-purple-600', icon: 'Sparkles', portal: 'https://muse.top' },
+  { id: 'melo', name: { zh: 'Melo AI', en: 'Melo AI' }, color: 'from-cyan-500 to-blue-600', icon: 'Music', portal: 'https://h.51melo.com' },
+];
 
 const UI_MODE_KEY = 'zmusic-ui-mode';
 const PUBLISH_ACCOUNTS_KEY = 'zmusic_publish_accounts';
@@ -74,6 +79,10 @@ function SettingsPage() {
   const [notifAuto, setNotifAuto] = useState(() => localStorage.getItem('zmusic_notifications_auto') !== 'false');
   const [notifPublish, setNotifPublish] = useState(() => localStorage.getItem('zmusic_notifications_publish') !== 'false');
   const [notifBatch, setNotifBatch] = useState(() => localStorage.getItem('zmusic_notifications_batch') !== 'false');
+  const [platformAuthData, setPlatformAuthData] = useState({});
+  const [tokenInputs, setTokenInputs] = useState({});
+  const [tokenShowState, setTokenShowState] = useState({});
+  const [tokenSaving, setTokenSaving] = useState({});
 
   useEffect(() => {
     if (NotificationService.isNotificationSupported()) {
@@ -100,6 +109,7 @@ function SettingsPage() {
   useEffect(() => {
     if (!isMobileEnvironment()) {
       loadStatus();
+      loadPlatformAuth();
     }
   }, []);
 
@@ -115,6 +125,57 @@ function SettingsPage() {
       }
     } catch (error) {
       console.error('Load failed:', error);
+    }
+  };
+
+  // Platform Auth: load status for all platforms
+  const loadPlatformAuth = async () => {
+    try {
+      const res = await fetch('/api/platform');
+      const data = await res.json();
+      if (data.success) {
+        const map = {};
+        (data.data || []).forEach(p => { map[p.id] = p; });
+        setPlatformAuthData(map);
+      }
+    } catch (e) {
+      console.error('Platform auth load failed:', e);
+    }
+  };
+
+  // Platform Auth: store a token
+  const handleStoreToken = async (platformId) => {
+    const token = (tokenInputs[platformId] || '').trim();
+    if (!token || token.length < 20) return;
+    setTokenSaving(prev => ({ ...prev, [platformId]: true }));
+    try {
+      const res = await fetch(`/api/platform/${platformId}/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTokenInputs(prev => ({ ...prev, [platformId]: '' }));
+        await loadPlatformAuth();
+      } else {
+        alert(data.error || 'Failed to save token');
+      }
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      setTokenSaving(prev => ({ ...prev, [platformId]: false }));
+    }
+  };
+
+  // Platform Auth: clear a token
+  const handleClearToken = async (platformId) => {
+    if (!confirm(isZh ? '确定要清除已保存的令牌吗？' : 'Clear stored token?')) return;
+    try {
+      await fetch(`/api/platform/${platformId}/token`, { method: 'DELETE' });
+      await loadPlatformAuth();
+    } catch (e) {
+      console.error('Clear token failed:', e);
     }
   };
 
@@ -430,6 +491,51 @@ function SettingsPage() {
             </div>
             <p className="text-[10px] text-gray-500">达到最大失败次数后自动停止 (使用上方滑块配置)</p>
           </div>
+
+          {/* Auto close on stop */}
+          <div className="p-3 rounded-lg bg-white/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-400">停止时自动关闭面板</span>
+              <button
+                onClick={() => updateAutoConfig({ autoCloseOnStop: !autoConfig.autoCloseOnStop })}
+                className={`relative w-10 h-5 rounded-full transition-colors ${autoConfig.autoCloseOnStop ? 'bg-emerald-500' : 'bg-gray-600'}`}
+              >
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${autoConfig.autoCloseOnStop ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-500">手动停止 AUTO 时自动收起创作面板</p>
+          </div>
+
+          {/* Auto close on done */}
+          <div className="p-3 rounded-lg bg-white/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-400">完成后自动关闭面板</span>
+              <button
+                onClick={() => updateAutoConfig({ autoCloseOnDone: !autoConfig.autoCloseOnDone })}
+                className={`relative w-10 h-5 rounded-full transition-colors ${autoConfig.autoCloseOnDone ? 'bg-emerald-500' : 'bg-gray-600'}`}
+              >
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${autoConfig.autoCloseOnDone ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-500">AUTO 正常完成后自动收起创作面板</p>
+          </div>
+
+          {/* Auto close delay */}
+          <div className="p-3 rounded-lg bg-white/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-400">自动关闭延迟</span>
+              <span className="text-sm font-bold text-violet-300">{autoConfig.autoCloseDelay / 1000}s</span>
+            </div>
+            <input
+              type="range"
+              min="500"
+              max="10000"
+              step="500"
+              value={autoConfig.autoCloseDelay}
+              onChange={(e) => updateAutoConfig({ autoCloseDelay: parseInt(e.target.value) })}
+              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-violet-500"
+            />
+          </div>
         </div>
 
         {/* Engine overrides */}
@@ -482,6 +588,123 @@ function SettingsPage() {
           <div className="text-[10px] text-gray-500">
             配置自动保存到本地存储
           </div>
+        </div>
+      </div>
+
+      <div className="gradient-border p-4 md:p-5">
+        <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
+          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          {isZh ? '平台认证 (浏览器无关)' : 'Platform Authentication (Browser-Agnostic)'}
+        </h3>
+        <p className="text-[10px] md:text-xs text-gray-500 mb-4">
+          {isZh
+            ? '在任何浏览器（Chrome、Firefox、Safari、手机）上登录平台后，复制令牌粘贴到这里。后端将自动管理认证，无需 Edge CDP。'
+            : 'Log in to each platform on ANY browser (Chrome, Firefox, Safari, mobile), then paste the token here. The backend manages auth — no Edge CDP required.'}
+        </p>
+        <div className="space-y-4">
+          {PLATFORM_AUTH_PLATFORMS.map((p) => {
+            const authData = platformAuthData[p.id];
+            const status = authData?.status || {};
+            const tokenValue = tokenInputs[p.id] || '';
+            const showToken = tokenShowState[p.id] || false;
+            const saving = tokenSaving[p.id] || false;
+            const IconComp = p.icon === 'Music' ? Music : Sparkles;
+            return (
+              <div key={p.id} className="p-3 md:p-4 rounded-xl bg-white/5 border border-white/10">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${p.color} flex items-center justify-center`}>
+                      <IconComp className="w-3.5 h-3.5 text-white" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-white">{isZh ? p.name.zh : p.name.en}</span>
+                      <a href={p.portal} target="_blank" rel="noopener noreferrer" className="ml-2 text-[10px] text-cyan-400 hover:underline inline-flex items-center gap-0.5">
+                        <Link2 className="w-3 h-3" />
+                        {isZh ? '打开平台' : 'Open'}
+                      </a>
+                    </div>
+                  </div>
+                  {status.hasToken ? (
+                    <div className="flex items-center gap-1.5">
+                      {status.expired ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-red-500/20 text-red-300 border border-red-500/30">
+                          {isZh ? '已过期' : 'Expired'}
+                        </span>
+                      ) : status.credits !== undefined ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          {isZh ? `${status.credits} 积分` : `${status.credits} credits`}
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          {isZh ? '已存储' : 'Stored'}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => handleClearToken(p.id)}
+                        className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-red-400 transition-colors"
+                        title={isZh ? '清除令牌' : 'Clear token'}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-gray-500/20 text-gray-400 border border-gray-500/30">
+                      {isZh ? '未配置' : 'Not configured'}
+                    </span>
+                  )}
+                </div>
+
+                {status.hasToken && !status.expired && status.daysLeft !== null && status.daysLeft !== undefined && (
+                  <div className="text-[10px] text-gray-500 mb-2">
+                    {isZh ? `令牌将在 ${status.daysLeft} 天后过期` : `Token expires in ${status.daysLeft} days`}
+                  </div>
+                )}
+
+                {status.hasToken && status.expired && (
+                  <div className="text-[10px] text-red-400 mb-2">
+                    {isZh ? '令牌已过期，请重新获取并粘贴。' : 'Token expired. Please re-obtain and paste.'}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <input
+                      type={showToken ? 'text' : 'password'}
+                      value={tokenValue}
+                      onChange={(e) => setTokenInputs(prev => ({ ...prev, [p.id]: e.target.value }))}
+                      placeholder={isZh ? '粘贴平台令牌 (JWT)...' : 'Paste platform token (JWT)...'}
+                      className="w-full px-3 py-2 pr-8 rounded-lg bg-white/5 border border-white/10 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50"
+                    />
+                    <button
+                      onClick={() => setTokenShowState(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                    >
+                      {showToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => handleStoreToken(p.id)}
+                    disabled={!tokenValue || tokenValue.length < 20 || saving}
+                    className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs font-medium transition-colors flex items-center gap-1.5"
+                  >
+                    {saving ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                    {isZh ? '保存' : 'Save'}
+                  </button>
+                </div>
+
+                {status.instructions && (
+                  <details className="mt-2">
+                    <summary className="text-[10px] text-cyan-400 cursor-pointer hover:underline">
+                      {isZh ? '如何获取令牌？' : 'How to get the token?'}
+                    </summary>
+                    <pre className="mt-1.5 p-2 rounded bg-black/30 text-[10px] text-gray-400 whitespace-pre-wrap font-mono">
+                      {isZh ? status.instructions.zh : status.instructions.en}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

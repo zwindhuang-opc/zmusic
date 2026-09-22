@@ -110,21 +110,33 @@ export class SunoController {
 
   async generate(req, res) {
     try {
-      const { prompt, style, duration, customMode, instrumental, title } = req.body || {};
+      const { prompt, style, duration, customMode, instrumental, title, model } = req.body || {};
+
+      // Suno model version (`mv` field). The legacy 'chirp-fenix' value is
+      // rejected by suno.cn — the API now only accepts v6 / v6-wild / v6-mini.
+      // Callers may override via the `model` body field.
+      const ALLOWED_MODELS = ['v6', 'v6-wild', 'v6-mini'];
+      const mv = ALLOWED_MODELS.includes(model) ? model : 'v6';
+
+      // suno.cn only accepts `duration` in custom mode — sending a duration
+      // without `custom_mode: true` is rejected with
+      // "duration 仅支持 custom_mode=true 的自定义模式".
+      // So custom mode is implied whenever a duration is requested.
+      const customModeEnabled = customMode === true || customMode === 'true' || Boolean(duration);
 
       // Build the Suno generate body. Include title and duration when provided
       // so the generated song has the correct name and length.
       const body = {
         prompt,
-        mv: 'chirp-fenix',
+        mv,
         tags: style || undefined,
-        custom_mode: customMode || false,
+        custom_mode: customModeEnabled,
         instrumental: instrumental || false,
         ...(title ? { title } : {}),
         ...(duration ? { duration: Number(duration) } : {}),
       };
 
-      logger.info(`[suno/generate] prompt="${(prompt || '').substring(0, 50)}..." style="${style || ''}" title="${title || ''}" duration=${duration || 'n/a'}`);
+      logger.info(`[suno/generate] prompt="${(prompt || '').substring(0, 50)}..." style="${style || ''}" title="${title || ''}" duration=${duration || 'n/a'} custom_mode=${customModeEnabled}`);
       logger.debug(`[suno/generate] Body: ${JSON.stringify(body)}`);
 
       const { status, data } = await proxyFetch('/mcp/api/generate', {

@@ -1,4 +1,5 @@
 import { config } from '../config/index.js';
+import { getCurrentLanguage } from '../i18n/index.js';
 
 const API_BASE = '/api/melo';
 
@@ -58,15 +59,25 @@ export async function generateSong(params) {
   });
   if (!res.ok) {
     let errMsg = `Melo generate error: ${res.status}`;
+    let errorKey = null;
+    let errData = null;
     try {
-      const err = await res.json();
-      if (err?.errorKey === 'HTML_RESPONSE') {
-        errMsg = 'Melo AI API 返回了 HTML 页面 — 可能是 API Token 已过期或接口已变更。请在浏览器中登录 h.51melo.com 并刷新页面。';
+      errData = await res.json();
+      const lang = getCurrentLanguage();
+      if (errData?.errorKey === 'HTML_RESPONSE') {
+        errMsg = lang === 'en'
+          ? 'Melo AI returned an HTML page (not JSON). The API token may be expired or the endpoint changed. Re-login to h.51melo.com in your browser and refresh.'
+          : 'Melo AI API 返回了 HTML 页面 — 可能是 API Token 已过期或接口已变更。请在浏览器中登录 h.51melo.com 并刷新页面。';
       } else {
-        errMsg = err.error || errMsg;
+        // Pick bilingual error: EN mode → error_en if present; otherwise fallback to error
+        errMsg = (lang === 'en' && errData?.error_en) ? errData.error_en : (errData?.error || errMsg);
       }
+      errorKey = errData?.errorKey || null;
     } catch { /* fallback to status code message */ }
-    throw new Error(errMsg);
+    const err = new Error(errMsg);
+    err.errorKey = errorKey;
+    err.responseData = errData;
+    throw err;
   }
   return res.json();
 }

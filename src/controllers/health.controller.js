@@ -118,7 +118,9 @@ export class HealthController {
       status: 'healthy',
       version: versionFile.version,
       uptime: Math.floor(process.uptime()),
-      port: config.port,
+      // Real backend listening port (set in server.js listen callback).
+      // config.port is the frontend port in the dev setup and would be misleading.
+      port: req.app?.get?.('backendPort') ?? config.port,
       apiConfigured: sunoConfigured,
       museConfigured,
       meloConfigured,

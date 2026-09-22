@@ -89,7 +89,7 @@ _SCENE_RULES: list[tuple[set[str], str, float]] = [
     ({"pizza", "hot dog", "donut", "cake", "sandwich", "banana", "apple", "orange",
       "broccoli", "carrot", "bowl", "fork", "knife", "spoon", "cup", "wine glass",
       "bottle"}, "culinary_memory", 0.8),
-    # Celebration: big group + cake = 100% festive
+    # Celebration: big group + cake = 100% festive (requires BOTH cake AND 3+ people)
     ({"cake", "dining table", "person>=3"}, "festive_celebration", 0.95),
     # Sports
     ({"surfboard"}, "seaside_vacation", 0.95),
@@ -119,6 +119,8 @@ _SCENE_RULES: list[tuple[set[str], str, float]] = [
     ({"person>=3", "dining table"}, "family_gathering", 0.88),
     ({"person>=3", "couch"}, "family_gathering", 0.82),
     # Stage hints are NOT in COCO (no guitar / mic / stage). CLIP would catch them.
+    # Solo portrait: single person with no other strong scene objects
+    # (handled specially in compute_scene_hints below)
 ]
 
 # Official Ultralytics YOLOv8n ONNX — tiny 6MB, COCO pretrained, auto-downloaded
@@ -380,44 +382,81 @@ def compute_scene_hints(objects: list[dict[str, Any]], color_feats: dict[str, An
     person_count = counts.get("person", 0)
 
     label_set = set(counts.keys())
+    
+    # Track whether this is a solo portrait (single person, no strong scene objects)
+    # Objects that indicate a specific scene (not just a person)
+    STRONG_SCENE_OBJECTS = {
+        "dining table", "cake", "wine glass", "couch", "bed", 
+        "laptop", "keyboard", "mouse", "car", "motorcycle", "bus", "truck",
+        "bicycle", "traffic light", "fire hydrant", "bench",
+        "cat", "dog", "bird", "horse", "elephant", "bear", "zebra", "giraffe",
+        "surfboard", "snowboard", "skis", "tennis racket", "baseball bat",
+        "potted plant", "tv", "microwave", "oven", "toaster", "sink", "refrigerator",
+        "umbrella", "backpack", "suitcase", "airplane", "train", "boat",
+    }
+    
+    scene_object_count = sum(counts.get(obj, 0) for obj in STRONG_SCENE_OBJECTS)
+    is_solo_portrait = (person_count == 1 and scene_object_count == 0)
+    
     scores: dict[str, float] = {}
-    for need_labels, scene_id, base in _SCENE_RULES:
-        hit = True
-        score = base
-        for need in need_labels:
-            # Person-count predicates like "person>=3" or "person=2"
-            if need.startswith("person"):
-                op = need[len("person"):]
-                ok = False
-                if op.startswith(">="):
-                    ok = person_count >= int(op[2:])
-                elif op.startswith("<="):
-                    ok = person_count <= int(op[2:])
-                elif op.startswith("="):
-                    ok = person_count == int(op[1:])
-                elif op.startswith(">"):
-                    ok = person_count > int(op[1:])
-                elif op.startswith("<"):
-                    ok = person_count < int(op[1:])
-                if not ok:
+    
+    # If it's a solo portrait, add a special hint and skip group/family/celebration rules
+    if is_solo_portrait:
+        # Solo portrait hints based on color features
+        brightness = color_feats.get("avgBrightness", 0.5)
+        dominant_hue = color_feats.get("dominantHue", "neutral")
+        
+        # Dark portrait → moody, introspective
+        if brightness < 0.3:
+            scores["solo_portrait"] = 0.85
+            scores["introspective"] = 0.7
+        # Warm lit portrait → nostalgic, intimate
+        elif dominant_hue == "warm" and brightness > 0.5:
+            scores["solo_portrait"] = 0.85
+            scores["nostalgic"] = 0.7
+        # Cool / neutral portrait → contemplative
+        else:
+            scores["solo_portrait"] = 0.85
+            scores["contemplative"] = 0.7
+    else:
+        # Normal rule-based matching for non-portrait scenes
+        for need_labels, scene_id, base in _SCENE_RULES:
+            hit = True
+            score = base
+            for need in need_labels:
+                # Person-count predicates like "person>=3" or "person=2"
+                if need.startswith("person"):
+                    op = need[len("person"):]
+                    ok = False
+                    if op.startswith(">="):
+                        ok = person_count >= int(op[2:])
+                    elif op.startswith("<="):
+                        ok = person_count <= int(op[2:])
+                    elif op.startswith("="):
+                        ok = person_count == int(op[1:])
+                    elif op.startswith(">"):
+                        ok = person_count > int(op[1:])
+                    elif op.startswith("<"):
+                        ok = person_count < int(op[1:])
+                    if not ok:
+                        hit = False
+                        break
+                elif need not in label_set:
                     hit = False
                     break
-            elif need not in label_set:
-                hit = False
-                break
-        if hit:
-            scores[scene_id] = min(1.0, scores.get(scene_id, 0.0) + score)
+            if hit:
+                scores[scene_id] = min(1.0, scores.get(scene_id, 0.0) + score)
 
-    # Color-based boosters: "outdoor + high green" biases to nature scenes
-    if color_feats.get("indoorOutdoor") == "outdoor":
-        if color_feats.get("greenRatio", 0) > 0.25:
-            scores["nature_healing"] = min(1.0, scores.get("nature_healing", 0) + 0.75)
-        if color_feats.get("blueRatio", 0) > 0.3:
-            scores["seaside_vacation"] = min(1.0, scores.get("seaside_vacation", 0) + 0.7)
-    if color_feats.get("dominantHue") == "warm" and counts.get("cake", 0) and person_count >= 2:
-        scores["festive_celebration"] = min(1.0, scores.get("festive_celebration", 0) + 0.25)
-    if person_count >= 3 and "dining table" in label_set:
-        scores["festive_celebration"] = min(1.0, scores.get("festive_celebration", 0) + 0.35)
+        # Color-based boosters: "outdoor + high green" biases to nature scenes
+        if color_feats.get("indoorOutdoor") == "outdoor":
+            if color_feats.get("greenRatio", 0) > 0.25:
+                scores["nature_healing"] = min(1.0, scores.get("nature_healing", 0) + 0.75)
+            if color_feats.get("blueRatio", 0) > 0.3:
+                scores["seaside_vacation"] = min(1.0, scores.get("seaside_vacation", 0) + 0.7)
+        if color_feats.get("dominantHue") == "warm" and counts.get("cake", 0) and person_count >= 2:
+            scores["festive_celebration"] = min(1.0, scores.get("festive_celebration", 0) + 0.25)
+        if person_count >= 3 and "dining table" in label_set:
+            scores["festive_celebration"] = min(1.0, scores.get("festive_celebration", 0) + 0.35)
 
     hints = sorted(({"id": sid, "score": round(s, 3)} for sid, s in scores.items()),
                    key=lambda x: -x["score"])

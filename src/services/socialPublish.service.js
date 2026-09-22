@@ -321,38 +321,132 @@ async function publishGeneric(platformId, payload, onProgress) {
   onProgress?.(0.05);
 
   try {
-    const hasAccount = account && (account.id || account.name);
-    const isNode = typeof process !== 'undefined' && process.versions && process.versions.node;
     const workingFile = videoFile || file;
+    const caption = [title, description, hashtags.map(h => (h.startsWith('#') ? h : `#${h}`)).join(' ')].filter(Boolean).join('\n');
+    onProgress?.(0.25);
 
-    onProgress?.(0.2);
+    // --- BROWSER-SIDE AUTOMATION (when running in browser) --------------------
+    if (isBrowser() && typeof window !== 'undefined') {
+      onProgress?.(0.4);
 
-    if (hasAccount && isNode) {
-      onProgress?.(0.5);
+      // Step 1: Copy caption to clipboard
+      let clipboardOk = false;
+      try {
+        if (navigator?.clipboard?.writeText) {
+          await navigator.clipboard.writeText(caption);
+          clipboardOk = true;
+        }
+      } catch { /* clipboard blocked - non-fatal */ }
+
+      onProgress?.(0.6);
+
+      // Step 2: Trigger auto-download of audio/video file
+      let fileDownloaded = false;
+      try {
+        if (workingFile && typeof URL !== 'undefined') {
+          const safeTitle = (title || 'zmusic-song').replace(/[\\/:*?"<>|]/g, '_');
+          const ext = videoFile ? 'mp4' : (workingFile.type?.includes('wav') ? 'wav' : 'mp3');
+          const url = URL.createObjectURL(workingFile);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${safeTitle}.${ext}`;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            try { document.body.removeChild(a); URL.revokeObjectURL(url); } catch { /* noop */ }
+          }, 1000);
+          fileDownloaded = true;
+        }
+      } catch { /* download failed - non-fatal */ }
+
+      onProgress?.(0.8);
+
+      // Step 3: Download cover image if available
+      let coverDownloaded = false;
+      try {
+        if (coverFile && typeof URL !== 'undefined') {
+          const safeTitle = (title || 'zmusic-cover').replace(/[\\/:*?"<>|]/g, '_');
+          const url = URL.createObjectURL(coverFile);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${safeTitle}-cover.jpg`;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            try { document.body.removeChild(a); URL.revokeObjectURL(url); } catch { /* noop */ }
+          }, 1000);
+          coverDownloaded = true;
+        }
+      } catch { /* non-fatal */ }
+
+      onProgress?.(0.9);
+
+      // Step 4: Open creator portal in a new tab
+      let portalOpened = false;
+      try {
+        if (meta?.creatorPortalUrl && window?.open) {
+          window.open(meta.creatorPortalUrl, '_blank', 'noopener,noreferrer');
+          portalOpened = true;
+        }
+      } catch { /* popup blocked - non-fatal */ }
+
+      onProgress?.(1.0);
+
+      return {
+        platform: platformId,
+        success: true,          // Manual bundle prepared successfully
+        fallback: true,         // Uses manual upload (not direct API)
+        manual: true,           // Explicit flag for UI
+        error: null,
+        shareUrl: null,
+        manualSteps: meta.manualSteps,
+        creatorPortalUrl: meta.creatorPortalUrl,
+        account: account || meta.defaultAccount,
+        // Browser helper result flags
+        helpers: {
+          captionCopied: clipboardOk,
+          fileDownloaded,
+          coverDownloaded,
+          portalOpened,
+        },
+        preparedBundle: {
+          title,
+          caption,
+          hashtags,
+          file: workingFile,
+          cover: coverFile || null,
+          // Save platform-specific message
+          nextSteps: clipboardOk
+            ? `✅ 文案已复制到剪贴板。请在打开的创作者页面粘贴文案（Ctrl+V），并上传下载好的文件。`
+            : `请手动复制以下文案，并上传下载好的文件：\n\n${caption}`,
+        },
+      };
     }
 
-    onProgress?.(0.95);
+    // --- Non-browser (Node) fallback: just return bundle info ----------------
+    onProgress?.(1.0);
     return {
       platform: platformId,
-      success: false,
+      success: true,
       fallback: true,
-      error: hasAccount ? `${platformId}.manual_upload_recommended` : `${platformId}.no_account_configured`,
+      manual: true,
+      error: null,
       shareUrl: null,
       manualSteps: meta.manualSteps,
       creatorPortalUrl: meta.creatorPortalUrl,
       account: account || meta.defaultAccount,
-      preparedBundle: { title, caption: [title, description, hashtags.map(h => `#${h}`).join(' ')].filter(Boolean).join('\n'), hashtags, file: workingFile },
+      preparedBundle: { title, caption, hashtags, file: workingFile },
     };
   } catch (e) {
     return {
       platform: platformId,
       success: false,
-      fallback: true,
+      fallback: false,
       error: e.message || 'Unknown error',
       manualSteps: meta.manualSteps,
       creatorPortalUrl: meta.creatorPortalUrl,
       account: account || meta.defaultAccount,
-      preparedBundle: { title, caption: [title, description, hashtags.map(h => `#${h}`).join(' ')].filter(Boolean).join('\n'), hashtags, file },
+      preparedBundle: { title, caption: [title, description].filter(Boolean).join('\n'), hashtags, file },
     };
   }
 }

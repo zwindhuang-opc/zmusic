@@ -379,7 +379,7 @@ See [ISSUE_LOG.md](ISSUE_LOG.md) for full details.
 
 ### Project Files
 ```
-e:\AI_Projects\zmusic\
+d:\AI_Projects\zmusic\
 ├── src/
 │   ├── agents/          # Unicorn Agent v7
 │   ├── controllers/     # 14 HTTP controllers

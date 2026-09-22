@@ -1,12 +1,12 @@
 /**
- * EasyMode.jsx - Elderly-friendly 3-step wizard
- * 
+ * EasyMode.jsx - Elderly-friendly 3-step wizard (fully bilingual)
+ *
  * Designed for non-technical users and elderly users.
- * Large fonts, big touch targets, Chinese-first, icon-guided.
+ * Large fonts, big touch targets, icon-guided.
  * All technical parameters are auto-selected with sensible defaults.
  *
  * Steps:
- * 1. Choose: 写歌词 (Generate Lyrics) / 做BGM (Make BGM) / 看图写歌 (Image-to-Song)
+ * 1. Choose: Lyrics / BGM / Image-to-Song
  * 2. Mood: Pick an emotion with emoji, or upload a picture
  * 3. Generate: One big button → results with copy/share
  */
@@ -25,28 +25,28 @@ import { MUSIC_STYLES } from '../config/musicStyles.js';
 
 /* --- Mood options with emoji for elderly-friendly selection --- */
 const MOOD_OPTIONS = [
-  { id: 'happy', emoji: '😊', label: '开心', style: 'pop', theme: 'happy', bpm: 120 },
-  { id: 'sad', emoji: '😢', label: '伤心', style: 'ballad', theme: 'sadness', bpm: 70 },
-  { id: 'love', emoji: '💕', label: '爱情', style: 'love_song', theme: 'love', bpm: 80 },
-  { id: 'healing', emoji: '🌿', label: '治愈', style: 'healing', theme: 'healing', bpm: 75 },
-  { id: 'excited', emoji: '🎉', label: '兴奋', style: 'energetic', theme: 'excitement', bpm: 130 },
-  { id: 'nostalgia', emoji: '📷', label: '怀旧', style: 'folk', theme: 'nostalgia', bpm: 85 },
-  { id: 'dreamy', emoji: '✨', label: '梦幻', style: 'dreamy', theme: 'dream', bpm: 90 },
-  { id: 'nature', emoji: '🌳', label: '自然', style: 'ambient', theme: 'nature', bpm: 70 },
-  { id: 'food', emoji: '🍜', label: '美食', style: 'food_vlog', theme: 'life', bpm: 90 },
-  { id: 'travel', emoji: '✈️', label: '旅行', style: 'pop', theme: 'adventure', bpm: 110 },
-  { id: 'dance', emoji: '💃', label: '跳舞', style: 'dance_party', theme: 'party', bpm: 128 },
-  { id: 'story', emoji: '📖', label: '故事', style: 'emotional_story', theme: 'story', bpm: 75 },
+  { id: 'happy',     emoji: '😊', zh: '开心',   en: 'Happy',    style: 'pop',              theme: 'happy',       bpm: 120 },
+  { id: 'sad',       emoji: '😢', zh: '伤心',   en: 'Sad',      style: 'ballad',           theme: 'sadness',     bpm: 70  },
+  { id: 'love',      emoji: '💕', zh: '爱情',   en: 'Love',     style: 'love_song',        theme: 'love',        bpm: 80  },
+  { id: 'healing',   emoji: '🌿', zh: '治愈',   en: 'Healing',  style: 'healing',          theme: 'healing',     bpm: 75  },
+  { id: 'excited',   emoji: '🎉', zh: '兴奋',   en: 'Excited',  style: 'energetic',        theme: 'excitement',  bpm: 130 },
+  { id: 'nostalgia', emoji: '📷', zh: '怀旧',   en: 'Nostalgia',style: 'folk',             theme: 'nostalgia',   bpm: 85  },
+  { id: 'dreamy',    emoji: '✨', zh: '梦幻',   en: 'Dreamy',   style: 'dreamy',           theme: 'dream',       bpm: 90  },
+  { id: 'nature',    emoji: '🌳', zh: '自然',   en: 'Nature',   style: 'ambient',          theme: 'nature',      bpm: 70  },
+  { id: 'food',      emoji: '🍜', zh: '美食',   en: 'Food',     style: 'food_vlog',        theme: 'life',        bpm: 90  },
+  { id: 'travel',    emoji: '✈️', zh: '旅行',   en: 'Travel',   style: 'pop',              theme: 'adventure',   bpm: 110 },
+  { id: 'dance',     emoji: '💃', zh: '跳舞',   en: 'Dance',    style: 'dance_party',      theme: 'party',       bpm: 128 },
+  { id: 'story',     emoji: '📖', zh: '故事',   en: 'Story',    style: 'emotional_story',  theme: 'story',       bpm: 75  },
 ];
 
 /* --- BGM style presets (simplified) --- */
 const BGM_PRESETS = [
-  { id: 'xiaohongshu_vlog', emoji: '📕', label: '小红书Vlog', desc: '温暖舒适' },
-  { id: 'food_vlog', emoji: '🍜', label: '美食视频', desc: '愉快俏皮' },
-  { id: 'commercial_ad', emoji: '📢', label: '商业广告', desc: '积极活力' },
-  { id: 'dance_party', emoji: '🎉', label: '派对舞曲', desc: '动感节奏' },
-  { id: 'nature_documentary', emoji: '🌿', label: '自然记录', desc: '宁静深远' },
-  { id: 'podcast_intro', emoji: '🎙️', label: '播客开场', desc: '专业大气' },
+  { id: 'xiaohongshu_vlog',    emoji: '📕', zh: '小红书Vlog', en: 'XHS Vlog',        zhDesc: '温暖舒适',   enDesc: 'Warm & cozy'       },
+  { id: 'food_vlog',           emoji: '🍜', zh: '美食视频',   en: 'Food Video',      zhDesc: '愉快俏皮',   enDesc: 'Playful & fun'     },
+  { id: 'commercial_ad',       emoji: '📢', zh: '商业广告',   en: 'Commercial Ad',   zhDesc: '积极活力',   enDesc: 'Energetic'         },
+  { id: 'dance_party',         emoji: '🎉', zh: '派对舞曲',   en: 'Party Music',     zhDesc: '动感节奏',   enDesc: 'Beat-driven'       },
+  { id: 'nature_documentary',  emoji: '🌿', zh: '自然记录',   en: 'Nature Doc',      zhDesc: '宁静深远',   enDesc: 'Calm & profound'   },
+  { id: 'podcast_intro',       emoji: '🎙️', zh: '播客开场',   en: 'Podcast Intro',   zhDesc: '专业大气',   enDesc: 'Pro & polished'    },
 ];
 
 /* --- Simple type cards --- */
@@ -56,37 +56,160 @@ const TYPE_CARDS = [
     icon: Music2,
     emoji: '🎵',
     color: 'from-violet-500 to-purple-600',
-    label: '写歌词',
-    desc: '输入主题，自动生成歌词',
-    descEn: 'Write lyrics from a theme'
+    zh: '写歌词',
+    en: 'Write Lyrics',
+    zhDesc: '输入主题，自动生成歌词',
+    enDesc: 'Pick a theme → AI writes lyrics',
   },
   {
     id: 'bgm',
     icon: Sparkles,
     emoji: '🎶',
     color: 'from-pink-500 to-rose-600',
-    label: '做BGM',
-    desc: '选择场景，生成背景音乐',
-    descEn: 'Make background music'
+    zh: '做BGM',
+    en: 'Make BGM',
+    zhDesc: '选择场景，生成背景音乐',
+    enDesc: 'Pick scene → background music',
   },
   {
     id: 'image',
     icon: ImageIcon,
     emoji: '🖼️',
     color: 'from-teal-500 to-emerald-600',
-    label: '看图写歌',
-    desc: '上传图片，AI自动生成歌词',
-    descEn: 'Upload photo → AI writes lyrics'
+    zh: '看图写歌',
+    en: 'Photo → Song',
+    zhDesc: '上传图片，AI自动生成歌词',
+    enDesc: 'Upload photo → AI writes lyrics',
   },
 ];
 
+/* --- UI labels (all bilingual) --- */
+const UI_LABELS = {
+  zh: {
+    // Step 1
+    s1_title: '你想做什么？',
+    s1_subtitle: '选择一种类型，我来帮你完成',
+    // Step 2 - Lyrics
+    s2_lyrics_title: '现在心情如何？',
+    s2_lyrics_subtitle: '选择一种心情，我来写歌词',
+    // Step 2 - BGM
+    s2_bgm_title: '选择背景音乐类型',
+    s2_bgm_subtitle: '不同场景需要不同的音乐',
+    // Step 2 - Image
+    s2_img_title: '上传一张图片',
+    s2_img_subtitle: 'AI会根据图片内容自动生成歌词',
+    img_click_to_pick: '点击选择图片',
+    img_uploaded: '✓ 图片已上传',
+    // Navigation
+    back: '返回',
+    next: '下一步',
+    // Step 3 - Summary
+    chosen_prefix: '已选择：',
+    img_chip: '🖼️ 图片已上传',
+    // Step 3 - Generate button
+    one_click_gen: '✨ 一键生成',
+    ai_is_analyzing_img: 'AI正在分析图片并创作...',
+    ai_is_creating: 'AI根据你的选择创作...',
+    ai_creating_title: 'AI正在创作中',
+    pls_wait: '请稍等片刻',
+    // Step 3 - Errors
+    gen_failed_title: '生成失败',
+    retry: '返回重试',
+    // Step 3 - Tabs
+    tab_all: '全部',
+    tab_lyrics: '歌词',
+    tab_command: '提示词',
+    // Step 3 - Actions
+    copy: '复制',
+    regenerate: '重新生成',
+    copy_tip: '💡 提示：复制后可粘贴到其他应用中使用',
+    back_edit: '返回修改',
+    // Header
+    easy_mode: '简单模式',
+    three_steps: '三步轻松创作',
+    expert_mode: '专业模式',
+    // Footer
+    footer_tip: '适合所有人使用 · 无需音乐或电脑经验',
+    // Toast / error messages
+    toast_upload_image: '请上传图片文件',
+    toast_image_analyzing: '图片已上传，正在分析...',
+    toast_img_load_failed: '图片加载失败',
+    toast_pick_mood: '请先选择一种类型和心情',
+    toast_success: '生成成功！',
+    toast_failed: '生成失败，请重试',
+    gen_failed_retry: '生成失败，请重试',
+    img_tag_uploaded: '图片已上传',
+  },
+  en: {
+    // Step 1
+    s1_title: 'What do you want to do?',
+    s1_subtitle: 'Pick a type and I\'ll help you do it',
+    // Step 2 - Lyrics
+    s2_lyrics_title: 'How are you feeling now?',
+    s2_lyrics_subtitle: 'Pick a mood, I\'ll write the lyrics',
+    // Step 2 - BGM
+    s2_bgm_title: 'Pick a background music style',
+    s2_bgm_subtitle: 'Different scenes need different music',
+    // Step 2 - Image
+    s2_img_title: 'Upload an image',
+    s2_img_subtitle: 'AI writes lyrics from the image content',
+    img_click_to_pick: 'Click to pick an image',
+    img_uploaded: '✓ Image uploaded',
+    // Navigation
+    back: 'Back',
+    next: 'Next',
+    // Step 3 - Summary
+    chosen_prefix: 'Selected:',
+    img_chip: '🖼️ Image uploaded',
+    // Step 3 - Generate button
+    one_click_gen: '✨ Generate Now',
+    ai_is_analyzing_img: 'AI analyzing the image and creating...',
+    ai_is_creating: 'AI creating based on your choices...',
+    ai_creating_title: 'AI is creating',
+    pls_wait: 'Please wait a moment',
+    // Step 3 - Errors
+    gen_failed_title: 'Generation failed',
+    retry: 'Back and retry',
+    // Step 3 - Tabs
+    tab_all: 'All',
+    tab_lyrics: 'Lyrics',
+    tab_command: 'Prompt',
+    // Step 3 - Actions
+    copy: 'Copy',
+    regenerate: 'Regenerate',
+    copy_tip: '💡 Tip: Paste into any music generation app after copying',
+    back_edit: 'Back to edit',
+    // Header
+    easy_mode: 'Easy Mode',
+    three_steps: '3 steps to create',
+    expert_mode: 'Expert Mode',
+    // Footer
+    footer_tip: 'For everyone · No music or computer experience needed',
+    // Toast / error messages
+    toast_upload_image: 'Please upload an image file',
+    toast_image_analyzing: 'Image uploaded, analyzing...',
+    toast_img_load_failed: 'Failed to load image',
+    toast_pick_mood: 'Please pick a type and mood first',
+    toast_success: 'Generated successfully!',
+    toast_failed: 'Generation failed, please try again',
+    gen_failed_retry: 'Generation failed, please try again',
+    img_tag_uploaded: 'Image uploaded',
+  },
+};
+
 export default function EasyMode({ onSwitchToExpert }) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
+  const isZh = lang === 'zh';
+  const L = UI_LABELS[isZh ? 'zh' : 'en'];
+
+  const pick = (o) => isZh ? (o.zh || o.label) : (o.en || o.label);
+  const pickDesc = (o) => isZh ? (o.zhDesc || o.desc) : (o.enDesc || o.desc);
+
   const { addToHistory, copyToClipboard, showToast } = useGeneration();
 
   /* --- Wizard state --- */
   const [step, setStep] = useState(1);
-  const [selectedType, setSelectedType] = useState(null); // 'lyrics' | 'bgm' | 'image'
+  const [selectedType, setSelectedType] = useState(null);
   const [selectedMood, setSelectedMood] = useState(null);
   const [selectedBgm, setSelectedBgm] = useState(null);
   const [uploadedImage, setUploadedImage] = useState(null);
@@ -97,7 +220,7 @@ export default function EasyMode({ onSwitchToExpert }) {
   const fileInputRef = useRef(null);
 
   /**
-   * Handle image upload for "看图写歌" type
+   * Handle image upload for "Photo → Song" type
    * Reads file, previews it, and runs AI analysis
    */
   const handleImageUpload = async (e) => {
@@ -105,14 +228,14 @@ export default function EasyMode({ onSwitchToExpert }) {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      showToast('请上传图片文件', 'error');
+      showToast(L.toast_upload_image, 'error');
       return;
     }
 
     const reader = new FileReader();
     reader.onload = async (ev) => {
       setUploadedImage(ev.target.result);
-      showToast('图片已上传，正在分析...', 'success');
+      showToast(L.toast_image_analyzing, 'success');
     };
     reader.readAsDataURL(file);
   };
@@ -139,7 +262,7 @@ export default function EasyMode({ onSwitchToExpert }) {
         params.genre = selectedMood.style;
         params.theme = selectedMood.theme;
         params.bpm = selectedMood.bpm;
-        params.subject = '生活';
+        params.subject = isZh ? '生活' : 'life';
       } else if (selectedType === 'bgm' && selectedBgm) {
         const styleInfo = MUSIC_STYLES[selectedBgm.id];
         params.genre = selectedBgm.id;
@@ -149,12 +272,11 @@ export default function EasyMode({ onSwitchToExpert }) {
           : 90;
         params.script = styleInfo?.promptTemplate || '';
       } else if (selectedType === 'image' && uploadedImage) {
-        // Create an Image element from the base64 data URL for proper analysis
         const img = new Image();
         img.crossOrigin = 'anonymous';
         await new Promise((resolve, reject) => {
           img.onload = resolve;
-          img.onerror = () => reject(new Error('图片加载失败'));
+          img.onerror = () => reject(new Error(L.toast_img_load_failed));
           img.src = uploadedImage;
         });
         const analysis = await fullImageAnalysis(img);
@@ -162,7 +284,6 @@ export default function EasyMode({ onSwitchToExpert }) {
         params.theme = analysis?.scene?.themes?.[0] || analysis?.themes?.[0] || 'nature';
         params.bpm = analysis?.scene?.tempos?.[1] || 90;
         params.visualContext = analysis;
-        // Also pass the visual context's scene data for better lyrics generation
         if (analysis?.visualContext) {
           params.visualContext.imagery = analysis.visualContext.imagery || analysis.scene?.imagery || [];
           params.visualContext.emotions = analysis.visualContext.emotions || analysis.scene?.emotions || [];
@@ -172,12 +293,11 @@ export default function EasyMode({ onSwitchToExpert }) {
           params.visualContext.sceneId = analysis.scene?.profileId || '';
         }
       } else {
-        showToast('请先选择一种类型和心情', 'error');
+        showToast(L.toast_pick_mood, 'error');
         setIsGenerating(false);
         return;
       }
 
-      // Use local generation (works offline, no server needed)
       const lyricsResult = generateLyrics(params);
 
       setResult({
@@ -198,19 +318,16 @@ export default function EasyMode({ onSwitchToExpert }) {
         source: 'easy_mode',
       });
 
-      showToast('生成成功！', 'success');
+      showToast(L.toast_success, 'success');
     } catch (err) {
       console.error('Generation failed:', err);
-      setError(err.message || '生成失败，请重试');
-      showToast('生成失败，请重试', 'error');
+      setError(err.message || L.gen_failed_retry);
+      showToast(L.toast_failed, 'error');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  /**
-   * Reset wizard to step 1
-   */
   const handleReset = () => {
     setStep(1);
     setSelectedType(null);
@@ -221,9 +338,6 @@ export default function EasyMode({ onSwitchToExpert }) {
     setError(null);
   };
 
-  /**
-   * Handle copy to clipboard with feedback
-   */
   const handleCopy = async (text) => {
     await copyToClipboard(text);
   };
@@ -247,7 +361,6 @@ export default function EasyMode({ onSwitchToExpert }) {
 
   /* ============ RENDER ============ */
 
-  /* -- Step indicator -- */
   const StepIndicator = () => (
     <div className="flex items-center justify-center gap-2 md:gap-4 mb-6">
       {[1, 2, 3].map((s) => (
@@ -268,17 +381,15 @@ export default function EasyMode({ onSwitchToExpert }) {
     </div>
   );
 
-  /* ============================================= */
-  /* STEP 1: Choose what you want to do            */
-  /* ============================================= */
+  /* STEP 1: Choose what you want to do */
   const renderStep1 = () => (
     <div className="animate-fade-in">
       <StepIndicator />
       <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-2">
-        你想做什么？
+        {L.s1_title}
       </h2>
       <p className="text-sm text-gray-400 text-center mb-8">
-        选择一种类型，我来帮你完成
+        {L.s1_subtitle}
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 max-w-3xl mx-auto">
@@ -298,8 +409,8 @@ export default function EasyMode({ onSwitchToExpert }) {
               <div className={`w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center text-4xl md:text-5xl shadow-lg`}>
                 <span>{card.emoji}</span>
               </div>
-              <h3 className="text-lg md:text-xl font-bold text-white mb-1">{card.label}</h3>
-              <p className="text-sm text-gray-400">{card.desc}</p>
+              <h3 className="text-lg md:text-xl font-bold text-white mb-1">{pick(card)}</h3>
+              <p className="text-sm text-gray-400">{pickDesc(card)}</p>
             </button>
           );
         })}
@@ -307,9 +418,7 @@ export default function EasyMode({ onSwitchToExpert }) {
     </div>
   );
 
-  /* ============================================= */
-  /* STEP 2: Choose mood / BGM preset / upload img  */
-  /* ============================================= */
+  /* STEP 2: Choose mood / BGM preset / upload img */
   const renderStep2 = () => (
     <div className="animate-fade-in">
       <StepIndicator />
@@ -317,10 +426,10 @@ export default function EasyMode({ onSwitchToExpert }) {
       {selectedType === 'lyrics' && (
         <>
           <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-2">
-            现在心情如何？
+            {L.s2_lyrics_title}
           </h2>
           <p className="text-sm text-gray-400 text-center mb-8">
-            选择一种心情，我来写歌词
+            {L.s2_lyrics_subtitle}
           </p>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4 max-w-3xl mx-auto">
             {MOOD_OPTIONS.map((mood) => (
@@ -334,7 +443,7 @@ export default function EasyMode({ onSwitchToExpert }) {
                 style={{ minHeight: '90px' }}
               >
                 <div className="text-3xl md:text-4xl mb-1">{mood.emoji}</div>
-                <div className="text-sm md:text-base font-semibold text-white">{mood.label}</div>
+                <div className="text-sm md:text-base font-semibold text-white">{pick(mood)}</div>
               </button>
             ))}
           </div>
@@ -344,10 +453,10 @@ export default function EasyMode({ onSwitchToExpert }) {
       {selectedType === 'bgm' && (
         <>
           <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-2">
-            选择背景音乐类型
+            {L.s2_bgm_title}
           </h2>
           <p className="text-sm text-gray-400 text-center mb-8">
-            不同场景需要不同的音乐
+            {L.s2_bgm_subtitle}
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-w-3xl mx-auto">
             {BGM_PRESETS.map((bgm) => (
@@ -360,8 +469,8 @@ export default function EasyMode({ onSwitchToExpert }) {
                   }`}
               >
                 <div className="text-3xl mb-2">{bgm.emoji}</div>
-                <div className="text-base md:text-lg font-bold text-white mb-0.5">{bgm.label}</div>
-                <div className="text-xs text-gray-400">{bgm.desc}</div>
+                <div className="text-base md:text-lg font-bold text-white mb-0.5">{pick(bgm)}</div>
+                <div className="text-xs text-gray-400">{pickDesc(bgm)}</div>
               </button>
             ))}
           </div>
@@ -371,10 +480,10 @@ export default function EasyMode({ onSwitchToExpert }) {
       {selectedType === 'image' && (
         <>
           <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-2">
-            上传一张图片
+            {L.s2_img_title}
           </h2>
           <p className="text-sm text-gray-400 text-center mb-8">
-            AI会根据图片内容自动生成歌词
+            {L.s2_img_subtitle}
           </p>
 
           <div className="max-w-md mx-auto">
@@ -387,7 +496,7 @@ export default function EasyMode({ onSwitchToExpert }) {
                 <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
                   <Upload className="w-10 h-10 text-white" />
                 </div>
-                <div className="text-lg md:text-xl font-bold text-white mb-1">点击选择图片</div>
+                <div className="text-lg md:text-xl font-bold text-white mb-1">{L.img_click_to_pick}</div>
                 <div className="text-sm text-gray-400">{t('common.support_jpg_png')}</div>
               </button>
             ) : (
@@ -400,7 +509,7 @@ export default function EasyMode({ onSwitchToExpert }) {
                   <X className="w-4 h-4" />
                 </button>
                 <div className="p-3 bg-gradient-to-r from-violet-500/20 to-pink-500/20 text-center">
-                  <div className="text-sm font-semibold text-white">✓ 图片已上传</div>
+                  <div className="text-sm font-semibold text-white">{L.img_uploaded}</div>
                 </div>
               </div>
             )}
@@ -422,7 +531,7 @@ export default function EasyMode({ onSwitchToExpert }) {
           className="px-6 py-3 rounded-xl bg-white/5 text-gray-300 hover:bg-white/10 transition-colors flex items-center gap-2"
         >
           <ArrowLeft className="w-5 h-5" />
-          <span className="text-base">返回</span>
+          <span className="text-base">{L.back}</span>
         </button>
 
         <button
@@ -430,16 +539,14 @@ export default function EasyMode({ onSwitchToExpert }) {
           disabled={(selectedType === 'lyrics' && !selectedMood) || (selectedType === 'bgm' && !selectedBgm) || (selectedType === 'image' && !uploadedImage)}
           className="px-8 py-3 md:px-10 md:py-4 rounded-xl bg-gradient-to-r from-violet-500 to-pink-500 text-white font-bold text-base md:text-lg disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-violet-500/30 transition-all flex items-center gap-2"
         >
-          <span>下一步</span>
+          <span>{L.next}</span>
           <ArrowRight className="w-5 h-5" />
         </button>
       </div>
     </div>
   );
 
-  /* ============================================= */
-  /* STEP 3: Generate & show results                */
-  /* ============================================= */
+  /* STEP 3: Generate & show results */
   const renderStep3 = () => (
     <div className="animate-fade-in">
       <StepIndicator />
@@ -447,23 +554,23 @@ export default function EasyMode({ onSwitchToExpert }) {
       {/* Summary bar */}
       <div className="max-w-3xl mx-auto mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          <span className="text-gray-400">已选择：</span>
+          <span className="text-gray-400">{L.chosen_prefix}</span>
           <span className="px-3 py-1 rounded-full bg-violet-500/20 text-violet-200">
-            {TYPE_CARDS.find(c => c.id === selectedType)?.label}
+            {pick(TYPE_CARDS.find(c => c.id === selectedType))}
           </span>
           {selectedMood && (
             <span className="px-3 py-1 rounded-full bg-pink-500/20 text-pink-200">
-              {selectedMood.emoji} {selectedMood.label}
+              {selectedMood.emoji} {pick(selectedMood)}
             </span>
           )}
           {selectedBgm && (
             <span className="px-3 py-1 rounded-full bg-pink-500/20 text-pink-200">
-              {selectedBgm.emoji} {selectedBgm.label}
+              {selectedBgm.emoji} {pick(selectedBgm)}
             </span>
           )}
           {uploadedImage && (
             <span className="px-3 py-1 rounded-full bg-teal-500/20 text-teal-200">
-              🖼️ 图片已上传
+              {L.img_chip}
             </span>
           )}
         </div>
@@ -477,10 +584,10 @@ export default function EasyMode({ onSwitchToExpert }) {
             className="relative px-12 py-8 md:px-16 md:py-10 rounded-2xl bg-gradient-to-r from-violet-500 via-pink-500 to-rose-500 text-white font-bold text-xl md:text-2xl shadow-xl shadow-violet-500/30 hover:shadow-2xl hover:shadow-violet-500/40 transition-all hover:scale-105 flex items-center gap-3 mx-auto"
           >
             <Sparkles className="w-7 h-7" />
-            <span>✨ 一键生成</span>
+            <span>{L.one_click_gen}</span>
           </button>
           <p className="mt-4 text-sm text-gray-400">
-            {selectedType === 'image' ? 'AI正在分析图片并创作...' : 'AI根据你的选择创作...'}
+            {selectedType === 'image' ? L.ai_is_analyzing_img : L.ai_is_creating}
           </p>
         </div>
       )}
@@ -490,8 +597,8 @@ export default function EasyMode({ onSwitchToExpert }) {
           <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-violet-500 to-pink-500 flex items-center justify-center animate-pulse">
             <Sparkles className="w-10 h-10 text-white animate-spin" />
           </div>
-          <div className="text-xl font-bold text-white mb-2">{t('easy.ai_creating')}</div>
-          <div className="text-sm text-gray-400">请稍等片刻</div>
+          <div className="text-xl font-bold text-white mb-2">{L.ai_creating_title}</div>
+          <div className="text-sm text-gray-400">{L.pls_wait}</div>
         </div>
       )}
 
@@ -500,13 +607,13 @@ export default function EasyMode({ onSwitchToExpert }) {
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
             <X className="w-8 h-8 text-red-400" />
           </div>
-          <div className="text-lg font-bold text-red-400 mb-2">生成失败</div>
+          <div className="text-lg font-bold text-red-400 mb-2">{L.gen_failed_title}</div>
           <div className="text-sm text-gray-400 mb-6">{error}</div>
           <button
             onClick={() => { setError(null); setStep(2); }}
             className="px-6 py-3 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors"
           >
-            返回重试
+            {L.retry}
           </button>
         </div>
       )}
@@ -516,9 +623,9 @@ export default function EasyMode({ onSwitchToExpert }) {
           {/* Result tabs */}
           <div className="flex gap-2 mb-4 rounded-xl bg-white/5 p-1">
             {[
-              { id: 'all', label: '全部' },
-              { id: 'lyrics', label: '歌词' },
-              { id: 'command', label: '提示词' }
+              { id: 'all', label: L.tab_all },
+              { id: 'lyrics', label: L.tab_lyrics },
+              { id: 'command', label: L.tab_command }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -553,20 +660,20 @@ export default function EasyMode({ onSwitchToExpert }) {
               className="flex-1 min-w-[140px] py-3 rounded-xl bg-gradient-to-r from-violet-500 to-pink-500 text-white font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-violet-500/30 transition-all"
             >
               <Copy className="w-5 h-5" />
-              <span className="text-base">复制</span>
+              <span className="text-base">{L.copy}</span>
             </button>
             <button
               onClick={handleReset}
               className="flex-1 min-w-[140px] py-3 rounded-xl bg-white/10 text-white font-semibold flex items-center justify-center gap-2 hover:bg-white/20 transition-all"
             >
               <RefreshCw className="w-5 h-5" />
-              <span className="text-base">重新生成</span>
+              <span className="text-base">{L.regenerate}</span>
             </button>
           </div>
 
           {/* Share tip */}
           <div className="mt-4 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 text-sm text-violet-200 text-center">
-            💡 提示：复制后可粘贴到其他应用中使用
+            {L.copy_tip}
           </div>
         </div>
       )}
@@ -579,16 +686,14 @@ export default function EasyMode({ onSwitchToExpert }) {
             className="px-6 py-3 rounded-xl bg-white/5 text-gray-300 hover:bg-white/10 transition-colors flex items-center gap-2"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span className="text-base">返回修改</span>
+            <span className="text-base">{L.back_edit}</span>
           </button>
         </div>
       )}
     </div>
   );
 
-  /* ============================================= */
-  /* Main layout                                    */
-  /* ============================================= */
+  /* Main layout */
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 md:py-10">
       {/* Header */}
@@ -598,8 +703,8 @@ export default function EasyMode({ onSwitchToExpert }) {
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl md:text-2xl font-bold text-white">简单模式</h1>
-            <p className="text-xs text-gray-400">三步轻松创作</p>
+            <h1 className="text-xl md:text-2xl font-bold text-white">{L.easy_mode}</h1>
+            <p className="text-xs text-gray-400">{L.three_steps}</p>
           </div>
         </div>
         <button
@@ -607,7 +712,7 @@ export default function EasyMode({ onSwitchToExpert }) {
           className="px-4 py-2 rounded-lg bg-white/5 text-gray-300 text-sm hover:bg-white/10 hover:text-white transition-all flex items-center gap-1.5"
         >
           <Settings className="w-4 h-4" />
-          <span>专业模式</span>
+          <span>{L.expert_mode}</span>
         </button>
       </div>
 
@@ -620,7 +725,7 @@ export default function EasyMode({ onSwitchToExpert }) {
 
       {/* Footer tips */}
       <div className="mt-10 text-center text-xs text-gray-500">
-        <p>适合所有人使用 · 无需音乐或电脑经验</p>
+        <p>{L.footer_tip}</p>
       </div>
     </div>
   );

@@ -29,8 +29,8 @@ function Dashboard({ apiStatus, agentStatus, onNavigate }) {
     { title: t('dashboard.lyrics_created'), value: stats.lyricsGenerated, icon: Mic, color: 'from-pink-500 to-rose-500', page: 'lyrics' },
     { title: t('dashboard.mv_productions'), value: stats.mvGenerated, icon: Video, color: 'from-blue-500 to-cyan-500', page: 'mv' },
     { title: t('dashboard.active_users'), value: stats.activeUsers, icon: Activity, color: 'from-emerald-500 to-teal-500', page: null },
-    // 5th card: 创作构思记录簿（包含成功 + 失败的全部构思过程）
-    { title: '创作构思记录簿', value: stats.creationAttempts + stats.songsGenerated, icon: Lightbulb, color: 'from-amber-500 via-orange-500 to-rose-500', page: null, extraHint: '成功+失败的全部创作思考' },
+    // 5th card: Creative Notebook (captures all creation attempts including failures)
+    { title: t('notebook.title'), value: stats.creationAttempts + stats.songsGenerated, icon: Lightbulb, color: 'from-amber-500 via-orange-500 to-rose-500', page: null, extraHint: t('notebook.card_hint') },
   ];
 
   const workbenchCards = [
@@ -358,8 +358,8 @@ function Dashboard({ apiStatus, agentStatus, onNavigate }) {
       </div>
 
       {/* ============================================================== */}
-      {/* === 创作构思记录簿 Creation Notebook — 专门记录"每一次思考过程"  */}
-      {/* 无论是否成功生成歌曲，所有 AUTO 构思、灵感、失败构思都会保存在此  */}
+      {/* === Creative Notebook — every creative process, win or lose  */}
+      {/* AUTO ideation details are saved here even when generation fails */}
       {/* ============================================================== */}
       <div className="gradient-border p-4 md:p-6">
         <div className="flex items-center justify-between mb-3 md:mb-4 flex-wrap gap-2">
@@ -369,23 +369,20 @@ function Dashboard({ apiStatus, agentStatus, onNavigate }) {
             </div>
             <div>
               <h3 className="text-sm md:text-base font-bold text-white flex items-center gap-2">
-                创作构思记录簿
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-medium">
-                  💡 记录每一次创意，无论成败
-                </span>
+                {t('notebook.title')}
               </h3>
               <p className="text-[11px] text-gray-500 mt-0.5">
-                AUTO 模式 60 秒构思全过程 → 即便积分不足未生成歌曲，所有构思细节、创作参数、命令均完整保存于此
+                {t('notebook.subtitle')}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-            <span>共 <span className="font-bold text-amber-300 font-mono">{stats.creationAttempts + stats.songsGenerated}</span> 份构思记录</span>
+            <span>{t('notebook.total_records', { count: stats.creationAttempts + stats.songsGenerated })}</span>
             <span className="text-gray-600">·</span>
-            <span className="text-emerald-400 font-medium">✅ 成功 {stats.songsGenerated}</span>
+            <span className="text-emerald-400 font-medium">{t('notebook.success_count', { count: stats.songsGenerated })}</span>
             <span className="text-gray-600">·</span>
-            <span className="text-rose-400 font-medium">❌ 构思未生成 {stats.creationAttempts}</span>
+            <span className="text-rose-400 font-medium">{t('notebook.failed_count', { count: stats.creationAttempts })}</span>
           </div>
         </div>
 
@@ -400,11 +397,9 @@ function Dashboard({ apiStatus, agentStatus, onNavigate }) {
                 <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500/10 to-rose-500/10 flex items-center justify-center border border-amber-500/20">
                   <Lightbulb className="w-8 h-8 text-amber-400/70" />
                 </div>
-                <div className="text-sm font-medium text-white mb-1">还没有创作构思记录</div>
+                <div className="text-sm font-medium text-white mb-1">{t('notebook.no_data')}</div>
                 <div className="text-xs text-gray-500 max-w-md mx-auto leading-relaxed">
-                  点击 <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 mx-1 font-mono">🚀 GLOBAL AUTO</span>
-                  或任一平台页面的 <span className="px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20 mx-1 font-mono">AUTO</span> 按钮，
-                  系统会进入 60 秒构思倒计时 —— 整个灵感思考过程（主题、风格、标题、歌词草稿、生成命令）都会完整记录在此，即使 API 因积分不足失败也不会丢失。
+                  {t('notebook.no_data_desc')}
                 </div>
               </div>
             );

@@ -137,7 +137,7 @@ Steps:
 
 ## 4. CentralizedHub Integration
 
-The project references the centralizedhub monorepo at `e:\AI_Projects\centralizedhub\` which provides:
+The project references the centralizedhub monorepo at `d:\AI_Projects\centralizedhub\` which provides:
 
 ### Available Utilities (from centralizedhub/packages/utils)
 - **useLocalStorage** - Persistent state management (already implemented natively)

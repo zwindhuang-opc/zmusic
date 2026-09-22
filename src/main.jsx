@@ -5,8 +5,13 @@ import { t } from './i18n/index.js';
 import App from './App.jsx';
 import './index.css';
 import { initMobile } from './mobile.js';
+import { installGlobalErrorCapture } from './utils/errorReporter.js';
 
 initMobile();
+
+// Ship window.onerror / unhandledrejection errors to the backend
+// (POST /api/errors/report → logs/server.log). Fire-and-forget.
+installGlobalErrorCapture();
 
 /**
  * Top-level Error Boundary.
@@ -142,10 +147,14 @@ root.render(
 // Kick off the "React is on screen" handshake after first commit.
 signalUiReady();
 
-// Register Service Worker for PWA offline support (production only)
+// Register Service Worker for PWA offline support (production only).
+// The `?v=` query ties the registration to the app version: a release changes
+// the script URL, so the browser installs the new worker and its CACHE_NAME
+// change purges the previous app-shell cache instead of serving stale assets.
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
+    const swVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        navigator.serviceWorker.register(`/sw.js?v=${swVersion}`, { scope: '/' })
             .then((reg) => {
                 console.log('[SW] Registered with scope:', reg.scope);
             })

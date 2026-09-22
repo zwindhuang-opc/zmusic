@@ -21,7 +21,7 @@ import {
 } from '../utils/autoGenUtils.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
-import { getEngineSongCount, getAutoConfig, getMaxErrors, getCountdownSeconds, shouldStopOnError, shouldAutoCloseOnStop, shouldAutoCloseOnDone, getAutoCloseDelay } from '../utils/autoConfig.js';
+import { getEngineSongCount, getAutoConfig, getMaxErrors, getCountdownSeconds, getSongDuration, shouldStopOnError, shouldAutoCloseOnStop, shouldAutoCloseOnDone, getAutoCloseDelay, shouldAutoChain } from '../utils/autoConfig.js';
 import { applyStrategyPreset, getStrategy } from '../data/creativePresets.js';
 
 const PROMPT_INSPIRATIONS = [
@@ -80,7 +80,7 @@ function SunoPage({ onNavigate }) {
   const [customMode, setCustomMode] = useState(false);
   const [styleInput, setStyleInput] = useState('');
   const [styleChips, setStyleChips] = useState([]);
-  const [duration, setDuration] = useState(60);
+  const [duration, setDuration] = useState(getSongDuration('suno'));
   const [instrumental, setInstrumental] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [inspiration, setInspiration] = useState('');
@@ -200,19 +200,24 @@ function SunoPage({ onNavigate }) {
         { hasQueryParam, hasHandshake, handshakeData });
 
       if (hasQueryParam || hasHandshake) {
-        console.log('[GLOBAL AUTO] [SunoPage] ✅ 握手成功，400ms 后启动 AUTO，65400ms 后链式导航/清理（60s 构思倒计时 + 5.4s 观察期）');
+        console.log(`[GLOBAL AUTO] [SunoPage] ✅ 握手成功，400ms 后启动 AUTO，${getCountdownSeconds() * 1000 + 5400}ms 后链式导航/清理（${getCountdownSeconds()}s 构思倒计时 + 5.4s 观察期）`);
         // Step 1: 启动 AUTO (400ms)
         setTimeout(() => {
           console.log('[GLOBAL AUTO] [SunoPage] ⏱ 400ms 触发 startAutoGeneration()');
           startAutoGeneration();
         }, 400);
-        // Step 2: 链式导航或清理 (65400ms = 60s 倒计时 + 5.4s 观察期) — 与 AUTO 成败完全解耦
+        // Step 2: 链式导航或清理 (${getCountdownSeconds() * 1000 + 5400}ms = ${getCountdownSeconds()}s 倒计时 + 5.4s 观察期) — 与 AUTO 成败完全解耦
         setTimeout(() => {
-          console.log('[GLOBAL AUTO] [SunoPage] ⏱ 65400ms 链式导航定时器触发（60s 倒计时结束）');
+          console.log(`[GLOBAL AUTO] [SunoPage] ⏱ ${getCountdownSeconds() * 1000 + 5400}ms 链式导航定时器触发（${getCountdownSeconds()}s 倒计时结束）`);
           try {
             const raw = localStorage.getItem('zmusic_globalauto');
             if (!raw) {
               console.warn('[GLOBAL AUTO] [SunoPage] localStorage 无 zmusic_globalauto，跳过链式导航');
+              return;
+            }
+            if (!shouldAutoChain()) {
+              console.log('[GLOBAL AUTO] [SunoPage] 自动链式生成已禁用，清理并跳过');
+              localStorage.removeItem('zmusic_globalauto');
               return;
             }
             const parsed = JSON.parse(raw);
@@ -248,7 +253,7 @@ function SunoPage({ onNavigate }) {
           } catch (e) {
             console.error('[GLOBAL AUTO] [SunoPage] 链式导航异常:', e);
           }
-        }, 65400);
+        }, getCountdownSeconds() * 1000 + 5400);
         try {
           const url = new URL(window.location.href);
           url.searchParams.delete('globalauto');
@@ -979,8 +984,8 @@ function SunoPage({ onNavigate }) {
             commandSent: choices.command,
           });
           setAutoThoughts(prev => [...prev.slice(-15), thought]);
-          setTimeout(() => handleGenerateRef.current(true), 1800);
-        }, 1500);
+          setTimeout(() => handleGenerateRef.current(true), 5400);
+        }, getCountdownSeconds() * 1000);
       }
     }
   };
