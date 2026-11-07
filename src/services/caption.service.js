@@ -250,6 +250,8 @@ function buildLocalCaptions({
   lang = "zh",
   count = 3,
 }) {
+  // 候选数量统一夹紧在 1~5（generateCaptions 之外的直接调用者也生效）
+  count = Math.max(1, Math.min(5, Number(count) || 3));
   const isZh = lang !== "en";
   const rand = mulberry32(
     hashSeed(`${kind}|${seed}|${title}|${style}|${Date.now()}`),

@@ -39,7 +39,7 @@ import PersistentAudioPlayer from './components/PersistentAudioPlayer.jsx';
 import PageErrorBoundary from './components/PageErrorBoundary.jsx';
 
 const UI_MODE_KEY = 'zmusic-ui-mode';
-const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '7.9.0';
+const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '7.9.1';
 
 function App() {
   const { t, i18n } = useTranslation();

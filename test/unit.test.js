@@ -33,6 +33,8 @@ process.env.SMS_PROVIDER = 'dev';
 
 const { default: authController } = await import('../src/controllers/auth.controller.js');
 const { default: libraryController } = await import('../src/controllers/library.controller.js');
+const { default: aiController } = await import('../src/controllers/ai.controller.js');
+const { default: captionService } = await import('../src/services/caption.service.js');
 
 // ---------------------------------------------------------------------------
 // Minimal Express-like req/res doubles
@@ -314,6 +316,97 @@ await test('listAlbums returns created albums', async () => {
   const r = await call(libraryController.listAlbums, {});
   assertEq(r.status, 200, 'status');
   assert(r.body.albums.some((a) => a.title === 'Unit Album'), 'created album listed');
+});
+
+// ---------------------------------------------------------------------------
+// CaptionService — 「AI 生词」本地生成器（buildLocalCaptions）
+// ---------------------------------------------------------------------------
+console.log('\nCaptionService — buildLocalCaptions');
+
+await test('inspiration 默认返回 3 条非空、互不重复的候选', async () => {
+  const captions = captionService.buildLocalCaptions({ kind: 'inspiration', lang: 'zh' });
+  assertEq(captions.length, 3, 'count');
+  assert(captions.every((c) => typeof c === 'string' && c.length > 10), 'non-empty strings');
+  assertEq(new Set(captions).size, captions.length, 'all unique');
+});
+
+await test('count 参数被夹紧在 1~5 之间', async () => {
+  assertEq(captionService.buildLocalCaptions({ kind: 'inspiration', count: 0 }).length >= 1, true, 'count=0 clamps up');
+  assert(captionService.buildLocalCaptions({ kind: 'inspiration', count: 99 }).length <= 5, 'count=99 clamps down');
+});
+
+await test('inspiration 携带 style 时出现在文案中', async () => {
+  const captions = captionService.buildLocalCaptions({ kind: 'inspiration', style: '流行音乐', lang: 'zh' });
+  assert(captions.every((c) => c.includes('流行音乐')), `style missing: ${JSON.stringify(captions)}`);
+});
+
+await test('inspiration 携带 seed 时保留用户原意', async () => {
+  const seed = '想写一首关于离家打拼的歌';
+  const captions = captionService.buildLocalCaptions({ kind: 'inspiration', seed, lang: 'zh' });
+  assert(captions.every((c) => c.includes(seed)), `seed missing: ${JSON.stringify(captions)}`);
+});
+
+await test('lyrics 候选包含主题与结构建议字段', async () => {
+  const captions = captionService.buildLocalCaptions({ kind: 'lyrics', lang: 'zh' });
+  assert(captions.every((c) => c.includes('主题') && c.includes('结构')), `lyrics shape: ${JSON.stringify(captions)}`);
+});
+
+await test('share 候选包含标题与话题标签', async () => {
+  const captions = captionService.buildLocalCaptions({ kind: 'share', title: '夏夜的海边', style: '流行', lang: 'zh' });
+  assert(captions.every((c) => c.includes('《夏夜的海边》')), `title missing: ${JSON.stringify(captions)}`);
+  assert(captions.every((c) => c.includes('#')), `hashtags missing: ${JSON.stringify(captions)}`);
+});
+
+await test('title 候选不含已有标题本身', async () => {
+  const captions = captionService.buildLocalCaptions({ kind: 'title', title: '未命名歌曲', lang: 'zh' });
+  assert(captions.length > 0, 'some titles returned');
+  assert(captions.every((c) => c !== '未命名歌曲'), 'must differ from existing title');
+});
+
+await test('英文生成走英文词池', async () => {
+  const captions = captionService.buildLocalCaptions({ kind: 'inspiration', lang: 'en', style: 'indie' });
+  assertEq(captions.length, 3, 'count');
+  assert(captions.every((c) => /[a-zA-Z]/.test(c) && !/[一-鿿]/.test(c)), `should be English: ${JSON.stringify(captions)}`);
+  assert(captions.every((c) => c.includes('indie')), 'style present');
+});
+
+await test('share 英文候选包含标题与标签', async () => {
+  const captions = captionService.buildLocalCaptions({ kind: 'share', title: 'River Night', lang: 'en' });
+  assert(captions.every((c) => c.includes('River') || c.includes('"')), 'title referenced');
+  assert(captions.every((c) => c.includes('#')), 'hashtags present');
+});
+
+await test('两次调用「换一批」产生不同组合', async () => {
+  // 本地生成混入 Date.now()，跨毫秒的两批应至少有一条不同（等价于换一批体验）
+  const a = captionService.buildLocalCaptions({ kind: 'inspiration', lang: 'zh' }).join('|');
+  await new Promise((r) => setTimeout(r, 3));
+  const b = captionService.buildLocalCaptions({ kind: 'inspiration', lang: 'zh' }).join('|');
+  assert(a !== b, 'two batches should differ');
+});
+
+// ---------------------------------------------------------------------------
+// AIController — POST /api/ai/captions 处理层
+// ---------------------------------------------------------------------------
+console.log('\nAIController — captions endpoint');
+
+await test('默认参数返回 3 条候选，source=local', async () => {
+  const r = await call(aiController.captions, { body: { kind: 'inspiration' } });
+  assertEq(r.status, 200, 'status');
+  assertEq(r.body.success, true, 'success flag');
+  assertEq(r.body.captions.length, 3, 'count');
+  assertEq(r.body.source, 'local', 'source (no LLM key configured)');
+});
+
+await test('空 body 也能返回候选（kind 默认值兜底）', async () => {
+  const r = await call(aiController.captions, { body: {} });
+  assertEq(r.status, 200, 'status');
+  assert(Array.isArray(r.body.captions) && r.body.captions.length > 0, 'captions present');
+});
+
+await test('非法 count 被夹紧（count=0 → 至少 1 条）', async () => {
+  const r = await call(aiController.captions, { body: { kind: 'title', count: 0 } });
+  assertEq(r.status, 200, 'status');
+  assert(r.body.captions.length >= 1 && r.body.captions.length <= 5, `count clamped, got ${r.body.captions.length}`);
 });
 
 // ---------------------------------------------------------------------------

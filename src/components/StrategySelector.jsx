@@ -84,12 +84,16 @@ export default function StrategySelector({
               onClick={(e) => { e.stopPropagation(); onSelect?.(null); }}
               className="w-full text-[11px] text-gray-400 hover:text-white bg-white/5 border border-white/5 hover:bg-white/10 rounded-lg py-1.5 transition-colors"
             >
-              × {L.default_hint}{L.clear_preset}
+              × {pickName(CREATIVE_STRATEGIES.find(s => s.id === selectedId)?.name)}{L.clear_preset}
             </button>
           )}
 
-          {/* Grid of strategy cards */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          {/* Grid of strategy cards
+              布局原则（修复"拥挤"问题）：
+              - 窄面板下最多 2 列，卡片改为横向行（图标在左、名称在右）
+              - 未选中卡片只显示 图标+名称+标签 一行，参数细节收起
+              - 选中卡片才展开 BPM/时长/复杂度（渐进披露） */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {CREATIVE_STRATEGIES.map(s => {
               const active = selectedId === s.id;
               const avgBpm = Math.round((s.bpmRange[0] + s.bpmRange[1]) / 2);
@@ -97,40 +101,40 @@ export default function StrategySelector({
                 <button
                   key={s.id}
                   onClick={(e) => { e.stopPropagation(); onSelect?.(active ? null : s.id); }}
-                  className={`group relative text-left p-2 md:p-2.5 rounded-xl border transition-all overflow-hidden ${active
-                    ? 'border-transparent shadow-xl scale-[1.02]'
+                  className={`group relative text-left rounded-xl border transition-all overflow-hidden ${active
+                    ? 'border-transparent shadow-lg'
                     : 'border-white/5 bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/15'
-                    }`}
+                    } ${active ? 'p-2.5' : 'p-2'}`}
                 >
                   {/* Gradient background when active */}
                   <div className={`absolute inset-0 bg-gradient-to-br ${s.color} transition-opacity ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-[0.06]'}`} />
                   <div className="relative">
-                    {/* Top row: icon + name */}
-                    <div className="flex items-start justify-between gap-1 mb-1.5">
-                      <span className="text-xl md:text-2xl leading-none">{s.icon}</span>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${active ? 'bg-white/20 text-white' : 'bg-white/5 text-gray-400 border border-white/10'}`}>
+                    {/* Row: icon + name + tag */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`${active ? 'text-xl' : 'text-lg'} leading-none flex-shrink-0`}>{s.icon}</span>
+                      <span className={`flex-1 min-w-0 truncate font-bold ${active ? 'text-[13px] text-white' : 'text-[12px] text-gray-200'}`}>
+                        {pickName(s.name)}
+                      </span>
+                      <span className={`flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded ${active ? 'bg-white/20 text-white' : 'bg-white/5 text-gray-500 border border-white/10'}`}>
                         {s.tag}
                       </span>
                     </div>
 
-                    {/* Name */}
-                    <div className={`text-[12px] md:text-[13px] font-bold mb-0.5 ${active ? 'text-white' : 'text-gray-100'}`}>
-                      {pickName(s.name)}
-                    </div>
-
-                    {/* Quick meta */}
-                    <div className={`text-[9.5px] md:text-[10px] space-y-0.5 ${active ? 'text-white/90' : 'text-gray-500'}`}>
-                      <div className="flex items-center gap-2 font-mono">
-                        <span>{L.bpm_label} {avgBpm}</span>
-                        <span>·</span>
-                        <span>{L.duration_label} {Math.round(s.defaultDuration / 60)}m</span>
+                    {/* Meta — 仅选中时展开，未选中保持单行卡片 */}
+                    {active && (
+                      <div className="mt-1.5 text-[10px] space-y-0.5 text-white/90">
+                        <div className="flex items-center gap-2 font-mono">
+                          <span>{L.bpm_label} {avgBpm}</span>
+                          <span>·</span>
+                          <span>{L.duration_label} {Math.round(s.defaultDuration / 60)}m</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span>{L.complexity_melody} {'■'.repeat(Math.min(5, Math.ceil(s.melodicComplexity / 2)))}{'·'.repeat(5 - Math.min(5, Math.ceil(s.melodicComplexity / 2)))}</span>
+                          <span>·</span>
+                          <span>{L.complexity_lyrics} {'■'.repeat(Math.min(5, Math.ceil(s.lyricComplexity / 2)))}{'·'.repeat(5 - Math.min(5, Math.ceil(s.lyricComplexity / 2)))}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span>{L.complexity_melody} {'■'.repeat(Math.min(5, Math.ceil(s.melodicComplexity / 2)))}{'·'.repeat(5 - Math.min(5, Math.ceil(s.melodicComplexity / 2)))}</span>
-                        <span>·</span>
-                        <span>{L.complexity_lyrics} {'■'.repeat(Math.min(5, Math.ceil(s.lyricComplexity / 2)))}{'·'.repeat(5 - Math.min(5, Math.ceil(s.lyricComplexity / 2)))}</span>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </button>
               );

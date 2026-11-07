@@ -279,6 +279,78 @@ async function runTests() {
     return data;
   }));
 
+  console.log('\nAI Captions Endpoint (count 边界集成测试)');
+
+  /** 便捷 POST，走与前端 AiCaptionButton 相同的路径。 */
+  const postCaptions = (body) => request('/api/ai/captions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  results.push(await test('POST /api/ai/captions count 缺省 → 3 条', async () => {
+    const data = await postCaptions({ kind: 'inspiration' });
+    if (!data.success) throw new Error('success is false');
+    if (data.captions?.length !== 3) throw new Error(`expected 3, got ${data.captions?.length}`);
+    if (!data.captions.every((c) => typeof c === 'string' && c.length > 5)) throw new Error('empty caption');
+    return data;
+  }));
+
+  results.push(await test('POST /api/ai/captions count=0 → 下界夹紧（≥1 条）', async () => {
+    const data = await postCaptions({ kind: 'inspiration', count: 0 });
+    if (!data.success) throw new Error('success is false');
+    if (!Array.isArray(data.captions) || data.captions.length < 1) {
+      throw new Error(`count=0 must clamp to ≥1, got ${data.captions?.length}`);
+    }
+    return data;
+  }));
+
+  results.push(await test('POST /api/ai/captions count=-5 → 下界夹紧（≥1 条）', async () => {
+    const data = await postCaptions({ kind: 'lyrics', count: -5 });
+    if (!data.success) throw new Error('success is false');
+    if (!Array.isArray(data.captions) || data.captions.length < 1) {
+      throw new Error(`negative count must clamp to ≥1, got ${data.captions?.length}`);
+    }
+    return data;
+  }));
+
+  results.push(await test('POST /api/ai/captions count=99 → 上界夹紧（≤5 条）', async () => {
+    const data = await postCaptions({ kind: 'inspiration', count: 99 });
+    if (!data.success) throw new Error('success is false');
+    if (data.captions?.length > 5) throw new Error(`count=99 must clamp to ≤5, got ${data.captions?.length}`);
+    return data;
+  }));
+
+  results.push(await test('POST /api/ai/captions count 为字符串 "2" → 数值转换后 2 条', async () => {
+    const data = await postCaptions({ kind: 'title', count: '2' });
+    if (!data.success) throw new Error('success is false');
+    if (data.captions?.length !== 2) throw new Error(`string "2" should give 2, got ${data.captions?.length}`);
+    return data;
+  }));
+
+  results.push(await test('POST /api/ai/captions count 为非法字符串 → 回退默认 3 条', async () => {
+    const data = await postCaptions({ kind: 'share', title: '夏夜的海边', count: 'abc' });
+    if (!data.success) throw new Error('success is false');
+    if (data.captions?.length !== 3) throw new Error(`NaN count should fall back to 3, got ${data.captions?.length}`);
+    return data;
+  }));
+
+  results.push(await test('POST /api/ai/captions 候选互不重复且非空', async () => {
+    const data = await postCaptions({ kind: 'inspiration', count: 5 });
+    if (!data.success) throw new Error('success is false');
+    const unique = new Set(data.captions);
+    if (unique.size !== data.captions.length) throw new Error('duplicate captions');
+    if (data.captions.some((c) => !c || c.trim().length === 0)) throw new Error('empty caption');
+    return data;
+  }));
+
+  results.push(await test('POST /api/ai/captions 无 LLM Key 时 source=local', async () => {
+    const data = await postCaptions({ kind: 'inspiration' });
+    if (!data.success) throw new Error('success is false');
+    if (data.source !== 'local') throw new Error(`expected source=local, got ${data.source}`);
+    return data;
+  }));
+
   const passed = results.filter((r) => r.passed).length;
   const skipped = results.filter((r) => r.skipped).length;
   const total = results.length;
