@@ -1,0 +1,1 @@
+const E={};var n={};const e=typeof import.meta!="undefined"&&E?E:{},_=typeof process!="undefined"&&n?n:{},o={sunoApiKey:e.VITE_SUNO_CN_API_KEY||_.SUNO_CN_API_KEY||"",museApiKey:e.VITE_MUSE_API_KEY||_.MUSE_API_KEY||_.MUSE_AI_API_KEY||"",meloApiKey:e.VITE_MELO_API_KEY||_.MELO_API_KEY||""};export{o as c};
