@@ -148,14 +148,81 @@ function stageAll() {
   git('add -A');
 }
 
-/** Commit with message */
+/**
+ * Commit with message.
+ * Multi-line messages are written to a temp file and passed via `-F` because
+ * embedding raw newlines in `-m` breaks on the Windows cmd shell.
+ */
 function commit(message) {
-  git(`commit -m "${message.replace(/"/g, '\\"')}"`);
+  const msgFile = path.join(ROOT, '.git', 'COMMIT_MSG');
+  fs.writeFileSync(msgFile, message, 'utf-8');
+  try {
+    git('commit -F .git/COMMIT_MSG');
+  } finally {
+    if (fs.existsSync(msgFile)) fs.unlinkSync(msgFile);
+  }
 }
 
-/** Create annotated tag */
+/** Whether a branch exists locally or on origin. */
+function branchExists(name) {
+  try {
+    execSync(`git rev-parse --verify ${name}`, { cwd: ROOT, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Keep `develop` mirroring `master` after every release.
+ * develop is a fast-forward-only mirror: it never carries its own commits,
+ * so a plain `merge --ff-only` is always safe. Runs after the working tree
+ * has been committed, and restores the original branch on any failure.
+ *
+ * @param {string} mainBranch - branch that just received the release
+ */
+function syncDevelopBranch(mainBranch = 'master') {
+  if (!branchExists('develop')) {
+    console.log('[branch] develop 分支不存在，跳过同步');
+    return false;
+  }
+  let switched = false;
+  try {
+    git('fetch origin --prune');
+    git('checkout develop');
+    switched = true;
+    git(`merge --ff-only ${mainBranch}`);
+    git('push origin develop');
+    git(`checkout ${mainBranch}`);
+    switched = false;
+    console.log(`[branch] develop 已快进同步到 ${mainBranch} 并推送`);
+    return true;
+  } catch (e) {
+    console.warn(`[branch] develop 同步失败: ${e.message}`);
+    if (switched) {
+      try { git(`checkout ${mainBranch}`); } catch { /* best effort */ }
+    }
+    return false;
+  }
+}
+
+/** Whether a git tag already exists. */
+function tagExists(tag) {
+  try {
+    execSync(`git rev-parse --verify refs/tags/${tag}`, { cwd: ROOT, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Create annotated tag (no-op if it already points at this release). */
 function createTag(version) {
   const tag = `v${version.version}`;
+  if (tagExists(tag)) {
+    console.log(`[tag] ${tag} 已存在，跳过创建`);
+    return tag;
+  }
   const message = `Release ${tag}\n\nVersion: ${version.version}\nBuild: #${version.buildNumber}\nDate: ${version.releaseDate}`;
   // Use printf-like approach for multi-line tag message
   fs.writeFileSync(path.join(ROOT, '.git', 'TAG_MSG'), message);
@@ -238,12 +305,17 @@ Usage:
   node scripts/release.mjs <command> [message]
 
 Commands:
-  major     Bump major version (e.g., 5.5.6 -> 6.0.0)
-  minor     Bump minor version (e.g., 5.5.6 -> 5.6.0)
-  patch     Bump patch version (e.g., 5.5.6 -> 5.5.7)
+  major     Bump major version (e.g., 7.7.2 -> 8.0.0) — 重大/破坏性变更
+  minor     Bump minor version (e.g., 7.7.2 -> 7.8.0) — 新功能
+  patch     Bump patch version (e.g., 7.7.2 -> 7.7.3) — 缺陷修复
+  publish   Tag + commit + push the CURRENT version (no bump)
+            （先用 version.js 升版本、跑截图，最后用 publish 统一发布）
   status    Show current version status
   backup    Commit and push all changes without version bump
-  help      Show this help message
+
+Branch management:
+  master 为唯一发布分支；每次成功推送到 master 后，develop 会被
+  --ff-only 快进同步到 master 并推送，保证 develop 始终是 master 的镜像。
 
 Examples:
   node scripts/release.mjs minor "Added social media BGM generator, prompt engineering, visual style recommendations"
@@ -291,19 +363,61 @@ function main() {
     commit(msg);
 
     const tag = `backup-${today()}`;
-    try {
-      git(`tag -a ${tag} -m "${msg.replace(/"/g, '\\"')}"`);
-      console.log(`Created tag: ${tag}`);
-    } catch (e) {
-      console.warn(`Tag creation skipped: ${e.message}`);
+    if (tagExists(tag)) {
+      console.log(`Tag ${tag} 已存在，跳过`);
+    } else {
+      try {
+        git(`tag -a ${tag} -m "${msg.replace(/"/g, '\\"')}"`);
+        console.log(`Created tag: ${tag}`);
+      } catch (e) {
+        console.warn(`Tag creation skipped: ${e.message}`);
+      }
     }
 
-    const pushed = push();
+    const branch = getCurrentBranch();
+    const pushed = push(branch);
     if (pushed) {
       pushTag(tag);
+      syncDevelopBranch(branch);
       console.log(`\nBackup completed successfully!`);
     } else {
       console.log(`\nBackup committed locally. Push will retry when online.`);
+    }
+    process.exit(0);
+  }
+
+  // 发布当前版本（不升版本号）：用于先跑 version.js + 截图，最后一步统一提交推送
+  if (command === 'publish') {
+    const ver = readVersion();
+    const msg = message || `Release v${ver.version} (build #${ver.buildNumber})`;
+    console.log(`\n=== Publish v${ver.version} (build #${ver.buildNumber}) ===`);
+    console.log(`Commit message: "${msg}"`);
+
+    const changes = getChangedFiles();
+    console.log(`Files to commit: ${changes.length}`);
+
+    if (changes.length > 0) {
+      stageAll();
+      commit(msg);
+    } else {
+      console.log('工作区无改动，仅创建 tag 并推送');
+    }
+
+    const tag = createTag(ver);
+    console.log(`Tagged: ${tag}`);
+
+    const branch = getCurrentBranch();
+    const pushed = push(branch);
+    if (pushed) {
+      pushTag(tag);
+      syncDevelopBranch(branch);
+      console.log(`\n=== PUBLISH COMPLETE ===`);
+      console.log(`  Version: v${ver.version}`);
+      console.log(`  Tag:     ${tag}`);
+      console.log(`  Branch:  ${branch} (+ develop 同步)`);
+    } else {
+      console.log(`\n=== PUBLISH COMMITTED LOCALLY (push failed) ===`);
+      console.log('  Run: node scripts/release.mjs backup  (when online)');
     }
     process.exit(0);
   }
@@ -360,6 +474,7 @@ function main() {
 
   if (pushed) {
     pushTag(tag);
+    syncDevelopBranch(branch);
     console.log(`\n=== RELEASE COMPLETE ===`);
     console.log(`  Version:  v${newVer.version}`);
     console.log(`  Build:    #${newVer.buildNumber}`);

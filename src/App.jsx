@@ -27,6 +27,7 @@ const BatchGenerationPage = lazy(() => import('./pages/BatchGenerationPage.jsx')
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage.jsx'));
 import { MuseIcon, SunoIcon, MeloIcon } from './components/BrandIcons.jsx';
 import FloatingChatBall from './components/FloatingChatBall.jsx';
+import FloatingAutoButton from './components/FloatingAutoButton.jsx';
 import EasyMode from './components/EasyMode.jsx';
 import { AutoProgressProvider } from './contexts/AutoProgressContext.jsx';
 import { GenerationProvider } from './stores/generationStore.jsx';
@@ -38,7 +39,7 @@ import PersistentAudioPlayer from './components/PersistentAudioPlayer.jsx';
 import PageErrorBoundary from './components/PageErrorBoundary.jsx';
 
 const UI_MODE_KEY = 'zmusic-ui-mode';
-const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '7.7.1';
+const BUILD_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : '7.8.0';
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -528,6 +529,7 @@ function App() {
       {user && (
         <>
           <FloatingChatBall />
+          <FloatingAutoButton onNavigate={setCurrentPage} currentPage={currentPage} />
           <AutoProgressBar />
           <PersistentAudioPlayer />
         </>

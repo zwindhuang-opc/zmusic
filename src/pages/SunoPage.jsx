@@ -18,6 +18,7 @@ import {
   generateCreativeThought,
   AUTO_CONFIRM,
   openPlatformWebsite,
+  useAutoStartListener,
 } from '../utils/autoGenUtils.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
@@ -514,6 +515,9 @@ function SunoPage({ onNavigate }) {
       }
     }, 1000);
   }, [randomizeSunoInputs, pickRandomThemeStyle, pickRandomSunoStyleTags, generateRandomTitle, generateAutoLyrics, generateAutoSunoPrompt]);
+
+  // 全局悬浮 AUTO 按钮 → 直接启动（无确认弹窗）
+  useAutoStartListener('suno', startAutoGeneration, autoRunningRef);
 
   // 点击 AUTO 按钮 → 若正在运行则请求停止；否则打开 3 步危险确认弹窗
   const handleAutoClick = () => {

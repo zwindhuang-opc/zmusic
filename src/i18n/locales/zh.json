@@ -1348,6 +1348,9 @@
     "music_create": "音乐创作",
     "notebook": "创作构思记录簿",
     "mv": "MV视频",
+    "mv_muse": "Muse MV",
+    "mv_suno": "Suno MV",
+    "mv_melo": "Melo MV",
     "profile": "个人资料",
     "quality": "质量分析器",
     "quick_actions": "快捷入口",
@@ -1358,6 +1361,11 @@
     "publish_studio": "发布工坊",
     "suno": "Suno AI",
     "workbench": "工作台"
+  },
+  "floatingAuto": {
+    "title": "AUTO 快捷启动",
+    "music": "歌曲生成",
+    "mv": "MV 生成"
   },
   "section_presets": {
     "commercial_jingle": "商业广告",

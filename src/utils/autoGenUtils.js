@@ -9,6 +9,8 @@
  * @module utils/autoGenUtils
  */
 
+import { useEffect } from 'react';
+
 // === Theme & Style banks for random AUTO generation ===
 
 const AUTO_THEMES = [
@@ -234,6 +236,44 @@ export function generateAutoMusePrompt(theme) {
     `讲述一个关于${theme}的故事，叙事性强的歌词，感人的副歌，制作精良`,
   ];
   return rand(prompts);
+}
+
+/**
+ * useAutoStartListener — 接收全局悬浮 AUTO 按钮的启动指令。
+ *
+ * 两条触发路径：
+ *   1. window 事件 `zmusic:auto-start`（detail.platform 匹配）— 页面已挂载时
+ *   2. sessionStorage 'zmusic-pending-auto' 标记 — 页面在导航后才挂载时，
+ *      挂载完成后消费该标记并延迟启动，保证状态初始化完成
+ *
+ * @param {string} platform - 本页面引擎标识 ('muse'|'suno'|'melo'|'mv-muse'...)
+ * @param {Function} startAutoGeneration - 页面的直接启动函数（无确认弹窗）
+ * @param {React.MutableRefObject<boolean>} autoRunningRef - 运行中防重复触发
+ */
+export function useAutoStartListener(platform, startAutoGeneration, autoRunningRef) {
+  useEffect(() => {
+    const trigger = () => {
+      try {
+        if (autoRunningRef?.current) return; // already running — ignore
+      } catch { /* ref unavailable — proceed */ }
+      startAutoGeneration();
+    };
+    // Path 1: live event from FloatingAutoButton
+    const onEvent = (e) => {
+      if (e.detail?.platform === platform) trigger();
+    };
+    window.addEventListener('zmusic:auto-start', onEvent);
+    // Path 2: pending flag consumed after mount
+    try {
+      const pending = sessionStorage.getItem('zmusic-pending-auto');
+      if (pending === platform) {
+        sessionStorage.removeItem('zmusic-pending-auto');
+        // Defer slightly so the page finishes mounting and state init first
+        setTimeout(trigger, 300);
+      }
+    } catch { /* sessionStorage unavailable — event path still works */ }
+    return () => window.removeEventListener('zmusic:auto-start', onEvent);
+  }, [platform, startAutoGeneration, autoRunningRef]);
 }
 
 /**

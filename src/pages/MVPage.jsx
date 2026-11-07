@@ -15,7 +15,7 @@ import { MVControls, MVVideoPlayer, MVTimelinePreview } from '../components/mv/i
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
 import { getEngineSongCount, getAutoConfig, getMaxErrors, getCountdownSeconds, shouldStopOnError, shouldAutoCloseOnStop, shouldAutoCloseOnDone, getAutoCloseDelay, shouldAutoChain } from '../utils/autoConfig.js';
-import { AUTO_CONFIRM, openPlatformWebsite, generateCreativeThought, generateRandomTitle, pickRandomThemeStyle, generateAutoLyrics } from '../utils/autoGenUtils.js';
+import { AUTO_CONFIRM, openPlatformWebsite, generateCreativeThought, generateRandomTitle, pickRandomThemeStyle, generateAutoLyrics, useAutoStartListener } from '../utils/autoGenUtils.js';
 
 const ICON_MAP = {
   Users, Cloud, Sun, Moon, Sparkles, Film, Brain, Palette, Clapperboard, Camera, Zap, Wand2, Music, Video,
@@ -1089,6 +1089,9 @@ function MVPage({ engine = 'muse', engineName = 'Muse AI' }) {
       }
     }, 1000);
   }, [engine, displayName, genres, paletteList, randomizeMVInputs]);
+
+  // Global floating AUTO button → direct start (no confirm modal)
+  useAutoStartListener(`mv-${engine}`, startAutoGeneration, autoRunningRef);
 
   // Click AUTO button → request stop if running; otherwise open 3-step confirm modal
   const handleAutoClick = () => {

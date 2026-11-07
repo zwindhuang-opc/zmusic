@@ -1,6 +1,6 @@
 {
   "name": "zmusic",
-  "version": "7.7.2",
+  "version": "7.8.0",
   "description": "ZMusic - Real AI Music Generation Platform with MVC Architecture",
   "main": "electron/main.js",
   "type": "module",
@@ -31,6 +31,7 @@
     "release:major": "node scripts/release.mjs major",
     "release:minor": "node scripts/release.mjs minor",
     "release:patch": "node scripts/release.mjs patch",
+    "publish": "node scripts/release.mjs publish",
     "backup": "node scripts/release.mjs backup",
     "backup:tag": "node scripts/release.mjs backup",
     "screenshot": "node scripts/take-screenshots.mjs",

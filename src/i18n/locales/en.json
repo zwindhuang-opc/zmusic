@@ -1348,6 +1348,9 @@
     "music_create": "Music Studio",
     "notebook": "Creative Notebook",
     "mv": "MV Video",
+    "mv_muse": "Muse MV",
+    "mv_suno": "Suno MV",
+    "mv_melo": "Melo MV",
     "profile": "Profile",
     "quality": "Quality Analyzer",
     "quick_actions": "Quick Actions",
@@ -1358,6 +1361,11 @@
     "publish_studio": "Publish Studio",
     "suno": "Suno AI",
     "workbench": "Workbench"
+  },
+  "floatingAuto": {
+    "title": "Quick AUTO Launch",
+    "music": "Song Generation",
+    "mv": "MV Generation"
   },
   "section_presets": {
     "commercial_jingle": "Commercial Jingle",

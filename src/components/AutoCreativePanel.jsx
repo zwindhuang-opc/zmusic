@@ -173,7 +173,17 @@ export default function AutoCreativePanel({
   const latest = thoughts[thoughts.length - 1];
 
   return (
-    <div className={`fixed left-6 top-20 bottom-24 w-[420px] max-w-[calc(100vw-3rem)] z-40 flex flex-col bg-[#0a0a14]/95 backdrop-blur-md border ${theme.border} rounded-2xl shadow-2xl ${theme.shadow} overflow-hidden`}>
+    <>
+      {/* AUTO 焦点压暗层：AUTO 运行时压暗背景主界面，让创作思维面板和
+          AUTO 进度卡成为视觉焦点。不拦截点击（pointer-events-none），
+          纯视觉聚焦，淡入淡出过渡。 */}
+      <div
+        aria-hidden="true"
+        className={`fixed inset-0 z-[45] bg-black/55 backdrop-blur-[2px] pointer-events-none transition-opacity duration-500 ${
+          autoRunning ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+      <div className={`fixed left-6 top-20 bottom-24 w-[420px] max-w-[calc(100vw-3rem)] z-[46] flex flex-col bg-[#0a0a14]/95 backdrop-blur-md border ${theme.border} rounded-2xl shadow-2xl ${theme.shadow} overflow-hidden`}>
       {/* Header */}
       <div className={`flex items-center justify-between px-4 py-3 border-b ${theme.border} bg-gradient-to-r ${theme.bgHeader}`}>
         <div className="flex items-center gap-2">
@@ -320,6 +330,7 @@ export default function AutoCreativePanel({
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

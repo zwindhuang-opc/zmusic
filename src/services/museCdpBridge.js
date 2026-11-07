@@ -268,11 +268,14 @@ async function fetchFromEdge(url, options = {}) {
     timeoutMs = 60000,
   } = options;
 
-  // Build headers. The muse.top API gateway requires an `AuthToken` JWT
-  // header (in addition to App-Key) — cookies alone return code=1006.
+  // Build headers. VERIFIED 2026-10-18 via bundle analysis + live capture:
+  // the current muse.top web app sends ONLY AuthToken (no App-Key) — the
+  // legacy App-Key header is what triggered code=1006 on generate.
   const headerObj = {
     'Content-Type': 'application/json',
-    'App-Key': '8e33a5e60ef347df808d14026f27d227',
+    Accept: 'application/json, text/plain, */*',
+    Referer: 'https://muse.top/',
+    Origin: 'https://muse.top',
     ...(authToken ? { 'AuthToken': authToken } : {}),
     ...headers,
   };
@@ -344,6 +347,42 @@ async function getCookies(urls = ['https://muse.top', 'https://project-api.atmob
 let cachedAuthToken = null;
 /** Where the cached token came from (localStorage key name). */
 let cachedTokenSource = null;
+/** Cached muse.top device UUID (localStorage 'muse-device-id') — the real
+ *  web app sends this as `machineId` in every request body. */
+let cachedMuseDeviceId = null;
+/** Timestamp of the last device-id read (30-min cache TTL). */
+let cachedDeviceIdAt = 0;
+
+/**
+ * Read (and cache for 30 min) the muse.top device UUID from the browser's
+ * localStorage['muse-device-id']. This is the exact `machineId` value the
+ * real muse.top web app puts in every API request body (buildBaseRequest).
+ * Falls back to null when the browser/CDP is unavailable — callers should
+ * use a placeholder then.
+ *
+ * @returns {Promise<string|null>} Device UUID or null
+ */
+async function getMuseDeviceId() {
+  if (cachedMuseDeviceId && Date.now() - cachedDeviceIdAt < 30 * 60 * 1000) {
+    return cachedMuseDeviceId;
+  }
+  try {
+    const store = await readLocalStorage(['muse-device-id']);
+    const id = store?.['muse-device-id'];
+    if (id && typeof id === 'string' && id.length > 10) {
+      cachedMuseDeviceId = id;
+      cachedDeviceIdAt = Date.now();
+    } else {
+      console.log('[MUSE-BRIDGE] muse-device-id not found in page localStorage', {
+        attachedPageUrl,
+        keysReturned: Object.keys(store || {}),
+      });
+    }
+  } catch (e) {
+    console.log('[MUSE-BRIDGE] muse-device-id read failed:', e.message);
+  }
+  return cachedMuseDeviceId;
+}
 
 /**
  * Check if the browser is logged into muse.top.
@@ -370,13 +409,14 @@ async function checkLogin() {
     method: 'POST',
     headers: cachedAuthToken ? { AuthToken: cachedAuthToken } : {},
     authToken: cachedAuthToken,
+    // Minimal body — exact replica of the muse.top web app (buildBaseRequest).
+    // Extra legacy fields (timestamp/nonce/sid) are NOT sent by the real app.
     body: {
       packageName: 'com.xingchat.web.muse',
       appPlatform: 4,
       channelName: 'web',
-      machineId: 'zmusic-cdp-check',
-      timestamp: Math.floor(Date.now() / 1000),
-      nonce: 'check' + Math.random().toString(36).substring(2, 10),
+      machineId: (await getMuseDeviceId()) || 'zmusic-cdp-check',
+      ...(cachedAuthToken ? { authToken: cachedAuthToken } : {}),
     },
   });
 
@@ -583,9 +623,8 @@ async function queryTask(taskId) {
       packageName: 'com.xingchat.web.muse',
       appPlatform: 4,
       channelName: 'web',
-      machineId: 'zmusic-cdp',
-      timestamp: Math.floor(Date.now() / 1000),
-      nonce: 'poll' + Math.random().toString(36).substring(2, 10),
+      machineId: (await getMuseDeviceId()) || 'zmusic-cdp',
+      ...(cachedAuthToken ? { authToken: cachedAuthToken } : {}),
       taskId,
       page: 1,
       page_size: 5,
@@ -1299,9 +1338,8 @@ async function keepalivePing() {
           packageName: 'com.xingchat.web.muse',
           appPlatform: 4,
           channelName: 'web',
-          machineId: 'zmusic-keepalive',
-          timestamp: Math.floor(Date.now() / 1000),
-          nonce: 'keepalive' + Math.random().toString(36).substring(2, 10),
+          machineId: (await getMuseDeviceId()) || 'zmusic-keepalive',
+          ...(token ? { authToken: token } : {}),
         },
       }
     );
@@ -1436,14 +1474,12 @@ async function recoverSession() {
           packageName: 'com.xingchat.web.muse',
           appPlatform: 4,
           channelName: 'web',
-          machineId: 'zmusic-recovery-' + Date.now(),
-          timestamp: Math.floor(Date.now() / 1000),
-          nonce: 'recover' + Math.random().toString(36).substring(2, 10),
+          machineId: (await getMuseDeviceId()) || ('zmusic-recovery-' + Date.now()),
+          ...(token ? { authToken: token } : {}),
         };
 
         const headers = {
           'Content-Type': 'application/json',
-          'App-Key': '8e33a5e60ef347df808d14026f27d227',
           'AuthToken': token,
         };
         if (cookieString) {
@@ -1538,6 +1574,7 @@ export {
   fetchFromEdge,
   getCookies,
   checkLogin,
+  getMuseDeviceId,
   generateSong,
   queryTask,
   extractAuthToken,
