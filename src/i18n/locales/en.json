@@ -1367,6 +1367,16 @@
     "music": "Song Generation",
     "mv": "MV Generation"
   },
+  "aiCaption": {
+    "button": "AI Text",
+    "title": "Let AI write it",
+    "regenerate": "Regenerate",
+    "loading": "Generating…",
+    "empty": "No suggestions yet — try Regenerate",
+    "apply": "Use this",
+    "error": "Generation failed, please retry",
+    "hint": "Based on your input and style; click to insert"
+  },
   "section_presets": {
     "commercial_jingle": "Commercial Jingle",
     "dance_track": "Dance Track",

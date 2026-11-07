@@ -21,6 +21,7 @@ import {
   useAutoStartListener,
 } from '../utils/autoGenUtils.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
+import AiCaptionButton from '../components/AiCaptionButton.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
 import { getEngineSongCount, getAutoConfig, getMaxErrors, getCountdownSeconds, getSongDuration, shouldStopOnError, shouldAutoCloseOnStop, shouldAutoCloseOnDone, getAutoCloseDelay, shouldAutoChain } from '../utils/autoConfig.js';
 import { applyStrategyPreset, getStrategy } from '../data/creativePresets.js';
@@ -1220,7 +1221,16 @@ function SunoPage({ onNavigate }) {
                     <Wand2 className="w-4 h-4 text-fuchsia-400" />
                     音乐描述
                   </label>
-                  <span className="text-[10px] text-gray-500">{prompt.length}/500</span>
+                  <div className="flex items-center gap-2">
+                    <AiCaptionButton
+                      kind="inspiration"
+                      seed={prompt}
+                      style={styleInputValue || styleInput}
+                      onApply={setPrompt}
+                      maxLength={500}
+                    />
+                    <span className="text-[10px] text-gray-500">{prompt.length}/500</span>
+                  </div>
                 </div>
                 <textarea
                   value={prompt}

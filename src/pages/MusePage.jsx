@@ -8,6 +8,7 @@ import {
   AlertTriangle, ShieldCheck, RotateCcw, ListMusic, Loader2
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
+import AiCaptionButton from '../components/AiCaptionButton.jsx';
 import MuseService from '../services/muse.service.js';
 import { useGeneration } from '../stores/generationStore.jsx';
 import {
@@ -1453,7 +1454,16 @@ function MusePage({ onNavigate }) {
                     <Wand2 className="w-4 h-4 text-fuchsia-400" />
                     灵感描述
                   </label>
-                  <span className="text-[10px] text-gray-500">{prompt.length}/200</span>
+                  <div className="flex items-center gap-2">
+                    <AiCaptionButton
+                      kind="inspiration"
+                      seed={prompt}
+                      style={selectedStyle}
+                      onApply={setPrompt}
+                      maxLength={200}
+                    />
+                    <span className="text-[10px] text-gray-500">{prompt.length}/200</span>
+                  </div>
                 </div>
                 <textarea
                   value={prompt}
@@ -1482,7 +1492,15 @@ function MusePage({ onNavigate }) {
                       <Mic className="w-4 h-4 text-fuchsia-400" />
                       歌词
                     </label>
-                    <span className="text-[10px] text-gray-500">{lyrics.length} 字符</span>
+                    <div className="flex items-center gap-2">
+                      <AiCaptionButton
+                        kind="lyrics"
+                        seed={prompt || lyrics}
+                        style={selectedStyle}
+                        onApply={setLyrics}
+                      />
+                      <span className="text-[10px] text-gray-500">{lyrics.length} 字符</span>
+                    </div>
                   </div>
                   <textarea
                     value={lyrics}

@@ -1367,6 +1367,16 @@
     "music": "歌曲生成",
     "mv": "MV 生成"
   },
+  "aiCaption": {
+    "button": "AI 生词",
+    "title": "AI 帮你写几句",
+    "regenerate": "换一批",
+    "loading": "正在生成…",
+    "empty": "暂时没有候选，点「换一批」试试",
+    "apply": "用这句",
+    "error": "生成失败，请稍后重试",
+    "hint": "根据当前输入和风格生成，点选即填入"
+  },
   "section_presets": {
     "commercial_jingle": "商业广告",
     "dance_track": "舞曲结构",

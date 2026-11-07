@@ -12,6 +12,7 @@ import historyController from '../controllers/history.controller.js';
 import sunoController from '../controllers/suno.controller.js';
 import freemusicController from '../controllers/freemusic.controller.js';
 import visionController from '../controllers/vision.controller.js';
+import aiController from '../controllers/ai.controller.js';
 import museController from '../controllers/muse.controller.js';
 import meloController from '../controllers/melo.controller.js';
 import contentController from '../controllers/content.controller.js';
@@ -91,6 +92,12 @@ export async function handleRoute(req, res, url, method, body) {
   if (path === '/api/vision/analyze' && method === 'POST') {
     req.body = body;
     return visionController.analyze(req, res);
+  }
+
+  // AI 生词 —— 各页面文本输入框的候选文案生成
+  if (path === '/api/ai/captions' && method === 'POST') {
+    req.body = body;
+    return aiController.captions(req, res);
   }
 
   // Music endpoints

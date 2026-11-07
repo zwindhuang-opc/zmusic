@@ -7,6 +7,7 @@ import {
   ChevronDown, ChevronUp, Package,
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
+import AiCaptionButton from '../components/AiCaptionButton.jsx';
 import { useGeneration } from '../stores/generationStore.jsx';
 import DouyinService from '../services/douyin.service.js';
 import SocialPublishService from '../services/socialPublish.service.js';
@@ -631,9 +632,19 @@ export default function PublishStudio({ onNavigate }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-300 mb-1.5">
-                {isZh ? '标题 *' : 'Title *'}
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-gray-300">
+                  {isZh ? '标题 *' : 'Title *'}
+                </label>
+                <AiCaptionButton
+                  kind="title"
+                  seed={title}
+                  title={selectedSong?.title || title}
+                  style={selectedSong?.style || ''}
+                  onApply={setTitle}
+                  maxLength={55}
+                />
+              </div>
               <input
                 value={title}
                 onChange={e => setTitle(e.target.value)}
@@ -645,9 +656,19 @@ export default function PublishStudio({ onNavigate }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-300 mb-1.5">
-                {isZh ? '描述 / Caption' : 'Description'}
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-gray-300">
+                  {isZh ? '描述 / Caption' : 'Description'}
+                </label>
+                <AiCaptionButton
+                  kind="share"
+                  seed={description}
+                  title={title || selectedSong?.title || ''}
+                  style={selectedSong?.style || ''}
+                  onApply={setDescription}
+                  maxLength={400}
+                />
+              </div>
               <textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}

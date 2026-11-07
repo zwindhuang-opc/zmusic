@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Mic, Sparkles, Loader, FileText, Cpu, Network, BookOpen, Settings as SettingsIcon, Wand2, Clock, Music2, User, History, Copy, Video, AlertCircle, Search, ChevronDown, ChevronUp, ChevronRight, Sliders, Palette, Layers, Image as ImageIcon, Upload, X, Check, Share2, Layout, Music4, Headphones, Cloud } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation.js';
+import AiCaptionButton from '../components/AiCaptionButton.jsx';
 import api, { isMobileEnvironment } from '../services/api.client.js';
 import { useGeneration } from '../stores/generationStore.jsx';
 import { generateLyrics } from '../utils/lyricsEngine.js';
@@ -616,6 +617,14 @@ function LyricsPage({ onNavigate, defaultMode }) {
             <div>
               <h2 className="text-lg font-bold text-white">{t('lyrics.script')}</h2>
               <p className="text-[11px] text-gray-400">{t('lyrics.script_hint')}</p>
+            </div>
+            <div className="ml-auto">
+              <AiCaptionButton
+                kind="lyrics"
+                seed={script}
+                style={genre}
+                onApply={setScript}
+              />
             </div>
           </div>
           <textarea

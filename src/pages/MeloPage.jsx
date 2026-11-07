@@ -21,6 +21,7 @@ import {
   useAutoStartListener,
 } from '../utils/autoGenUtils.js';
 import AutoCreativePanel from '../components/AutoCreativePanel.jsx';
+import AiCaptionButton from '../components/AiCaptionButton.jsx';
 import { useAutoProgress } from '../contexts/AutoProgressContext.jsx';
 import { getEngineSongCount, getAutoConfig, getMaxErrors, getCountdownSeconds, getSongDuration, shouldStopOnError, shouldAutoCloseOnStop, shouldAutoCloseOnDone, getAutoCloseDelay, shouldAutoChain } from '../utils/autoConfig.js';
 import HistoryPanel from '../components/HistoryPanel.jsx';
@@ -1406,7 +1407,14 @@ function MeloPage({ onNavigate }) {
                 <FileText className="w-4 h-4 text-amber-400" />
                 歌词输入
               </label>
-              <span className="text-[10px] text-gray-500">{lyrics.length} 字符</span>
+              <div className="flex items-center gap-2">
+                <AiCaptionButton
+                  kind="lyrics"
+                  seed={lyrics}
+                  onApply={setLyrics}
+                />
+                <span className="text-[10px] text-gray-500">{lyrics.length} 字符</span>
+              </div>
             </div>
 
             <textarea
